@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/*
+ * "Console shell" palette. Semantic names map to the hardware they borrow from:
+ * shell = device plastic, screen = the display panel, led = power LED (match),
+ * amber = partial, miss = unlit outline, abtn = the red A button (primary action).
+ */
+:root {
+  --shell: #e6e3ee;
+  --shell-edge: #cfcadc;
+  --screen: #f6f4fa;
+  --ink: #211d33;
+  --ink-soft: #5b5670;
+  --led: #1f9d57;
+  --amber: #f0b429;
+  --amber-pale: #f8d98a;
+  --miss: #8d88a3;
+  --abtn: #d7263d;
+  --abtn-press: #b51c31;
+  --focus: #3b5bdb;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --shell: #1b1828;
+    --shell-edge: #322d48;
+    --screen: #24203a;
+    --ink: #eeebf7;
+    --ink-soft: #a9a3c2;
+    --led: #34b873;
+    --amber: #f5c451;
+    --amber-pale: #c99a2e;
+    --miss: #6e6888;
+    --abtn: #f0465b;
+    --abtn-press: #d8324a;
+    --focus: #8fa8ff;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-shell: var(--shell);
+  --color-shell-edge: var(--shell-edge);
+  --color-screen: var(--screen);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-led: var(--led);
+  --color-amber: var(--amber);
+  --color-miss: var(--miss);
+  --color-abtn: var(--abtn);
+  --color-abtn-press: var(--abtn-press);
+  --font-display: "Bungee", "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body {
+  background: var(--shell);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Partial matches are striped so they read without colour. */
+.cell-partial {
+  background: repeating-linear-gradient(135deg, var(--amber) 0 9px, var(--amber-pale) 9px 15px);
+  color: #2a2208;
+}
+
+/* A guess snapping into its slot. */
+@keyframes slot-in {
+  from {
+    transform: translateY(-6px) scale(0.985);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.slot-in > * {
+  animation: slot-in 240ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.slot-in > :nth-child(2) { animation-delay: 30ms; }
+.slot-in > :nth-child(3) { animation-delay: 60ms; }
+.slot-in > :nth-child(4) { animation-delay: 90ms; }
+.slot-in > :nth-child(5) { animation-delay: 120ms; }
+.slot-in > :nth-child(6) { animation-delay: 150ms; }
+.slot-in > :nth-child(7) { animation-delay: 180ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .slot-in > * {
+    animation: none;
+  }
+}

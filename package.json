@@ -1,0 +1,46 @@
+{
+  "name": "game-guess",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "setup": "tsx scripts/setup.ts",
+    "dev": "tsx scripts/dev.ts",
+    "dev:next": "next dev",
+    "build": "prisma generate --schema db/schema.prisma && next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"tests/unit/**/*.test.ts\" \"tests/integration/**/*.test.ts\"",
+    "test:db": "tsx scripts/with-db.ts node --import tsx --test --test-concurrency=1 \"tests/db/**/*.test.ts\"",
+    "test:e2e": "playwright test",
+    "db:generate": "prisma generate --schema db/schema.prisma",
+    "db:migrate": "tsx scripts/with-db.ts prisma migrate deploy --schema db/schema.prisma",
+    "db:migrate:dev": "tsx scripts/with-db.ts prisma migrate dev --schema db/schema.prisma",
+    "db:seed": "tsx scripts/with-db.ts tsx db/seed.ts",
+    "db:check": "prisma migrate diff --from-migrations db/migrations --to-schema-datamodel db/schema.prisma --shadow-database-url \"$SHADOW_DATABASE_URL\" --exit-code"
+  },
+  "dependencies": {
+    "@fontsource/atkinson-hyperlegible": "^5.2.0",
+    "@fontsource/bungee": "^5.2.0",
+    "@prisma/client": "^6.19.0",
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "embedded-postgres": "18.4.0-beta.17",
+    "prisma": "^6.19.0",
+    "tailwindcss": "^4.1.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

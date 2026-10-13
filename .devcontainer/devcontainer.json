@@ -1,0 +1,15 @@
+{
+  "name": "GameGuess",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "GameGuess", "onAutoForward": "openBrowser" }
+  },
+  "postCreateCommand": "npm install --no-audit --no-fund && npm run setup",
+  "postAttachCommand": "npm run dev",
+  "customizations": {
+    "vscode": {
+      "extensions": ["Prisma.prisma", "bradlc.vscode-tailwindcss"]
+    }
+  }
+}
