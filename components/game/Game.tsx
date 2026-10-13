@@ -47,7 +47,7 @@ function newId(): string {
 export function Game() {
   const [today, setToday] = useState<TodayPayload | null>(null);
   const [offsetMs, setOffsetMs] = useState(0);
-  const [loadError, setLoadError] = useState(false);
+  const [loadError, setLoadError] = useState<null | { detail?: string; hint?: string }>(null);
   const [candidates, setCandidates] = useState<CandidateEntry[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -63,17 +63,21 @@ export function Game() {
   const over = !!state && state.outcome !== "IN_PROGRESS";
 
   const loadToday = useCallback(async () => {
-    setLoadError(false);
+    setLoadError(null);
     try {
       const res = await fetch("/api/puzzle/today", { cache: "no-store" });
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { detail?: string; hint?: string };
+        setLoadError({ detail: body.detail ?? `HTTP ${res.status}`, hint: body.hint });
+        return null;
+      }
       const data = (await res.json()) as TodayPayload;
       setOffsetMs(Date.parse(data.serverNow) - Date.now());
       setToday(data);
       setRevealed([]);
       return data;
     } catch {
-      setLoadError(true);
+      setLoadError({ hint: "Couldn't reach the server. Is `npm run dev` still running?" });
       return null;
     }
   }, []);
@@ -194,6 +198,8 @@ export function Game() {
       {loadError && (
         <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
           <p>Couldn&apos;t load today&apos;s puzzle.</p>
+          {loadError.hint && <p className="mt-2 text-sm font-medium">{loadError.hint}</p>}
+          {loadError.detail && <p className="mt-1 font-mono text-xs break-all text-zinc-600 dark:text-zinc-400">{loadError.detail}</p>}
           <button type="button" onClick={loadToday} className="mt-2 font-semibold text-blue-600 underline">
             Try again
           </button>

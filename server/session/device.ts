@@ -3,10 +3,18 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 export const DEVICE_COOKIE = "gg_d";
 export const DEVICE_COOKIE_MAX_AGE = 60 * 60 * 24 * 400; // ~400 days (browser cap)
 
+const DEV_FALLBACK_SECRET = "dev-only-insecure-session-secret-do-not-use-in-prod";
+let warned = false;
+
 function secret(): string {
   const s = process.env.SESSION_SECRET;
-  if (!s || s.length < 32) throw new Error("SESSION_SECRET must be set (>= 32 chars)");
-  return s;
+  if (s && s.length >= 32) return s;
+  if (process.env.NODE_ENV === "production") throw new Error("SESSION_SECRET must be set (>= 32 chars)");
+  if (!warned) {
+    warned = true;
+    console.warn("[gameguess] SESSION_SECRET missing or short; using an insecure development fallback.");
+  }
+  return DEV_FALLBACK_SECRET;
 }
 
 function sign(id: string, key: string): string {

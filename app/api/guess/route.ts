@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { isSameOrigin } from "@/lib/origin";
 import { submitGuess, type GuessStatus } from "@/server/game/judge";
 import { repo } from "@/server/game/service";
-import { clientIp, ensureDevice, json } from "@/server/http";
+import { clientIp, ensureDevice, json, withErrors } from "@/server/http";
 import { rateLimit } from "@/server/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ const HTTP_STATUS: Record<GuessStatus, number> = {
 
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
-export async function POST(req: NextRequest) {
+export const POST = withErrors(async (req: NextRequest) => {
   // Basic CSRF defence: JSON only, and same-origin when the browser tells us the origin.
   if (!req.headers.get("content-type")?.includes("application/json")) {
     return json({ error: "unsupported_media_type" }, { status: 415 });
@@ -53,4 +53,4 @@ export async function POST(req: NextRequest) {
 
   const res = await submitGuess(repo, { deviceId: device.deviceId, puzzleNumber, gameId, clientGuessId, now: new Date() });
   return json(res, { status: HTTP_STATUS[res.status], device });
-}
+});

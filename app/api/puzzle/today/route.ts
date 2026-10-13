@@ -2,11 +2,11 @@ import type { NextRequest } from "next/server";
 import { nextSwitchAt } from "@/lib/date-utc";
 import { getTodayState } from "@/server/game/judge";
 import { repo } from "@/server/game/service";
-import { ensureDevice, json } from "@/server/http";
+import { ensureDevice, json, withErrors } from "@/server/http";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
+export const GET = withErrors(async (req: NextRequest) => {
   const device = ensureDevice(req);
   const now = new Date();
   const today = await getTodayState(repo, device.deviceId, now);
@@ -14,4 +14,4 @@ export async function GET(req: NextRequest) {
     { ...today, serverNow: now.toISOString(), nextSwitchAt: nextSwitchAt(now).toISOString() },
     { device },
   );
-}
+});

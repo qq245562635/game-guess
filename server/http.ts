@@ -1,5 +1,6 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
+import { diagnose } from "./diagnose";
 import { DEVICE_COOKIE, DEVICE_COOKIE_MAX_AGE, issueDeviceToken, verifyDeviceToken } from "./session/device";
 
 export interface DeviceContext {
@@ -32,6 +33,23 @@ export function json(body: unknown, init: { status?: number; device?: DeviceCont
     });
   }
   return res;
+}
+
+/**
+ * Wrap a route handler so unexpected errors become a JSON 500. In development the body
+ * includes the cause and a setup hint so the page can show what to fix.
+ */
+export function withErrors<A extends unknown[]>(handler: (...args: A) => Promise<Response>) {
+  return async (...args: A): Promise<Response> => {
+    try {
+      return await handler(...args);
+    } catch (error) {
+      console.error("[gameguess] request failed:", error);
+      const body: Record<string, string> = { error: "server_error" };
+      if (process.env.NODE_ENV !== "production") Object.assign(body, diagnose(error));
+      return json(body, { status: 500 });
+    }
+  };
 }
 
 export function clientIp(req: NextRequest): string {
