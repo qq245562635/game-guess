@@ -27,6 +27,22 @@ function findPgCtl(): string | null {
   return null;
 }
 
+/**
+ * Postgres on Windows cannot initialise when its install path (node_modules inside this
+ * project) contains non-ASCII characters and the system code page is not UTF-8.
+ */
+export function pathProblem(platform: string, cwd: string): string | null {
+  if (platform !== "win32" || !/[^\x00-\x7f]/.test(cwd)) return null;
+  return [
+    `The project path contains non-ASCII characters: ${cwd}`,
+    "Embedded PostgreSQL on Windows cannot start from such a path.",
+    "Fix: move the project to an ASCII-only folder (e.g. E:\\code\\game-guess), delete .data, and run `npm run setup` again.",
+    "项目路径包含中文等非 ASCII 字符，Windows 上内嵌数据库无法初始化。",
+    "请把项目移到纯英文路径（例如 E:\\code\\game-guess），删除 .data 文件夹后重新运行 npm run setup。",
+    "Alternatively set EMBEDDED_PG=0 and point DATABASE_URL at your own PostgreSQL.",
+  ].join("\n");
+}
+
 export function loadEnv() {
   try {
     process.loadEnvFile(".env");
@@ -70,20 +86,8 @@ export async function ensureLocalDb(log = (m: string) => console.log(`[db] ${m}`
     return { embedded: false, stop: async () => {} };
   }
 
-  // Postgres on Windows cannot initialise when its install path (node_modules inside this
-  // project) contains non-ASCII characters and the system code page is not UTF-8.
-  if (process.platform === "win32" && /[^\x00-\x7f]/.test(process.cwd())) {
-    throw new Error(
-      [
-        `The project path contains non-ASCII characters: ${process.cwd()}`,
-        "Embedded PostgreSQL on Windows cannot start from such a path.",
-        "Fix: move the project to an ASCII-only folder (e.g. E:\\code\\game-guess), delete .data, and run `npm run setup` again.",
-        "项目路径包含中文等非 ASCII 字符，Windows 上内嵌数据库无法初始化。",
-        "请把项目移到纯英文路径（例如 E:\\code\\game-guess），删除 .data 文件夹后重新运行 npm run setup。",
-        "Alternatively set EMBEDDED_PG=0 and point DATABASE_URL at your own PostgreSQL.",
-      ].join("\n"),
-    );
-  }
+  const problem = pathProblem(process.platform, process.cwd());
+  if (problem) throw new Error(problem);
 
   const { default: EmbeddedPostgres } = await import("embedded-postgres");
   const user = decodeURIComponent(url.username || "postgres");

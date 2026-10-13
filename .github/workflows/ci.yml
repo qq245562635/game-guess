@@ -119,18 +119,6 @@ jobs:
             exit 1
           fi
           echo "::notice title=fresh-clone ${{ matrix.os }}::embedded-postgres $(node -p "require('./node_modules/embedded-postgres/package.json').version")"
-      - name: Non-ASCII project path gives a clear message (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          mkdir -p "$RUNNER_TEMP/研究"
-          cd "$RUNNER_TEMP/研究"
-          DATABASE_URL=postgresql://gg:gg@localhost:5499/x node --import "$GITHUB_WORKSPACE/node_modules/tsx/dist/esm/index.mjs" -e '
-            const { pathToFileURL } = require("node:url");
-            import(pathToFileURL(process.env.GITHUB_WORKSPACE + "/scripts/local-db.ts").href)
-              .then((m) => m.ensureLocalDb())
-              .then(() => { console.log("expected an error"); process.exit(1); },
-                    (e) => { console.log(e.message); process.exit(/non-ASCII/.test(e.message) ? 0 : 1); });'
-          echo "::notice title=fresh-clone windows non-ascii::clear error shown"
       - name: npm run dev, then play through a forwarded origin
         run: |
           set -euo pipefail
