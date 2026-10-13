@@ -82,7 +82,7 @@ jobs:
             const r = require("./e2e.json");
             const walk = (s, p = []) => [...(s.specs || []).flatMap((sp) => sp.tests.map((t) => ({ title: [...p, sp.title].join(" > "), t }))), ...(s.suites || []).flatMap((c) => walk(c, [...p, c.title]))];
             for (const { title, t } of r.suites.flatMap((s) => walk(s))) {
-              if (t.status === "expected") continue;
+              if (t.status === "expected" || t.status === "skipped") continue;
               const err = t.results.find((x) => x.error)?.error?.message?.split("\n").slice(0, 3).join(" | ") || "";
               console.log(`::warning title=e2e ${t.status} [${t.projectName}]::${title} :: ${err.replace(/\x1b\[[0-9;]*m/g, "").slice(0, 400)}`);
             }'

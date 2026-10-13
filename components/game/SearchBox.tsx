@@ -29,6 +29,11 @@ export function SearchBox({ candidates, exclude, disabled, busy, onSubmit }: Pro
   const index = useMemo(() => (candidates ? buildSearchIndex(candidates) : []), [candidates]);
   const results = useMemo(() => searchCandidates(index, query, 8, exclude), [index, query, exclude]);
   const showList = open && results.length > 0 && !selected;
+  // Distinguish "already guessed" from "not in the list" when nothing is offered.
+  const alreadyGuessed = useMemo(
+    () => results.length === 0 && searchCandidates(index, query, 1).length > 0,
+    [index, query, results.length],
+  );
 
   function choose(entry: CandidateEntry) {
     setSelected(entry);
@@ -142,7 +147,7 @@ export function SearchBox({ candidates, exclude, disabled, busy, onSubmit }: Pro
       )}
       {open && !selected && query.trim() && !loading && results.length === 0 && (
         <p className="mt-2 text-sm text-ink-soft" role="status">
-          No game by that name. Try fewer words or a common short name like "GTA V".
+          {alreadyGuessed ? "You've already guessed every game that matches." : 'No game by that name. Try fewer words or a common short name like "GTA V".'}
         </p>
       )}
     </div>

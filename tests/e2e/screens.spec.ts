@@ -41,8 +41,11 @@ async function shoot(browser: Browser, project: Record<string, unknown>, scheme:
   await page.getByRole("combobox").fill("zel");
   await page.waitForTimeout(200);
   await page.screenshot({ path: out("2-playing"), fullPage: true });
-
   await page.getByRole("combobox").fill("");
+  await page.locator("table").evaluate((t) => (t.parentElement!.scrollLeft = 320));
+  await page.locator("table").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: out("2b-scrolled") });
+
   await guess(page, answer);
   await page.screenshot({ path: out("3-solved-dialog"), fullPage: false });
   await page.keyboard.press("Escape");

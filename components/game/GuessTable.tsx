@@ -29,7 +29,7 @@ function CellView({ cell }: { cell: Cell }) {
   const text = "values" in cell ? cell.values.join(", ") : cell.value;
   return (
     <td className={`rounded-xl px-2 py-2 text-center ${LOOK[cell.result]}`}>
-      <div className="text-sm leading-tight font-bold">{text}</div>
+      <div className="text-[13px] leading-tight font-bold [overflow-wrap:anywhere] hyphens-auto">{text}</div>
       <div className="mt-1 text-xs">
         <span aria-hidden="true">{ICON[cell.result]} </span>
         {MARK[cell.result]}
@@ -40,23 +40,22 @@ function CellView({ cell }: { cell: Cell }) {
 
 function EmptySlot({ n, next }: { n: number; next: boolean }) {
   return (
-    <tr aria-hidden="true">
-      <td
-        colSpan={7}
-        className={`h-[58px] rounded-xl border-2 border-dashed px-4 text-sm ${
-          next ? "border-ink-soft text-ink-soft" : "border-shell-edge text-transparent"
-        }`}
-      >
-        {next ? `Guess ${n} goes here` : `Slot ${n}`}
-      </td>
-    </tr>
+    <div
+      aria-hidden="true"
+      className={`flex h-[58px] items-center rounded-xl border-2 border-dashed px-4 text-sm ${
+        next ? "border-ink-soft text-ink-soft" : "border-shell-edge"
+      }`}
+    >
+      {next ? `Guess ${n} goes here` : null}
+    </div>
   );
 }
 
 export function GuessTable({ rows, maxGuesses, over }: { rows: GuessRow[]; maxGuesses: number; over: boolean }) {
   const empty = over ? 0 : maxGuesses - rows.length;
   return (
-    <div className="-mx-4 overflow-x-auto px-4 pb-1">
+    <>
+      <div className="-mx-3 overflow-x-auto px-3 pb-1 sm:-mx-5 sm:px-5">
       <table className="w-full min-w-[700px] table-fixed border-separate border-spacing-x-1.5 border-spacing-y-1.5">
         <caption className="sr-only">Your guesses and how each attribute compares to the answer</caption>
         <colgroup>
@@ -67,7 +66,7 @@ export function GuessTable({ rows, maxGuesses, over }: { rows: GuessRow[]; maxGu
         </colgroup>
         <thead>
           <tr className="text-left text-xs text-ink-soft">
-            <th scope="col" className="px-3 pb-1 font-bold">
+            <th scope="col" className="sticky left-0 z-[1] bg-screen px-3 pb-1 font-bold">
               Game
             </th>
             {COLUMNS.map((h) => (
@@ -82,7 +81,7 @@ export function GuessTable({ rows, maxGuesses, over }: { rows: GuessRow[]; maxGu
             <tr key={r.game.id} data-guess className={i === rows.length - 1 ? "slot-in" : undefined}>
               <th
                 scope="row"
-                className={`rounded-xl px-3 py-2 text-left align-middle ${
+                className={`sticky left-0 z-[1] rounded-xl px-3 py-2 text-left align-middle shadow-[6px_0_0_var(--screen)] ${
                   r.correct ? "bg-led text-white" : "bg-screen text-ink"
                 }`}
               >
@@ -94,12 +93,17 @@ export function GuessTable({ rows, maxGuesses, over }: { rows: GuessRow[]; maxGu
               ))}
             </tr>
           ))}
+        </tbody>
+      </table>
+      </div>
+      {empty > 0 && (
+        <div className="mt-1.5 space-y-1.5 px-1.5">
           {Array.from({ length: empty }, (_, k) => (
             <EmptySlot key={k} n={rows.length + k + 1} next={k === 0} />
           ))}
-        </tbody>
-      </table>
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 
