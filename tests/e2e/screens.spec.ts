@@ -41,6 +41,24 @@ async function shoot(browser: Browser, project: Record<string, unknown>, scheme:
   await page.getByRole("combobox").fill("zel");
   await page.waitForTimeout(200);
   await page.screenshot({ path: out("2-playing"), fullPage: true });
+  const probe = await page.locator("td div.font-bold").evaluateAll((els) =>
+    els
+      .filter((e) => /Entertain/.test(e.textContent ?? ""))
+      .map((e) => {
+        const cs = getComputedStyle(e);
+        return {
+          text: JSON.stringify(e.textContent),
+          codes: [...(e.textContent ?? "")].map((c) => c.charCodeAt(0).toString(16)).join(" "),
+          width: e.getBoundingClientRect().width,
+          font: cs.fontFamily + " " + cs.fontSize + " " + cs.fontWeight,
+          hyphens: cs.hyphens,
+          wrap: cs.overflowWrap,
+          lang: e.closest("[lang]")?.getAttribute("lang"),
+          lines: Math.round(e.getBoundingClientRect().height / parseFloat(cs.lineHeight || "14")),
+        };
+      }),
+  );
+  require("node:fs").writeFileSync(`screenshots/${name}-${scheme}-probe.json`, JSON.stringify(probe, null, 2));
   await page.getByRole("combobox").fill("");
   await page.locator("table").evaluate((t) => (t.parentElement!.scrollLeft = 320));
   await page.locator("table").scrollIntoViewIfNeeded();
