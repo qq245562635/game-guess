@@ -4,11 +4,28 @@
  * `npm run dev` when DATABASE_URL points at localhost and nothing is listening there yet.
  * Set EMBEDDED_PG=0 to always use your own database instead.
  */
-import { existsSync, rmSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { connect } from "node:net";
 import { join } from "node:path";
 
 export const DATA_DIR = join(process.cwd(), ".data", "postgres");
+
+/** Find pg_ctl inside the platform package that embedded-postgres installed. */
+function findPgCtl(): string | null {
+  const root = join(process.cwd(), "node_modules", "@embedded-postgres");
+  const exe = process.platform === "win32" ? "pg_ctl.exe" : "pg_ctl";
+  const stack = existsSync(root) ? [root] : [];
+  while (stack.length) {
+    const dir = stack.pop()!;
+    for (const name of readdirSync(dir)) {
+      const full = join(dir, name);
+      if (name === exe) return full;
+      if (statSync(full).isDirectory()) stack.push(full);
+    }
+  }
+  return null;
+}
 
 export function loadEnv() {
   try {
@@ -91,7 +108,21 @@ export async function ensureLocalDb(log = (m: string) => console.log(`[db] ${m}`
   }
   // A crash can leave a stale lock file behind; the port is free, so it is safe to remove.
   rmSync(join(DATA_DIR, "postmaster.pid"), { force: true });
-  await step("start", () => pg.start());
+  // On Windows, postgres.exe refuses to run from an elevated (admin) shell; pg_ctl drops
+  // privileges for it, so start and stop through pg_ctl there.
+  const pgCtl = process.platform === "win32" ? findPgCtl() : null;
+  const logFile = join(DATA_DIR, "..", "postgres.log");
+  if (pgCtl) {
+    const r = spawnSync(pgCtl, ["-D", DATA_DIR, "-o", `-p ${port}`, "-l", logFile, "-w", "-t", "60", "start"], {
+      encoding: "utf8",
+    });
+    if (r.status !== 0) {
+      const tail = existsSync(logFile) ? readFileSync(logFile, "utf8").split(/\r?\n/).slice(-15).join("\n") : "";
+      throw new Error(`embedded PostgreSQL start failed (pg_ctl): ${r.stderr || r.stdout}\n${tail}`);
+    }
+  } else {
+    await step("start", () => pg.start());
+  }
   try {
     await pg.createDatabase(database);
   } catch {
@@ -105,7 +136,8 @@ export async function ensureLocalDb(log = (m: string) => console.log(`[db] ${m}`
     stop: async () => {
       if (stopped) return;
       stopped = true;
-      await pg.stop();
+      if (pgCtl) spawnSync(pgCtl, ["-D", DATA_DIR, "-m", "fast", "-w", "stop"], { encoding: "utf8" });
+      else await pg.stop();
       log("embedded PostgreSQL stopped");
     },
   };
