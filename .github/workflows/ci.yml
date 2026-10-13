@@ -73,8 +73,18 @@ jobs:
       - name: E2E
         run: |
           set -o pipefail
-          npm run test:e2e 2>&1 | tee e2e.log
+          status=0
+          PLAYWRIGHT_JSON_OUTPUT_NAME=e2e.json npx playwright test --reporter=list,json 2>&1 | tee e2e.log || status=$?
           echo "::notice title=e2e::$(grep -E '[0-9]+ (passed|failed|flaky|skipped)' e2e.log | tr '\n' ' ')"
+          node -e '
+            const r = require("./e2e.json");
+            const walk = (s, p = []) => [...(s.specs || []).flatMap((sp) => sp.tests.map((t) => ({ title: [...p, sp.title].join(" > "), t }))), ...(s.suites || []).flatMap((c) => walk(c, [...p, c.title]))];
+            for (const { title, t } of r.suites.flatMap((s) => walk(s))) {
+              if (t.status === "expected") continue;
+              const err = t.results.find((x) => x.error)?.error?.message?.split("\n").slice(0, 3).join(" | ") || "";
+              console.log(`::warning title=e2e ${t.status} [${t.projectName}]::${title} :: ${err.replace(/\x1b\[[0-9;]*m/g, "").slice(0, 400)}`);
+            }'
+          exit $status
       - uses: actions/upload-artifact@v5
         if: failure()
         with:
