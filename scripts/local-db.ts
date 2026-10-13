@@ -64,17 +64,34 @@ export async function ensureLocalDb(log = (m: string) => console.log(`[db] ${m}`
     password,
     port,
     persistent: true,
-    onLog: () => {},
-    onError: () => {},
+    onLog: (m: unknown) => remember(m),
+    onError: (m: unknown) => remember(m),
   });
+
+  // Keep Postgres' own output quiet unless something fails.
+  const recent: string[] = [];
+  function remember(m: unknown) {
+    for (const line of String(m instanceof Error ? m.message : m).split(/\r?\n/)) {
+      if (line.trim()) recent.push(line.trim());
+    }
+    if (recent.length > 40) recent.splice(0, recent.length - 40);
+  }
+  const step = async (name: string, fn: () => Promise<unknown>) => {
+    try {
+      await fn();
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : e === undefined ? "" : String(e);
+      throw new Error(`embedded PostgreSQL ${name} failed${reason ? `: ${reason}` : ""}\n${recent.slice(-15).join("\n")}`);
+    }
+  };
 
   if (!existsSync(join(DATA_DIR, "PG_VERSION"))) {
     log(`initialising embedded PostgreSQL in .data/postgres (first run only)`);
-    await pg.initialise();
+    await step("initialise", () => pg.initialise());
   }
   // A crash can leave a stale lock file behind; the port is free, so it is safe to remove.
   rmSync(join(DATA_DIR, "postmaster.pid"), { force: true });
-  await pg.start();
+  await step("start", () => pg.start());
   try {
     await pg.createDatabase(database);
   } catch {
