@@ -28,14 +28,14 @@ jobs:
       SESSION_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
       CI: "true"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Install
         run: npm install --no-audit --no-fund
       - name: Upload lockfile (commit it from here until one is in the repo)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: package-lock
           path: package-lock.json
@@ -75,7 +75,7 @@ jobs:
           set -o pipefail
           npm run test:e2e 2>&1 | tee e2e.log
           echo "::notice title=e2e::$(grep -E '[0-9]+ (passed|failed|flaky|skipped)' e2e.log | tr '\n' ' ')"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: playwright-report
