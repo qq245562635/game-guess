@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "m*-*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: gg
+          POSTGRES_PASSWORD: gg
+          POSTGRES_DB: gameguess
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U gg" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://gg:gg@localhost:5432/gameguess
+      SHADOW_DATABASE_URL: postgresql://gg:gg@localhost:5432/gameguess_shadow
+      SESSION_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Upload lockfile (commit it from here until one is in the repo)
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-lock
+          path: package-lock.json
+      - name: Generate Prisma client
+        run: npm run db:generate
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit + integration tests
+        run: npm test
+      - name: Migrate
+        run: npm run db:migrate
+      - name: Migration matches schema
+        run: |
+          psql "postgresql://gg:gg@localhost:5432/postgres" -c "CREATE DATABASE gameguess_shadow"
+          npm run db:check
+      - name: Seed
+        run: npm run db:seed
+      - name: Database tests
+        run: npm run test:db
+      - name: Build
+        run: npm run build
+      - name: No secrets or answers in client bundle
+        run: |
+          ! grep -rl "SESSION_SECRET\|DATABASE_URL\|$SESSION_SECRET" .next/static || (echo "secret found in client bundle" && exit 1)
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: E2E
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
