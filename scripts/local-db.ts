@@ -113,12 +113,14 @@ export async function ensureLocalDb(log = (m: string) => console.log(`[db] ${m}`
   const pgCtl = process.platform === "win32" ? findPgCtl() : null;
   const logFile = join(DATA_DIR, "..", "postgres.log");
   if (pgCtl) {
+    // stdio must be "ignore": postgres.exe inherits pg_ctl's handles and would keep pipes open forever.
     const r = spawnSync(pgCtl, ["-D", DATA_DIR, "-o", `-p ${port}`, "-l", logFile, "-w", "-t", "60", "start"], {
-      encoding: "utf8",
+      stdio: "ignore",
+      timeout: 90_000,
     });
     if (r.status !== 0) {
       const tail = existsSync(logFile) ? readFileSync(logFile, "utf8").split(/\r?\n/).slice(-15).join("\n") : "";
-      throw new Error(`embedded PostgreSQL start failed (pg_ctl): ${r.stderr || r.stdout}\n${tail}`);
+      throw new Error(`embedded PostgreSQL start failed (pg_ctl exit ${r.status ?? r.error?.message})\n${tail}`);
     }
   } else {
     await step("start", () => pg.start());
@@ -136,7 +138,7 @@ export async function ensureLocalDb(log = (m: string) => console.log(`[db] ${m}`
     stop: async () => {
       if (stopped) return;
       stopped = true;
-      if (pgCtl) spawnSync(pgCtl, ["-D", DATA_DIR, "-m", "fast", "-w", "stop"], { encoding: "utf8" });
+      if (pgCtl) spawnSync(pgCtl, ["-D", DATA_DIR, "-m", "fast", "-w", "stop"], { stdio: "ignore", timeout: 60_000 });
       else await pg.stop();
       log("embedded PostgreSQL stopped");
     },
