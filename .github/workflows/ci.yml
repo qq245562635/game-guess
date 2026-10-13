@@ -43,8 +43,13 @@ jobs:
         run: npm run db:generate
       - name: Typecheck
         run: npm run typecheck
+      - name: Versions
+        run: echo "::notice title=versions::node $(node -v), next $(npx next --version | tail -1), prisma $(npm ls prisma --depth=0 | grep -o 'prisma@[0-9.]*'), react $(npm ls react --depth=0 | grep -o 'react@[0-9.]*' | head -1)"
       - name: Unit + integration tests
-        run: npm test
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee unit.log
+          echo "::notice title=unit+integration::$(grep -E '^# (tests|pass|fail) ' unit.log | tr '\n' ' ')"
       - name: Migrate
         run: npm run db:migrate
       - name: Migration matches schema
@@ -54,7 +59,10 @@ jobs:
       - name: Seed
         run: npm run db:seed
       - name: Database tests
-        run: npm run test:db
+        run: |
+          set -o pipefail
+          npm run test:db 2>&1 | tee db.log
+          echo "::notice title=db::$(grep -E '^# (tests|pass|fail) ' db.log | tr '\n' ' ')"
       - name: Build
         run: npm run build
       - name: No secrets or answers in client bundle
@@ -63,7 +71,10 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - name: E2E
-        run: npm run test:e2e
+        run: |
+          set -o pipefail
+          npm run test:e2e 2>&1 | tee e2e.log
+          echo "::notice title=e2e::$(grep -E '[0-9]+ (passed|failed|flaky|skipped)' e2e.log | tr '\n' ' ')"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
