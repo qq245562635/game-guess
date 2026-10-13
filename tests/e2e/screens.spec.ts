@@ -1,6 +1,7 @@
 /**
  * Visual review shots (not assertions). Runs only with SCREENSHOTS=1; images go to ./screenshots.
  */
+import { writeFileSync } from "node:fs";
 import { test, type Browser, type Page } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 import { todayPuzzleNumber } from "../../lib/date-utc";
@@ -58,7 +59,7 @@ async function shoot(browser: Browser, project: Record<string, unknown>, scheme:
         };
       }),
   );
-  require("node:fs").writeFileSync(`screenshots/${name}-${scheme}-probe.json`, JSON.stringify(probe, null, 2));
+  writeFileSync(`screenshots/${name}-${scheme}-probe.json`, JSON.stringify(probe, null, 2));
   await page.getByRole("combobox").fill("");
   await page.locator("table").evaluate((t) => (t.parentElement!.scrollLeft = 320));
   await page.locator("table").scrollIntoViewIfNeeded();
