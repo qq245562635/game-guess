@@ -103,7 +103,11 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: npm run setup
         run: |
-          npm run setup
+          set -o pipefail
+          if ! npm run setup 2>&1 | tee setup.log; then
+            tail -25 setup.log | sed 's/%/%25/g' | while IFS= read -r line; do echo "::error title=setup::$line"; done
+            exit 1
+          fi
           echo "::notice title=fresh-clone ${{ matrix.os }}::embedded-postgres $(node -p "require('./node_modules/embedded-postgres/package.json').version")"
       - name: npm run dev, then play through a forwarded origin
         run: |
