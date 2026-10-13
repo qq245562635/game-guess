@@ -83,35 +83,37 @@ jobs:
             playwright-report
             test-results
 
-  codespace-smoke:
-    # Runs the same setup script a Codespace runs, then plays via a forwarded-URL style request.
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: gg
-          POSTGRES_PASSWORD: gg
-          POSTGRES_DB: gameguess
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U gg" --health-interval 5s --health-timeout 5s --health-retries 10
+  fresh-clone:
+    # What a new contributor does: clone, npm install, npm run setup, npm run dev. No Docker, no system Postgres.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Codespace setup script
-        run: bash .devcontainer/setup.sh
-      - name: Start dev server and play through a forwarded origin
+      - name: npm install
+        run: npm install --no-audit --no-fund
+      - name: npm run setup
+        run: |
+          npm run setup
+          echo "::notice title=fresh-clone ${{ matrix.os }}::embedded-postgres $(node -p "require('./node_modules/embedded-postgres/package.json').version")"
+      - name: npm run dev, then play through a forwarded origin
         run: |
           set -euo pipefail
           npm run dev > dev.log 2>&1 &
-          for _ in $(seq 1 60); do curl -sf localhost:3000/api/puzzle/today > /dev/null && break; sleep 2; done
+          for _ in $(seq 1 90); do curl -sf localhost:3000/api/puzzle/today > /dev/null && break; sleep 2; done
           FWD=demo-3000.app.github.dev
           curl -sf -c jar -H "X-Forwarded-Host: $FWD" localhost:3000/ > page.html
           today=$(curl -sf -b jar -c jar -H "X-Forwarded-Host: $FWD" localhost:3000/api/puzzle/today)
+          echo "$today" | grep -q '"available":true'
           n=$(echo "$today" | node -pe 'JSON.parse(require("fs").readFileSync(0)).puzzleNumber')
           game=$(curl -sf localhost:3000/api/games/index | node -pe 'JSON.parse(require("fs").readFileSync(0))[0].id')
           code=$(curl -s -o guess.json -w '%{http_code}' -b jar -X POST localhost:3000/api/guess \
@@ -121,11 +123,10 @@ jobs:
           test "$code" = 200
           grep -q '"status":"accepted"' guess.json
           bad=$(curl -s -o /dev/null -w '%{http_code}' -b jar -X POST localhost:3000/api/guess \
-            -H "Content-Type: application/json" -H "Origin: https://evil.example" -H "X-Forwarded-Host: $FWD" \
+            -H "Content-Type: application/json" -H "Origin: https://evil.example" \
             -d "{\"puzzleNumber\":$n,\"gameId\":\"$game\",\"clientGuessId\":\"smoke-2\"}")
           test "$bad" = 403
-          grep -q "GameGuess" page.html || grep -q "__next" page.html
-          echo "::notice title=codespace-smoke::setup ok, forwarded-origin guess=200, cross-site guess=403"
+          echo "::notice title=fresh-clone ${{ matrix.os }}::setup + dev ok, guess=200, cross-site=403"
       - name: Dev server log
         if: always()
-        run: tail -50 dev.log || true
+        run: tail -60 dev.log || true

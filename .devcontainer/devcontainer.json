@@ -1,17 +1,15 @@
 {
   "name": "GameGuess",
-  "dockerComposeFile": "docker-compose.yml",
-  "service": "app",
-  "workspaceFolder": "/workspaces/game-guess",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": { "label": "GameGuess", "onAutoForward": "openBrowser" }
   },
-  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postCreateCommand": "npm install --no-audit --no-fund && npm run setup",
   "postAttachCommand": "npm run dev",
   "customizations": {
     "vscode": {
-      "extensions": ["Prisma.prisma", "bradlc.vscode-tailwindcss", "dbaeumer.vscode-eslint"]
+      "extensions": ["Prisma.prisma", "bradlc.vscode-tailwindcss"]
     }
   }
 }

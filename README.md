@@ -13,17 +13,18 @@ Next.js (App Router) · TypeScript · Tailwind CSS · PostgreSQL · Prisma · Pl
 
 ## Run locally
 
-Requirements: Node 22+, Docker (or any PostgreSQL 16).
+Requirements: **Node 22+** only. No Docker or PostgreSQL install needed.
 
 ```bash
-cp .env.example .env            # then set SESSION_SECRET (command is in the file)
-docker compose up -d db         # PostgreSQL on localhost:5432
 npm install
-npm run db:generate
-npm run db:migrate              # apply migrations
-npm run db:seed                 # DEV data: ~68 games, puzzles from yesterday to +30 days
-npm run dev                     # http://localhost:3000
+npm run setup     # creates .env, starts an embedded PostgreSQL, migrates, loads dev data
+npm run dev       # http://localhost:3000  (Ctrl+C stops the site and the database)
 ```
+
+`npm run setup` / `npm run dev` use **embedded PostgreSQL** (real Postgres binaries installed
+through npm, data in `.data/postgres`). If something is already listening on the
+`DATABASE_URL` port, or `EMBEDDED_PG=0` is set, your own database is used instead
+(for example `docker compose up -d db`, or a hosted Neon URL).
 
 > The seed is **unreviewed development data** with placeholder hints. Production content
 > is entered and reviewed through the admin (M3).
