@@ -5,7 +5,9 @@ const PORT = Number(process.env.PORT ?? 3000);
 export default defineConfig({
   testDir: "tests/e2e",
   timeout: 30_000,
-  retries: process.env.CI ? 1 : 0,
+  // CI repeats every test and allows no retries, so flaky behaviour fails the build.
+  retries: 0,
+  repeatEach: Number(process.env.E2E_REPEAT ?? 1),
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure" },
   projects: [

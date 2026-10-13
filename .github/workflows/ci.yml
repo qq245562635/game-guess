@@ -74,7 +74,7 @@ jobs:
         run: |
           set -o pipefail
           status=0
-          PLAYWRIGHT_JSON_OUTPUT_NAME=e2e.json npx playwright test --reporter=list,json 2>&1 | tee e2e.log || status=$?
+          E2E_REPEAT=3 PLAYWRIGHT_JSON_OUTPUT_NAME=e2e.json npx playwright test --reporter=list,json 2>&1 | tee e2e.log || status=$?
           echo "::notice title=e2e::$(grep -E '[0-9]+ (passed|failed|flaky|skipped)' e2e.log | tr '\n' ' ')"
           node -e '
             const r = require("./e2e.json");

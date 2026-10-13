@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { buildSearchIndex, searchCandidates } from "@/lib/normalize";
 import type { CandidateEntry } from "@/lib/types";
 
@@ -18,6 +18,13 @@ export function SearchBox({ candidates, exclude, disabled, busy, onSubmit }: Pro
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [selected, setSelected] = useState<CandidateEntry | null>(null);
+  // Closing on blur is delayed so a click on an option still lands; cancel it if focus returns.
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  };
+  useEffect(() => cancelClose, []);
 
   const index = useMemo(() => (candidates ? buildSearchIndex(candidates) : []), [candidates]);
   const results = useMemo(() => searchCandidates(index, query, 8, exclude), [index, query, exclude]);
@@ -79,13 +86,20 @@ export function SearchBox({ candidates, exclude, disabled, busy, onSubmit }: Pro
           placeholder={loading ? "Loading games…" : "Type a game title…"}
           value={query}
           onChange={(e) => {
+            cancelClose();
             setQuery(e.target.value);
             setSelected(null);
             setOpen(true);
             setActive(0);
           }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 120)}
+          onFocus={() => {
+            cancelClose();
+            setOpen(true);
+          }}
+          onBlur={() => {
+            cancelClose();
+            closeTimer.current = setTimeout(() => setOpen(false), 120);
+          }}
           onKeyDown={onKeyDown}
           className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base shadow-sm placeholder:text-zinc-400 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900"
         />
