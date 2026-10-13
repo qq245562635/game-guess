@@ -1,4 +1,8 @@
 import type { Metadata, Viewport } from "next";
+// Self-hosted fonts (no request to Google Fonts at runtime).
+import "@fontsource/bungee/400.css";
+import "@fontsource/atkinson-hyperlegible/400.css";
+import "@fontsource/atkinson-hyperlegible/700.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,8 +15,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
-    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+    { media: "(prefers-color-scheme: light)", color: "#e6e3ee" },
+    { media: "(prefers-color-scheme: dark)", color: "#1b1828" },
   ],
 };
 

@@ -25,11 +25,11 @@ async function guess(page: Page, title: string) {
   await page.getByRole("button", { name: "Guess" }).click();
 }
 
-const rows = (page: Page) => page.locator("tbody tr");
+const rows = (page: Page) => page.locator("tbody tr[data-guess]");
 
 test("new game shows 6 attempts and no guesses", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("6 of 6 guesses left")).toBeVisible();
+  await expect(page.getByText("6 guesses left")).toBeVisible();
   await expect(rows(page)).toHaveCount(0);
 });
 
@@ -37,27 +37,27 @@ test("wrong guess adds one row; refresh restores; then win", async ({ page }) =>
   await page.goto("/");
   await guess(page, wrong[0]);
   await expect(rows(page)).toHaveCount(1);
-  await expect(page.getByText("5 of 6 guesses left")).toBeVisible();
+  await expect(page.getByText("5 guesses left")).toBeVisible();
 
   await page.reload();
   await expect(rows(page)).toHaveCount(1);
-  await expect(page.getByText("5 of 6 guesses left")).toBeVisible();
+  await expect(page.getByText("5 guesses left")).toBeVisible();
 
   await guess(page, answer.title);
-  await expect(page.getByRole("dialog")).toContainText("You got it!");
+  await expect(page.getByRole("dialog")).toContainText("Solved!");
   await expect(page.getByRole("dialog")).toContainText(answer.title);
   await page.keyboard.press("Escape");
-  await expect(page.getByText("Solved in 2/6!")).toBeVisible();
+  await expect(page.getByText("Solved in 2 of 6")).toBeVisible();
   await expect(page.getByRole("combobox")).toHaveCount(0);
 
   await page.reload();
-  await expect(page.getByText("Solved in 2/6!")).toBeVisible();
+  await expect(page.getByText("Solved in 2 of 6")).toBeVisible();
 });
 
 test("six wrong guesses lose and reveal the answer", async ({ page }) => {
   await page.goto("/");
   for (const t of wrong) await guess(page, t);
-  await expect(page.getByRole("dialog")).toContainText("Better luck tomorrow");
+  await expect(page.getByRole("dialog")).toContainText("Out of guesses");
   await expect(page.getByRole("dialog")).toContainText(answer.title);
 });
 

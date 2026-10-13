@@ -23,6 +23,8 @@
     "db:check": "prisma migrate diff --from-migrations db/migrations --to-schema-datamodel db/schema.prisma --shadow-database-url \"$SHADOW_DATABASE_URL\" --exit-code"
   },
   "dependencies": {
+    "@fontsource/atkinson-hyperlegible": "^5.2.0",
+    "@fontsource/bungee": "^5.2.0",
     "@prisma/client": "^6.19.0",
     "next": "^16.0.0",
     "react": "^19.2.0",

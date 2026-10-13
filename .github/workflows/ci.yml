@@ -11,6 +11,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # only to publish review screenshots to the ci-screenshots branch
     timeout-minutes: 25
     services:
       postgres:
@@ -85,6 +87,17 @@ jobs:
               console.log(`::warning title=e2e ${t.status} [${t.projectName}]::${title} :: ${err.replace(/\x1b\[[0-9;]*m/g, "").slice(0, 400)}`);
             }'
           exit $status
+      - name: Review screenshots
+        if: github.event_name == 'push'
+        run: |
+          SCREENSHOTS=1 npx playwright test tests/e2e/screens.spec.ts --reporter=list
+          cd screenshots
+          git init -q -b ci-screenshots
+          echo "Screenshots for ${GITHUB_SHA} (${GITHUB_REF_NAME})" > README.md
+          git add -A
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "screenshots ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" ci-screenshots
+          echo "::notice title=screenshots::$(ls *.png | wc -l) images on branch ci-screenshots"
       - uses: actions/upload-artifact@v5
         if: failure()
         with:

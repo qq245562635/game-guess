@@ -28,17 +28,17 @@ export function Dialog({ open, onClose, title, children }: Props) {
         if (e.target === ref.current) onClose();
       }}
       aria-labelledby="dialog-title"
-      className="m-auto w-[min(92vw,480px)] rounded-2xl bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-black/50 dark:bg-zinc-900 dark:text-zinc-100"
+      className="m-auto w-[min(92vw,460px)] rounded-[28px] border-2 border-ink bg-screen p-0 text-ink shadow-[0_10px_0_var(--shell-edge)] backdrop:bg-[#211d33]/60"
     >
       <div className="p-6">
         <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 id="dialog-title" className="text-xl font-bold">
+          <h2 id="dialog-title" className="font-display text-2xl leading-none">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="rounded-full px-2.5 py-1 text-ink-soft hover:bg-shell"
             aria-label="Close"
           >
             ✕

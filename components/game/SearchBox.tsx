@@ -83,7 +83,7 @@ export function SearchBox({ candidates, exclude, disabled, busy, onSubmit }: Pro
           spellCheck={false}
           autoFocus
           disabled={disabled || loading}
-          placeholder={loading ? "Loading games…" : "Type a game title…"}
+          placeholder={loading ? "Loading the game list…" : "Name a game, e.g. Hollow Knight"}
           value={query}
           onChange={(e) => {
             cancelClose();
@@ -101,13 +101,13 @@ export function SearchBox({ candidates, exclude, disabled, busy, onSubmit }: Pro
             closeTimer.current = setTimeout(() => setOpen(false), 120);
           }}
           onKeyDown={onKeyDown}
-          className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base shadow-sm placeholder:text-zinc-400 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900"
+          className="min-w-0 flex-1 rounded-2xl border-2 border-ink bg-shell px-4 py-3 text-base font-bold placeholder:font-normal placeholder:text-ink-soft disabled:opacity-60"
         />
         <button
           type="button"
           onClick={submit}
           disabled={!selected || busy || disabled}
-          className="shrink-0 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-zinc-400 dark:disabled:bg-zinc-700"
+          className="shrink-0 rounded-full bg-abtn px-6 py-3 font-bold text-white shadow-[0_4px_0_var(--abtn-press)] active:translate-y-[3px] active:shadow-[0_1px_0_var(--abtn-press)] disabled:cursor-not-allowed disabled:bg-miss disabled:shadow-none"
         >
           {busy ? "…" : "Guess"}
         </button>
@@ -117,7 +117,7 @@ export function SearchBox({ candidates, exclude, disabled, busy, onSubmit }: Pro
         <ul
           id={`${listId}-list`}
           role="listbox"
-          className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+          className="absolute z-20 mt-2 max-h-72 w-full overflow-auto rounded-2xl border-2 border-ink bg-screen py-1 shadow-[0_8px_0_var(--shell-edge)]"
         >
           {results.map((r, i) => (
             <li
@@ -130,19 +130,19 @@ export function SearchBox({ candidates, exclude, disabled, busy, onSubmit }: Pro
                 choose(r);
               }}
               onMouseEnter={() => setActive(i)}
-              className={`flex cursor-pointer justify-between gap-3 px-4 py-2 ${
-                i === active ? "bg-blue-50 dark:bg-blue-950" : ""
+              className={`flex cursor-pointer justify-between gap-3 px-4 py-2.5 ${
+                i === active ? "bg-shell" : ""
               }`}
             >
               <span>{r.title}</span>
-              <span className="text-zinc-500 tabular-nums">{r.year}</span>
+              <span className="text-ink-soft tabular-nums">{r.year}</span>
             </li>
           ))}
         </ul>
       )}
       {open && !selected && query.trim() && !loading && results.length === 0 && (
-        <p className="mt-2 text-sm text-zinc-500" role="status">
-          No matching game. Try a shorter title or a common abbreviation.
+        <p className="mt-2 text-sm text-ink-soft" role="status">
+          No game by that name. Try fewer words or a common short name like "GTA V".
         </p>
       )}
     </div>

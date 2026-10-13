@@ -1,49 +1,77 @@
 import type { Cell, GuessRow } from "@/lib/types";
 
-const HEADERS = ["Year", "Genre", "Platform", "Developer", "Publisher", "Perspective"];
+const COLUMNS = ["Year", "Genre", "Platform", "Developer", "Publisher", "Perspective"];
 
-const STYLE = {
-  exact: "bg-hit text-white",
-  partial: "bg-near text-black",
-  none: "bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200",
+const LOOK = {
+  exact: "bg-led text-white",
+  partial: "cell-partial",
+  none: "border-2 border-miss text-ink-soft",
 } as const;
 
-const MARK = { exact: "✓ Match", partial: "~ Partial", none: "✗ No" } as const;
+const MARK = { exact: "Match", partial: "Partial", none: "No match" } as const;
+const ICON = { exact: "✓", partial: "≈", none: "✕" } as const;
 
 function CellView({ cell }: { cell: Cell }) {
   if (cell.dim === "year") {
-    const style = cell.result === "exact" ? STYLE.exact : STYLE.none;
-    const label =
-      cell.result === "exact" ? "✓ Match" : cell.result === "answer_earlier" ? "↓ Earlier" : "↑ Later";
+    const look = cell.result === "exact" ? LOOK.exact : LOOK.none;
+    const label = cell.result === "exact" ? "Match" : cell.result === "answer_earlier" ? "Earlier" : "Later";
+    const arrow = cell.result === "exact" ? "✓" : cell.result === "answer_earlier" ? "↓" : "↑";
     return (
-      <td className={`rounded-lg px-2 py-2 text-center align-middle ${style}`}>
-        <div className="text-base font-bold tabular-nums">{cell.value}</div>
-        <div className="text-xs font-medium">{label}</div>
+      <td className={`rounded-xl px-2 py-2 text-center ${look}`}>
+        <div className="font-display text-xl leading-none tabular-nums">{cell.value}</div>
+        <div className="mt-1 text-xs font-bold">
+          <span aria-hidden="true">{arrow} </span>
+          {label}
+        </div>
       </td>
     );
   }
   const text = "values" in cell ? cell.values.join(", ") : cell.value;
   return (
-    <td className={`rounded-lg px-2 py-2 text-center align-middle ${STYLE[cell.result]}`}>
-      <div className="text-sm leading-tight font-medium">{text}</div>
-      <div className="mt-0.5 text-xs opacity-90">{MARK[cell.result]}</div>
+    <td className={`rounded-xl px-2 py-2 text-center ${LOOK[cell.result]}`}>
+      <div className="text-sm leading-tight font-bold">{text}</div>
+      <div className="mt-1 text-xs">
+        <span aria-hidden="true">{ICON[cell.result]} </span>
+        {MARK[cell.result]}
+      </div>
     </td>
   );
 }
 
-export function GuessTable({ rows }: { rows: GuessRow[] }) {
-  if (rows.length === 0) return null;
+function EmptySlot({ n, next }: { n: number; next: boolean }) {
   return (
-    <div className="-mx-4 overflow-x-auto px-4">
-      <table className="w-full min-w-[720px] border-separate border-spacing-1 text-sm">
+    <tr aria-hidden="true">
+      <td
+        colSpan={7}
+        className={`h-[58px] rounded-xl border-2 border-dashed px-4 text-sm ${
+          next ? "border-ink-soft text-ink-soft" : "border-shell-edge text-transparent"
+        }`}
+      >
+        {next ? `Guess ${n} goes here` : `Slot ${n}`}
+      </td>
+    </tr>
+  );
+}
+
+export function GuessTable({ rows, maxGuesses, over }: { rows: GuessRow[]; maxGuesses: number; over: boolean }) {
+  const empty = over ? 0 : maxGuesses - rows.length;
+  return (
+    <div className="-mx-4 overflow-x-auto px-4 pb-1">
+      <table className="w-full min-w-[700px] table-fixed border-separate border-spacing-x-1.5 border-spacing-y-1.5">
         <caption className="sr-only">Your guesses and how each attribute compares to the answer</caption>
+        <colgroup>
+          <col className="w-[22%]" />
+          {COLUMNS.map((c) => (
+            <col key={c} />
+          ))}
+        </colgroup>
         <thead>
-          <tr className="text-xs text-zinc-500 uppercase">
-            <th scope="col" className="px-2 py-1 text-left font-semibold">
+          <tr className="text-left text-xs text-ink-soft">
+            <th scope="col" className="px-3 pb-1 font-bold">
               Game
             </th>
-            {HEADERS.map((h) => (
-              <th key={h} scope="col" className="px-2 py-1 font-semibold">
+            {COLUMNS.map((h) => (
+              <th key={h} scope="col" className="px-2 pb-1 text-center font-bold">
                 {h}
               </th>
             ))}
@@ -51,19 +79,23 @@ export function GuessTable({ rows }: { rows: GuessRow[] }) {
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={r.game.id} className={i === rows.length - 1 ? "row-in" : undefined}>
+            <tr key={r.game.id} data-guess className={i === rows.length - 1 ? "slot-in" : undefined}>
               <th
                 scope="row"
-                className={`rounded-lg px-3 py-2 text-left font-semibold ${
-                  r.correct ? STYLE.exact : "bg-white dark:bg-zinc-900"
+                className={`rounded-xl px-3 py-2 text-left align-middle ${
+                  r.correct ? "bg-led text-white" : "bg-screen text-ink"
                 }`}
               >
-                {r.game.title}
+                <div className="text-sm leading-tight font-bold">{r.game.title}</div>
+                <div className={`mt-0.5 text-xs ${r.correct ? "text-white/85" : "text-ink-soft"}`}>Guess {i + 1}</div>
               </th>
               {r.cells.map((c) => (
                 <CellView key={c.dim} cell={c} />
               ))}
             </tr>
+          ))}
+          {Array.from({ length: empty }, (_, k) => (
+            <EmptySlot key={k} n={rows.length + k + 1} next={k === 0} />
           ))}
         </tbody>
       </table>

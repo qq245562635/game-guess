@@ -7,6 +7,7 @@ import type { GuessResponse, TodayResponse } from "@/server/game/judge";
 import { Dialog } from "@/components/ui/Dialog";
 import { Countdown } from "./Countdown";
 import { GuessTable, describeRow } from "./GuessTable";
+import { Lives } from "./Lives";
 import { SearchBox } from "./SearchBox";
 
 type TodayPayload = TodayResponse & { serverNow: string; nextSwitchAt: string };
@@ -172,20 +173,35 @@ export function Game() {
   }
 
   const wrong = state ? state.guesses.filter((g) => !g.correct).length : 0;
+  const dateLabel = today
+    ? new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }).format(
+        new Date(`${today.dateUtc}T00:00:00Z`),
+      )
+    : null;
 
   return (
-    <div className="space-y-5">
-      <header className="flex items-center justify-between gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800">
+    <div className="space-y-6">
+      <header className="flex items-start justify-between gap-4 pt-2">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">{SITE_NAME}</h1>
-          <p className="text-sm text-zinc-500">
-            {today ? `Daily puzzle #${today.puzzleNumber} · ${today.dateUtc}` : "Daily video game puzzle"}
+          <h1 className="font-display text-[clamp(2rem,6vw,3.25rem)] leading-none tracking-tight">{SITE_NAME}</h1>
+          <p className="mt-2 flex items-center gap-2 text-ink-soft">
+            <span
+              aria-hidden="true"
+              className={`inline-block size-2.5 rounded-full ${today?.available ? "bg-led" : "bg-miss"}`}
+            />
+            {today ? (
+              <span>
+                Puzzle <strong className="text-ink">#{today.puzzleNumber}</strong>, {dateLabel}
+              </span>
+            ) : (
+              <span>One video game a day. Six guesses.</span>
+            )}
           </p>
         </div>
         <button
           type="button"
           onClick={() => setHelpOpen(true)}
-          className="rounded-full border border-zinc-300 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          className="shrink-0 rounded-full border-2 border-ink px-4 py-2 text-sm font-bold hover:bg-ink hover:text-shell"
         >
           How to play
         </button>
@@ -196,40 +212,38 @@ export function Game() {
       </p>
 
       {loadError && (
-        <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-          <p>Couldn&apos;t load today&apos;s puzzle.</p>
-          {loadError.hint && <p className="mt-2 text-sm font-medium">{loadError.hint}</p>}
-          {loadError.detail && <p className="mt-1 font-mono text-xs break-all text-zinc-600 dark:text-zinc-400">{loadError.detail}</p>}
-          <button type="button" onClick={loadToday} className="mt-2 font-semibold text-blue-600 underline">
+        <div role="alert" className="rounded-2xl border-2 border-abtn bg-screen p-4">
+          <p className="font-bold">Today&apos;s puzzle didn&apos;t load.</p>
+          {loadError.hint && <p className="mt-2 text-sm">{loadError.hint}</p>}
+          {loadError.detail && <p className="mt-1 text-xs break-all text-ink-soft">{loadError.detail}</p>}
+          <button type="button" onClick={loadToday} className="mt-3 font-bold text-abtn underline">
             Try again
           </button>
         </div>
       )}
 
       {today && !today.available && (
-        <p className="rounded-xl bg-zinc-100 p-4 dark:bg-zinc-900">
-          Today&apos;s puzzle isn&apos;t ready yet. Please check back soon.
+        <p className="rounded-2xl border-2 border-dashed border-miss p-4">
+          Today&apos;s puzzle isn&apos;t published yet. Check back after the next update.
         </p>
       )}
 
       {state && (
-        <>
+        <div className="rounded-[28px] border-2 border-shell-edge bg-screen p-3 sm:p-5">
           {!over && (
-            <section className="sticky top-0 z-10 -mx-4 space-y-2 bg-zinc-50/95 px-4 py-2 backdrop-blur dark:bg-zinc-950/95">
+            <section className="sticky top-0 z-10 -mx-3 -mt-3 space-y-3 rounded-t-[26px] bg-screen/95 px-3 pt-3 pb-3 backdrop-blur sm:-mx-5 sm:-mt-5 sm:px-5 sm:pt-5">
               <SearchBox candidates={candidates} exclude={exclude} disabled={over} busy={busy} onSubmit={onSubmit} />
-              <div className="flex items-center justify-between text-sm">
-                <span>
-                  <strong className="tabular-nums">{state.remaining}</strong> of {state.maxGuesses} guesses left
-                </span>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Lives remaining={state.remaining} max={state.maxGuesses} />
                 {state.guesses.length === 0 && (
-                  <span className="text-zinc-500">Guess any game to get your first clues.</span>
+                  <span className="text-sm text-ink-soft">Any game works as a first guess.</span>
                 )}
               </div>
               {notice && (
-                <div role="status" className="flex items-center justify-between gap-3 text-sm text-amber-700 dark:text-amber-400">
+                <div role="status" className="flex items-center justify-between gap-3 rounded-xl bg-shell px-3 py-2 text-sm">
                   <span>{notice}</span>
                   {pending && !busy && (
-                    <button type="button" onClick={() => send(pending)} className="font-semibold underline">
+                    <button type="button" onClick={() => send(pending)} className="font-bold text-abtn underline">
                       Retry
                     </button>
                   )}
@@ -239,37 +253,35 @@ export function Game() {
           )}
 
           {over && (
-            <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="text-lg font-bold">
-                {state.outcome === "WON" ? `Solved in ${state.guesses.length}/${state.maxGuesses}!` : "Out of guesses."}
-              </p>
-              <p className="mt-1">
-                The answer was{" "}
-                <strong>
-                  {state.answer?.title} ({state.answer?.year})
-                </strong>
-                .
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={share}
-                  className="rounded-xl bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
-                >
-                  {copied ? "Copied!" : "Share result"}
-                </button>
-                <span className="text-sm text-zinc-500">
+            <section className="mb-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl bg-shell p-4 sm:p-5">
+              <div>
+                <p className="text-sm text-ink-soft">
+                  {state.outcome === "WON"
+                    ? `Solved in ${state.guesses.length} of ${state.maxGuesses}`
+                    : "Out of guesses. Today's game was"}
+                </p>
+                <p className="mt-1 text-2xl leading-tight font-bold">
+                  {state.answer?.title} <span className="font-normal text-ink-soft">({state.answer?.year})</span>
+                </p>
+                <p className="mt-2 text-sm text-ink-soft">
                   Next puzzle in{" "}
                   {today && <Countdown target={today.nextSwitchAt} offsetMs={offsetMs} onDone={loadToday} />}
-                </span>
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={share}
+                className="rounded-full bg-abtn px-6 py-3 font-bold text-white shadow-[0_4px_0_var(--abtn-press)] active:translate-y-[3px] active:shadow-[0_1px_0_var(--abtn-press)]"
+              >
+                {copied ? "Copied" : "Share result"}
+              </button>
             </section>
           )}
 
-          <GuessTable rows={state.guesses} />
+          <GuessTable rows={state.guesses} maxGuesses={state.maxGuesses} over={over} />
 
-          <section aria-labelledby="hints-title" className="space-y-2">
-            <h2 id="hints-title" className="text-sm font-semibold text-zinc-500 uppercase">
+          <section aria-labelledby="hints-title" className="mt-4 grid gap-2 sm:grid-cols-2">
+            <h2 id="hints-title" className="sr-only">
               Hints
             </h2>
             {[0, 1].map((i) => {
@@ -277,56 +289,59 @@ export function Game() {
               const need = i === 0 ? 2 : 4;
               if (!text) {
                 return (
-                  <p key={i} className="rounded-lg border border-dashed border-zinc-300 px-3 py-2 text-sm text-zinc-500 dark:border-zinc-700">
-                    Hint {i + 1} unlocks after {need} wrong guesses ({Math.min(wrong, need)}/{need}).
-                  </p>
+                  <div key={i} className="rounded-2xl border-2 border-dashed border-shell-edge px-4 py-3 text-sm text-ink-soft">
+                    <span aria-hidden="true">🔒 </span>
+                    Hint {i + 1} unlocks after {need} misses
+                    <span className="ml-2 tabular-nums">
+                      ({Math.min(wrong, need)}/{need})
+                    </span>
+                  </div>
                 );
               }
               return revealed.includes(i) || over ? (
-                <p key={i} className="rounded-lg bg-amber-50 px-3 py-2 text-sm dark:bg-amber-950">
-                  <strong>Hint {i + 1}:</strong> {text}
+                <p key={i} className="rounded-2xl bg-shell px-4 py-3 text-sm">
+                  <strong>Hint {i + 1}.</strong> {text}
                 </p>
               ) : (
                 <button
                   key={i}
                   type="button"
                   onClick={() => setRevealed((r) => [...r, i])}
-                  className="block w-full rounded-lg border border-amber-400 px-3 py-2 text-left text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-950"
+                  className="rounded-2xl border-2 border-amber px-4 py-3 text-left text-sm font-bold hover:bg-shell"
                 >
                   Reveal hint {i + 1}
                 </button>
               );
             })}
           </section>
-        </>
+        </div>
       )}
 
       <Dialog
         open={resultOpen && over}
         onClose={() => setResultOpen(false)}
-        title={state?.outcome === "WON" ? "You got it!" : "Better luck tomorrow"}
+        title={state?.outcome === "WON" ? "Solved!" : "Out of guesses"}
       >
         {state && over && (
-          <div className="space-y-3">
-            <p>
-              The answer was{" "}
-              <strong>
-                {state.answer?.title} ({state.answer?.year})
-              </strong>
-              .
-            </p>
-            <p className="text-sm text-zinc-500">
-              {state.outcome === "WON" ? `Solved in ${state.guesses.length}/${state.maxGuesses}.` : "X/6"}
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-ink-soft">Today&apos;s game</p>
+              <p className="text-2xl leading-tight font-bold">
+                {state.answer?.title} <span className="font-normal text-ink-soft">({state.answer?.year})</span>
+              </p>
+            </div>
+            <p className="font-display text-4xl leading-none">
+              {state.outcome === "WON" ? `${state.guesses.length}/${state.maxGuesses}` : `X/${state.maxGuesses}`}
             </p>
             <button
               type="button"
               onClick={share}
-              className="w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
+              className="w-full rounded-full bg-abtn px-6 py-3 font-bold text-white shadow-[0_4px_0_var(--abtn-press)] active:translate-y-[3px] active:shadow-[0_1px_0_var(--abtn-press)]"
             >
-              {copied ? "Copied to clipboard!" : "Share result"}
+              {copied ? "Copied to clipboard" : "Share result"}
             </button>
             {today && (
-              <p className="text-center text-sm text-zinc-500">
+              <p className="text-center text-sm text-ink-soft">
                 Next puzzle in <Countdown target={today.nextSwitchAt} offsetMs={offsetMs} />
               </p>
             )}
@@ -335,26 +350,35 @@ export function Game() {
       </Dialog>
 
       <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} title="How to play">
-        <div className="space-y-3 text-sm leading-relaxed">
-          <p>Guess today&apos;s video game in {6} tries. Everyone gets the same game; it changes at 00:00 UTC.</p>
-          <p>Each guess shows how it compares to the answer:</p>
-          <ul className="space-y-1.5">
-            <li>
-              <span className="rounded bg-hit px-1.5 text-white">✓ Match</span> — identical
+        <div className="space-y-4 text-sm leading-relaxed">
+          <p>
+            Guess today&apos;s video game in six tries. Everyone gets the same game, and it changes at midnight UTC.
+          </p>
+          <p>Each guess is compared with the answer, one attribute at a time:</p>
+          <ul className="space-y-2">
+            <li className="flex items-center gap-3">
+              <span className="w-24 shrink-0 rounded-lg bg-led px-2 py-1 text-center text-xs font-bold text-white">✓ Match</span>
+              Same as the answer
             </li>
-            <li>
-              <span className="rounded bg-near px-1.5 text-black">~ Partial</span> — some genres, platforms or
-              perspectives overlap
+            <li className="flex items-center gap-3">
+              <span className="cell-partial w-24 shrink-0 rounded-lg px-2 py-1 text-center text-xs font-bold">≈ Partial</span>
+              Some genres, platforms or perspectives overlap
             </li>
-            <li>
-              <span className="rounded bg-zinc-200 px-1.5 dark:bg-zinc-800">✗ No</span> — nothing in common
+            <li className="flex items-center gap-3">
+              <span className="w-24 shrink-0 rounded-lg border-2 border-miss px-2 py-0.5 text-center text-xs font-bold text-ink-soft">
+                ✕ No match
+              </span>
+              Nothing in common
             </li>
-            <li>
-              <strong>↑ Later / ↓ Earlier</strong> — the answer was released later or earlier than your guess
+            <li className="flex items-center gap-3">
+              <span className="w-24 shrink-0 rounded-lg border-2 border-miss px-2 py-0.5 text-center text-xs font-bold text-ink-soft">
+                ↑ Later
+              </span>
+              The answer came out later than your guess (↓ Earlier: before it)
             </li>
           </ul>
-          <p>Platforms are the ones available at launch. Hints unlock after 2 and 4 wrong guesses.</p>
-          <p>Repeat or unknown guesses never use up an attempt.</p>
+          <p>Platforms are the ones the game launched on. Hints unlock after 2 and 4 misses.</p>
+          <p>Repeated or unknown games never cost a guess.</p>
         </div>
       </Dialog>
     </div>
