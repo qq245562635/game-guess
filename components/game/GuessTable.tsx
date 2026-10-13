@@ -1,3 +1,4 @@
+import { softHyphenate } from "@/lib/hyphenate";
 import type { Cell, GuessRow } from "@/lib/types";
 
 const COLUMNS = ["Year", "Genre", "Platform", "Developer", "Publisher", "Perspective"];
@@ -26,12 +27,12 @@ function CellView({ cell }: { cell: Cell }) {
       </td>
     );
   }
-  const text = "values" in cell ? cell.values.join(", ") : cell.value;
+  const text = softHyphenate("values" in cell ? cell.values.join(", ") : cell.value);
   return (
     <td className={`rounded-xl px-2 py-2 text-center ${LOOK[cell.result]}`}>
       <div
         lang="en"
-        className={`leading-tight font-bold [overflow-wrap:break-word] hyphens-auto ${
+        className={`leading-tight font-bold [overflow-wrap:break-word] hyphens-manual ${
           /\S{11,}/.test(text) ? "text-xs" : "text-[13px]"
         }`}
       >
