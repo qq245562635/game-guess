@@ -1,0 +1,21 @@
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/javascript-node:22
+    volumes:
+      - ..:/workspaces/game-guess:cached
+    command: sleep infinity
+    # Share the database's network so Postgres is reachable on localhost:5432.
+    network_mode: service:db
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gg
+      POSTGRES_PASSWORD: gg
+      POSTGRES_DB: gameguess
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

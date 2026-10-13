@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { isSameOrigin } from "@/lib/origin";
 import { submitGuess, type GuessStatus } from "@/server/game/judge";
 import { repo } from "@/server/game/service";
 import { clientIp, ensureDevice, json } from "@/server/http";
@@ -22,8 +23,11 @@ export async function POST(req: NextRequest) {
   if (!req.headers.get("content-type")?.includes("application/json")) {
     return json({ error: "unsupported_media_type" }, { status: 415 });
   }
-  const origin = req.headers.get("origin");
-  if (origin && origin !== req.nextUrl.origin) return json({ error: "forbidden" }, { status: 403 });
+  const sameOrigin = isSameOrigin(req.headers.get("origin"), {
+    forwardedHost: req.headers.get("x-forwarded-host"),
+    host: req.headers.get("host"),
+  });
+  if (!sameOrigin) return json({ error: "forbidden" }, { status: 403 });
 
   const device = ensureDevice(req);
   if (!rateLimit(`guess:${clientIp(req)}`, 60, 60_000) || !rateLimit(`guess-d:${device.deviceId}`, 30, 60_000)) {

@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // Lets the dev server be opened through GitHub Codespaces' forwarded URL.
+  allowedDevOrigins: ["*.app.github.dev"],
   async headers() {
     return [
       {
