@@ -1,0 +1,487 @@
+/* ===== tunables ===== */
+const CFG={weekLen:60,timerMax:25,pinBase:11,pinScale:280,houseEvery:8.5,destFirst:40,destEvery:72,
+  carSpeed:2.4,mwBoost:2.3,startRoads:36,carsPerHouse:2,dayCycle:120};
+const PAL=[
+  {c:'#ef6f5e',d:'#b9463a'},{c:'#2fb3b0',d:'#1d7f7d'},{c:'#e9b53b',d:'#a97f17'},
+  {c:'#8a6fd8',d:'#5d45a6'},{c:'#5bb85a',d:'#3a873a'}];
+const DAYS=['周一','周二','周三','周四','周五','周六','周日'];
+const ITEMS={
+  bridge:{name:'桥',desc:'拖路进河时自动使用，一段河只耗 1 座',n:1},
+  ra:{name:'环岛',desc:'点在路口上，过路口几乎不减速',n:2},
+  light:{name:'红绿灯',desc:'点在路口上，横竖交替放行',n:2},
+  mw:{name:'高速路',desc:'任选两个路点直连，无视河流',n:1}};
+const ICON={
+  bridge:'<svg viewBox="0 0 24 24"><path d="M2 16h20M4 16v-3a8 8 0 0 1 16 0v3" fill="none" stroke="#1f2a33" stroke-width="2.2" stroke-linecap="round"/><path d="M8 9v7M12 7.5V16M16 9v7" stroke="#1f2a33" stroke-width="1.6"/></svg>',
+  ra:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="#1f2a33" stroke-width="4"/><circle cx="12" cy="12" r="2.5" fill="#1f2a33"/></svg>',
+  light:'<svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="4" fill="#1f2a33"/><circle cx="12" cy="7.5" r="2.3" fill="#ef6f5e"/><circle cx="12" cy="16.5" r="2.3" fill="#5bb85a"/></svg>',
+  mw:'<svg viewBox="0 0 24 24"><path d="M4 19L20 5" stroke="#f2879f" stroke-width="5" stroke-linecap="round"/><circle cx="4" cy="19" r="2.5" fill="#1f2a33"/><circle cx="20" cy="5" r="2.5" fill="#1f2a33"/></svg>',
+  road:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="#1f2a33"/><path d="M12 6v3M12 11v2M12 15v3" stroke="#fbfcf8" stroke-width="1.8" stroke-linecap="round"/></svg>'};
+
+/* day / night colours for the map */
+const SKY={
+  land:['#dde6d6','#252c38'], grid:['#cdd8c6','#2c3441'], water:['#93cfd2','#2d475a'], waterEdge:['#f1efe2','#3a5468'],
+  road:['#3c4350','#7b8597'], rail:['#f6f3e8','#b9c3d2'], island:['#dde6d6','#252c38'], shadow:['rgba(32,48,52,.17)','rgba(0,0,0,.35)']};
+
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d'), app=document.getElementById('app');
+const $=id=>document.getElementById(id);
+let G=null, cols=14, rows=20, S=30, ox=0, oy=0, W=0, H=0, dpr=1;
+let tool='road', speed=1, paused=false, hover=-1, ptr={x:0,y:0};
+const rnd=Math.random;
+const I=(x,y)=>y*cols+x, X=i=>i%cols, Y=i=>(i/cols)|0;
+const inB=(x,y)=>x>=0&&y>=0&&x<cols&&y<rows;
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+
+/* ===== colour helpers ===== */
+function hex(h){if(h.startsWith('rgba'))return h.match(/[\d.]+/g).map(Number);const n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&255,1]}
+const SKYRGB={};for(const k in SKY)SKYRGB[k]=SKY[k].map(hex);
+function sky(k,t){const[a,b]=SKYRGB[k];const m=(i)=>a[i]+(b[i]-a[i])*t;return`rgba(${m(0)|0},${m(1)|0},${m(2)|0},${m(3).toFixed(2)})`}
+
+/* ===== layout ===== */
+function layout(){
+  const r=app.getBoundingClientRect(); dpr=Math.min(2,window.devicePixelRatio||1); W=r.width; H=r.height;
+  cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  const top=62, bot=74, side=16, aw=W-side*2, ah=H-top-bot;
+  S=Math.max(12,Math.floor(Math.min(aw/cols,ah/rows)));
+  ox=Math.round((W-S*cols)/2); oy=Math.round(top+(ah-S*rows)/2);
+}
+addEventListener('resize',layout);
+
+/* ===== world setup ===== */
+function newGame(){
+  const r=app.getBoundingClientRect(); const land=r.width>r.height*1.05;
+  cols=land?22:14; rows=land?14:20; layout();
+  G={t:0,score:0,roads:CFG.startRoads,items:{bridge:1,ra:0,light:0,mw:0},week:1,nextWeek:CFG.weekLen,
+    water:new Uint8Array(cols*rows),occ:new Int16Array(cols*rows).fill(-1),
+    nodes:new Map(),adj:new Map(),mws:[],mwSeq:1,mwDeg:new Map(),dests:[],houses:[],cars:[],
+    colorsActive:2,nextHouse:7,nextDest:CFG.destFirst,dirty:false,over:false,bridgeSeq:1,dispatchT:0,mwStart:-1,modal:false,fx:[],demo:false};
+  genRiver();
+  for(let c=0;c<2;c++){const d=spawnDest(c,'sq');spawnHouse(c,d);spawnHouse(c,d);}
+  setTool('road'); setSpeed(1); syncHud(true);
+}
+function genRiver(){
+  const portrait=rows>cols, L=portrait?rows:cols, Sd=portrait?cols:rows, ph=rnd()*6;
+  const base=Sd*(rnd()<.5?0.68:0.32);
+  for(let u=0;u<L;u++){
+    const c=base+Math.sin(u*0.36+ph)*1.6+Math.sin(u*0.11+ph*2)*0.9;
+    for(let v=0;v<Sd;v++) if(Math.abs(v+0.5-c)<1.05) G.water[portrait?I(v,u):I(u,v)]=1;
+  }
+}
+const isFree=i=>!G.water[i]&&G.occ[i]<0&&!G.nodes.has(i);
+function spawnDest(color,shape){
+  for(let k=0;k<500;k++){
+    const x=1+(rnd()*(cols-3)|0), y=1+(rnd()*(rows-3)|0);
+    const fp=[I(x,y),I(x+1,y),I(x,y+1),I(x+1,y+1)];
+    if(!fp.every(isFree))continue;
+    let ok=true;
+    for(let yy=y-1;yy<=y+2&&ok;yy++)for(let xx=x-1;xx<=x+2;xx++){
+      if(!inB(xx,yy))continue;const i=I(xx,yy);const n=G.nodes.get(i);
+      if(G.occ[i]>=0||(n&&n.kind!=='road')){ok=false;break}
+    }
+    if(!ok||G.dests.some(d=>Math.hypot(d.x-x,d.y-y)<3.6))continue;
+    const doors=shuffle([[x,y+2,x,y+1],[x+1,y+2,x+1,y+1],[x,y-1,x,y],[x+1,y-1,x+1,y],[x-1,y,x,y],[x-1,y+1,x,y+1],[x+2,y,x+1,y],[x+2,y+1,x+1,y+1]]);
+    const dd=doors.find(([a,b])=>inB(a,b)&&isFree(I(a,b)));
+    if(!dd)continue;
+    const id=G.dests.length;
+    const d={id,x,y,color,shape,cap:shape==='sq'?7:10,door:I(dd[0],dd[1]),inner:I(dd[2],dd[3]),pins:0,assigned:0,timer:0,nextPin:5+rnd()*4,born:G.t};
+    fp.forEach(i=>G.occ[i]=id);
+    G.nodes.set(d.door,{kind:'door',dest:d}); G.adj.set(d.door,new Set());
+    G.dests.push(d); return d;
+  }
+  return null;
+}
+function spawnHouse(color,near){
+  const ds=G.dests.filter(d=>d.color===color); if(!ds.length)return null;
+  const d=near||ds[rnd()*ds.length|0]; const cx=d.x+1, cy=d.y+1, c=[];
+  for(let dy=-6;dy<=6;dy++)for(let dx=-6;dx<=6;dx++){
+    const x=cx+dx,y=cy+dy; if(!inB(x,y))continue; const i=I(x,y); if(!isFree(i))continue;
+    const r=Math.hypot(x+.5-cx,y+.5-cy); if(r<2.2||r>6)continue;
+    if(nearDoor(x,y))continue; c.push(i);
+  }
+  let idx=c.length?c[rnd()*c.length|0]:-1;
+  if(idx<0){const all=[];for(let i=0;i<cols*rows;i++)if(isFree(i)&&!nearDoor(X(i),Y(i)))all.push(i);if(!all.length)return null;idx=all[rnd()*all.length|0]}
+  const h={idx,color,cars:[],born:G.t};
+  for(let k=0;k<CFG.carsPerHouse;k++)h.cars.push({house:h,color,state:'idle',path:null,i:0,p:0,px:0,py:0,hx:1,hy:0});
+  G.houses.push(h); G.cars.push(...h.cars);
+  G.nodes.set(idx,{kind:'house',house:h}); G.adj.set(idx,new Set()); return h;
+}
+function nearDoor(x,y){for(const d of G.dests){const dx=X(d.door),dy=Y(d.door);if(Math.abs(dx-x)+Math.abs(dy-y)<=1)return true}return false}
+
+/* ===== graph ===== */
+function markDirty(){G.dirty=true;G.mwDeg=new Map();for(const m of G.mws){G.mwDeg.set(m.a,(G.mwDeg.get(m.a)||0)+1);G.mwDeg.set(m.b,(G.mwDeg.get(m.b)||0)+1)}}
+const deg=i=>(G.adj.get(i)?.size||0)+(G.mwDeg.get(i)||0);
+const mwBetween=(a,b)=>G.mws.find(m=>(m.a===a&&m.b===b)||(m.a===b&&m.b===a));
+const edgeExists=(a,b)=>G.adj.get(a)?.has(b)||!!mwBetween(a,b);
+const segLen=(a,b)=>G.adj.get(a)?.has(b)?1:Math.hypot(X(a)-X(b),Y(a)-Y(b));
+function addEdge(a,b){G.adj.get(a).add(b);G.adj.get(b).add(a);markDirty()}
+function removeNode(i){for(const j of G.adj.get(i)||[])G.adj.get(j)?.delete(i);G.adj.delete(i);G.nodes.delete(i);
+  for(let k=G.mws.length-1;k>=0;k--){const m=G.mws[k];if(m.a===i||m.b===i){G.mws.splice(k,1);G.items.mw++}}markDirty()}
+function junctionPen(v){if(deg(v)<3)return 0;const n=G.nodes.get(v);return n.ra?0.15:n.light?0.5:0.9}
+function dijkstra(src,target){
+  const dist=new Map([[src,0]]),prev=new Map(),done=new Set(),order=[],open=[src];
+  while(open.length){
+    let bi=0;for(let k=1;k<open.length;k++)if(dist.get(open[k])<dist.get(open[bi]))bi=k;
+    const u=open.splice(bi,1)[0]; if(done.has(u))continue; done.add(u); order.push(u);
+    if(u===target)break;
+    const nu=G.nodes.get(u); if(!nu||(u!==src&&nu.kind!=='road'))continue;
+    const relax=(v,w)=>{if(done.has(v)||!G.nodes.has(v))return;const nd=dist.get(u)+w+junctionPen(v);if(!dist.has(v)||nd<dist.get(v)){dist.set(v,nd);prev.set(v,u);open.push(v)}};
+    for(const v of G.adj.get(u))relax(v,1);
+    for(const m of G.mws){if(m.a===u)relax(m.b,m.len/CFG.mwBoost);else if(m.b===u)relax(m.a,m.len/CFG.mwBoost)}
+  }
+  return{dist,prev,order};
+}
+function findPath(a,b){if(a===b)return[a];const{dist,prev}=dijkstra(a,b);if(!dist.has(b))return null;const p=[b];let k=b;while(k!==a){k=prev.get(k);p.push(k)}return p.reverse()}
+
+/* ===== building roads ===== */
+function tryConnect(a,b){
+  if(G.occ[b]>=0)return false;
+  const na=G.nodes.get(a), nb=G.nodes.get(b); if(!na)return false;
+  if(G.adj.get(a).has(b))return true;
+  if(na.kind==='house'&&G.adj.get(a).size>=1)return false;
+  if(nb){
+    if(nb.kind==='house'&&G.adj.get(b).size>=1)return false;
+    if(na.kind!=='road'&&nb.kind!=='road')return false;
+    addEdge(a,b);return true;
+  }
+  if(G.water[b]){
+    if(na.water){G.nodes.set(b,{kind:'road',water:true,bridge:na.bridge})}
+    else{if(G.items.bridge<=0){toast('没有桥了，选周补给时可以拿');return false}
+      G.items.bridge--;G.nodes.set(b,{kind:'road',water:true,bridge:G.bridgeSeq++})}
+  }else{
+    if(G.roads<=0){toast('路块用完了，擦掉一些或等下周补给');return false}
+    G.roads--;G.nodes.set(b,{kind:'road'});
+  }
+  G.adj.set(b,new Set());addEdge(a,b);return true;
+}
+function startAt(i){
+  if(G.occ[i]>=0)return false;
+  if(G.nodes.has(i))return true;
+  if(G.water[i]){toast('从岸边的路按住往河里拖，会自动用桥');G.flashWater=1.2;return false}
+  if(G.roads<=0){toast('路块用完了');return false}
+  G.roads--;G.nodes.set(i,{kind:'road'});G.adj.set(i,new Set());markDirty();return true;
+}
+function eraseAt(i){
+  const n=G.nodes.get(i); if(!n)return;
+  if(n.kind!=='road'){for(const j of [...G.adj.get(i)]){G.adj.get(j).delete(i)}G.adj.get(i).clear();markDirty();return}
+  if(n.water){const id=n.bridge;for(const [k,v] of [...G.nodes])if(v.water&&v.bridge===id)removeNode(k);G.items.bridge++;return}
+  G.roads++; if(n.ra)G.items.ra++; if(n.light)G.items.light++; removeNode(i);
+}
+function eraseMwNear(px,py){
+  for(let k=0;k<G.mws.length;k++){const m=G.mws[k];
+    const ax=X(m.a)+.5,ay=Y(m.a)+.5,bx=X(m.b)+.5,by=Y(m.b)+.5;const dx=bx-ax,dy=by-ay;
+    const t=Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/(dx*dx+dy*dy)));
+    if(Math.hypot(ax+dx*t-px,ay+dy*t-py)<0.32&&t>0.08&&t<0.92){G.mws.splice(k,1);G.items.mw++;markDirty();return true}}
+  return false;
+}
+
+/* ===== cars ===== */
+function center(i){return[X(i)+.5,Y(i)+.5]}
+function computePos(c){
+  if(c.state==='stuck'){const[x,y]=center(c.at);c.px=x;c.py=y;return}
+  const a=c.path[c.i],b=c.path[c.i+1];const[ax,ay]=center(a),[bx,by]=center(b);
+  const L=Math.hypot(bx-ax,by-ay)||1;const t=Math.min(1,c.p/segLen(a,b));
+  c.hx=(bx-ax)/L;c.hy=(by-ay)/L;const off=0.15;
+  c.px=ax+(bx-ax)*t-c.hy*off;c.py=ay+(by-ay)*t+c.hx*off;
+}
+function sendHome(c,from){
+  c.dest=null;const p=findPath(from,c.house.idx);
+  if(p&&p.length>1){c.state='back';c.path=p;c.i=0;c.p=0;computePos(c)}
+  else if(p){c.state='idle'}
+  else{c.state='stuck';c.at=from;c.retry=1;c.stuckT=0;computePos(c)}
+}
+function arrive(c){
+  const at=c.path[c.path.length-1];
+  if(c.state==='out'){const d=c.dest;d.pins=Math.max(0,d.pins-1);d.assigned--;G.score++;d.timer=Math.max(0,d.timer-3);
+    G.fx.push({x:X(d.door)+.5,y:Y(d.door)+.5,t:0,c:PAL[d.color].c});sendHome(c,at)}
+  else c.state='idle';
+}
+function teleportHome(c){if(c.state==='out'&&c.dest)c.dest.assigned--;c.dest=null;c.state='idle'}
+function replanAll(){
+  for(const c of G.cars){
+    if(c.state==='stuck'){if(!G.nodes.has(c.at))teleportHome(c);continue}
+    if(c.state!=='out'&&c.state!=='back')continue;
+    const a=c.path[c.i],b=c.path[c.i+1];let start,keep;
+    if(G.nodes.has(a)&&G.nodes.has(b)&&edgeExists(a,b)){start=b;keep=true}
+    else if(G.nodes.has(a)){start=a;keep=false}else{teleportHome(c);continue}
+    let np=findPath(start,c.state==='out'?c.dest.door:c.house.idx);
+    if(!np&&c.state==='out'){c.dest.assigned--;c.dest=null;c.state='back';np=findPath(start,c.house.idx)}
+    if(!np){c.state='stuck';c.at=start;c.retry=1;c.stuckT=0;computePos(c);continue}
+    if(keep){c.path=[a,...np];c.i=0}
+    else if(np.length<2){c.path=[start,start];c.i=0;c.p=0;arrive(c);continue}
+    else{c.path=np;c.i=0;c.p=0}
+  }
+}
+function dispatch(){
+  const list=G.dests.filter(d=>d.pins-d.assigned>0).sort((a,b)=>(b.timer-a.timer)||(b.pins/b.cap-a.pins/a.cap));
+  for(const d of list){
+    let need=d.pins-d.assigned;const{prev,order}=dijkstra(d.door,-1);
+    for(const u of order){
+      const n=G.nodes.get(u);if(n.kind!=='house'||n.house.color!==d.color)continue;
+      for(const c of n.house.cars){
+        if(c.state!=='idle'||need<=0)continue;
+        const path=[u];let k=u;while(k!==d.door){k=prev.get(k);path.push(k)}
+        c.state='out';c.dest=d;c.path=path;c.i=0;c.p=0;computePos(c);d.assigned++;need--;
+      }
+      if(need<=0)break;
+    }
+  }
+}
+function updateCar(c,dt){
+  if(c.state==='idle')return;
+  if(c.state==='stuck'){
+    c.stuckT+=dt;c.retry-=dt;
+    if(c.retry<=0){c.retry=1;if(!G.nodes.has(c.at)){c.state='idle';return}sendHome(c,c.at)}
+    if(c.state==='stuck'&&c.stuckT>10)c.state='idle';return;
+  }
+  const a=c.path[c.i],b=c.path[c.i+1];const grid=G.adj.get(a)?.has(b);const L=segLen(a,b);
+  let v=CFG.carSpeed*(grid?1:CFG.mwBoost);
+  if(grid){
+    const na=G.nodes.get(a),nb=G.nodes.get(b);
+    const f=n=>n.ra?0.85:n.light?1:0.42;
+    if(c.p>L-0.45&&deg(b)>=3)v*=f(nb);else if(c.p<0.45&&deg(a)>=3)v*=f(na);
+    if(nb.light&&deg(b)>=3){
+      const green=(Math.floor(G.t/2.6)%2===0)?'h':'v', axis=Y(a)===Y(b)?'h':'v', stop=L-0.55;
+      if(axis!==green&&c.p<=stop+1e-6&&c.p+v*dt>stop){c.p=stop;v=0}
+    }
+  }
+  if(v>0)for(const o of G.cars){
+    if(o===c||o.state==='idle'||o.state==='stuck')continue;
+    const dx=o.px-c.px,dy=o.py-c.py,fwd=dx*c.hx+dy*c.hy;
+    if(fwd<=0||fwd>0.5)continue;
+    if(Math.abs(-dx*c.hy+dy*c.hx)>0.17)continue;
+    if(o.hx*c.hx+o.hy*c.hy>0.3){v=0;break}
+  }
+  c.p+=v*dt;
+  if(c.p>=L){c.p-=L;c.i++;if(c.i>=c.path.length-1){arrive(c);return}}
+  computePos(c);
+}
+
+/* ===== sim ===== */
+function pickHouseColor(){
+  const act=[...new Set(G.dests.map(d=>d.color))];let best=act[0],bw=-1;
+  for(const col of act){const pins=G.dests.filter(d=>d.color===col).reduce((s,d)=>s+d.pins,0)+2;
+    const hs=G.houses.filter(h=>h.color===col).length+1;const w=pins/hs*(0.6+rnd()*0.8);if(w>bw){bw=w;best=col}}
+  return best;
+}
+function update(dt){
+  G.t+=dt;
+  if(G.t>=G.nextWeek){openWeek();return}
+  G.nextHouse-=dt;if(G.nextHouse<=0){G.nextHouse=CFG.houseEvery*(0.8+rnd()*0.4);spawnHouse(pickHouseColor())}
+  G.nextDest-=dt;if(G.nextDest<=0){G.nextDest=CFG.destEvery*(0.85+rnd()*0.3);
+    const col=rnd()*G.colorsActive|0,shape=G.week>=3&&rnd()<0.35?'ci':'sq';const d=spawnDest(col,shape);if(d)spawnHouse(col,d)}
+  const iv=CFG.pinBase/(1+G.t/CFG.pinScale);
+  for(const d of G.dests){
+    d.nextPin-=dt;if(d.nextPin<=0){d.pins++;d.nextPin=iv*(0.7+rnd()*0.6)}
+    if(d.pins>d.cap)d.timer+=dt;else d.timer=Math.max(0,d.timer-dt*0.6);
+    if(d.timer>=CFG.timerMax){gameOver(d);return}
+  }
+  if(G.dirty){replanAll();G.dirty=false}
+  G.dispatchT-=dt;if(G.dispatchT<=0){dispatch();G.dispatchT=0.25}
+  for(const c of G.cars)updateCar(c,dt);
+  for(const f of G.fx)f.t+=dt;G.fx=G.fx.filter(f=>f.t<0.6);
+}
+
+/* ===== weekly upgrade ===== */
+function openWeek(){
+  G.modal=true;
+  const keys=shuffle(Object.keys(ITEMS));
+  const opts=[{item:keys[0],tiles:15},rnd()<0.8?{item:keys[1],tiles:15}:{item:null,tiles:30}];
+  $('wkTitle').textContent=`第 ${G.week} 周结束`;
+  const box=$('wkOpts');box.innerHTML='';
+  opts.forEach(o=>{
+    const b=document.createElement('button');b.className='opt';
+    const it=o.item?ITEMS[o.item]:null;
+    b.innerHTML=`<div class="ic">${ICON[o.item||'road']}</div><b>${it?it.name+(it.n>1?' ×'+it.n:''):'一大批路块'}</b><span>${it?it.desc:'没有道具，路块翻倍'}</span><span class="t">+${o.tiles} 路块</span>`;
+    b.onclick=()=>{if(o.item)G.items[o.item]+=ITEMS[o.item].n;G.roads+=o.tiles;closeWeek()};
+    box.appendChild(b);
+  });
+  $('week').hidden=false;
+}
+function closeWeek(){
+  $('week').hidden=true;G.modal=false;G.week++;G.nextWeek+=CFG.weekLen;
+  if(G.week%2===0&&G.colorsActive<PAL.length){const col=G.colorsActive++;const d=spawnDest(col,'sq');if(d){spawnHouse(col,d);spawnHouse(col,d)}toast('新颜色的街区出现了')}
+  syncHud(true);
+}
+function gameOver(d){
+  G.over=true;let best=0;try{best=+localStorage.getItem('clt-best')||0;if(G.score>best){best=G.score;localStorage.setItem('clt-best',best)}}catch(e){best=Math.max(best,G.score)}
+  G.failed=d;$('overScore').textContent=G.score;$('overWeek').textContent=`第 ${G.week} 周`;$('overBest').textContent=best;
+  $('overWhy').textContent=G.score>=best&&G.score>0?'新纪录！不过有一栋楼的订单堆满了。':'有一栋楼的订单堆满了。';
+  setTimeout(()=>{$('over').hidden=false},700);
+}
+
+/* ===== drawing ===== */
+function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h)}
+function render(){
+  ctx.clearRect(0,0,W,H);
+  const nt=G?0.5-0.5*Math.cos(2*Math.PI*G.t/CFG.dayCycle):0;
+  ctx.fillStyle=sky('land',nt);ctx.fillRect(0,0,W,H);
+  if(!G)return;
+  const px=i=>ox+(X(i)+.5)*S, py=i=>oy+(Y(i)+.5)*S;
+  // grid
+  ctx.strokeStyle=sky('grid',nt);ctx.lineWidth=1;ctx.beginPath();
+  for(let x=0;x<=cols;x++){ctx.moveTo(ox+x*S+.5,oy);ctx.lineTo(ox+x*S+.5,oy+rows*S)}
+  for(let y=0;y<=rows;y++){ctx.moveTo(ox,oy+y*S+.5);ctx.lineTo(ox+cols*S,oy+y*S+.5)}
+  ctx.stroke();
+  // water (bank, then body)
+  ctx.fillStyle=sky('waterEdge',nt);
+  for(let i=0;i<cols*rows;i++)if(G.water[i]){const e=S*0.14;ctx.fillRect(ox+X(i)*S-e,oy+Y(i)*S-e,S+2*e,S+2*e)}
+  ctx.fillStyle=sky('water',nt);
+  for(let i=0;i<cols*rows;i++)if(G.water[i])ctx.fillRect(ox+X(i)*S-.5,oy+Y(i)*S-.5,S+1,S+1);
+  if(G.flashWater>0){G.flashWater-=1/60;ctx.fillStyle=`rgba(255,255,255,${0.45*Math.abs(Math.sin(G.flashWater*6))})`;
+    for(let i=0;i<cols*rows;i++)if(G.water[i])ctx.fillRect(ox+X(i)*S-.5,oy+Y(i)*S-.5,S+1,S+1)}
+  // map frame
+  ctx.strokeStyle=sky('grid',nt);ctx.lineWidth=2;ctx.strokeRect(ox-1,oy-1,cols*S+2,rows*S+2);
+
+  const shadow=sky('shadow',nt), road=sky('road',nt), land=sky('island',nt);
+  ctx.lineCap='round';ctx.lineJoin='round';
+  // bridge rails
+  ctx.strokeStyle=sky('rail',nt);ctx.lineWidth=S*0.86;ctx.beginPath();
+  for(const[i,set]of G.adj){const n=G.nodes.get(i);for(const j of set)if(j>i&&(n.water||G.nodes.get(j).water)){ctx.moveTo(px(i),py(i));ctx.lineTo(px(j),py(j))}}
+  ctx.stroke();
+  // door stubs + roads
+  ctx.strokeStyle=road;ctx.lineWidth=S*0.62;ctx.beginPath();
+  for(const d of G.dests){ctx.moveTo(px(d.door),py(d.door));ctx.lineTo(px(d.inner),py(d.inner))}
+  for(const[i,set]of G.adj)for(const j of set)if(j>i){ctx.moveTo(px(i),py(i));ctx.lineTo(px(j),py(j))}
+  ctx.stroke();
+  ctx.fillStyle=road;
+  for(const[i,n]of G.nodes)if(n.kind!=='house'){ctx.beginPath();ctx.arc(px(i),py(i),S*0.31,0,7);ctx.fill()}
+  // lane dashes on long straight roads are skipped for clarity; junction furniture:
+  for(const[i,n]of G.nodes){
+    if(n.ra){ctx.fillStyle=road;ctx.beginPath();ctx.arc(px(i),py(i),S*0.5,0,7);ctx.fill();ctx.fillStyle=land;ctx.beginPath();ctx.arc(px(i),py(i),S*0.18,0,7);ctx.fill()}
+    if(n.light){const g=(Math.floor(G.t/2.6)%2===0);ctx.fillStyle='#1b2028';rr(px(i)-S*.14,py(i)-S*.14,S*.28,S*.28,S*.08);ctx.fill();
+      ctx.fillStyle='#ef6f5e';ctx.fillRect(px(i)-S*.1+(g?0:S*.1),py(i)-S*.04,S*.1,S*.08);ctx.fillStyle='#6fd36a';ctx.fillRect(px(i)-(g?0:S*.1),py(i)-S*.04,S*.1,S*.08)}
+  }
+  // motorways
+  for(const m of G.mws){
+    ctx.strokeStyle='rgba(176,72,104,.35)';ctx.lineWidth=S*0.5;ctx.beginPath();ctx.moveTo(px(m.a)+S*.08,py(m.a)+S*.1);ctx.lineTo(px(m.b)+S*.08,py(m.b)+S*.1);ctx.stroke();
+    ctx.strokeStyle='#f2879f';ctx.lineWidth=S*0.4;ctx.beginPath();ctx.moveTo(px(m.a),py(m.a));ctx.lineTo(px(m.b),py(m.b));ctx.stroke();
+    for(const e of[m.a,m.b]){ctx.fillStyle='#fbfcf8';ctx.beginPath();ctx.arc(px(e),py(e),S*.17,0,7);ctx.fill();ctx.strokeStyle='#2a2f38';ctx.lineWidth=S*.06;ctx.stroke()}
+    const mx=(px(m.a)+px(m.b))/2,my=(py(m.a)+py(m.b))/2;
+    ctx.fillStyle='#fbfcf8';ctx.beginPath();ctx.arc(mx,my,S*.26,0,7);ctx.fill();ctx.strokeStyle='#2a2f38';ctx.lineWidth=S*.06;ctx.stroke();
+    ctx.fillStyle='#2a2f38';ctx.font=`700 ${S*.3}px Outfit,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(m.id,mx,my+S*.02);
+  }
+  // mw preview
+  if(tool==='mw'&&G.mwStart>=0){ctx.setLineDash([S*.2,S*.15]);ctx.strokeStyle='#f2879f';ctx.lineWidth=S*.22;ctx.beginPath();ctx.moveTo(px(G.mwStart),py(G.mwStart));ctx.lineTo(ptr.x,ptr.y);ctx.stroke();ctx.setLineDash([])}
+  // houses
+  const sh=S*0.16;
+  for(const h of G.houses){
+    const k=Math.min(1,(G.t-h.born)/0.35),s=S*0.64*(0.4+0.6*k),x=px(h.idx)-s/2,y=py(h.idx)-s/2,p=PAL[h.color];
+    ctx.fillStyle=shadow;rr(x+sh,y+sh*1.2,s,s,S*.12);ctx.fill();
+    ctx.fillStyle=p.d;rr(x,y,s,s,S*.12);ctx.fill();
+    ctx.fillStyle=p.c;rr(x,y,s,s*0.62,S*.12);ctx.fill();
+    const idle=h.cars.filter(c=>c.state==='idle').length;ctx.fillStyle='rgba(255,255,255,.85)';
+    for(let q=0;q<idle;q++){ctx.beginPath();ctx.arc(x+s*(0.33+q*0.34),y+s*0.8,s*0.07,0,7);ctx.fill()}
+  }
+  // destinations
+  for(const d of G.dests){
+    const p=PAL[d.color],bx=ox+d.x*S,by=oy+d.y*S,k=Math.min(1,(G.t-d.born)/0.5),sz=2*S*(0.5+0.5*k),x0=bx+S-sz/2,y0=by+S-sz/2,in_=S*0.12;
+    ctx.fillStyle=shadow;
+    if(d.shape==='sq'){rr(x0+in_+sh*1.4,y0+in_+sh*1.6,sz-2*in_,sz-2*in_,S*.28);ctx.fill();
+      ctx.fillStyle=p.d;rr(x0+in_,y0+in_,sz-2*in_,sz-2*in_,S*.28);ctx.fill();
+      ctx.fillStyle=p.c;rr(x0+in_+S*.1,y0+in_,sz-2*in_-S*.2,sz-2*in_-S*.22,S*.22);ctx.fill();}
+    else{ctx.beginPath();ctx.arc(bx+S+sh*1.4,by+S+sh*1.6,sz/2-in_,0,7);ctx.fill();
+      ctx.fillStyle=p.d;ctx.beginPath();ctx.arc(bx+S,by+S,sz/2-in_,0,7);ctx.fill();
+      ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(bx+S,by+S-S*.08,sz/2-in_-S*.08,0,7);ctx.fill();}
+    // demand dots
+    const per=d.shape==='sq'?4:4, shown=Math.min(d.pins,d.cap), r=S*0.1, gap=S*0.3, gx=bx+S-(per-1)*gap/2, gy=by+S-gap*(d.shape==='sq'?1:1.2);
+    for(let q=0;q<shown;q++){const cx=gx+(q%per)*gap,cy=gy+((q/per)|0)*gap;ctx.fillStyle='#fbfcf8';ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill();ctx.fillStyle=p.d;ctx.beginPath();ctx.arc(cx,cy,r*0.45,0,7);ctx.fill()}
+    if(d.pins>d.cap){ctx.fillStyle='#fbfcf8';ctx.font=`700 ${S*.32}px Outfit,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('+'+(d.pins-d.cap),bx+S,by+S*1.55)}
+    if(d.timer>0){
+      const R=S*1.32,f=d.timer/CFG.timerMax,pulse=0.5+0.5*Math.sin(G.t*8);
+      ctx.strokeStyle=`rgba(217,68,58,${0.18+0.18*pulse})`;ctx.lineWidth=S*.34;ctx.beginPath();ctx.arc(bx+S,by+S,R,0,7);ctx.stroke();
+      ctx.strokeStyle='#d9443a';ctx.lineWidth=S*.16;ctx.lineCap='round';ctx.beginPath();ctx.arc(bx+S,by+S,R,-Math.PI/2,-Math.PI/2+f*Math.PI*2);ctx.stroke();
+    }
+  }
+  // cars
+  for(const c of G.cars){
+    if(c.state==='idle')continue;
+    ctx.save();ctx.translate(ox+c.px*S,oy+c.py*S);ctx.rotate(Math.atan2(c.hy,c.hx));
+    ctx.fillStyle=PAL[c.color].d;rr(-S*.19,-S*.11,S*.38,S*.22,S*.07);ctx.fill();
+    ctx.fillStyle=PAL[c.color].c;rr(-S*.17,-S*.09,S*.3,S*.18,S*.06);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillRect(S*.04,-S*.07,S*.06,S*.14);
+    ctx.restore();
+  }
+  // delivery pops
+  for(const f of G.fx){ctx.strokeStyle=f.c;ctx.globalAlpha=1-f.t/0.6;ctx.lineWidth=S*.08;ctx.beginPath();ctx.arc(ox+f.x*S,oy+f.y*S,S*(0.2+f.t*1.2),0,7);ctx.stroke();ctx.globalAlpha=1}
+  // hover
+  if(hover>=0&&!G.over){const hx=ox+X(hover)*S,hy=oy+Y(hover)*S;ctx.strokeStyle=tool==='erase'?'#d9443a':'rgba(31,42,51,.45)';ctx.lineWidth=2;rr(hx+2,hy+2,S-4,S-4,S*.2);ctx.stroke()}
+}
+
+/* ===== HUD ===== */
+let lastHud='';
+function syncHud(force){
+  const day=DAYS[Math.min(6,Math.floor((G.t%CFG.weekLen)/(CFG.weekLen/7)))];
+  const key=[G.score,G.week,day,G.roads,G.items.bridge,G.items.ra,G.items.light,G.items.mw].join();
+  if(!force&&key===lastHud)return;lastHud=key;
+  $('score').textContent=G.score;$('day').innerHTML=`<b>第 ${G.week} 周</b>&nbsp;${day}`;
+  $('nRoad').textContent=G.roads;$('nBridge').textContent=G.items.bridge;$('nRa').textContent=G.items.ra;$('nLight').textContent=G.items.light;$('nMw').textContent=G.items.mw;
+  for(const k of['ra','light','mw']){const b=document.querySelector(`[data-tool="${k}"]`);b.disabled=G.items[k]<=0&&tool!==k}
+}
+let toastT=0;
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),1800)}
+function setTool(t){
+  tool=t;if(G)G.mwStart=-1;
+  document.querySelectorAll('[data-tool]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tool===t));
+  if(t==='ra')toast('点一个路口放环岛');if(t==='light')toast('点一个路口放红绿灯');if(t==='mw')toast('依次点两个路点，建一条高速路');
+}
+function setSpeed(s){speed=s;paused=s===0;$('bPause').setAttribute('aria-pressed',s===0);$('b1').setAttribute('aria-pressed',s===1);$('b2').setAttribute('aria-pressed',s===2)}
+$('bBridge').onclick=()=>{if(!G||G.demo)return;setTool('road');G.flashWater=1.6;
+  toast(G.items.bridge>0?'桥不用单独放：从岸边按住把路拖进河里，会自动用掉一座':'桥用完了，周末补给里可以选')};
+$('dock').addEventListener('click',e=>{const b=e.target.closest('[data-tool]');if(!b||b.disabled)return;setTool(tool===b.dataset.tool&&b.dataset.tool!=='road'?'road':b.dataset.tool)});
+$('bPause').onclick=()=>setSpeed(paused?1:0);$('b1').onclick=()=>setSpeed(1);$('b2').onclick=()=>setSpeed(2);
+$('bStart').onclick=()=>{$('start').hidden=true;newGame()};
+$('bAgain').onclick=()=>{$('over').hidden=true;newGame()};
+addEventListener('keydown',e=>{if(!G||G.over||G.modal)return;
+  if(e.code==='Space'){e.preventDefault();setSpeed(paused?1:0)}else if(e.key==='1')setSpeed(1);else if(e.key==='2')setSpeed(2);
+  else if(e.key==='e'||e.key==='E')setTool(tool==='erase'?'road':'erase');else if(e.key==='Escape')setTool('road')});
+
+/* ===== input ===== */
+let drag=null;
+function tileAt(e){const r=cv.getBoundingClientRect();const x=e.clientX-r.left,y=e.clientY-r.top;ptr.x=x;ptr.y=y;
+  const tx=Math.floor((x-ox)/S),ty=Math.floor((y-oy)/S);return{i:inB(tx,ty)?I(tx,ty):-1,fx:(x-ox)/S,fy:(y-oy)/S}}
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{
+  if(!G||G.over||G.modal)return;const{i,fx,fy}=tileAt(e);
+  const erasing=e.button===2||tool==='erase';
+  if(erasing){if(!eraseMwNear(fx,fy)&&i>=0)eraseAt(i);drag={erase:true,last:i};cv.setPointerCapture(e.pointerId);return}
+  if(i<0)return;
+  if(tool==='road'){if(startAt(i)){drag={erase:false,last:i};cv.setPointerCapture(e.pointerId)}return}
+  const n=G.nodes.get(i);
+  if(tool==='ra'||tool==='light'){
+    if(!n||n.kind!=='road'||n.water){toast('要点在道路上');return}
+    if(n.ra||n.light){toast('这里已经有了');return}
+    n[tool]=true;G.items[tool]--;markDirty();if(G.items[tool]<=0)setTool('road');return}
+  if(tool==='mw'){
+    if(!n||n.kind==='house'){toast('要点在道路或大楼入口上');return}
+    if(G.mwStart<0){G.mwStart=i;return}
+    if(i===G.mwStart){G.mwStart=-1;return}
+    const len=Math.hypot(X(i)-X(G.mwStart),Y(i)-Y(G.mwStart));if(len<2){toast('两点太近了');return}
+    if(mwBetween(G.mwStart,i)){toast('这两点已经连着了');return}
+    G.mws.push({a:G.mwStart,b:i,len,id:G.mwSeq++});G.items.mw--;markDirty();setTool('road');
+  }
+});
+cv.addEventListener('pointermove',e=>{
+  if(!G)return;const{i}=tileAt(e);hover=i;if(!drag||i<0||G.over||G.modal)return;
+  if(drag.erase){if(i!==drag.last){eraseAt(i);drag.last=i}return}
+  let last=drag.last;
+  while(last!==i){
+    const dx=X(i)-X(last),dy=Y(i)-Y(last);
+    const next=Math.abs(dx)>=Math.abs(dy)?I(X(last)+Math.sign(dx),Y(last)):I(X(last),Y(last)+Math.sign(dy));
+    if(!tryConnect(last,next))break;last=next;
+  }
+  drag.last=last;
+});
+const endDrag=()=>{drag=null};
+cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+cv.addEventListener('pointerleave',()=>{hover=-1});
+
+/* ===== loop ===== */
+let prevT=performance.now();
+function frame(now){
+  const real=Math.min(0.1,(now-prevT)/1000);prevT=now;
+  if(G&&!G.demo&&!G.over&&!G.modal&&!paused){let left=real*speed;while(left>0){const s=Math.min(0.034,left);update(s);left-=s;if(G.over||G.modal)break}}
+  render();if(G)syncHud(false);requestAnimationFrame(frame);
+}
+layout();
+// demo backdrop behind the start card
+newGame();G.demo=true;
+requestAnimationFrame(frame);

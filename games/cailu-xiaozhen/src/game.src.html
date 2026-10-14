@@ -1,0 +1,140 @@
+<title>彩路小镇</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Outfit:wght@500;700&family=ZCOOL+KuaiLe&display=swap">
+<style>
+/* Layout: full-bleed map canvas; floating HUD pills at top, tool dock at bottom. Single visual world (the map has its own day/night). */
+:root{
+  --ink:#1f2a33; --muted:#5f6d72; --pill:#fbfcf8; --pill-2:#eef2ea; --line:#d3dccf;
+  --accent:#ef6f5e; --danger:#d9443a; --sel:#1f2a33; --sel-fg:#fbfcf8; --ground:#cdd8c9;
+  --f-display:"ZCOOL KuaiLe","Noto Sans SC",system-ui,sans-serif;
+  --f-ui:"Noto Sans SC",system-ui,-apple-system,"PingFang SC",sans-serif;
+  --f-num:"Outfit","Noto Sans SC",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+[hidden]{display:none!important}
+body{background:var(--ground);color:var(--ink);font-family:var(--f-ui);overflow:hidden;-webkit-user-select:none;user-select:none}
+#app{position:relative;height:100%;overflow:hidden}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+.bar{position:absolute;left:0;right:0;display:flex;align-items:center;gap:8px;pointer-events:none;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar.top{top:10px;justify-content:space-between}
+.bar.bot{bottom:12px;justify-content:center}
+.pill{pointer-events:auto;background:var(--pill);border-radius:999px;box-shadow:0 2px 0 rgba(31,42,51,.14);display:flex;align-items:center;gap:6px;padding:6px 12px;min-height:40px}
+.score{font-family:var(--f-num);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;gap:8px}
+.score svg{width:16px;height:20px}
+.day{font-size:13px;color:var(--muted);font-weight:500}
+.day b{color:var(--ink);font-weight:700}
+.spd{padding:4px}
+.spd button,.dock button{font:inherit;border:0;background:transparent;color:var(--ink);cursor:pointer;border-radius:999px}
+.spd button{width:34px;height:32px;display:grid;place-items:center}
+.spd button svg{width:16px;height:16px}
+.spd button[aria-pressed="true"]{background:var(--sel);color:var(--sel-fg)}
+.dock{padding:5px;gap:2px;flex-wrap:nowrap;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.dock button,.chip{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:52px;height:50px;padding:0 6px;border-radius:16px}
+.dock button svg,.chip svg{width:22px;height:22px}
+.dock .lbl{font-size:10.5px;line-height:1;letter-spacing:.04em;color:var(--muted)}
+.dock .n{position:absolute;top:2px;right:4px;font-family:var(--f-num);font-weight:700;font-size:11px;font-variant-numeric:tabular-nums;background:var(--pill-2);border-radius:999px;padding:0 5px;line-height:16px;min-width:16px;text-align:center}
+.dock button[aria-pressed="true"]{background:var(--sel);color:var(--sel-fg)}
+.dock button[aria-pressed="true"] .lbl{color:var(--sel-fg)}
+.dock button[aria-pressed="true"] .n{background:var(--accent);color:#fff}
+.dock button:disabled{opacity:.35;cursor:default}
+.dock .sep{width:1px;align-self:stretch;margin:8px 3px;background:var(--line)}
+.chip{color:var(--ink)}
+.chip .lbl{font-size:10.5px;color:var(--muted)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#toast{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--pill);font-size:13px;padding:8px 14px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+#toast.on{opacity:1}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(31,42,51,.38);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
+.card{background:var(--pill);border-radius:24px;padding:24px 22px;width:min(420px,100%);box-shadow:0 6px 0 rgba(31,42,51,.18);display:flex;flex-direction:column;gap:14px}
+.card h1{font-family:var(--f-display);font-weight:400;font-size:40px;line-height:1;margin:0;letter-spacing:.02em}
+.card h2{font-family:var(--f-display);font-weight:400;font-size:30px;margin:0;line-height:1.1}
+.card p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+.card ul{margin:0;padding-left:1.1em;font-size:14px;line-height:1.75;color:var(--ink)}
+.card ul b{color:var(--accent)}
+.swatches{display:flex;gap:6px}
+.swatches i{width:22px;height:22px;border-radius:6px;display:block}
+.go{font:inherit;font-weight:700;font-size:16px;border:0;border-radius:999px;background:var(--ink);color:var(--pill);padding:12px 18px;cursor:pointer}
+.go:hover{background:#2c3a45}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{font:inherit;text-align:left;border:2px solid var(--line);background:var(--pill);border-radius:18px;padding:14px 12px;cursor:pointer;display:flex;flex-direction:column;gap:8px;color:var(--ink)}
+.opt:hover{border-color:var(--ink)}
+.opt .ic{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--pill-2)}
+.opt .ic svg{width:26px;height:26px}
+.opt b{font-size:16px}
+.opt span{font-size:12.5px;color:var(--muted);line-height:1.5}
+.opt .t{font-family:var(--f-num);font-weight:700;font-size:13px;color:var(--ink)}
+.big{font-family:var(--f-num);font-weight:700;font-size:56px;line-height:1;font-variant-numeric:tabular-nums}
+.stats{display:flex;gap:18px;font-size:13px;color:var(--muted)}
+.stats b{display:block;font-family:var(--f-num);font-size:20px;color:var(--ink)}
+@media (max-width:420px){.dock button,.chip{min-width:44px;padding:0 3px}.card h1{font-size:34px}}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+
+<div id="app">
+  <canvas id="cv" aria-label="游戏地图"></canvas>
+
+  <div class="bar top">
+    <div class="pill score" title="已送达订单">
+      <svg viewBox="0 0 16 20" aria-hidden="true"><path d="M8 0a8 8 0 0 0-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 0 0-8-8z" fill="currentColor"/><circle cx="8" cy="8" r="3" fill="#fbfcf8"/></svg>
+      <span id="score">0</span>
+    </div>
+    <div class="pill day" id="day"><b>第 1 周</b>&nbsp;周一</div>
+    <div class="pill spd" role="group" aria-label="速度">
+      <button id="bPause" aria-label="暂停" aria-pressed="false"><svg viewBox="0 0 16 16"><rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor"/><rect x="9.5" y="2" width="3.5" height="12" rx="1" fill="currentColor"/></svg></button>
+      <button id="b1" aria-label="正常速度" aria-pressed="true"><svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg></button>
+      <button id="b2" aria-label="加速" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M1 3v10l7-5zM8 3v10l7-5z" fill="currentColor"/></svg></button>
+    </div>
+  </div>
+
+  <div class="bar bot">
+    <div class="pill dock" id="dock">
+      <button data-tool="road" aria-pressed="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor"/><path d="M12 6v3M12 11v2M12 15v3" stroke="var(--pill)" stroke-width="1.8" stroke-linecap="round"/></svg><span class="lbl">道路</span><span class="n" id="nRoad">0</span></button>
+      <button id="bBridge" title="桥：从岸边把路拖进河里自动使用"><svg viewBox="0 0 24 24"><path d="M2 16h20M4 16v-3a8 8 0 0 1 16 0v3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8 9v7M12 7.5V16M16 9v7" stroke="currentColor" stroke-width="1.6"/></svg><span class="lbl">桥</span><span class="n" id="nBridge">0</span></button>
+      <button data-tool="ra"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg><span class="lbl">环岛</span><span class="n" id="nRa">0</span></button>
+      <button data-tool="light"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="4" fill="currentColor"/><circle cx="12" cy="7.5" r="2.3" fill="#ef6f5e"/><circle cx="12" cy="16.5" r="2.3" fill="#5bb85a"/></svg><span class="lbl">红绿灯</span><span class="n" id="nLight">0</span></button>
+      <button data-tool="mw"><svg viewBox="0 0 24 24"><path d="M4 19L20 5" stroke="#f2879f" stroke-width="5" stroke-linecap="round"/><circle cx="4" cy="19" r="2.5" fill="currentColor"/><circle cx="20" cy="5" r="2.5" fill="currentColor"/></svg><span class="lbl">高速</span><span class="n" id="nMw">0</span></button>
+      <span class="sep"></span>
+      <button data-tool="erase"><svg viewBox="0 0 24 24"><path d="M14.5 4.5l5 5L10 19H5.5L3 16.5z" fill="currentColor"/><path d="M8 11l5 5" stroke="var(--pill)" stroke-width="1.8"/><path d="M11 19h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="lbl">橡皮</span></button>
+    </div>
+  </div>
+
+  <div id="toast" role="status"></div>
+
+  <div class="overlay" id="start">
+    <div class="card">
+      <h1>彩路小镇</h1>
+      <div class="swatches"><i style="background:#ef6f5e"></i><i style="background:#2fb3b0"></i><i style="background:#e9b53b"></i><i style="background:#8a6fd8"></i><i style="background:#5bb85a"></i></div>
+      <ul>
+        <li>按住拖动画路，把<b>同色小屋</b>连到<b>同色大楼</b></li>
+        <li>大楼会冒出订单点，同色小车送到一单 = 1 分</li>
+        <li>订单积压超上限（方楼 7 / 圆楼 10）开始<b>红色倒计时</b>，走完就结束</li>
+        <li>每周二选一领补给：路块、桥、环岛、红绿灯、高速路</li>
+        <li>右键或橡皮擦除道路，路块原数返还</li>
+      </ul>
+      <button class="go" id="bStart">开始一局</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="week" hidden>
+    <div class="card">
+      <h2 id="wkTitle">第 1 周结束</h2>
+      <p>选一份补给，扩建你的路网。</p>
+      <div class="opts" id="wkOpts"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="over" hidden>
+    <div class="card">
+      <p id="overWhy">一栋大楼的订单堆满了。</p>
+      <div class="big" id="overScore">0</div>
+      <div class="stats"><div>坚持到<b id="overWeek">第 1 周</b></div><div>最高分<b id="overBest">0</b></div></div>
+      <button class="go" id="bAgain">再来一局</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/*GAME*/
+</script>
