@@ -224,7 +224,8 @@ function spawnDest(color,shape){
     }
     if(!ok||G.dests.some(d=>Math.hypot(d.x-x,d.y-y)<3.6))continue;
     const doors=shuffle([[x,y+2,x,y+1],[x+1,y+2,x+1,y+1],[x,y-1,x,y],[x+1,y-1,x+1,y],[x-1,y,x,y],[x-1,y+1,x,y+1],[x+2,y,x+1,y],[x+2,y+1,x+1,y+1]]);
-    const dd=doors.find(([a,b])=>inB(a,b)&&isFree(I(a,b)));
+    const before=reachableHouses();
+    const dd=doors.find(([a,b])=>inB(a,b)&&isFree(I(a,b))&&placementOK(new Set([...fp,I(a,b)]),before,null,[I(a,b),color]));
     if(!dd)continue;
     const id=G.dests.length;
     const d={id,x,y,color,shape,cap:shape==='sq'?7:10,door:I(dd[0],dd[1]),inner:I(dd[2],dd[3]),pins:0,assigned:0,timer:0,nextPin:5+rnd()*4,born:G.t};
@@ -242,14 +243,34 @@ function spawnHouse(color,near){
     const r=Math.hypot(x+.5-cx,y+.5-cy); if(r<2.2||r>6)continue;
     if(nearDoor(x,y))continue; c.push(i);
   }
-  let idx=c.length?c[rnd()*c.length|0]:-1;
-  if(idx<0){const all=[];for(let i=0;i<cols*rows;i++)if(isFree(i)&&!nearDoor(X(i),Y(i)))all.push(i);if(!all.length)return null;idx=all[rnd()*all.length|0]}
+  const before=reachableHouses(), fits=i=>placementOK(new Set([i]),before,[i,color]);
+  let idx=shuffle(c).find(fits)??-1;
+  if(idx<0){const all=[];for(let i=0;i<cols*rows;i++)if(isFree(i)&&!nearDoor(X(i),Y(i)))all.push(i);idx=shuffle(all).find(fits)??-1;if(idx<0)return null}
   const h={idx,color,cars:[],born:G.t};
   for(let k=0;k<CFG.carsPerHouse;k++)h.cars.push({house:h,color,state:'idle',path:null,i:0,p:0,px:0,py:0,hx:1,hy:0});
   G.houses.push(h); G.cars.push(...h.cars);
   G.nodes.set(idx,{kind:'house',house:h}); G.adj.set(idx,new Set()); return h;
 }
 function nearDoor(x,y){for(const d of G.dests){const dx=X(d.door),dy=Y(d.door);if(Math.abs(dx-x)+Math.abs(dy-y)<=1)return true}return false}
+/* 小区只能接一条路、也不能被穿行，处理厂和入口同样挡路。为了不出现永远连不上的小区，
+   刷小区 / 处理厂前先试放：按"可修路格"（空地、河、已有道路）划分连通区域，
+   要求新小区能通到同色处理厂入口，且原本能通的小区不被这次放置切断。 */
+const N4=i=>{const x=X(i),y=Y(i),r=[];if(x>0)r.push(i-1);if(x<cols-1)r.push(i+1);if(y>0)r.push(i-cols);if(y<rows-1)r.push(i+cols);return r};
+function reachability(block,extraDoor){
+  const walk=j=>!block.has(j)&&G.occ[j]<0&&(!G.nodes.has(j)||G.nodes.get(j).kind==='road');
+  const comp=new Int32Array(cols*rows).fill(-1),colors=[];let n=0;
+  for(let s=0;s<cols*rows;s++){if(comp[s]>=0||!walk(s))continue;comp[s]=n;colors.push(new Set());const q=[s];
+    while(q.length){const u=q.pop();for(const v of N4(u))if(comp[v]<0&&walk(v)){comp[v]=n;q.push(v)}}n++}
+  const doors=G.dests.map(d=>[d.door,d.color]);if(extraDoor)doors.push(extraDoor);
+  for(const[door,color]of doors)for(const v of N4(door))if(comp[v]>=0)colors[comp[v]].add(color);
+  return(idx,color)=>N4(idx).some(v=>comp[v]>=0&&colors[comp[v]].has(color));
+}
+function reachableHouses(){const ok=reachability(new Set());return G.houses.filter(h=>ok(h.idx,h.color))}
+function placementOK(block,before,newHouse,extraDoor){
+  const ok=reachability(block,extraDoor);
+  if(newHouse&&!ok(newHouse[0],newHouse[1]))return false;
+  return before.every(h=>ok(h.idx,h.color));
+}
 
 /* ===== graph ===== */
 function markDirty(){G.dirty=true;G.mwDeg=new Map();for(const m of G.mws){G.mwDeg.set(m.a,(G.mwDeg.get(m.a)||0)+1);G.mwDeg.set(m.b,(G.mwDeg.get(m.b)||0)+1)}}

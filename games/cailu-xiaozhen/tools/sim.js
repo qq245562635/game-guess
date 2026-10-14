@@ -1,5 +1,5 @@
 const fs=require('fs');const src=fs.readFileSync(require('path').join(__dirname,'..','src','game.js'),'utf8');
-const el=()=>({style:{},classList:{add(){},remove(){}},addEventListener(){},setAttribute(){},getBoundingClientRect:()=>({width:400,height:800,left:0,top:0}),getContext:()=>new Proxy({},{get:()=>()=>{}}),appendChild(){},set onclick(f){},hidden:true,textContent:'',innerHTML:''});
+const el=()=>({style:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},setAttribute(){},getBoundingClientRect:()=>({width:400,height:800,left:0,top:0}),getContext:()=>new Proxy({},{get:()=>()=>{}}),appendChild(){},set onclick(f){},hidden:true,textContent:'',innerHTML:''});
 global.document={getElementById:el,querySelectorAll:()=>[],querySelector:el,createElement:el};
 global.window={devicePixelRatio:1};global.addEventListener=()=>{};global.requestAnimationFrame=()=>{};global.performance={now:()=>0};
 global.localStorage={getItem:()=>0,setItem(){}};global.setTimeout=()=>0;global.clearTimeout=()=>{};
@@ -13,4 +13,9 @@ for(let s=0;s<59*30;s++)update(1/30);
 console.log('score',G.score,'pins',G.dests.map(d=>d.pins+'/'+d.assigned),'cars',G.cars.map(c=>c.state).join(','),'over',G.over);
 // erase a road mid-way and keep going
 const r=[...G.nodes].find(([i,n])=>n.kind==='road'&&!n.water);eraseAt(r[0]);for(let s=0;s<200;s++)update(1/30);console.log('after erase ok',G.score);
+
+// 回归：刷满小区和处理厂后，每个小区都必须能通到同色处理厂入口（过河按可修桥算）
+{let bad=0,total=0;for(let g=0;g<40;g++){newGame();for(let k=0;k<40;k++)spawnHouse(pickHouseColor());for(let k=0;k<5;k++){G.t+=1;const d=spawnDest(G.dests[k%G.dests.length].color,'sq');if(d)spawnHouse(d.color,d)}for(let k=0;k<25;k++)spawnHouse(pickHouseColor());
+  const ok=reachability(new Set());for(const h of G.houses){total++;if(!ok(h.idx,h.color))bad++}}
+ console.log('unreachable houses',bad,'/',total);if(bad)process.exitCode=1}
 `);

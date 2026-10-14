@@ -23,4 +23,9 @@ for(let run=0;run<40;run++){
 }
 console.log('inspection pass',pass,'fail',fail,'game-over before test',overs);
 console.log('samples',gots.slice(0,12).join(' '));
+
+// 回归：刷满小区和处理厂后，每个小区都必须能通到同色处理厂入口（过河按可修桥算）
+{let bad=0,total=0;for(let g=0;g<40;g++){newGame();for(let k=0;k<40;k++)spawnHouse(pickHouseColor());for(let k=0;k<5;k++){G.t+=1;const d=spawnDest(G.dests[k%G.dests.length].color,'sq');if(d)spawnHouse(d.color,d)}for(let k=0;k<25;k++)spawnHouse(pickHouseColor());
+  const ok=reachability(new Set());for(const h of G.houses){total++;if(!ok(h.idx,h.color))bad++}}
+ console.log('unreachable houses',bad,'/',total);if(bad)process.exitCode=1}
 `);
