@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>黑心弹珠摊</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+QingKe+HuangYou&display=swap">
+<style>
+/* Layout: one-screen phone column — HUD plank on top, pachinko board fills the middle, controls tray at the bottom. Night-market stall at night. */
+:root {
+  --night: #1b1217;
+  --dusk: #2a1d33;
+  --plank: #5a3a28;
+  --plank-dark: #3b261b;
+  --rim: #b8262b;
+  --brass: #d9a441;
+  --gold: #f2c94c;
+  --pop: #ef5b9c;
+  --sus: #e04a3a;
+  --ink: #f6e7c8;
+  --muted: #b79f86;
+  --display: "ZCOOL QingKe HuangYou", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  background: var(--night); color: var(--ink); font-family: var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 8px; box-sizing: border-box; overflow: hidden;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+#app { max-width: 460px; height: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; position: relative; }
+.px { image-rendering: pixelated; image-rendering: crisp-edges; }
+
+/* HUD */
+.hud { background: var(--plank); border: 3px solid var(--rim); box-shadow: inset 0 0 0 2px var(--plank-dark), 0 3px 0 #000; padding: 8px 10px; display: grid; grid-template-columns: auto 1fr 1.25fr; gap: 4px 10px; align-items: center; }
+.avatar { width: 52px; height: 52px; background: #6c7f99; border: 2px solid var(--brass); grid-row: span 1; }
+.who { min-width: 0; }
+.day { font-family: var(--display); color: var(--muted); font-size: 15px; letter-spacing: .04em; white-space: nowrap; }
+.money { font-family: var(--display); color: var(--gold); font-size: 34px; line-height: 1; text-shadow: 2px 2px 0 var(--plank-dark); font-variant-numeric: tabular-nums; }
+.money.neg { color: var(--sus); }
+.bars { display: grid; gap: 5px; min-width: 0; }
+.bar-row { display: grid; grid-template-columns: auto 1fr; gap: 2px 6px; align-items: center; font-size: 12px; font-weight: 700; }
+.bar-row .num { justify-self: end; font-family: var(--display); font-size: 16px; }
+.bar { grid-column: 1 / -1; height: 8px; background: var(--plank-dark); border: 1px solid #000; position: relative; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; display: block; transition: width .2s; }
+#popBar { background: var(--pop); }
+#susBar { background: var(--sus); }
+.bar.danger { animation: blink .5s steps(2) infinite; }
+@keyframes blink { 50% { border-color: var(--gold); } }
+.hud-foot { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr 1.25fr; gap: 10px; align-items: center; }
+.watch { font-size: 13px; font-weight: 700; white-space: nowrap; color: var(--ink); }
+.queue { display: flex; gap: 3px; min-width: 0; overflow: hidden; height: 22px; align-items: flex-end; }
+.queue img { width: 18px; height: 18px; flex: none; }
+.progress { position: relative; height: 22px; }
+.track { position: absolute; left: 0; right: 6px; bottom: 3px; height: 7px; background: var(--plank-dark); border: 1px solid #000; overflow: hidden; }
+.track .zone { position: absolute; top: 0; bottom: 0; background: rgba(242, 201, 76, .3); }
+.track .fill { position: absolute; inset: 0 auto 0 0; background: #7bbf4a; }
+.flag { position: absolute; bottom: 2px; width: 2px; height: 19px; background: var(--ink); }
+.flag::after { content: ""; position: absolute; left: 2px; top: 0; border-left: 9px solid var(--gold); border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
+.flag.end { right: 6px; } .flag.end::after { border-left-color: var(--rim); }
+
+/* Board */
+.stage { flex: 1; min-height: 0; position: relative; }
+#board { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+.banner { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); background: var(--gold); color: #3a1f0e; font-family: var(--display); font-size: 16px; padding: 3px 12px; border: 2px solid #000; box-shadow: 2px 2px 0 #000; white-space: nowrap; pointer-events: none; }
+.banner.alert { background: var(--sus); color: #fff; animation: blink .5s steps(2) infinite; }
+
+/* Controls */
+.tray { display: grid; gap: 8px; }
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.card { appearance: none; border: 2px solid #000; background: #3c3330; color: var(--ink); font: inherit; padding: 6px 8px; display: grid; grid-template-columns: 40px 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; box-shadow: inset 0 0 0 2px #5a4c46, 0 3px 0 #000; cursor: pointer; touch-action: manipulation; }
+.card canvas { grid-row: span 2; width: 40px; height: 40px; }
+.card b { font-size: 14px; }
+.card span { font-family: var(--display); color: var(--gold); font-size: 15px; }
+.card.on { background: #6b4b1f; box-shadow: inset 0 0 0 2px var(--gold), 0 3px 0 #000; }
+.card.poor span { color: var(--sus); }
+.card:focus-visible, .btn:focus-visible, .cta:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.hint { font-size: 12px; color: var(--muted); text-align: center; min-height: 16px; }
+.row { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 8px; }
+.btn { appearance: none; border: 2px solid #000; font: inherit; color: var(--ink); background: #4d3f3a; box-shadow: inset 0 0 0 2px #6a5952, 0 3px 0 #000; padding: 8px 10px; font-weight: 700; cursor: pointer; position: relative; overflow: hidden; touch-action: manipulation; }
+.btn:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px #6a5952, 0 1px 0 #000; }
+.btn.slap { background: #c4671f; box-shadow: inset 0 0 0 2px #e89a4f, 0 3px 0 #000; font-family: var(--display); font-size: 18px; line-height: 1; }
+.btn.slap small { display: block; font-family: var(--body); font-size: 11px; font-weight: 700; margin-top: 2px; }
+.btn.slap .cd { position: absolute; inset: auto 0 0 0; background: rgba(0, 0, 0, .55); pointer-events: none; }
+.btn.speed { font-family: var(--display); font-size: 20px; }
+.btn.pause { width: 54px; font-size: 18px; }
+.btn[disabled] { opacity: .55; cursor: default; }
+
+.tip { position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); background: #fff4d6; color: #3a1f0e; border: 2px solid #000; box-shadow: 3px 3px 0 #000; padding: 8px 10px; font-size: 13px; line-height: 1.5; z-index: 5; }
+.tip b { display: block; font-family: var(--display); font-size: 16px; }
+.tray { position: relative; }
+
+/* Overlays */
+.overlay { position: fixed; inset: 0; background: rgba(15, 8, 12, .82); display: grid; place-items: center; z-index: 20;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.sheet { width: min(100%, 380px); max-height: 100%; overflow: auto; background: var(--plank); border: 3px solid var(--rim); box-shadow: inset 0 0 0 2px var(--plank-dark), 6px 6px 0 #000; padding: 18px 18px 16px; display: grid; gap: 12px; }
+.sheet h1, .sheet h2 { margin: 0; font-family: var(--display); font-weight: 400; color: var(--gold); text-wrap: balance; text-shadow: 2px 2px 0 var(--plank-dark); }
+.sheet h1 { font-size: 40px; letter-spacing: .06em; }
+.sheet h2 { font-size: 28px; }
+.sheet p { margin: 0; line-height: 1.6; font-size: 14px; }
+.sheet ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; font-size: 14px; line-height: 1.55; }
+.sheet em { font-style: normal; color: var(--gold); font-weight: 700; }
+.ledger { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 15px; font-variant-numeric: tabular-nums; }
+.ledger .v { font-family: var(--display); font-size: 18px; text-align: right; }
+.ledger .plus { color: #9be36b; } .ledger .minus { color: #ff8a7a; }
+.ledger .total { border-top: 2px dashed var(--muted); padding-top: 6px; font-weight: 700; }
+.cta { appearance: none; border: 2px solid #000; background: var(--gold); color: #3a1f0e; font-family: var(--display); font-size: 22px; padding: 10px; box-shadow: inset 0 -4px 0 #c99a2a, 0 4px 0 #000; cursor: pointer; }
+.cta:active { transform: translateY(2px); }
+.small { font-size: 12px; color: var(--muted); }
+
+@media (max-width: 380px) { .money { font-size: 28px; } .hud { gap: 4px 8px; } .avatar { width: 44px; height: 44px; } }
+#app.jolt { animation: jolt .4s ease-out; }
+@keyframes jolt { 0% { transform: translate(0, 0); } 15% { transform: translate(-7px, 4px) rotate(-.6deg); } 30% { transform: translate(6px, -3px) rotate(.5deg); } 50% { transform: translate(-4px, 2px); } 70% { transform: translate(3px, -1px); } 100% { transform: translate(0, 0); } }
+@media (prefers-reduced-motion: reduce) { .bar.danger, .banner.alert, #app.jolt { animation: none; } }
+</style>
+
+<div id="app">
+  <header class="hud">
+    <canvas class="avatar px" id="avatar" width="12" height="12" aria-label="摊主头像"></canvas>
+    <div class="who">
+      <div class="day" id="dayLabel">第 1 天 开张大吉</div>
+      <div class="money" id="money">¥66</div>
+    </div>
+    <div class="bars">
+      <div class="bar-row"><span>♥ 人气</span><span class="num" id="popNum" style="color:var(--pop)">50</span>
+        <div class="bar"><i id="popBar" style="width:50%"></i></div></div>
+      <div class="bar-row"><span>◉ 嫌疑</span><span class="num" id="susNum" style="color:var(--sus)">0</span>
+        <div class="bar" id="susWrap"><i id="susBar" style="width:0%"></i></div></div>
+    </div>
+    <div class="hud-foot">
+      <div class="watch" id="watch">围观 3 人</div>
+      <div class="queue" id="queue" aria-label="排队顾客"></div>
+      <div class="progress" aria-label="今日进度">
+        <div class="track"><div class="zone" id="zone"></div><div class="fill" id="dayFill"></div></div>
+        <div class="flag" id="patrolFlag"></div>
+        <div class="flag end"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="board"></canvas>
+    <div class="banner" id="banner" hidden></div>
+  </div>
+
+  <div class="tray">
+    <div class="tip" id="tip" hidden></div>
+    <div class="hint" id="hint">点机关再点钉阵放置 · 长按机关看说明</div>
+    <div class="cards">
+      <button class="card" id="card-fist" data-type="fist"><canvas class="px" width="20" height="20"></canvas><b>弹簧拳头</b><span>¥10</span></button>
+      <button class="card" id="card-magnet" data-type="magnet"><canvas class="px" width="20" height="20"></canvas><b>磁铁</b><span>¥14</span></button>
+    </div>
+    <div class="row">
+      <button class="btn slap" id="slap">拍桌子<small>拍飞一批</small><i class="cd" id="slapCd"></i></button>
+      <button class="btn speed" id="speed">1 倍速</button>
+      <button class="btn pause" id="pause" aria-label="暂停">❚❚</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ovStart">
+  <div class="sheet">
+    <h1>黑心弹珠摊</h1>
+    <p>夜市口支个弹珠台。顾客花 <em>¥2</em> 打一颗弹珠，落进哪格你就赔哪格的钱。</p>
+    <ul>
+      <li>老老实实摆摊，赚的钱刚够交摊位费。想发财，就得靠<em>机关</em>“调教”弹珠。</li>
+      <li>机关出手、拍桌子都会涨<em>嫌疑</em>，围观的人越多涨得越快。嫌疑满了，摊子就被掀了。</li>
+      <li>黄旗那一段<em>城管巡逻</em>，嫌疑翻倍。</li>
+      <li>顾客老是不中奖，<em>人气</em>就掉，人气低了没人来玩。</li>
+      <li>每天收摊交摊位费，钱不够就破产。</li>
+    </ul>
+    <button class="cta" id="startBtn">开张</button>
+    <p class="small" id="best"></p>
+  </div>
+</div>
+<div class="overlay" id="ovDay" hidden>
+  <div class="sheet">
+    <h2 id="dayTitle">第 1 天 收摊</h2>
+    <div class="ledger" id="ledger"></div>
+    <p class="small" id="dayNote"></p>
+    <button class="cta" id="nextBtn">明天接着摆</button>
+  </div>
+</div>
+<div class="overlay" id="ovOver" hidden>
+  <div class="sheet">
+    <h2 id="overTitle">摊子被掀了</h2>
+    <p id="overText"></p>
+    <button class="cta" id="againBtn">再来一局</button>
+  </div>
+</div>
+
+<script>
+// ===== Pachinko physics engine (pure, no DOM) =====
+const W = 360, H = 520;
+const G = 620;
+const BR = 6;
+const B = { L: 12, R: 348, cx: 180, cy: 172, dr: 168, laneX: 326, laneTop: 150, bottom: 504, slotTop: 440 };
+const SLOT_N = 9;
+const SLOT_W = (B.laneX - B.L) / SLOT_N;
+const PRIZES = [0, 1, 0, 3, 8, 3, 0, 1, 0];
+const PEG_R = 3;
+
+function makeRng(seed) {
+  let s = seed >>> 0 || 1;
+  return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+}
+
+function buildPegs() {
+  const pegs = [];
+  for (let r = 0; r < 8; r++) {
+    const y = 196 + r * 31;
+    if (r % 2 === 0) {
+      for (let i = 0; i <= 9; i++) {
+        let x = B.L + i * SLOT_W;
+        if (i === 0) x = B.L + 4; if (i === 9) x = B.laneX - 4;
+        pegs.push({ x, y });
+      }
+    } else {
+      for (let i = 0; i < 9; i++) pegs.push({ x: B.L + (i + 0.5) * SLOT_W, y });
+    }
+  }
+  return pegs;
+}
+function buildSegs() {
+  const s = [{ x1: B.laneX, y1: B.laneTop, x2: B.laneX, y2: B.bottom }];
+  for (let i = 1; i < SLOT_N; i++) { const x = B.L + i * SLOT_W; s.push({ x1: x, y1: B.slotTop, x2: x, y2: B.bottom }); }
+  return s;
+}
+
+function createWorld(seed) {
+  return {
+    rng: makeRng(seed || 12345), pegs: buildPegs(), segs: buildSegs(),
+    balls: [], mechs: [], events: [], nextId: 1, magnetTime: 0, t: 0,
+  };
+}
+
+function launchBall(w, power) {
+  const p = power != null ? power : 690 + w.rng() * 230;
+  const b = { id: w.nextId++, x: (B.laneX + B.R) / 2, y: B.bottom - BR - 12, vx: (w.rng() - 0.5) * 6, vy: -p, mt: {}, trail: [], age: 0, inLane: true };
+  w.balls.push(b);
+  return b;
+}
+
+function collideCircle(b, px, py, pr, e, w) {
+  const dx = b.x - px, dy = b.y - py, d2 = dx * dx + dy * dy, m = BR + pr;
+  if (d2 >= m * m || d2 === 0) return false;
+  const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
+  b.x = px + nx * m; b.y = py + ny * m;
+  const vn = b.vx * nx + b.vy * ny;
+  if (vn < 0) {
+    b.vx -= (1 + e) * vn * nx; b.vy -= (1 + e) * vn * ny;
+    const j = (w.rng() - 0.5) * 36; b.vx += -ny * j; b.vy += nx * j;
+  }
+  return true;
+}
+
+function collideSeg(b, s, e, w) {
+  const ex = s.x2 - s.x1, ey = s.y2 - s.y1;
+  let t = ((b.x - s.x1) * ex + (b.y - s.y1) * ey) / (ex * ex + ey * ey);
+  t = Math.max(0, Math.min(1, t));
+  return collideCircle(b, s.x1 + ex * t, s.y1 + ey * t, 1.5, e, w);
+}
+
+function stepWorld(w, dt) {
+  const sub = 4, h = dt / sub;
+  for (let k = 0; k < sub; k++) substep(w, h);
+  for (const m of w.mechs) { if (m.cd > 0) m.cd -= dt; if (m.anim > 0) m.anim -= dt; }
+  w.t += dt;
+}
+
+function substep(w, h) {
+  const balls = w.balls;
+  for (const b of balls) {
+    let ax = 0, ay = G;
+    for (const m of w.mechs) {
+      if (m.type !== 'magnet') continue;
+      const dx = m.x - b.x, dy = m.y - b.y, d = Math.hypot(dx, dy);
+      const used = b.mt[m.id] || 0;
+      if (d < 66 && used < 1.1 && b.y > B.laneTop - 10 && b.x < B.laneX) {
+        const f = 1500 * (1 - d / 66) + 260;
+        ax += dx / (d + 0.01) * f; ay += dy / (d + 0.01) * f;
+        b.mt[m.id] = used + h; w.magnetTime += h;
+        b.vx *= 0.995; b.vy *= 0.995;
+      }
+    }
+    b.vx += ax * h; b.vy += ay * h;
+    const sp = Math.hypot(b.vx, b.vy); if (sp > 1100) { b.vx *= 1100 / sp; b.vy *= 1100 / sp; }
+    b.x += b.vx * h; b.y += b.vy * h; b.age += h;
+  }
+  for (const b of balls) {
+    // dome
+    if (b.y < B.cy) {
+      const dx = b.x - B.cx, dy = b.y - B.cy, d = Math.hypot(dx, dy), lim = B.dr - BR;
+      if (d > lim) {
+        const nx = dx / d, ny = dy / d; b.x = B.cx + nx * lim; b.y = B.cy + ny * lim;
+        const vn = b.vx * nx + b.vy * ny; if (vn > 0) { b.vx -= 1.25 * vn * nx; b.vy -= 1.25 * vn * ny; }
+      }
+    }
+    if (b.x < B.L + BR) { b.x = B.L + BR; if (b.vx < 0) b.vx = -b.vx * 0.4; }
+    if (b.x > B.R - BR) { b.x = B.R - BR; if (b.vx > 0) b.vx = -b.vx * 0.4; }
+    if (b.inLane && b.y < B.laneTop - BR) b.inLane = false;
+    if (b.y > 170 && b.y < B.slotTop + 10) for (const p of w.pegs) collideCircle(b, p.x, p.y, PEG_R, 0.5, w);
+    for (const s of w.segs) if (b.y > s.y1 - 10) collideSeg(b, s, 0.3, w);
+    // fists
+    for (const m of w.mechs) {
+      if (m.type !== 'fist' || m.cd > 0) continue;
+      if (Math.hypot(b.x - m.x, b.y - m.y) < 20) {
+        b.vx = m.dir * 380; b.vy = Math.min(b.vy, -40) - 90;
+        m.cd = 0.8; m.anim = 0.25; w.events.push({ type: 'fist', mech: m, x: m.x, y: m.y });
+      }
+    }
+  }
+  // ball-ball
+  for (let i = 0; i < balls.length; i++) for (let j = i + 1; j < balls.length; j++) {
+    const a = balls[i], c = balls[j]; const dx = c.x - a.x, dy = c.y - a.y, d2 = dx * dx + dy * dy;
+    if (d2 < 4 * BR * BR && d2 > 0) {
+      const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, o = (2 * BR - d) / 2;
+      a.x -= nx * o; a.y -= ny * o; c.x += nx * o; c.y += ny * o;
+      const rv = (c.vx - a.vx) * nx + (c.vy - a.vy) * ny;
+      if (rv < 0) { const j2 = -0.9 * rv; a.vx -= j2 * nx; a.vy -= j2 * ny; c.vx += j2 * nx; c.vy += j2 * ny; }
+    }
+  }
+  // scoring / reload
+  for (let i = balls.length - 1; i >= 0; i--) {
+    const b = balls[i];
+    if (b.y >= B.bottom - BR - 0.5) {
+      if (b.x < B.laneX) {
+        const slot = Math.max(0, Math.min(SLOT_N - 1, Math.floor((b.x - B.L) / SLOT_W)));
+        balls.splice(i, 1); w.events.push({ type: 'score', slot, prize: PRIZES[slot], x: B.L + (slot + 0.5) * SLOT_W, ball: b });
+      } else if (b.vy > 0) {
+        balls.splice(i, 1); w.events.push({ type: 'reload', ball: b });
+      }
+    } else if (b.age > 25) { balls.splice(i, 1); w.events.push({ type: 'stuck', ball: b }); }
+  }
+}
+
+function slapTable(w) {
+  for (const b of w.balls) { if (b.inLane) continue; b.vy = -(260 + w.rng() * 220); b.vx += (w.rng() - 0.5) * 320; }
+}
+// ===== end engine =====
+
+</script>
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const PRICE = 2, DAY_LEN = 70, MAX_MECH = 5, PATROL = [0.45, 0.62];
+const rent = d => 12 + 8 * (d - 1);
+const MECH = {
+  fist: { name: '弹簧拳头', price: 10, desc: '放在钉阵里，弹珠路过时一拳打飞。点一下已放好的拳头可以换朝向。每出一拳，嫌疑 +3。' },
+  magnet: { name: '磁铁', price: 14, desc: '把附近的弹珠吸过去，放在「谢谢惠顾」上方最好用。吸住弹珠时嫌疑会持续上涨。' },
+};
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- pixel sprites ----------
+function paint(cv, map, pal) {
+  const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height);
+  map.forEach((row, y) => [...row].forEach((ch, x) => { if (pal[ch]) { c.fillStyle = pal[ch]; c.fillRect(x, y, 1, 1); } }));
+}
+const BOSS = ['...kkkkkk...', '..kkkkkkkk..', '.kkssssssskk', '.kssssssssk.', '.gggggggggg.', '.gwggsggwgg.', '.ssssnsssss.', '.ssmmmmmmss.', '..ssswwsss..', '...ssssss...', '.bbbyyyybbb.', 'bbbbbbbbbbbb'];
+const BOSS_PAL = { k: '#2a1a14', s: '#e7a46b', g: '#141018', w: '#ffffff', n: '#c97f4b', m: '#7a2a1f', b: '#2f5f9e', y: '#f2c94c' };
+const GIRL = ['kk.kkkk.kk', 'kkkkkkkkkk', '.kssssssk.', '.sgssssgs.', '.ssssssss.', '.spsmmsps.', '..ssssss..', '.rrrrrrrr.', 'rrrrrrrrrr', 'rrrrrrrrrr'];
+const BOY = ['..kkkkkk..', '.kkkkkkkk.', '.kssssssk.', '.sgssssgs.', '.ssssssss.', '.sssmmsss.', '..ssssss..', '.bbbbbbbb.', 'bbbbbbbbbb', 'bbbbbbbbbb'];
+const KID_PAL = { k: '#2a1a14', s: '#f0b989', g: '#141018', p: '#f08a9a', m: '#7a2a1f', r: '#d8566b', b: '#4f86c6' };
+paint($('#avatar'), BOSS, BOSS_PAL);
+function kidURL(map) { const c = document.createElement('canvas'); c.width = 10; c.height = 10; paint(c, map, KID_PAL); return c.toDataURL(); }
+const KIDS = [kidURL(GIRL), kidURL(BOY)];
+
+// ---------- state ----------
+let S;
+function bestDay() { try { return +localStorage.getItem('pachinko-best') || 0; } catch (e) { return 0; } }
+function saveBest(d) { try { if (d > bestDay()) localStorage.setItem('pachinko-best', d); } catch (e) {} }
+function newGame() {
+  S = { money: 66, pop: 50, sus: 0, day: 1, t: 0, phase: 'start', speed: 1, paused: false, queue: [], arriveT: 0.6, launchCD: 0.5,
+    slapCD: 0, placing: null, floats: [], shake: 0, shakeDur: 1, shakeAmp: 0, flash: 0, mechId: 1, world: createWorld((Date.now() % 99991) + 1), lastMag: 0, ghost: null, stats: null };
+  resetStats(); renderQueue();
+}
+function resetStats() { S.stats = { income: 0, payout: 0, spend: 0, balls: 0, big: 0 }; }
+const watchers = () => Math.max(1, Math.round(S.pop / 12));
+const inPatrol = () => S.phase === 'open' && S.t / DAY_LEN >= PATROL[0] && S.t / DAY_LEN < PATROL[1];
+function addSus(v) { const mult = (0.6 + watchers() * 0.12) * (inPatrol() ? 2 : 1); S.sus = Math.min(100, S.sus + v * mult); }
+function float(x, y, text, color, size) { S.floats.push({ x, y, text, color, size: size || 13, life: 1.2 }); }
+function shake(dur, amp) {
+  S.shake = dur; S.shakeDur = dur; S.shakeAmp = reduceMotion ? Math.min(amp, 3) : amp; S.flash = Math.max(S.flash, amp >= 10 ? 0.16 : 0.06);
+  if (amp >= 10 && !reduceMotion) { const a = $('#app'); a.classList.remove('jolt'); void a.offsetWidth; a.classList.add('jolt'); }
+}
+function haptic(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+
+// ---------- loop ----------
+let last = performance.now(), acc = 0;
+function frame(now) {
+  let dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!S.paused && (S.phase === 'open' || S.phase === 'closing')) {
+    acc += dt * S.speed;
+    while (acc >= 1 / 60) { update(1 / 60); acc -= 1 / 60; }
+  } else acc = 0;
+  for (const f of S.floats) f.life -= dt; S.floats = S.floats.filter(f => f.life > 0);
+  if (S.shake > 0) S.shake -= dt;
+  if (S.flash > 0) S.flash -= dt;
+  draw(); hud();
+  requestAnimationFrame(frame);
+}
+
+function update(dt) {
+  const w = S.world;
+  if (S.phase === 'open') {
+    S.t += dt;
+    if (S.t >= DAY_LEN) { S.phase = 'closing'; if (S.queue.length) float(B.cx, 120, `${S.queue.length} 位顾客没轮上，走了`, '#f6e7c8', 12); S.queue = []; renderQueue(); }
+    if (S.pop > 0) {
+      S.arriveT -= dt;
+      if (S.arriveT <= 0) {
+        if (S.queue.length < 6) { S.queue.push(Math.random() < 0.5 ? 0 : 1); renderQueue(); }
+        S.arriveT = Math.max(0.9, 3.0 - S.pop * 0.022) * (0.6 + Math.random() * 0.8);
+      }
+    }
+    S.launchCD -= dt;
+    if (S.queue.length && w.balls.length < 3 && S.launchCD <= 0) {
+      S.queue.shift(); renderQueue();
+      S.money += PRICE; S.stats.income += PRICE; S.stats.balls++;
+      launchBall(w); float(B.laneX - 4, B.bottom - 30, '+¥2', '#9be36b', 12);
+      S.launchCD = 1.0;
+    }
+  }
+  stepWorld(w, dt);
+  for (const ev of w.events) {
+    if (ev.type === 'score') {
+      if (ev.prize > 0) {
+        S.money -= ev.prize; S.stats.payout += ev.prize;
+        S.pop += ev.prize === 8 ? 6 : ev.prize === 3 ? 2 : 1;
+        if (ev.prize === 8) { S.stats.big++; shake(0.25, 6); haptic(30); }
+        float(ev.x, B.slotTop - 6, `赔 ¥${ev.prize}`, ev.prize === 8 ? '#ff6b5a' : '#f2c94c', ev.prize === 8 ? 16 : 13);
+      } else { S.pop -= 1.5; float(ev.x, B.slotTop - 6, '嘿嘿', '#c9b49a', 12); }
+    } else if (ev.type === 'fist') { addSus(3); float(ev.x, ev.y - 16, '嫌疑+', '#ff8a7a', 11); }
+    else if (ev.type === 'reload') launchBall(w);
+  }
+  w.events.length = 0;
+  const magDelta = w.magnetTime - S.lastMag; S.lastMag = w.magnetTime;
+  if (magDelta > 0) addSus(magDelta * 4);
+  S.sus = Math.max(0, S.sus - 2 * dt);
+  S.pop = Math.max(0, Math.min(100, S.pop));
+  if (S.slapCD > 0) S.slapCD -= dt;
+  if (S.sus >= 100) return gameOver('caught');
+  if (S.phase === 'closing' && w.balls.length === 0) endDay();
+}
+
+// ---------- day flow ----------
+function startDay() { S.phase = 'open'; S.t = 0; S.arriveT = 0.6; S.launchCD = 0.5; resetStats(); $('#ovDay').hidden = true; $('#ovStart').hidden = true; }
+function endDay() {
+  const r = rent(S.day); S.money -= r; S.phase = 'summary';
+  const st = S.stats, net = st.income - st.payout - st.spend - r;
+  $('#dayTitle').textContent = `第 ${S.day} 天 收摊`;
+  const row = (k, v, cls) => `<span class="${cls || ''}">${k}</span><span class="v ${cls || ''}">${v}</span>`;
+  $('#ledger').innerHTML =
+    row(`弹珠收入（${st.balls} 颗）`, `+¥${st.income}`, 'plus') + row(`赔出去的奖（大奖 ${st.big} 次）`, `-¥${st.payout}`, 'minus') +
+    row('买机关', `-¥${st.spend}`, 'minus') + row('摊位费', `-¥${r}`, 'minus') +
+    row('今天净赚', `${net >= 0 ? '+' : '-'}¥${Math.abs(net)}`, 'total ' + (net >= 0 ? 'plus' : 'minus')) + row('手里还剩', `¥${S.money}`, 'total');
+  if (S.money < 0) { gameOver('broke'); return; }
+  saveBest(S.day);
+  $('#dayNote').textContent = `明天摊位费 ¥${rent(S.day + 1)}。机关会留在台子上。人气 ${Math.round(S.pop)}，嫌疑过一夜清零。`;
+  $('#ovDay').hidden = false; $('#nextBtn').focus();
+}
+function nextDay() { S.day++; S.sus = 0; S.lastMag = S.world.magnetTime; startDay(); }
+function gameOver(kind) {
+  S.phase = 'over'; saveBest(S.day - (kind === 'broke' ? 1 : 0));
+  $('#ovDay').hidden = true;
+  $('#overTitle').textContent = kind === 'caught' ? '摊子被掀了' : '交不起摊位费，破产了';
+  $('#overText').textContent = kind === 'caught'
+    ? `第 ${S.day} 天，围观的人看出了门道，一拥而上把你的弹珠台掀了。最后手里 ¥${S.money}。`
+    : `第 ${S.day} 天收摊，摊位费交完还欠 ¥${-S.money}。少买点机关，或者多让顾客中几次奖留住人气。`;
+  $('#ovOver').hidden = false; $('#againBtn').focus();
+}
+
+// ---------- controls ----------
+function slap() {
+  if (S.phase !== 'open' && S.phase !== 'closing') return;
+  if (S.slapCD > 0) return;
+  shake(0.45, 14); haptic([40, 30, 70]);
+  if (!S.world.balls.some(b => !b.inLane)) { float(B.cx, 250, '台上没珠子，白拍了', '#f6e7c8', 14); return; }
+  slapTable(S.world); addSus(14); S.pop = Math.max(0, S.pop - 2); S.slapCD = 5;
+  float(B.cx, 250, '啪！', '#ffffff', 28);
+}
+$('#slap').addEventListener('click', slap);
+$('#speed').addEventListener('click', () => { S.speed = S.speed === 1 ? 2 : S.speed === 2 ? 3 : 1; $('#speed').textContent = `${S.speed} 倍速`; });
+$('#pause').addEventListener('click', togglePause);
+function togglePause() { S.paused = !S.paused; $('#pause').textContent = S.paused ? '▶' : '❚❚'; $('#pause').setAttribute('aria-label', S.paused ? '继续' : '暂停'); }
+document.addEventListener('keydown', e => { if (e.code === 'Space' && S.phase !== 'start') { e.preventDefault(); togglePause(); } if (e.key === 'Escape') setPlacing(null); });
+$('#startBtn').addEventListener('click', startDay);
+$('#nextBtn').addEventListener('click', nextDay);
+$('#againBtn').addEventListener('click', () => { $('#ovOver').hidden = true; newGame(); startDay(); });
+
+function setPlacing(type) {
+  S.placing = type;
+  document.querySelectorAll('.card').forEach(c => c.classList.toggle('on', c.dataset.type === type));
+  $('#hint').textContent = type ? `点钉阵放下${MECH[type].name}（¥${MECH[type].price}）· 再点一次卡片取消` : '点机关再点钉阵放置 · 长按机关看说明';
+}
+document.querySelectorAll('.card').forEach(card => {
+  const type = card.dataset.type; let timer = null, long = false;
+  drawMechIcon(card.querySelector('canvas'), type);
+  card.addEventListener('pointerdown', () => { long = false; timer = setTimeout(() => { long = true; showTip(type); }, 450); });
+  const end = () => { clearTimeout(timer); if (long) setTimeout(() => $('#tip').hidden = true, 1800); };
+  card.addEventListener('pointerup', end); card.addEventListener('pointerleave', () => clearTimeout(timer));
+  card.addEventListener('contextmenu', e => e.preventDefault());
+  card.addEventListener('click', e => { if (long) { long = false; return; } setPlacing(S.placing === type ? null : type); });
+});
+function showTip(type) { const t = $('#tip'); t.innerHTML = `<b>${MECH[type].name} · ¥${MECH[type].price}</b>${MECH[type].desc}`; t.hidden = false; }
+
+// ---------- board canvas ----------
+const cv = $('#board'), ctx = cv.getContext('2d');
+let view = { s: 1, ox: 0, oy: 0, dpr: 1 }, staticLayer = null;
+function resize() {
+  const r = $('#stage').getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  const s = Math.min(r.width / (W + 8), r.height / (H + 8));
+  view = { s, dpr, ox: (r.width - W * s) / 2, oy: (r.height - H * s) / 2 + 2 };
+  buildStatic();
+}
+new ResizeObserver(resize).observe($('#stage'));
+function toWorld(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left - view.ox) / view.s, y: (e.clientY - r.top - view.oy) / view.s }; }
+function canPlace(p) {
+  if (p.x < B.L + 10 || p.x > B.laneX - 10 || p.y < 186 || p.y > B.slotTop - 6) return '只能放在钉阵里';
+  if (S.world.mechs.some(m => Math.hypot(m.x - p.x, m.y - p.y) < 26)) return '离别的机关太近了';
+  if (S.world.mechs.length >= MAX_MECH) return `台子上最多放 ${MAX_MECH} 个机关`;
+  if (S.money < MECH[S.placing].price) return '钱不够';
+  return null;
+}
+cv.addEventListener('pointermove', e => { S.ghost = S.placing ? toWorld(e) : null; });
+cv.addEventListener('pointerleave', () => { S.ghost = null; });
+cv.addEventListener('pointerdown', e => {
+  const p = toWorld(e);
+  if (S.placing) {
+    const err = canPlace(p);
+    if (err) { float(p.x, p.y, err, '#ff8a7a', 12); return; }
+    const price = MECH[S.placing].price;
+    S.world.mechs.push({ id: S.mechId++, type: S.placing, x: p.x, y: p.y, dir: p.x > B.cx ? -1 : 1, cd: 0, anim: 0 });
+    S.money -= price; S.stats.spend += price; float(p.x, p.y - 18, `-¥${price}`, '#ff8a7a', 12);
+    setPlacing(null);
+    return;
+  }
+  const m = S.world.mechs.find(m => m.type === 'fist' && Math.hypot(m.x - p.x, m.y - p.y) < 18);
+  if (m) { m.dir *= -1; float(m.x, m.y - 18, m.dir > 0 ? '朝右' : '朝左', '#f6e7c8', 11); }
+});
+
+function boardPath(c, grow) {
+  c.beginPath(); c.moveTo(B.L - grow, B.bottom + grow); c.lineTo(B.L - grow, B.cy);
+  c.arc(B.cx, B.cy, B.dr + grow, Math.PI, 2 * Math.PI); c.lineTo(B.R + grow, B.bottom + grow); c.closePath();
+}
+function buildStatic() {
+  const { s, dpr } = view; staticLayer = document.createElement('canvas');
+  staticLayer.width = Math.ceil((W + 8) * s * dpr); staticLayer.height = Math.ceil((H + 8) * s * dpr);
+  const c = staticLayer.getContext('2d'); c.scale(s * dpr, s * dpr);
+  // rim
+  boardPath(c, 9); c.fillStyle = '#7d1418'; c.fill();
+  boardPath(c, 7); c.fillStyle = '#b8262b'; c.fill();
+  boardPath(c, 2); c.fillStyle = '#e0b04f'; c.fill();
+  // wood
+  c.save(); boardPath(c, 0); c.clip();
+  c.fillStyle = '#c98b52'; c.fillRect(0, 0, W, H);
+  const rnd = makeRng(99);
+  for (let y = 10; y < H; y += 24) {
+    c.fillStyle = 'rgba(120,70,30,.35)'; c.fillRect(0, y, W, 1.2);
+    for (let i = 0; i < 4; i++) { const x = rnd() * W; c.fillRect(x, y, 1.2, 24); }
+    for (let i = 0; i < 3; i++) {
+      c.strokeStyle = 'rgba(150,90,45,.35)'; c.lineWidth = 0.8; c.beginPath();
+      c.ellipse(rnd() * W, y + 12, 8 + rnd() * 14, 3 + rnd() * 3, 0, 0, Math.PI * 2); c.stroke();
+    }
+  }
+  c.strokeStyle = 'rgba(190,225,255,.45)'; c.lineWidth = 1.5; c.beginPath(); c.arc(B.cx, B.cy, B.dr - 6, Math.PI * 1.02, Math.PI * 1.98); c.stroke();
+  c.restore();
+  // rivets
+  c.fillStyle = '#e0b04f';
+  for (let a = Math.PI; a <= 2 * Math.PI + 0.01; a += Math.PI / 18) c.fillRect(B.cx + Math.cos(a) * (B.dr + 5) - 1.5, B.cy + Math.sin(a) * (B.dr + 5) - 1.5, 3, 3);
+  for (let y = B.cy + 18; y < B.bottom; y += 34) { c.fillRect(B.L - 6.5, y, 3, 3); c.fillRect(B.R + 3.5, y, 3, 3); }
+  // slots
+  const labels = { 0: ['谢谢', '惠顾'], 1: ['1元'], 3: ['3元'], 8: ['8元'] };
+  for (let i = 0; i < SLOT_N; i++) {
+    const p = PRIZES[i], x = B.L + i * SLOT_W + 1.5, y = B.slotTop + 6, w = SLOT_W - 3, h = B.bottom - y;
+    c.fillStyle = p === 0 ? '#4a2f22' : p === 8 ? '#c8262b' : '#e2b23e'; c.fillRect(x, y, w, h);
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(x, y + h - 4, w, 4);
+    c.fillStyle = p === 0 ? '#e8d5b5' : p === 8 ? '#fff3c4' : '#5a3a14';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    const L = labels[p];
+    if (L.length === 2) { c.font = '700 10px ' + getComputedStyle(document.body).fontFamily; c.fillText(L[0], x + w / 2, y + h / 2 - 7); c.fillText(L[1], x + w / 2, y + h / 2 + 7); }
+    else { c.font = `${p === 8 ? 17 : 14}px "ZCOOL QingKe HuangYou", sans-serif`; c.fillText(L[0], x + w / 2, y + h / 2 + 1); }
+    if (p === 8) {
+      c.fillStyle = '#c8262b'; c.fillRect(x + 3, y - 13, w - 6, 12); c.strokeStyle = '#000'; c.lineWidth = 1; c.strokeRect(x + 3, y - 13, w - 6, 12);
+      c.fillStyle = '#f2c94c'; c.font = '13px "ZCOOL QingKe HuangYou", sans-serif'; c.fillText('大奖', x + w / 2, y - 6.5);
+    }
+  }
+  // dividers
+  for (const sg of buildSegs()) {
+    const lane = sg.x1 === B.laneX;
+    c.fillStyle = lane ? '#7a4a26' : '#b9873a'; c.fillRect(sg.x1 - (lane ? 2 : 1.2), sg.y1, lane ? 4 : 2.4, sg.y2 - sg.y1);
+    c.fillStyle = '#e0b04f'; c.beginPath(); c.arc(sg.x1, sg.y1, lane ? 3.5 : 2.6, 0, Math.PI * 2); c.fill();
+  }
+  // plunger
+  c.fillStyle = '#7a4a26'; c.fillRect(B.laneX + 5, B.bottom - 6, 12, 6); c.fillRect(B.laneX + 9, B.bottom - 14, 4, 8);
+  // pegs
+  for (const p of buildPegs()) {
+    c.fillStyle = '#5a3a14'; c.beginPath(); c.arc(p.x + 0.6, p.y + 0.8, PEG_R, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#e0b04f'; c.beginPath(); c.arc(p.x, p.y, PEG_R, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#fff1c2'; c.fillRect(p.x - 1.5, p.y - 1.5, 1.2, 1.2);
+  }
+}
+
+function drawFist(c, m, ghost) {
+  const ext = m.anim > 0 ? 15 : 3, d = m.dir;
+  c.save(); c.translate(m.x, m.y); if (ghost) c.globalAlpha = 0.55;
+  c.fillStyle = '#7a4a26'; c.fillRect(-d * 6 - 2, -9, 4, 18);
+  c.strokeStyle = '#cfd6dc'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(-d * 4, 0);
+  const n = 5; for (let i = 1; i <= n; i++) c.lineTo(-d * 4 + d * (ext + 4) * i / n, i % 2 ? -3 : 3); c.stroke();
+  const gx = d * ext + d * 2;
+  c.fillStyle = '#8f1a1f'; c.beginPath(); c.arc(gx + 0.8, 0.8, 6, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#d8333a'; c.beginPath(); c.arc(gx, 0, 6, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#ff8a8a'; c.fillRect(gx - 2, -4, 2, 2);
+  c.restore();
+}
+function drawMagnet(c, m, ghost, active) {
+  c.save(); c.translate(m.x, m.y); if (ghost) c.globalAlpha = 0.55;
+  if (active || ghost) { c.strokeStyle = 'rgba(120,190,255,.45)'; c.setLineDash([3, 3]); c.lineWidth = 1; c.beginPath(); c.arc(0, 0, 66, 0, Math.PI * 2); c.stroke(); c.setLineDash([]); }
+  c.lineWidth = 6; c.strokeStyle = '#8f1a1f'; c.beginPath(); c.arc(0.8, 1.8, 6, Math.PI, 0, true); c.stroke();
+  c.strokeStyle = '#d8333a'; c.beginPath(); c.arc(0, 1, 6, Math.PI, 0, true); c.stroke();
+  c.fillStyle = '#d8333a'; c.fillRect(-9, -5, 6, 6); c.fillRect(3, -5, 6, 6);
+  c.fillStyle = '#dfe6ea'; c.fillRect(-9, -8, 6, 3); c.fillRect(3, -8, 6, 3);
+  c.restore();
+}
+function drawMechIcon(canvas, type) {
+  const c = canvas.getContext('2d'); c.imageSmoothingEnabled = false; c.save(); c.translate(10, 10); c.scale(0.9, 0.9);
+  if (type === 'fist') drawFist(c, { x: 0, y: 0, dir: 1, anim: 0 }); else drawMagnet(c, { x: 0, y: 2 }, false, false);
+  c.restore();
+}
+function drawBall(c, b) {
+  for (let i = 0; i < b.trail.length; i++) { const t = b.trail[i]; c.fillStyle = `rgba(190,225,255,${0.06 * (i + 1)})`; c.beginPath(); c.arc(t.x, t.y, BR * (0.4 + i * 0.08), 0, Math.PI * 2); c.fill(); }
+  const g = c.createRadialGradient(b.x - 2, b.y - 2, 1, b.x, b.y, BR);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(0.6, '#cfe7f7'); g.addColorStop(1, '#6f9fc4');
+  c.fillStyle = g; c.beginPath(); c.arc(b.x, b.y, BR, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = '#1f3c5a'; c.lineWidth = 0.8; c.stroke();
+  const a = b.x * 0.2;
+  c.strokeStyle = '#e0383e'; c.lineWidth = 1.6; c.beginPath(); c.arc(b.x, b.y, BR * 0.55, a, a + 1.6); c.stroke();
+  c.strokeStyle = '#2f6fd0'; c.beginPath(); c.arc(b.x, b.y, BR * 0.55, a + Math.PI, a + Math.PI + 1.6); c.stroke();
+}
+function draw() {
+  const { s, dpr, ox, oy } = view;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const bg = ctx.createLinearGradient(0, 0, 0, cv.height); bg.addColorStop(0, '#2a1d33'); bg.addColorStop(1, '#1b1217');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, cv.width, cv.height);
+  let sx = 0, sy = 0; if (S.shake > 0) { const k = S.shake / S.shakeDur, a = S.shakeAmp * k * k; sx = (Math.random() - 0.5) * 2 * a; sy = (Math.random() - 0.5) * 2 * a; }
+  ctx.setTransform(dpr, 0, 0, dpr, (ox + sx) * dpr, (oy + sy) * dpr);
+  if (staticLayer) ctx.drawImage(staticLayer, 0, 0, staticLayer.width / dpr, staticLayer.height / dpr);
+  ctx.scale(s, s);
+  if (inPatrol()) { ctx.save(); boardPath(ctx, 0); ctx.clip(); ctx.fillStyle = 'rgba(80,140,255,.07)'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+  const w = S.world;
+  for (const m of w.mechs) {
+    if (m.type === 'fist') drawFist(ctx, m);
+    else drawMagnet(ctx, m, false, w.balls.some(b => Math.hypot(b.x - m.x, b.y - m.y) < 66 && (b.mt[m.id] || 0) < 1.1));
+  }
+  if (S.placing && S.ghost) {
+    const ok = !canPlace(S.ghost);
+    if (S.placing === 'fist') drawFist(ctx, { ...S.ghost, dir: S.ghost.x > B.cx ? -1 : 1, anim: 0 }, true); else drawMagnet(ctx, S.ghost, true);
+    if (!ok) { ctx.strokeStyle = '#ff5a4a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(S.ghost.x, S.ghost.y, 12, 0, Math.PI * 2); ctx.stroke(); }
+  }
+  for (const b of w.balls) { b.trail.push({ x: b.x, y: b.y }); if (b.trail.length > 6) b.trail.shift(); drawBall(ctx, b); }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const f of S.floats) {
+    const k = 1 - f.life / 1.2; ctx.globalAlpha = Math.min(1, f.life * 2);
+    ctx.font = `${f.size}px "ZCOOL QingKe HuangYou", sans-serif`;
+    ctx.fillStyle = '#000'; ctx.fillText(f.text, f.x + 1, f.y - k * 22 + 1);
+    ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y - k * 22);
+  }
+  ctx.globalAlpha = 1;
+  if (S.flash > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = `rgba(255,245,220,${Math.min(0.35, S.flash * 2)})`; ctx.fillRect(0, 0, cv.width, cv.height); }
+}
+
+// ---------- HUD ----------
+const cache = {};
+function set(id, prop, v) { const k = id + prop; if (cache[k] === v) return; cache[k] = v; const el = document.getElementById(id); if (prop === 'text') el.textContent = v; else if (prop === 'w') el.style.width = v; else if (prop === 'hidden') el.hidden = v; else el.className = v; }
+function hud() {
+  set('money', 'text', `${S.money < 0 ? '-' : ''}¥${Math.abs(S.money)}`); set('money', 'class', 'money' + (S.money < 0 ? ' neg' : ''));
+  set('dayLabel', 'text', `第 ${S.day} 天 ${S.day === 1 ? '开张大吉' : S.phase === 'closing' ? '准备收摊' : '照常营业'}`);
+  const pop = Math.round(S.pop), sus = Math.round(S.sus);
+  set('popNum', 'text', String(pop)); set('popBar', 'w', pop + '%');
+  set('susNum', 'text', String(sus)); set('susBar', 'w', sus + '%'); set('susWrap', 'class', 'bar' + (sus >= 75 ? ' danger' : ''));
+  set('watch', 'text', `围观 ${watchers()} 人`);
+  set('dayFill', 'w', Math.min(100, S.t / DAY_LEN * 100).toFixed(1) + '%');
+  const patrol = inPatrol();
+  let banner = '';
+  if (S.sus >= 75) banner = '有人起疑了，收着点！'; else if (patrol) banner = '城管巡逻中 · 嫌疑翻倍';
+  else if (S.phase === 'closing') banner = '收摊中，等最后几颗落地'; else if (S.paused) banner = '已暂停';
+  set('banner', 'hidden', !banner); set('banner', 'text', banner); set('banner', 'class', 'banner' + (S.sus >= 75 ? ' alert' : ''));
+  const live = S.phase === 'open' || S.phase === 'closing';
+  const slapReady = live && S.slapCD <= 0;
+  $('#slap').disabled = !slapReady;
+  set('slapCd', 'w', '100%'); $('#slapCd').style.height = (S.slapCD > 0 ? S.slapCD / 5 * 100 : 0) + '%';
+  for (const t of ['fist', 'magnet']) set('card-' + t, 'class', 'card' + (S.placing === t ? ' on' : '') + (S.money < MECH[t].price ? ' poor' : ''));
+}
+function renderQueue() {
+  const q = $('#queue'); q.innerHTML = '';
+  for (const k of S.queue) { const im = new Image(); im.src = KIDS[k]; im.className = 'px'; im.alt = ''; q.appendChild(im); }
+}
+{ const z = $('#zone'); z.style.left = PATROL[0] * 100 + '%'; z.style.width = (PATROL[1] - PATROL[0]) * 100 + '%'; $('#patrolFlag').style.left = `calc(${PATROL[0] * 100}% - ${PATROL[0] * 6}px)`; }
+
+newGame();
+const b = bestDay(); if (b) $('#best').textContent = `最好成绩：撑过 ${b} 天`;
+resize();
+if (document.fonts) document.fonts.ready.then(buildStatic);
+requestAnimationFrame(frame);
+})();
+
+</script>
+
+</body>
+</html>
