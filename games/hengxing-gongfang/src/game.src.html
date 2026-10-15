@@ -1,0 +1,18 @@
+<title>恒星工坊</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 整页只有一块 WebGL 画布，界面也画在画布里（和微信小游戏同一套代码） */
+:root{--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px);color-scheme:dark}
+html,body{height:100%;margin:0;background:#0a0d13;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+#app{position:fixed;inset:0}
+@media (min-width:700px){#app{left:50%;width:min(480px,100vw);transform:translateX(-50%);box-shadow:0 0 0 1px #1d2433}}
+#cv{position:absolute;inset:0;display:block;touch-action:none}
+#err{position:absolute;inset:0;display:none;place-items:center;padding:24px;font:15px/1.6 system-ui,sans-serif;color:#e6ebf3;text-align:center}
+</style>
+<div id="app"><canvas id="cv" aria-label="恒星工坊 游戏画面"></canvas><div id="err"></div></div>
+<script>
+addEventListener('error',e=>{const el=document.getElementById('err');el.style.display='grid';el.textContent='游戏启动失败：'+(e.message||e.error);});
+</script>
+<script>
+/*GAME*/
+</script>

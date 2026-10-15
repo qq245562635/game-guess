@@ -1,0 +1,13 @@
+{
+  "appid": "touristappid",
+  "projectname": "hengxing-gongfang",
+  "description": "恒星工坊",
+  "compileType": "game",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "minified": true,
+    "postcss": false
+  }
+}
