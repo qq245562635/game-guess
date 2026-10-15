@@ -25,6 +25,8 @@ body{background:var(--ground);color:var(--ink);font-family:var(--f-ui);overflow:
 .pill{pointer-events:auto;background:var(--pill);border-radius:999px;box-shadow:0 2px 0 rgba(27,42,74,.14);display:flex;align-items:center;gap:6px;padding:6px 12px;min-height:40px}
 .score{font-family:var(--f-num);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;gap:6px}
 .score svg{width:18px;height:18px}
+.score{transition:transform .12s ease-out}
+.score.bump{transform:scale(1.14)}
 .score small{font-family:var(--f-ui);font-size:12px;font-weight:500;color:var(--muted)}
 .day{font-size:13px;color:var(--muted);font-weight:500}
 .day b{color:var(--ink);font-weight:700}
@@ -82,7 +84,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .stats{display:flex;gap:18px;font-size:13px;color:var(--muted)}
 .stats b{display:block;font-family:var(--f-num);font-size:20px;color:var(--ink)}
 @media (max-width:420px){.dock button{min-width:44px;padding:0 3px}.card h1{font-size:38px}.day{font-size:12px;padding:6px 10px}.spd button{width:30px}}
-@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+@media (prefers-reduced-motion:reduce){#toast,.score{transition:none}}
 </style>
 
 <div id="app">
@@ -96,7 +98,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <button id="bMute" aria-label="静音" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor"/><path id="muteWave" d="M11 5.5a3.5 3.5 0 0 1 0 5M12.8 3.6a6 6 0 0 1 0 8.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path id="muteX" d="M11 6l4 4M15 6l-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:none"/></svg></button>
     </div>
     <div class="r">
-      <div class="pill score" title="清运量（袋）">
+      <div class="pill score" id="scoreP" title="清运量（袋）">
         <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 5h12l-1.2 11a1.4 1.4 0 0 1-1.4 1.2H5.6A1.4 1.4 0 0 1 4.2 16z" fill="currentColor"/><rect x="2" y="2.6" width="14" height="2.4" rx="1.2" fill="currentColor"/><rect x="7" y="1" width="4" height="2" rx="1" fill="currentColor"/><path d="M7 8v6M11 8v6" stroke="#fffdf7" stroke-width="1.4" stroke-linecap="round"/></svg>
         <span id="score">0</span><small>袋</small>
       </div>
@@ -133,6 +135,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       </div>
       <ul>
         <li>按住拖动修清运路线，把<b>同色小区</b>连到<b>同色处理厂</b>；画错了点「撤销」</li>
+        <li>先把一片小区串起来再接到厂里，<b>一笔接通 3 户以上</b>奖励路段</li>
         <li>处理厂门口会堆待清运的垃圾袋，同色清运车拉走一袋 = 清运量 +1</li>
         <li>垃圾袋超限（方厂 7 / 圆厂 10）开始<b>投诉倒计时</b>，走完就投诉爆表</li>
         <li>每周市政拨款二选一；督导员会不定期<b>突击检查</b></li>
