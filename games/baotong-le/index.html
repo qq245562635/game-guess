@@ -88,7 +88,10 @@ const SKY={
 
 let G=null, cols=14, rows=20, S=30, ox=0, oy=0, W=0, H=0, dpr=1;
 let tool='road', speed=1, paused=false, hover=-1, ptr={x:0,y:0}, drag=null;
-const rnd=Math.random;
+let K=CFG;   // 本局生效的数值：CFG 合并关卡的 cfg 覆盖
+/* 随机数：关卡用固定种子（同一关每次地图一样，之后的刷新随玩家节奏自然分岔）；无尽模式随机 */
+let rnd=Math.random;
+function seedRng(seed){let a=seed>>>0;rnd=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const I=(x,y)=>y*cols+x, X=i=>i%cols, Y=i=>(i/cols)|0;
 const inB=(x,y)=>x>=0&&y>=0&&x<cols&&y<rows;
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
@@ -129,31 +132,55 @@ function sfx(name,gap){
 function unlockAudio(){P.unlockAudio()}
 
 /* ===== world setup ===== */
-function newGame(){
-  const sz=P.size(), land=sz.w>sz.h*1.05;
-  cols=land?22:14; rows=land?14:20; if(typeof layout==='function')layout();
-  G={t:0,score:0,roads:CFG.startRoads,items:{bridge:CFG.startBridges,ra:0,light:0,mw:0},week:1,nextWeek:CFG.weekLen,
+function newGame(lvIdx){
+  const lv=lvIdx===undefined||lvIdx===null?null:LEVELS[lvIdx];
+  K=Object.assign({},CFG,lv&&lv.cfg||{});
+  seedRng(lv?lvIdx*7919+1013:(Math.random()*4294967296)>>>0);
+  const sz=P.size(), land=sz.w>sz.h*1.05, base=lv?lv.size:[14,20];
+  cols=land?base[1]:base[0]; rows=land?base[0]:base[1];
+  const items=Object.assign({bridge:lv?0:K.startBridges,ra:0,light:0,mw:0},lv&&lv.items||{});
+  G={t:0,score:0,roads:K.startRoads,items,week:1,nextWeek:K.weekLen,
     water:new Uint8Array(cols*rows),occ:new Int16Array(cols*rows).fill(-1),
     nodes:new Map(),adj:new Map(),mws:[],mwSeq:1,mwDeg:new Map(),dests:[],houses:[],cars:[],
-    colorsActive:2,nextHouse:10,nextDest:CFG.destFirst,strokes:[],flash:[],served:new Set(),live:new Set(),heat:new Map(),sweeps:[],floats:[],dirty:false,over:false,bridgeSeq:1,dispatchT:0,mwStart:-1,modal:false,fx:[],demo:false,
-    insp:null,nextInsp:range(CFG.inspFirst),inspCount:0,inspPassed:0,beepT:0};
-  genRiver();
-  for(let k=0;k<2;k++){const c=ORDER[k];const d=spawnDest(c,'sq');spawnHouse(c,d);spawnHouse(c,d);}
-  tool='road'; speed=1; paused=false; drag=null; UI.reset();
+    colorsActive:lv?lv.colors:2,nextHouse:10,nextDest:K.destFirst,strokes:[],flash:[],served:new Set(),live:new Set(),heat:new Map(),sweeps:[],floats:[],dirty:false,over:false,bridgeSeq:1,dispatchT:0,mwStart:-1,modal:false,fx:[],demo:false,
+    insp:null,nextInsp:lv&&!lv.insp?Infinity:range(K.inspFirst),inspCount:0,inspPassed:0,beepT:0,
+    lv,lvIdx:lv?lvIdx:null,land,won:false,everTimer:false,area:{x0:0,y0:0,x1:cols,y1:rows}};
+  if(lv&&lv.area){const[w,h]=land?[lv.area.start[1],lv.area.start[0]]:lv.area.start;
+    G.area={x0:(cols-w)>>1,y0:(rows-h)>>1,x1:((cols-w)>>1)+w,y1:((rows-h)>>1)+h}}
+  G.view=Object.assign({},G.area);
+  genRiver(lv?lv.river:1);
+  for(let k=0;k<G.colorsActive;k++){const c=ORDER[k];const d=spawnDest(c,'sq');spawnHouse(c,d);spawnHouse(c,d);}
+  tool='road'; speed=1; paused=false; drag=null;
+  if(typeof layout==='function')layout();
+  UI.reset();
 }
-function genRiver(){
-  const portrait=rows>cols, L=portrait?rows:cols, Sd=portrait?cols:rows, ph=rnd()*6;
-  const base=Sd*(rnd()<.5?0.68:0.32);
-  for(let u=0;u<L;u++){
-    const c=base+Math.sin(u*0.36+ph)*1.6+Math.sin(u*0.11+ph*2)*0.9;
-    for(let v=0;v<Sd;v++) if(Math.abs(v+0.5-c)<1.05) G.water[portrait?I(v,u):I(u,v)]=1;
-  }
+/* 城区扩张：按关卡的 step 向四周扩，不超出地图 */
+function growArea(){
+  const a=G.area,lv=G.lv;if(!lv||!lv.area)return false;
+  const[sw,sh]=G.land?[lv.area.step[1],lv.area.step[0]]:lv.area.step;
+  const w=Math.min(cols,a.x1-a.x0+sw),h=Math.min(rows,a.y1-a.y0+sh);
+  if(w===a.x1-a.x0&&h===a.y1-a.y0)return false;
+  const cx=(a.x0+a.x1)/2,cy=(a.y0+a.y1)/2;
+  let x0=Math.round(cx-w/2),y0=Math.round(cy-h/2);x0=Math.max(0,Math.min(cols-w,x0));y0=Math.max(0,Math.min(rows-h,y0));
+  G.area={x0,y0,x1:x0+w,y1:y0+h};return true;
 }
-const isFree=i=>!G.water[i]&&G.occ[i]<0&&!G.nodes.has(i);
+const inArea=i=>{const a=G.area,x=X(i),y=Y(i);return x>=a.x0&&x<a.x1&&y>=a.y0&&y<a.y1};
+function genRiver(n){
+  if(!n)return;
+  const portrait=rows>cols;
+  const lay=(along,base,amp)=>{ // along=true：沿长边流
+    const L=along?(portrait?rows:cols):(portrait?cols:rows),Sd=along?(portrait?cols:rows):(portrait?rows:cols),ph=rnd()*6,b=Sd*base;
+    for(let u=0;u<L;u++){const c=b+Math.sin(u*0.36+ph)*amp+Math.sin(u*0.11+ph*2)*amp*0.56;
+      for(let v=0;v<Sd;v++)if(Math.abs(v+0.5-c)<1.05){const vert=along===portrait;G.water[vert?I(v,u):I(u,v)]=1}}};
+  lay(true,rnd()<.5?0.68:0.32,Math.min(1.6,(portrait?cols:rows)*0.11));
+  if(n>1)lay(false,rnd()<.5?0.62:0.38,Math.min(1.2,(portrait?rows:cols)*0.06));
+}
+const isFree=i=>!G.water[i]&&G.occ[i]<0&&!G.nodes.has(i)&&inArea(i);
 function spawnDest(color,shape){
   const before=reachableHouses(),cands=[];
   for(let k=0;k<500;k++){
-    const x=1+(rnd()*(cols-3)|0), y=1+(rnd()*(rows-3)|0);
+    const A=G.area,x=A.x0+(rnd()*(A.x1-A.x0-1)|0), y=A.y0+(rnd()*(A.y1-A.y0-1)|0);
+    if(x+1>=A.x1||y+1>=A.y1)continue;
     const fp=[I(x,y),I(x+1,y),I(x,y+1),I(x+1,y+1)];
     if(!fp.every(isFree))continue;
     let ok=true;
@@ -172,7 +199,7 @@ function spawnDest(color,shape){
   if(!cands.length)return null;
   {const{x,y,dd,fp}=cands.sort((a,b)=>b.sc-a.sc)[0];
     const id=G.dests.length;
-    const d={id,x,y,color,shape,cap:shape==='sq'?7:10,door:I(dd[0],dd[1]),inner:I(dd[2],dd[3]),pins:0,assigned:0,timer:0,nextPin:range(CFG.firstPin),born:G.t};
+    const d={id,x,y,color,shape,cap:shape==='sq'?7:10,door:I(dd[0],dd[1]),inner:I(dd[2],dd[3]),pins:0,assigned:0,timer:0,nextPin:range(K.firstPin),born:G.t};
     fp.forEach(i=>G.occ[i]=id);
     G.nodes.set(d.door,{kind:'door',dest:d}); G.adj.set(d.door,new Set());
     G.dests.push(d); return d;
@@ -221,7 +248,7 @@ function spawnHouse(color,near){
   const before=reachableHouses(), fits=i=>placementOK(new Set([i]),before,[i,color]);
   const idx=pool.find(fits);if(idx===undefined)return null;
   const h={idx,color,cars:[],born:G.t,seed:rnd()};
-  for(let k=0;k<CFG.carsPerHouse;k++)h.cars.push({house:h,color,state:'idle',path:null,i:0,p:0,px:0,py:0,hx:1,hy:0});
+  for(let k=0;k<K.carsPerHouse;k++)h.cars.push({house:h,color,state:'idle',path:null,i:0,p:0,px:0,py:0,hx:1,hy:0});
   G.houses.push(h); G.cars.push(...h.cars);
   G.nodes.set(idx,{kind:'house',house:h}); G.adj.set(idx,new Set()); return h;
 }
@@ -231,7 +258,7 @@ function nearDoor(x,y){for(const d of G.dests){const dx=X(d.door),dy=Y(d.door);i
    要求新小区能通到同色处理厂入口，且原本能通的小区不被这次放置切断。 */
 const N4=i=>{const x=X(i),y=Y(i),r=[];if(x>0)r.push(i-1);if(x<cols-1)r.push(i+1);if(y>0)r.push(i-cols);if(y<rows-1)r.push(i+cols);return r};
 function reachability(block,extraDoor){
-  const walk=j=>!block.has(j)&&G.occ[j]<0&&(!G.nodes.has(j)||G.nodes.get(j).kind==='road');
+  const walk=j=>!block.has(j)&&G.occ[j]<0&&inArea(j)&&(!G.nodes.has(j)||G.nodes.get(j).kind==='road');
   const comp=new Int32Array(cols*rows).fill(-1),colors=[];let n=0;
   for(let s=0;s<cols*rows;s++){if(comp[s]>=0||!walk(s))continue;comp[s]=n;colors.push(new Set());const q=[s];
     while(q.length){const u=q.pop();for(const v of N4(u))if(comp[v]<0&&walk(v)){comp[v]=n;q.push(v)}}n++}
@@ -241,7 +268,7 @@ function reachability(block,extraDoor){
 }
 function landFrom(src){ // 不过河能走到的格子
   const seen=new Set([src]),q=[src];
-  while(q.length){const u=q.pop();for(const v of N4(u))if(!seen.has(v)&&!G.water[v]&&G.occ[v]<0&&(!G.nodes.has(v)||G.nodes.get(v).kind==='road')){seen.add(v);q.push(v)}}
+  while(q.length){const u=q.pop();for(const v of N4(u))if(!seen.has(v)&&!G.water[v]&&G.occ[v]<0&&inArea(v)&&(!G.nodes.has(v)||G.nodes.get(v).kind==='road')){seen.add(v);q.push(v)}}
   return seen;
 }
 function reachableHouses(){const ok=reachability(new Set());return G.houses.filter(h=>ok(h.idx,h.color))}
@@ -271,7 +298,7 @@ function dijkstra(src,target){
     const nu=G.nodes.get(u); if(!nu||(u!==src&&nu.kind!=='road'))continue;
     const relax=(v,w)=>{if(done.has(v)||!G.nodes.has(v))return;const nd=dist.get(u)+w+junctionPen(v);if(!dist.has(v)||nd<dist.get(v)){dist.set(v,nd);prev.set(v,u);open.push(v)}};
     for(const v of G.adj.get(u))relax(v,1);
-    for(const m of G.mws){if(m.a===u)relax(m.b,m.len/CFG.mwBoost);else if(m.b===u)relax(m.a,m.len/CFG.mwBoost)}
+    for(const m of G.mws){if(m.a===u)relax(m.b,m.len/K.mwBoost);else if(m.b===u)relax(m.a,m.len/K.mwBoost)}
   }
   return{dist,prev,order};
 }
@@ -279,7 +306,7 @@ function findPath(a,b){if(a===b)return[a];const{dist,prev}=dijkstra(a,b);if(!dis
 
 /* ===== building roads ===== */
 function tryConnect(a,b){
-  if(G.occ[b]>=0)return false;
+  if(G.occ[b]>=0||!inArea(b))return false;
   const na=G.nodes.get(a), nb=G.nodes.get(b); if(!na)return false;
   if(G.adj.get(a).has(b))return true;
   if(na.kind==='house'&&G.adj.get(a).size>=1)return false;
@@ -329,7 +356,7 @@ function sendHome(c,from){
 }
 function arrive(c){
   const at=c.path[c.path.length-1];
-  if(c.state==='out'){const d=c.dest;d.pins=Math.max(0,d.pins-1);d.assigned--;G.score++;d.timer=Math.max(0,d.timer-3);
+  if(c.state==='out'){const d=c.dest;d.pins=Math.max(0,d.pins-1);d.assigned--;G.score++;d.timer=Math.max(0,d.timer-3);if(G.lv&&!G.won&&G.score>=G.lv.goal)levelWin();
     G.fx.push({x:X(d.door)+.5,y:Y(d.door)+.5,t:0,c:PAL[d.color].c});
     const now=P.now();d.bump=now;G.floats.push({x:X(d.door)+.5,y:Y(d.door)+.1,text:'+1',color:PAL[d.color].d,t:now,small:true});bumpScore();
     if(G.insp&&G.insp.d===d)inspProgress();
@@ -376,7 +403,7 @@ function updateCar(c,dt){
     if(c.state==='stuck'&&c.stuckT>10)c.state='idle';return;
   }
   const a=c.path[c.i],b=c.path[c.i+1];const grid=nb(a).has(b);const L=segLen(a,b);
-  let v=CFG.carSpeed*(grid?1:CFG.mwBoost);
+  let v=K.carSpeed*(grid?1:K.mwBoost);
   if(grid){
     const na=G.nodes.get(a),nb=G.nodes.get(b);
     const f=n=>n.ra?0.85:n.light?1:0.42;
@@ -453,20 +480,20 @@ function startInsp(){
   const cand=G.dests.filter(d=>G.t-d.born>15&&d.timer<=0&&reachable(d));
   if(!cand.length){G.nextInsp=G.t+12;return}
   const d=cand[rnd()*cand.length|0];
-  const need=Math.min(CFG.inspNeedMax,CFG.inspNeed+CFG.inspNeedStep*G.inspCount);
-  G.insp={d,need,got:0,left:CFG.inspTime};G.inspCount++;
+  const need=Math.min(K.inspNeedMax,K.inspNeed+K.inspNeedStep*G.inspCount);
+  G.insp={d,need,got:0,left:K.inspTime};G.inspCount++;
   toast(`督导员突击检查${PAL[d.color].plant}：90 秒内清运 ${need} 袋`);sfx('beep');
 }
 function inspProgress(){const s=G.insp;s.got++;if(s.got>=s.need)endInsp(true)}
 function endInsp(ok){
   const s=G.insp;G.insp=null;
-  G.nextInsp=G.t+range(CFG.inspEvery)*CFG.weekLen;
+  G.nextInsp=G.t+range(K.inspEvery)*K.weekLen;
   if(ok){
-    const k=Object.keys(ITEMS)[rnd()*4|0];G.items[k]+=1;G.roads+=CFG.inspReward;G.inspPassed++;
-    toast(`检查通过！奖励 ${CFG.inspReward} 路段 + 1 ${ITEMS[k].name}`);sfx('ding2');
+    const pool=G.lv?G.lv.pool:Object.keys(ITEMS),k=pool.length?pool[rnd()*pool.length|0]:null;if(k)G.items[k]+=1;G.roads+=K.inspReward;G.inspPassed++;
+    toast(`检查通过！奖励 ${K.inspReward} 路段`+(k?` + 1 ${ITEMS[k].name}`:''));sfx('ding2');
     G.fx.push({x:s.d.x+1,y:s.d.y+1,t:0,c:MW_C,big:true});
   }else{
-    s.d.pins+=CFG.inspPenalty;toast(`检查不合格，${PAL[s.d.color].plant}被追加 ${CFG.inspPenalty} 袋`);sfx('fail');
+    s.d.pins+=K.inspPenalty;toast(`检查不合格，${PAL[s.d.color].plant}被追加 ${K.inspPenalty} 袋`);sfx('fail');
   }
   syncHud(true);
 }
@@ -481,20 +508,20 @@ function pickHouseColor(){
 function update(dt){
   G.t+=dt;
   if(G.t>=G.nextWeek){openWeek();return}
-  G.nextHouse-=dt;if(G.nextHouse<=0){G.nextHouse=CFG.houseEvery*(0.8+rnd()*0.4);spawnHouse(pickHouseColor())}
-  G.nextDest-=dt;if(G.nextDest<=0){G.nextDest=CFG.destEvery*(0.85+rnd()*0.3);
-    const col=ORDER[rnd()*G.colorsActive|0],shape=G.week>=3&&rnd()<0.35?'ci':'sq';const d=spawnDest(col,shape);if(d)spawnHouse(col,d)}
+  G.nextHouse-=dt;if(G.nextHouse<=0){G.nextHouse=K.houseEvery*(0.8+rnd()*0.4);spawnHouse(pickHouseColor())}
+  G.nextDest-=dt;if(G.nextDest<=0){G.nextDest=K.destEvery*(0.85+rnd()*0.3);
+    const col=ORDER[rnd()*G.colorsActive|0],cf=G.lv?G.lv.circle||0:3,shape=cf&&G.week>=cf&&rnd()<0.35?'ci':'sq';const d=spawnDest(col,shape);if(d)spawnHouse(col,d)}
   // inspection
   if(!G.insp&&G.t>=G.nextInsp)startInsp();
   if(G.insp){G.insp.left-=dt;if(G.insp.left<=0)endInsp(false)}
-  const iv=CFG.pinBase/(1+G.t/CFG.pinScale);
+  const iv=K.pinBase/(1+G.t/K.pinScale);
   let warn=0;
   for(const d of G.dests){
-    d.nextPin-=dt*(G.insp&&G.insp.d===d?CFG.inspPinRate:1);
+    d.nextPin-=dt*(G.insp&&G.insp.d===d?K.inspPinRate:1);
     if(d.nextPin<=0){d.pins++;d.nextPin=iv*(0.7+rnd()*0.6);sfx('pop',0.25)}
-    if(d.pins>d.cap){if(d.timer===0)G.beepT=0;d.timer+=dt}else d.timer=Math.max(0,d.timer-dt*CFG.timerRecover);
-    warn=Math.max(warn,d.pins>d.cap?d.timer/CFG.timerMax:0);
-    if(d.timer>=CFG.timerMax){gameOver(d);return}
+    if(d.pins>d.cap){if(d.timer===0)G.beepT=0;d.timer+=dt;G.everTimer=true}else d.timer=Math.max(0,d.timer-dt*K.timerRecover);
+    warn=Math.max(warn,d.pins>d.cap?d.timer/K.timerMax:0);
+    if(d.timer>=K.timerMax){gameOver(d);return}
   }
   if(warn>0){G.beepT-=dt;if(G.beepT<=0){sfx('beep');G.beepT=3.2-2.2*warn}}
   if(G.dirty){replanAll();G.dirty=false;checkConnections(false)}
@@ -507,26 +534,112 @@ function update(dt){
 
 /* ===== 每周市政拨款 ===== */
 function openWeek(){
+  const pool=G.lv?G.lv.pool:Object.keys(ITEMS);
+  if(!pool.length){G.roads+=20;closeWeek();toast(`本周拨款：路段 +20`);sfx('ding');return}  // 早期关卡没有设施可选，直接发路段
   G.modal=true;
-  const keys=shuffle(Object.keys(ITEMS));
-  G.weekOpts=[{item:keys[0],tiles:15},rnd()<0.8?{item:keys[1],tiles:15}:{item:null,tiles:30}];
+  const keys=shuffle(pool.slice());
+  G.weekOpts=keys.length>1?[{item:keys[0],tiles:15},rnd()<0.8?{item:keys[1],tiles:15}:{item:null,tiles:30}]:[{item:keys[0],tiles:15},{item:null,tiles:30}];
   UI.week();sfx('ding');
 }
 function chooseWeek(o){if(o.item)G.items[o.item]+=ITEMS[o.item].n;G.roads+=o.tiles;closeWeek()}
 function closeWeek(){
-  G.modal=false;G.week++;G.nextWeek+=CFG.weekLen;
-  if(G.week%2===0&&G.colorsActive<PAL.length){const col=ORDER[G.colorsActive++];const d=spawnDest(col,'sq');if(d){spawnHouse(col,d);spawnHouse(col,d)}toast(`新片区开始分类投放：${PAL[col].name}！`)}
+  G.modal=false;G.week++;G.nextWeek+=K.weekLen;
+  let msg='';
+  if(G.lv&&G.lv.area&&(G.week-1)%G.lv.area.every===0&&growArea())msg='城区扩大了，新地块上会出现小区和处理厂';
+  const addNow=G.lv?(G.lv.addColors||[]).indexOf(G.week)>=0:G.week%2===0;
+  if(addNow&&G.colorsActive<PAL.length){const col=ORDER[G.colorsActive++];const d=spawnDest(col,'sq');if(d){spawnHouse(col,d);spawnHouse(col,d)}msg=`新片区开始分类投放：${PAL[col].name}！`}
+  if(msg)toast(msg);
   syncHud(true);
+}
+/* ===== 关卡进度：每关最好星数，存在本地 ===== */
+function loadProgress(){try{const v=JSON.parse(P.store.get('btl-levels')||'{}');return{stars:Array.isArray(v.stars)?v.stars:[]}}catch(e){return{stars:[]}}}
+function saveProgress(p){P.store.set('btl-levels',JSON.stringify(p))}
+const levelUnlocked=(p,i)=>i===0||(p.stars[i-1]||0)>0;
+function levelWin(){
+  G.won=true;G.over=true;G.insp=null;
+  const stars=[true,!G.everTimer,G.week<=G.lv.weeks3];
+  const n=stars.filter(Boolean).length,p=loadProgress();
+  const prev=p.stars[G.lvIdx]||0;if(n>prev){p.stars[G.lvIdx]=n;saveProgress(p)}
+  G.winInfo={stars,n,prev,score:G.score,week:G.week};
+  sfx('combo');setTimeout(()=>UI.win(),900);
 }
 function gameOver(d){
   G.over=true;G.insp=null;
-  let best=+P.store.get('btl-best')||0;if(G.score>best){best=G.score;P.store.set('btl-best',best)}
+  let best=+P.store.get('btl-best')||0;if(!G.lv&&G.score>best){best=G.score;P.store.set('btl-best',best)}
   G.failed=d;
-  G.overInfo={score:G.score,week:G.week,best,insp:G.inspPassed,
-    why:(G.score>=best&&G.score>0?'新纪录！不过':'')+`${PAL[d.color].plant}门口的垃圾袋堆成山，居民投诉打爆了热线。`};
+  G.overInfo={score:G.score,week:G.week,best,insp:G.inspPassed,goal:G.lv?G.lv.goal:0,
+    why:(!G.lv&&G.score>=best&&G.score>0?'新纪录！不过':'')+`${PAL[d.color].plant}门口的垃圾袋堆成山，居民投诉打爆了热线。`};
   sfx('fail');setTimeout(()=>UI.over(),700);
 }
 
+
+/* 爆桶了 · 关卡表
+   设计思路：前 4 关一关只教一件事；第 5 关起城区按周向外扩（开局格子大、后面看到的地图越来越大）；
+   新元素按 颜色 → 河与桥 → 扩城 → 环岛 → 大厂 → 督导员 → 红绿灯 → 第四种颜色 → 高架 的顺序逐个解锁。
+   字段（尺寸都按竖屏写，横屏自动转置）：
+     size      最终地图 [列, 行]
+     area      城区扩张：start 开局 [宽, 高]，step 每次扩 [宽, 高]，every 每几周扩一次；不写就是整张图
+     colors    开局几种颜色（按 ORDER：蓝 → 绿 → 灰 → 红），addColors 第几周开始各加一种
+     river     河的条数 0 / 1 / 2（两条时一横一竖交叉）
+     pool      周拨款里可能出现的设施；items 开局送的设施
+     circle    第几周起会出圆形大厂（0 = 不出）；insp 有没有督导员
+     goal      清运目标（袋）；weeks3 三星要在第几周内完成
+     cfg       覆盖 CFG 的数值（节奏）
+     feat      这一关的新元素（关卡介绍里高亮）；tip 开局提示；ghost 第一关画出示范路线 */
+const LEVELS=[
+  {name:'第一条路',size:[7,9],colors:1,river:0,pool:[],goal:12,weeks3:3,ghost:true,
+   cfg:{pinBase:10,houseEvery:18,destFirst:1e9,startRoads:30},
+   feat:{icon:'road',label:'修路'},desc:'临江市第一个小区开始垃圾分类了。按住小区，拖一条路连到同色的分拣中心，清运车就会自己跑起来。',
+   tip:'按住小区，沿着虚线拖到分拣中心门口'},
+  {name:'两种垃圾',size:[8,10],colors:2,river:0,pool:[],goal:25,weeks3:3,
+   cfg:{pinBase:12,houseEvery:15,destFirst:1e9,startRoads:34},
+   feat:{icon:'kinds',label:'颜色配对'},desc:'湿垃圾也开始分出来了。蓝色小区只能送去蓝色的厂，绿色只能送去绿色的厂，别接错。',
+   tip:'颜色要对上：同色小区连同色处理厂'},
+  {name:'连成一片',size:[8,11],colors:2,river:0,pool:[],goal:35,weeks3:4,
+   cfg:{pinBase:12,houseEvery:13,destFirst:70,destEvery:110,startRoads:34},
+   feat:{icon:'combo',label:'一笔接通'},desc:'新小区总是挨着老小区盖。先修一条街把一片小区串起来，最后一笔接到厂里，一次接通 3 户以上奖励路段。',
+   tip:'先串起一片小区，再一笔接到厂里'},
+  {name:'过河',size:[9,12],colors:2,river:1,pool:['bridge'],items:{bridge:2},goal:40,weeks3:4,
+   cfg:{destFirst:60,destEvery:100},
+   feat:{icon:'bridge',label:'跨河大桥'},desc:'城里有条河。从岸边按住把路往河里拖，会自动修一座桥；桥不够了，周拨款里可以申请。',
+   tip:'从岸边按住往河里拖，会自动修桥'},
+  {name:'城市长大了',size:[10,14],area:{start:[7,9],step:[1,2],every:1},colors:2,river:1,pool:['bridge'],items:{bridge:1},goal:50,weeks3:5,
+   feat:{icon:'expand',label:'城区扩张'},desc:'每过一周，城区就往外扩一圈，新的小区和处理厂会出现在新地块上。路网要留出往外长的余地。',
+   tip:'每过一周，城区会向外扩一圈'},
+  {name:'焚烧厂',size:[10,14],area:{start:[8,10],step:[1,2],every:1},colors:2,addColors:[2],river:1,pool:['bridge'],items:{bridge:1},goal:60,weeks3:5,
+   feat:{icon:'c3',label:'干垃圾'},desc:'第 2 周起，干垃圾也要分出来，会出现灰色的焚烧厂和灰色小区。三种颜色的路要尽量分开走。',
+   tip:'第 2 周会出现灰色的干垃圾'},
+  {name:'环岛',size:[11,15],area:{start:[8,10],step:[1,2],every:1},colors:2,addColors:[2],river:1,pool:['bridge','ra'],items:{bridge:1,ra:2},goal:70,weeks3:5,
+   feat:{icon:'ra',label:'环岛'},desc:'三条以上的路交汇时，清运车过路口要减速。在路口放一个环岛，车几乎不用减速。',
+   tip:'点底部「环岛」，再点一个路口'},
+  {name:'大厂来了',size:[11,15],area:{start:[9,11],step:[1,2],every:1},colors:3,river:1,circle:2,pool:['bridge','ra'],items:{bridge:1,ra:1},goal:80,weeks3:5,
+   feat:{icon:'circle',label:'圆形大厂'},desc:'圆形的大厂门口能堆 10 袋才开始投诉，但它往往开在远处，路要修得更长。',
+   tip:'圆形大厂能堆 10 袋'},
+  {name:'突击检查',size:[12,16],area:{start:[9,11],step:[1,2],every:1},colors:3,river:1,circle:3,insp:true,pool:['bridge','ra'],items:{bridge:1,ra:1},goal:90,weeks3:6,
+   feat:{icon:'insp',label:'督导员'},desc:'督导员会不定期突击检查一座处理厂，90 秒内清运够袋数就有奖励，不合格会被追加垃圾。',
+   tip:'督导员来时，优先保那座厂'},
+  {name:'红绿灯',size:[12,17],area:{start:[9,12],step:[1,2],every:1},colors:3,river:1,circle:3,insp:true,pool:['bridge','ra','light'],items:{bridge:1,light:2},goal:100,weeks3:6,
+   feat:{icon:'light',label:'红绿灯'},desc:'红绿灯让横竖两个方向交替放行，十字路口不会再挤成一团。比环岛便宜，但车要等灯。',
+   tip:'点底部「红绿灯」，再点一个十字路口'},
+  {name:'有害垃圾',size:[13,18],area:{start:[9,12],step:[1,2],every:1},colors:2,addColors:[2,3],river:1,circle:3,insp:true,pool:['bridge','ra','light'],items:{bridge:2},goal:110,weeks3:6,
+   feat:{icon:'c1',label:'有害垃圾'},desc:'四种垃圾到齐了：第 3 周起出现红色的有害垃圾处理厂。它们离得都不近，路网要提前规划。',
+   tip:'第 3 周会出现红色的有害垃圾'},
+  {name:'两条河',size:[13,19],area:{start:[10,13],step:[1,2],every:1},colors:3,addColors:[3],river:2,circle:3,insp:true,pool:['bridge','ra','light','mw'],items:{bridge:2,mw:1},goal:135,weeks3:7,
+   feat:{icon:'mw',label:'转运高架'},desc:'两条河把城市切成了四块。转运高架可以把任意两个路点直接连起来，不管中间隔着什么。',
+   tip:'点底部「高架」，依次点两个路点'},
+  {name:'早高峰',size:[14,20],area:{start:[10,13],step:[1,2],every:1},colors:3,addColors:[2],river:1,circle:2,insp:true,pool:['bridge','ra','light','mw'],items:{bridge:2,ra:1},goal:160,weeks3:7,
+   cfg:{pinBase:12.5,houseEvery:11.5},
+   feat:{icon:'fast',label:'节奏更快'},desc:'早高峰来了，小区冒得更快，垃圾也出得更快。所有设施都可能出现在拨款里。',
+   tip:'节奏变快了，路网要更省'},
+  {name:'全城清运',size:[14,21],area:{start:[9,12],step:[1,2],every:1},colors:2,addColors:[2,3],river:2,circle:2,insp:true,pool:['bridge','ra','light','mw'],items:{bridge:2},goal:200,weeks3:8,
+   cfg:{pinBase:12.5,houseEvery:11},
+   feat:{icon:'expand',label:'大地图'},desc:'整座临江城都交给你了：两条河、四种垃圾、一路扩到最大。',
+   tip:'城区会一直扩到最大'},
+  {name:'临江大考',size:[15,22],area:{start:[10,13],step:[1,2],every:1},colors:3,addColors:[2],river:2,circle:2,insp:true,pool:['bridge','ra','light','mw'],items:{bridge:2,ra:1},goal:240,weeks3:8,
+   cfg:{pinBase:11.5,houseEvery:10.5,destEvery:85},
+   feat:{icon:'fast',label:'最终关'},desc:'市里的年终考核。最大的地图、最快的节奏，撑过去就是临江最强的环卫调度员。',
+   tip:'最终关，祝你好运'},
+];
 
 /* 爆桶了 · WebGL 渲染器（R）
    WebGL1，不依赖任何引擎。所有图形用一个着色器按 SDF（有向距离场）画：
@@ -666,7 +779,8 @@ void main(){
     A.map.set(key,e);A.x+=w+2;A.row=Math.max(A.row,h);return e;
   }
   /* 精灵：name 唯一，size=CSS 像素边长，draw(ctx,s) 在 s×s 设备像素里画（白色 = 可着色） */
-  R.sprite=function(name,size,draw){const s=Math.max(4,Math.round(size*dpr));return alloc('S|'+name+'|'+s,s,s,(ctx)=>draw(ctx,s))};
+  R.sprite=function(name,size,draw){const s=Math.max(4,Math.round(size*dpr/4)*4);  // 尺寸取 4 的倍数：镜头缩放时不至于每帧生成新贴图
+  return alloc('S|'+name+'|'+s,s,s,(ctx)=>draw(ctx,s))};
   /* 画精灵：中心 (cx,cy)，CSS 尺寸 w×h，col 着色，可选朝向 */
   R.img=function(e,cx,cy,w,h,col,ux,uy){quad(cx,cy,ux===undefined?1:ux,uy||0,w/2,h/2,e.u0,e.v0,e.u1,e.v1,0,0,0,0,3,0,0,1,col||WHITE)};
   const WHITE=[1,1,1,1];
@@ -684,12 +798,13 @@ void main(){
     e.adv=adv;e.pad=pad;return e;
   }
   const chars=s=>Array.from(String(s));
+  const qpx=sz=>{const p=sz*dpr;return Math.max(6,p>24?Math.round(p/2)*2:Math.round(p))};  // 大字号取偶数，减少缩放时的字形缓存
   /* 文字宽度（CSS 像素） */
-  R.measure=function(str,o){const px=Math.max(6,Math.round(o.size*dpr)),wt=o.weight||400;let w=0;
+  R.measure=function(str,o){const px=qpx(o.size),wt=o.weight||400;let w=0;
     for(const ch of chars(str))w+=glyph(ch,o.font||'ui',wt,px,0).adv;return w/dpr*(o.scale||1)};
   /* 画文字：y 是行中线；o={size,font,weight,color,align,scale,outline:[颜色,宽度]} */
   R.text=function(str,x,y,o){
-    const sc=o.scale||1,px=Math.max(6,Math.round(o.size*dpr)),wt=o.weight||400,f=o.font||'ui';
+    const sc=o.scale||1,px=qpx(o.size),wt=o.weight||400,f=o.font||'ui';
     const cs=chars(str);let tw=0;const gs=cs.map(ch=>{const g=glyph(ch,f,wt,px,0);tw+=g.adv;return g});
     tw=tw/dpr*sc;let cx=o.align==='center'?x-tw/2:o.align==='right'?x-tw:x;const x0=cx;
     if(o.outline){const ow=Math.max(1,Math.round(o.outline[1]*dpr));let ox=x0;
@@ -759,22 +874,25 @@ const SPR={
 };
 
 function render(){
-  const nt=G?0.5-0.5*Math.cos(2*Math.PI*G.t/CFG.dayCycle):0;
+  const nt=G?0.5-0.5*Math.cos(2*Math.PI*G.t/K.dayCycle):0;
   const land=sky('land',nt);R.begin(land);
   if(!G){R.end();return}
   const px=i=>ox+(X(i)+.5)*S, py=i=>oy+(Y(i)+.5)*S, now=P.now();
   const INK=C('#1b2a4a'),PAPER=C('#fffdf7');
-  // 网格
-  const gc=sky('grid',nt);
-  for(let x=0;x<=cols;x++)R.rect(ox+x*S-.5,oy,1,rows*S,0,gc);
-  for(let y=0;y<=rows;y++)R.rect(ox,oy+y*S-.5,cols*S,1,0,gc);
+  // 网格（只画当前城区）
+  const gc=sky('grid',nt),A=G.area,ax=ox+A.x0*S,ay=oy+A.y0*S,aw=(A.x1-A.x0)*S,ah=(A.y1-A.y0)*S;
+  for(let x=A.x0;x<=A.x1;x++)R.rect(ox+x*S-.5,ay,1,ah,0,gc);
+  for(let y=A.y0;y<=A.y1;y++)R.rect(ax,oy+y*S-.5,aw,1,0,gc);
   // 河：先岸再水
   const we=sky('waterEdge',nt),wa=sky('water',nt),e=S*0.14;
   for(let i=0;i<cols*rows;i++)if(G.water[i])R.rect(ox+X(i)*S-e,oy+Y(i)*S-e,S+2*e,S+2*e,0,we);
   for(let i=0;i<cols*rows;i++)if(G.water[i])R.rect(ox+X(i)*S-.5,oy+Y(i)*S-.5,S+1,S+1,0,wa);
   if(G.flashWater>0){G.flashWater-=1/60;const fw=CA('#ffffff',0.45*Math.abs(Math.sin(G.flashWater*6)));
     for(let i=0;i<cols*rows;i++)if(G.water[i])R.rect(ox+X(i)*S-.5,oy+Y(i)*S-.5,S+1,S+1,0,fw)}
-  R.rect(ox-1,oy-1,cols*S+2,rows*S+2,0,gc,{stroke:2});
+  // 城区外：盖一层雾，还没开发的地块（和河）隐约可见
+  {const fog=CA(nt>.5?'#1b2a4a':'#f5f1e8',.78),mx=ox,my=oy,mw=cols*S,mh=rows*S;
+   R.rect(mx,my,mw,ay-my,0,fog);R.rect(mx,ay+ah,mw,my+mh-ay-ah,0,fog);R.rect(mx,ay,ax-mx,ah,0,fog);R.rect(ax+aw,ay,mx+mw-ax-aw,ah,0,fog)}
+  R.rect(ax-1,ay-1,aw+2,ah+2,0,gc,{stroke:2});
 
   const shA=sky('shadow',nt),shO=opaque(land,shA),road=sky('road',nt),rail=sky('rail',nt),sh=S*0.16;
   // 道路阴影 / 桥栏 / 路面
@@ -816,6 +934,18 @@ function render(){
   if(tool==='mw'&&G.mwStart>=0){const x1=px(G.mwStart),y1=py(G.mwStart),L=Math.hypot(ptr.x-x1,ptr.y-y1),st=S*.35;
     for(let d=0;d<L;d+=st){const e2=Math.min(L,d+S*.2);R.line(x1+(ptr.x-x1)*d/L,y1+(ptr.y-y1)*d/L,x1+(ptr.x-x1)*e2/L,y1+(ptr.y-y1)*e2/L,S*.22,C(MW_C))}}
 
+  // 第一关：示范路线（虚线 + 移动的小圆点），接通后消失
+  if(G.lv&&G.lv.ghost&&!G.served.size&&!G.over){
+    if(!G.ghost||G.ghost.n!==G.nodes.size){const h=G.houses[0],d=h&&G.dests.find(d=>d.color===h.color);let path=null;
+      if(d){const pr=new Map([[h.idx,-1]]),q=[h.idx];while(q.length){const u=q.shift();if(u===d.door)break;
+          for(const v of N4(u)){if(pr.has(v)||G.occ[v]>=0||G.water[v]||!inArea(v))continue;const n=G.nodes.get(v);if(n&&n.kind!=='road'&&v!==d.door)continue;pr.set(v,u);q.push(v)}}
+        if(pr.has(d.door)){path=[d.door];let k=d.door;while(pr.get(k)!==-1){k=pr.get(k);path.push(k)}path.reverse()}}
+      G.ghost={n:G.nodes.size,path}}
+    const gp=G.ghost.path;
+    if(gp){const pts=gp.map(q=>[px(q),py(q)]),L=gp.length-1,ph=(now/600)%1,col=CA('#1b2a4a',.35);
+      for(let k=0;k<L;k++){const a=pts[k],b=pts[k+1];for(let f=ph*0.5;f<1;f+=0.5){const f2=Math.min(1,f+0.25);R.line(a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[0]+(b[0]-a[0])*f2,a[1]+(b[1]-a[1])*f2,S*.14,col)}}
+      const t=(now/1800)%1.25,fi=Math.min(L,t*L),i0=Math.floor(fi),i1=Math.min(L,i0+1),fr=fi-i0,fx=pts[i0][0]+(pts[i1][0]-pts[i0][0])*fr,fy=pts[i0][1]+(pts[i1][1]-pts[i0][1])*fr;
+      R.circle(fx,fy,S*.24,CA('#f5a623',.85));R.ring(fx,fy,S*.24,S*.06,PAPER)}}
   // 小区：米色楼群 + 门口分类桶
   const top=sky('bldTop',nt),side=sky('bldSide',nt);
   for(const h of G.houses){
@@ -850,11 +980,11 @@ function render(){
     if(d.pins>d.cap){const rowsN=Math.ceil(shown/per);
       R.text('+'+(d.pins-d.cap),cx+((Math.min(per,shown)-1)/2)*gap+S*.28,baseY-(rowsN-1)*rowH,{size:S*.32,font:'num',weight:700,color:nt>.5?PAPER:INK})}
     // 督导员检查圈
-    if(G.insp&&G.insp.d===d){const Rr=S*1.5,f=G.insp.left/CFG.inspTime;
+    if(G.insp&&G.insp.d===d){const Rr=S*1.5,f=G.insp.left/K.inspTime;
       R.ring(cx,cy,Rr,S*.08,C(MW_C),{dash:29,phase:-G.t*1.9});R.arc(cx,cy,Rr,S*.16,-Math.PI/2,f*Math.PI*2,C(MW_C));
       const gx=cx-Rr*.72,gy=cy+Rr*.72;R.circle(gx,gy,S*.3,C(MW_C));R.text('督',gx,gy,{size:S*.3,font:'ui',weight:700,color:INK,align:'center'})}
     // 投诉倒计时
-    if(d.timer>0){const Rr=S*1.32,f=d.timer/CFG.timerMax,pulse=0.5+0.5*Math.sin(G.t*8);
+    if(d.timer>0){const Rr=S*1.32,f=d.timer/K.timerMax,pulse=0.5+0.5*Math.sin(G.t*8);
       R.ring(cx,cy,Rr,S*(.3+.12*pulse),CA('#d9443a',.18+.22*pulse));R.arc(cx,cy,Rr,S*.16,-Math.PI/2,f*Math.PI*2,C('#d9443a'));
       const ex=cx+Rr*.72,ey=cy+Rr*.72;R.circle(ex,ey,S*(.28+.04*pulse),C('#d9443a'));R.text('!',ex,ey,{size:S*.38,font:'num',weight:700,color:C('#ffffff'),align:'center'})}
   }
@@ -891,7 +1021,7 @@ function render(){
    开始页 / 周拨款 / 投诉爆表 三张卡片。
    微信小游戏右上角有胶囊按钮，顶部栏整体放在胶囊下方。 */
 const UI=(()=>{
-  const UI={state:'start'};
+  const UI={state:'menu'};
   const INK=C('#1b2a4a'),MUTED=C('#6b6a63'),PILL=C('#fffdf7'),PILL2=C('#efe9da'),LINE=C('#e2dac6'),ACC=C('#f5a623'),DANGER=C('#d9443a'),SHADOW=CA('#1b2a4a',.14);
   let hits=[],press=null,toastMsg='',toastT=-1e9,bumpT=-1e9,ins={top:10,bottom:12,left:16,right:16};
   const hit=(id,x,y,w,h,fn,dis)=>{hits.push({id,x,y,w,h,fn,dis});return press&&press.id===id};
@@ -937,6 +1067,7 @@ const UI=(()=>{
     else if(name==='ra'){R.ring(cx,cy,8*k,4*k,ink);R.circle(cx,cy,2.5*k,ink)}
     else if(name==='light'){R.rect(X0+7*k,Y0+2*k,10*k,20*k,4*k,ink);R.circle(cx,Y0+7.5*k,2.3*k,C('#e2554a'));R.circle(cx,Y0+16.5*k,2.3*k,C('#4caf68'))}
     else if(name==='mw'){const a=at(4,19),b=at(20,5);R.line(a[0],a[1],b[0],b[1],5*k,C(MW_C));R.circle(a[0],a[1],2.5*k,ink);R.circle(b[0],b[1],2.5*k,ink)}
+    else if(name==='menu'){const k2=s/16;for(const dy of[-4,0,4])R.line(cx-5*k2,cy+dy*k2,cx+5*k2,cy+dy*k2,1.8*k2,ink)}
     else if(name==='pause'){const k2=s/16;R.rect(cx-5*k2,cy-6*k2,3.5*k2,12*k2,k2,ink);R.rect(cx+1.5*k2,cy-6*k2,3.5*k2,12*k2,k2,ink)}
     else R.img(ICONS[name](s),cx,cy,s,s,ink);
   }
@@ -950,20 +1081,23 @@ const UI=(()=>{
   /* ===== 顶部栏 ===== */
   function topBar(){
     const y=ins.top,h=40,narrow=W<380,bw=narrow?30:34;
-    // 左：暂停 / 1× / 2× / 静音
-    const btns=[['pause',paused,()=>setSpeed(paused?1:0)],['play',!paused&&speed===1,()=>setSpeed(1)],['ff',!paused&&speed===2,()=>setSpeed(2)],[SFX.muted?'mute':'sound',SFX.muted,toggleMute]];
+    // 左：暂停 / 1× / 2× / 菜单（声音开关在菜单里）
+    const btns=[['pause',paused,()=>setSpeed(paused?1:0)],['play',!paused&&speed===1,()=>setSpeed(1)],['ff',!paused&&speed===2,()=>setSpeed(2)],['menu',false,()=>UI.pause()]];
     const lw=8+bw*btns.length;pill(ins.left,y,lw,h);
     btns.forEach(([n,on,fn],k)=>{const bx=ins.left+4+k*bw,dn=hit('top'+k,bx,y,bw,h,fn);
       if(on||dn)R.rect(bx,y+4,bw,32,16,on?INK:PILL2);icon(n,bx+bw/2,y+h/2,16,on?PILL:INK,on?INK:PILL)});
     // 右：日期，清运量
-    const day=DAYS[Math.min(6,Math.floor((G.t%CFG.weekLen)/(CFG.weekLen/7)))],wk=`第 ${G.week} 周`;
+    const day=DAYS[Math.min(6,Math.floor((G.t%K.weekLen)/(K.weekLen/7)))],wk=`第 ${G.week} 周`;
     const o1={size:narrow?12:13,weight:700,font:'ui'},o2={size:narrow?12:13,font:'ui'};
     const dw=tw(wk,o1)+tw(' '+day,o2)+24,dx=W-ins.right-dw;pill(dx,y,dw,h);
     let tx=dx+12;tx+=T(wk,tx,y+h/2,Object.assign({},o1,{color:INK}));T(' '+day,tx,y+h/2,Object.assign({},o2,{color:MUTED}));
-    const so={size:20,font:'num',weight:700},sw=18+6+tw(String(G.score),so)+6+tw('袋',{size:12})+24,sx=dx-8-sw;
+    const stxt=G.lv?`${G.score}/${G.lv.goal}`:String(G.score);let so={size:20,font:'num',weight:700},unit=true;
+    let sw=18+6+tw(stxt,so)+6+tw('袋',{size:12})+24;
+    if(dx-8-sw<ins.left+lw+8){so={size:16,font:'num',weight:700};unit=false;sw=18+6+tw(stxt,so)+20}   // 窄屏：缩字号、去掉"袋"
+    const sx=dx-8-sw;
     const bk=(P.now()-bumpT)/130,sc=bk>=0&&bk<1?1+0.14*Math.sin(bk*Math.PI):1;
     if(sc!==1){R.save();R.scaleAt(sx+sw/2,y+h/2,sc,sc)}
-    pill(sx,y,sw,h);let x=sx+12;icon('bag',x+9,y+h/2,18,INK);x+=24;x+=T(String(G.score),x,y+h/2,Object.assign({},so,{color:INK}))+6;T('袋',x,y+h/2+1,{size:12,font:'ui',color:MUTED});
+    pill(sx,y,sw,h);let x=sx+12;icon('bag',x+9,y+h/2,18,INK);x+=24;x+=T(stxt,x,y+h/2,Object.assign({},so,{color:INK}))+6;if(unit)T('袋',x,y+h/2+1,{size:12,font:'ui',color:MUTED});
     if(sc!==1)R.restore();
   }
   /* 督导员横幅 */
@@ -979,7 +1113,9 @@ const UI=(()=>{
   /* ===== 底部工具栏 ===== */
   function dock(){
     const narrow=W<=420,bw=narrow?44:52,bh=50,pad=5;
-    const items=[['road','路段',G.roads],['bridge','大桥',G.items.bridge],['ra','环岛',G.items.ra],['light','红绿灯',G.items.light],['mw','高架',G.items.mw],null,['erase','拆路'],['undo','撤销']];
+    // 关卡里只摆本关用得上的设施（拨款池里有，或手上有），新设施解锁时更显眼
+    const can=k=>!G.lv||G.lv.pool.indexOf(k)>=0||G.items[k]>0;
+    const items=[['road','路段',G.roads]].concat([['bridge','大桥'],['ra','环岛'],['light','红绿灯'],['mw','高架']].filter(([k])=>can(k)).map(([k,l])=>[k,l,G.items[k]]),[null,['erase','拆路'],['undo','撤销']]);
     const w=pad*2+items.reduce((a,it)=>a+(it?bw:7),0),x0=(W-w)/2,y=H-ins.bottom-bh-pad*2;
     UI.dockTop=y;pill(x0,y,w,bh+pad*2);
     let x=x0+pad;
@@ -993,6 +1129,7 @@ const UI=(()=>{
       const dn=hit('dock-'+name,x,y,bw,bh+pad*2,dis?null:fn,dis);
       R.alpha=dis?0.35:1;
       if(on)R.rect(x,y+pad,bw,bh,16,INK);else if(dn)R.rect(x,y+pad,bw,bh,16,PILL2);
+      if(G.lv&&G.lv.feat&&G.lv.feat.icon===name&&G.t<15&&UI.state==='play'){R.alpha=1;R.rect(x+1,y+pad+1,bw-2,bh-2,15,CA('#f5a623',.55+.45*Math.sin(P.now()/180)),{stroke:3})}
       icon(name,x+bw/2,y+pad+19,22,on?PILL:INK,on?INK:PILL);
       T(label,x+bw/2,y+pad+40,{size:10.5,font:'ui',color:on?PILL:MUTED,align:'center'});
       if(n!==undefined){const ns=String(n),nw=Math.max(16,tw(ns,{size:11,font:'num',weight:700})+10),bx=x+bw-4-nw,by=y+pad+2;
@@ -1025,32 +1162,121 @@ const UI=(()=>{
     para:(f,segs,o)=>{const lines=R.wrap(segs,f.w-(o.indent||0),o),lh=o.size*(o.lh||1.6);
       lines.forEach((ln,i)=>{if(f.draw){let x=f.x+(o.indent||0);if(i===0&&o.bullet)T('•',f.x+2,f.top+f.y+lh/2,{size:o.size,font:'ui',color:INK});
         for(const r of ln)x+=T(r.t,x,f.top+f.y+lh/2,{size:o.size,font:'ui',weight:r.weight||o.weight||400,color:r.color||o.color})}f.y+=lh})},
-    button:(f,label,id,fn)=>{const h=46;if(f.draw){const dn=hit(id,f.x,f.top+f.y,f.w,h,fn);R.rect(f.x,f.top+f.y,f.w,h,h/2,dn?C('#26396a'):INK);
-      T(label,f.x+f.w/2,f.top+f.y+h/2,{size:16,font:'ui',weight:700,color:PILL,align:'center'})}f.y+=h},
+    /* 按钮：ghost=描边样式；right=右侧小字 */
+    btn:(f,x,w,label,id,fn,ghost,right)=>{const h=46,y=f.top+f.y,dn=hit(id,x,y,w,h,fn);
+      if(ghost){R.rect(x,y,w,h,h/2,dn?PILL2:PILL);R.rect(x,y,w,h,h/2,LINE,{stroke:2})}else R.rect(x,y,w,h,h/2,dn?C('#26396a'):INK);
+      const fg=ghost?INK:PILL;
+      if(right){T(label,x+20,y+h/2,{size:16,font:'ui',weight:700,color:fg});T(right,x+w-20,y+h/2,{size:13,font:'ui',color:ghost?MUTED:CA('#fffdf7',.75),align:'right'})}
+      else T(label,x+w/2,y+h/2,{size:16,font:'ui',weight:700,color:fg,align:'center'})},
+    button:(f,label,id,fn,ghost,right)=>{if(f.draw)F.btn(f,f.x,f.w,label,id,fn,ghost,right);f.y+=46},
+    row2:(f,a,b)=>{const w=(f.w-10)/2;if(f.draw){F.btn(f,f.x,w,a[0],a[1],a[2],true);F.btn(f,f.x+w+10,w,b[0],b[1],b[2],true)}f.y+=46},
+    kinds:f=>{const kw=(f.w-18)/4,kh=44;
+      if(f.draw)PAL.forEach((p,k)=>{const x=f.x+k*(kw+6),y=f.top+f.y;R.rect(x,y,kw,kh,12,C(p.c));
+        T(p.name,x+kw/2,y+15,{size:12,font:'ui',weight:700,color:C('#ffffff'),align:'center'});
+        T(['分拣中心','处理厂','生化厂','焚烧厂'][k],x+kw/2,y+31,{size:10.5,font:'ui',color:CA('#ffffff',.9),align:'center'})});
+      f.y+=kh},
   };
   const B=t=>({t,color:DANGER,weight:700});
+  const GOLD=C('#f5a623'),STAR_OFF=C('#e2dac6');
+  const starSpr=s=>R.sprite('star',s,(g,n)=>{g.fillStyle='#fff';g.beginPath();for(let k=0;k<10;k++){const r=k%2?n*0.21:n*0.48,a=-Math.PI/2+k*Math.PI/5;g.lineTo(n/2+Math.cos(a)*r,n/2+Math.sin(a)*r*1.02+n*0.03)}g.closePath();g.fill()});
+  const star=(cx,cy,s,on,sc)=>R.img(starSpr(s),cx,cy,s*(sc||1),s*(sc||1),on?GOLD:STAR_OFF);
+  const lockSpr=s=>R.sprite('lock',s,(g,n)=>{g.fillStyle='#fff';g.strokeStyle='#fff';g.lineWidth=n*0.1;rr2d(g,n*.22,n*.44,n*.56,n*.42,n*.08);g.fill();g.beginPath();g.arc(n/2,n*.44,n*.17,Math.PI,0);g.stroke()});
+  /* 关卡新元素的小图标 */
+  function featIcon(name,cx,cy,s){
+    if(['road','bridge','ra','light','mw'].indexOf(name)>=0)return icon(name,cx,cy,s,INK,PILL2);
+    if(name==='kinds'){[0,2,3,1].forEach((c,k)=>R.circle(cx+(k%2?1:-1)*s*.22,cy+(k<2?-1:1)*s*.22,s*.18,C(PAL[c].c)));return}
+    if(name==='combo'){T('×3',cx,cy,{size:s*.62,font:'num',weight:700,color:GOLD,align:'center'});return}
+    if(name==='expand'){R.rect(cx-s*.42,cy-s*.42,s*.84,s*.84,s*.12,INK,{stroke:s*.1});R.rect(cx-s*.18,cy-s*.18,s*.36,s*.36,s*.06,INK);return}
+    if(name==='c3'||name==='c1'){R.rect(cx-s*.38,cy-s*.38,s*.76,s*.76,s*.18,C(PAL[name==='c3'?3:1].c));return}
+    if(name==='circle'){R.circle(cx,cy,s*.42,C(PAL[0].d));R.circle(cx,cy-s*.04,s*.38,C(PAL[0].c));return}
+    if(name==='insp'){R.circle(cx,cy,s*.45,ACC);T('督',cx,cy,{size:s*.5,font:'ui',weight:700,color:INK,align:'center'});return}
+    if(name==='fast')return icon('ff',cx,cy,s*.8,INK,PILL2);
+  }
 
-  function startCard(){layoutCard(f=>{
-    F.title(f,'爆桶了',W<=420?38:46,'垃圾分类大作战');F.gap(f,14);
-    F.para(f,[{t:'你是临江市新上任的环卫调度员。小区已经分好类了，剩下的就看你的车队了。'}],{size:14,color:MUTED});F.gap(f,14);
-    const kw=(f.w-18)/4,kh=44;
-    if(f.draw)PAL.forEach((p,k)=>{const x=f.x+k*(kw+6),y=f.top+f.y;R.rect(x,y,kw,kh,12,C(p.c));
-      T(p.name,x+kw/2,y+15,{size:12,font:'ui',weight:700,color:C('#ffffff'),align:'center'});
-      T(['分拣中心','处理厂','生化厂','焚烧厂'][k],x+kw/2,y+31,{size:10.5,font:'ui',color:CA('#ffffff',.9),align:'center'})});
-    f.y+=kh;F.gap(f,14);
+  /* ===== 跳转 ===== */
+  UI.sel=0;
+  function startLevel(i){unlockAudio();newGame(i);UI.state='play';UI.hint={text:LEVELS[i].tip,t0:0};UI.sel=i}
+  function startEndless(){unlockAudio();newGame();UI.state='play';UI.hint=null}
+  function backTo(state){demo();UI.state=state;UI.hint=null}
+  function resume(){UI.state='play';setSpeed(UI.prevSpeed||1)}
+
+  /* ===== 主菜单 ===== */
+  function menuCard(){const p=loadProgress(),got=p.stars.reduce((a,b)=>a+(b||0),0),done=p.stars.filter(Boolean).length,best=+P.store.get('btl-best')||0;
+    layoutCard(f=>{
+      F.title(f,'爆桶了',W<=420?38:46,'垃圾分类大作战');F.gap(f,14);
+      F.para(f,[{t:'你是临江市新上任的环卫调度员。小区已经分好类了，剩下的就看你的车队了。'}],{size:14,color:MUTED});F.gap(f,14);
+      F.kinds(f);F.gap(f,18);
+      F.button(f,'关卡模式','go-levels',()=>{UI.state='levels'},false,`${done}/${LEVELS.length} 关 · ★ ${got}`);F.gap(f,10);
+      F.button(f,'无尽模式','go-endless',()=>{UI.state='endless'},true,best?`最高 ${best} 袋`:'能撑几周？');
+    })}
+  /* ===== 选关 ===== */
+  function levelsCard(){const p=loadProgress(),got=p.stars.reduce((a,b)=>a+(b||0),0);
+    let next=LEVELS.findIndex((l,i)=>levelUnlocked(p,i)&&!p.stars[i]);
+    layoutCard(f=>{
+      F.title(f,'选择关卡',30);F.gap(f,8);
+      F.para(f,[{t:`通关一关解锁下一关 · 已获得 ★ ${got} / ${LEVELS.length*3}`}],{size:13,color:MUTED});F.gap(f,12);
+      const nc=5,gap=8,tw_=(f.w-gap*(nc-1))/nc,th=tw_*1.12,nr=Math.ceil(LEVELS.length/nc);
+      if(f.draw)LEVELS.forEach((lv,i)=>{const x=f.x+(i%nc)*(tw_+gap),y=f.top+f.y+Math.floor(i/nc)*(th+gap),open=levelUnlocked(p,i),s=p.stars[i]||0;
+        const dn=hit('lv'+i,x,y,tw_,th,open?()=>{UI.sel=i;UI.state='intro'}:()=>toast('先通过上一关'));
+        R.rect(x,y,tw_,th,14,open?(dn?LINE:PILL2):CA('#e2dac6',.45));
+        if(i===next)R.rect(x,y,tw_,th,14,ACC,{stroke:2.5});
+        if(open){T(String(i+1),x+tw_/2,y+th*.4,{size:Math.min(24,tw_*.38),font:'num',weight:700,color:INK,align:'center'});
+          for(let k=0;k<3;k++)star(x+tw_/2+(k-1)*tw_*.24,y+th*.76,tw_*.22,k<s)}
+        else R.img(lockSpr(tw_*.4),x+tw_/2,y+th/2,tw_*.4,tw_*.4,CA('#6b6a63',.6))});
+      f.y+=nr*th+(nr-1)*gap;F.gap(f,16);
+      F.button(f,'返回','lv-back',()=>{UI.state='menu'},true);
+    })}
+  /* ===== 关卡介绍 ===== */
+  function introCard(){const i=UI.sel,lv=LEVELS[i],best=loadProgress().stars[i]||0;
+    layoutCard(f=>{
+      F.title(f,`第 ${i+1} 关 · ${lv.name}`,W<=380?24:28);F.gap(f,12);
+      if(lv.feat){const t=`新：${lv.feat.label}`,o={size:14,font:'ui',weight:700},w=36+tw(t,o)+14,h=34;
+        if(f.draw){const y=f.top+f.y;R.rect(f.x,y,w,h,h/2,PILL2);featIcon(lv.feat.icon,f.x+19,y+h/2,20);T(t,f.x+36,y+h/2,Object.assign({color:INK},o))}
+        f.y+=h;F.gap(f,12)}
+      F.para(f,[{t:lv.desc}],{size:14,color:MUTED});F.gap(f,12);
+      F.para(f,[{t:'目标：'},{t:`清运 ${lv.goal} 袋`,weight:700,color:INK}],{size:15,color:INK});F.gap(f,8);
+      for(const[k,txt]of[[0,'完成目标'],[1,'全程没有触发投诉倒计时'],[2,`第 ${lv.weeks3} 周内完成`]]){
+        if(f.draw){const y=f.top+f.y+12;star(f.x+9,y,18,k<best);T(txt,f.x+26,y,{size:13.5,font:'ui',color:INK})}f.y+=26}
+      F.gap(f,14);
+      F.button(f,best?'再玩一次':'开始','lv-start',()=>startLevel(i));F.gap(f,10);
+      F.button(f,'返回','intro-back',()=>{UI.state='levels'},true);
+    })}
+  /* ===== 通关 ===== */
+  function winCard(){const w=G.winInfo||{stars:[1,0,0]},i=G.lvIdx,has=i+1<LEVELS.length,age=(P.now()-(UI.winT||0))/1000;
+    layoutCard(f=>{
+      F.title(f,`第 ${i+1} 关 通关！`,30);F.gap(f,16);
+      if(f.draw){const cy=f.top+f.y+28;for(let k=0;k<3;k++){const a=age-0.25*k,sc=a<0?0:a<0.3?0.4+0.6*Math.sin(a/0.3*Math.PI/2)+0.15*Math.sin(a/0.3*Math.PI):1;
+        star(f.x+f.w/2+(k-1)*62,cy+(k===1?-6:0),52,!!w.stars[k],w.stars[k]?Math.max(sc,0.01):1)}}
+      f.y+=60;F.gap(f,12);
+      for(const[k,txt]of[[0,'完成目标'],[1,'全程没有触发投诉倒计时'],[2,`第 ${G.lv.weeks3} 周内完成`]]){
+        if(f.draw){const y=f.top+f.y+11;T(w.stars[k]?'✓':'✗',f.x+6,y,{size:15,font:'ui',weight:700,color:w.stars[k]?C('#4caf68'):MUTED,align:'center'});T(txt,f.x+22,y,{size:13.5,font:'ui',color:w.stars[k]?INK:MUTED})}f.y+=24}
+      F.gap(f,6);F.para(f,[{t:`清运 ${w.score} 袋 · 用时 ${w.week} 周`}],{size:13,color:MUTED});F.gap(f,14);
+      if(has){F.button(f,'下一关','win-next',()=>{UI.sel=i+1;UI.state='intro';demo()});F.gap(f,10)}
+      F.row2(f,['重玩','win-again',()=>startLevel(i)],['选关','win-levels',()=>backTo('levels')]);
+    })}
+  /* ===== 暂停 ===== */
+  function pauseCard(){layoutCard(f=>{
+    F.title(f,'暂停',30,G.lv?`第 ${G.lvIdx+1} 关 · ${G.lv.name}`:'无尽模式');F.gap(f,16);
+    if(G.lv){F.para(f,[{t:'目标：'},{t:`清运 ${G.score} / ${G.lv.goal} 袋`,weight:700,color:INK}],{size:14,color:MUTED});F.gap(f,14)}
+    F.button(f,'继续','p-resume',resume);F.gap(f,10);
+    F.button(f,SFX.muted?'声音：关':'声音：开','p-mute',toggleMute,true);F.gap(f,10);
+    F.row2(f,['重新开始','p-restart',()=>G.lv?startLevel(G.lvIdx):startEndless()],['退出','p-quit',()=>backTo(G.lv?'levels':'menu')]);
+  })}
+  /* ===== 无尽模式说明 ===== */
+  function endlessCard(){layoutCard(f=>{
+    F.title(f,'无尽模式',30,'城市一直长，看你能撑几周');F.gap(f,14);
     for(const li of[[{t:'按住拖动修清运路线，把'},B('同色小区'),{t:'连到'},B('同色处理厂'),{t:'；画错了点「撤销」'}],
       [{t:'先把一片小区串起来再接到厂里，'},B('一笔接通 3 户以上'),{t:'奖励路段'}],
-      [{t:'处理厂门口会堆待清运的垃圾袋，同色清运车拉走一袋 = 清运量 +1'}],
       [{t:'垃圾袋超限（方厂 7 / 圆厂 10）开始'},B('投诉倒计时'),{t:'，走完就投诉爆表'}],
       [{t:'每周市政拨款二选一；督导员会不定期'},B('突击检查')]])
       F.para(f,li,{size:14,lh:1.75,color:INK,indent:15,bullet:true});
-    F.gap(f,14);F.button(f,'上岗！','go-start',()=>{unlockAudio();newGame();UI.state='play'});
+    F.gap(f,14);F.button(f,'上岗！','go-start',startEndless);F.gap(f,10);
+    F.button(f,'返回','endless-back',()=>{UI.state='menu'},true);
   })}
   function weekCard(){layoutCard(f=>{
     F.title(f,`第 ${G.week} 周 · 本周拨款到了`,W<=380?24:30);F.gap(f,14);
     F.para(f,[{t:'二选一，钱要花在刀刃上。'}],{size:14,color:MUTED});F.gap(f,14);
     const ow=(f.w-10)/2,opts=G.weekOpts||[];
-    // 先量出两张选项卡的高度，取较高的
     const descL=opts.map(o=>R.wrap([{t:o.item?ITEMS[o.item].desc:'这周不买设施，路段额度翻倍'}],ow-24,{size:12.5,font:'ui'}));
     const oh=14+44+8+20+8+Math.max(...descL.map(l=>l.length))*12.5*1.5+8+16+14;
     if(f.draw)opts.forEach((o,k)=>{const x=f.x+k*(ow+10),y=f.top+f.y,it=o.item?ITEMS[o.item]:null;
@@ -1065,20 +1291,43 @@ const UI=(()=>{
   function overCard(){const o=G.overInfo||{};layoutCard(f=>{
     F.title(f,'投诉爆表！',30);F.gap(f,14);
     F.para(f,[{t:o.why||''}],{size:14,color:MUTED});F.gap(f,14);
+    if(G.lv){
+      if(f.draw){const y=f.top+f.y+28;let w=T(String(o.score),f.x,y,{size:56,font:'num',weight:700,color:INK});T(`/ ${o.goal} 袋`,f.x+w+8,y+10,{size:18,font:'ui',color:MUTED})}
+      f.y+=58;F.gap(f,6);
+      if(f.draw){const y=f.top+f.y,bw=f.w,pr=Math.min(1,o.score/o.goal);R.rect(f.x,y,bw,10,5,PILL2);R.rect(f.x,y,Math.max(10,bw*pr),10,5,GOLD)}
+      f.y+=10;F.gap(f,8);F.para(f,[{t:`还差 ${Math.max(0,o.goal-o.score)} 袋，撑到了第 ${o.week} 周`}],{size:13,color:MUTED});F.gap(f,14);
+      F.button(f,'再试一次','go-again',()=>startLevel(G.lvIdx));F.gap(f,10);
+      F.button(f,'选关','over-levels',()=>backTo('levels'),true);
+      return;
+    }
     if(f.draw){const y=f.top+f.y+28;const w=T(String(o.score),f.x,y,{size:56,font:'num',weight:700,color:INK});T('袋',f.x+w+6,y+10,{size:16,font:'ui',color:MUTED})}
     f.y+=58;F.gap(f,14);
     if(f.draw){let x=f.x;for(const[l,v]of[['坚持到',`第 ${o.week} 周`],['检查通过',String(o.insp)],['最高纪录',String(o.best)]]){
       const y=f.top+f.y;T(l,x,y+9,{size:13,font:'ui',color:MUTED});const w2=T(v,x,y+32,{size:20,font:/周/.test(v)?'ui':'num',weight:700,color:INK});x+=Math.max(w2,tw(l,{size:13}))+18}}
     f.y+=46;F.gap(f,14);
-    F.button(f,'重新上岗','go-again',()=>{unlockAudio();newGame();UI.state='play'});
+    F.button(f,'重新上岗','go-again',startEndless);F.gap(f,10);
+    F.button(f,'回主菜单','over-menu',()=>backTo('menu'),true);
   })}
+  /* 开局提示（第一关一直显示到接通为止） */
+  function hintPill(){
+    const h=UI.hint;if(!h||!G.lv||G.insp)return;
+    const keep=G.lv.ghost?G.served.size===0:G.t<14;if(!keep){UI.hint=null;return}
+    const o={size:13,font:'ui'},w=Math.min(W-32,tw(h.text,o)+44),y=ins.top+50,hh=36,x=(W-w)/2;
+    R.rect(x,y+2,w,hh,hh/2,SHADOW);R.rect(x,y,w,hh,hh/2,PILL);R.circle(x+18,y+hh/2,5,ACC);
+    T(h.text,x+30,y+hh/2,Object.assign({color:INK},o));
+  }
 
   /* ===== 每帧 ===== */
+  const MAPLESS={menu:1,levels:1,intro:1,endless:1};
   UI.draw=function(){
-    hits=[];if(!G)return;
-    if(UI.state!=='start'){topBar();if(UI.state==='play')inspBanner();dock();toastView()}
-    if(UI.state==='start')startCard();else if(UI.state==='week')weekCard();else if(UI.state==='over')overCard();
+    hits=[];if(!G)return;const st=UI.state;
+    if(!MAPLESS[st]){topBar();if(st==='play'){inspBanner();hintPill()}dock();toastView()}
+    else toastView();
+    if(st==='menu')menuCard();else if(st==='levels')levelsCard();else if(st==='intro')introCard();else if(st==='endless')endlessCard();
+    else if(st==='week')weekCard();else if(st==='over')overCard();else if(st==='win')winCard();else if(st==='pause')pauseCard();
   };
+  UI.win=()=>{UI.state='win';UI.winT=P.now()};
+  UI.pause=()=>{if(UI.state!=='play')return;UI.prevSpeed=paused?1:speed;setSpeed(0);UI.state='pause'};
   const inside=(h,p)=>p.x>=h.x&&p.x<=h.x+h.w&&p.y>=h.y&&p.y<=h.y+h.h;
   /* 触摸先给界面：命中按钮或有卡片时吃掉事件，返回 true */
   UI.down=function(p){
@@ -1205,27 +1454,31 @@ function bindInput(){
   P.onKey(e=>{if(!G||G.demo||G.over||G.modal||UI.state!=='play')return;
     if(e.code==='Space'){e.preventDefault();setSpeed(paused?1:0)}else if(e.key==='1')setSpeed(1);else if(e.key==='2')setSpeed(2);
     else if(e.key==='e'||e.key==='E')setTool(tool==='erase'?'road':'erase');else if(e.key==='Escape')setTool('road');
-    else if(e.key==='m'||e.key==='M')toggleMute();else if(e.key==='z'||e.key==='Z'){e.preventDefault();undo()}});
+    else if(e.key==='m'||e.key==='M')toggleMute();else if(e.key==='p'||e.key==='P')UI.pause();else if(e.key==='z'||e.key==='Z'){e.preventDefault();undo()}});
 }
 
-/* 爆桶了 · 启动、布局、主循环 */
-function layout(){
-  const sz=P.size();W=sz.w;H=sz.h;dpr=sz.dpr;R.resize(W,H,dpr);
-  const rs=UI.reserve(sz),aw=W-rs.side*2,ah=H-rs.top-rs.bottom;
-  S=Math.max(12,Math.floor(Math.min(aw/cols,ah/rows)));
-  ox=Math.round((W-S*cols)/2);oy=Math.round(rs.top+(ah-S*rows)/2);
+/* 爆桶了 · 启动、布局、镜头、主循环 */
+let RS=null;   // 地图上下要给界面让出的空间
+function layout(){const sz=P.size();W=sz.w;H=sz.h;dpr=sz.dpr;R.resize(W,H,dpr);RS=UI.reserve(sz);fitView()}
+/* 镜头：把当前城区（G.view，扩张时平滑过渡到 G.area）放满屏幕中间。城区小时格子大，扩张后拉远 */
+function fitView(){
+  if(!RS)return;const v=G?G.view:{x0:0,y0:0,x1:cols,y1:rows},vw=v.x1-v.x0,vh=v.y1-v.y0,aw=W-RS.side*2,ah=H-RS.top-RS.bottom;
+  S=Math.max(10,Math.min(aw/vw,ah/vh,52));ox=(W-S*vw)/2-v.x0*S;oy=RS.top+(ah-S*vh)/2-v.y0*S;
 }
 function demo(){newGame();G.demo=true;for(const h of G.houses)h.born=-9;for(const d of G.dests){d.born=-9;d.pins=2+(Math.random()*3|0)}}
 let prevT=0;
 function frame(){
   const now=P.now(),real=Math.min(0.1,(now-prevT)/1000);prevT=now;
   if(G&&!G.demo&&!G.over&&!G.modal&&!paused&&UI.state==='play'){let left=real*speed;while(left>0){const s=Math.min(0.034,left);update(s);left-=s;if(G.over||G.modal)break}}
+  if(G){const v=G.view,a=G.area,k=1-Math.exp(-real*3);let moving=false;
+    for(const key of['x0','y0','x1','y1']){const d=a[key]-v[key];if(Math.abs(d)>0.003){v[key]+=d*k;moving=true}else v[key]=a[key]}
+    if(moving)fitView()}
   render();UI.draw();R.end();
   P.raf(frame);
 }
 P.ready(()=>{
   R.init(P.canvas);
-  demo();UI.state='start';   // 开始页背后放一局静止的地图
+  demo();UI.state='menu';   // 菜单背后放一局静止的地图
   P.onResize(()=>{const land=W>H*1.05;layout();const nowLand=W>H*1.05;if(land!==nowLand&&G&&G.demo)demo()});
   bindInput();prevT=P.now();P.raf(frame);
 });

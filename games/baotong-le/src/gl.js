@@ -136,7 +136,8 @@ void main(){
     A.map.set(key,e);A.x+=w+2;A.row=Math.max(A.row,h);return e;
   }
   /* 精灵：name 唯一，size=CSS 像素边长，draw(ctx,s) 在 s×s 设备像素里画（白色 = 可着色） */
-  R.sprite=function(name,size,draw){const s=Math.max(4,Math.round(size*dpr));return alloc('S|'+name+'|'+s,s,s,(ctx)=>draw(ctx,s))};
+  R.sprite=function(name,size,draw){const s=Math.max(4,Math.round(size*dpr/4)*4);  // 尺寸取 4 的倍数：镜头缩放时不至于每帧生成新贴图
+  return alloc('S|'+name+'|'+s,s,s,(ctx)=>draw(ctx,s))};
   /* 画精灵：中心 (cx,cy)，CSS 尺寸 w×h，col 着色，可选朝向 */
   R.img=function(e,cx,cy,w,h,col,ux,uy){quad(cx,cy,ux===undefined?1:ux,uy||0,w/2,h/2,e.u0,e.v0,e.u1,e.v1,0,0,0,0,3,0,0,1,col||WHITE)};
   const WHITE=[1,1,1,1];
@@ -154,12 +155,13 @@ void main(){
     e.adv=adv;e.pad=pad;return e;
   }
   const chars=s=>Array.from(String(s));
+  const qpx=sz=>{const p=sz*dpr;return Math.max(6,p>24?Math.round(p/2)*2:Math.round(p))};  // 大字号取偶数，减少缩放时的字形缓存
   /* 文字宽度（CSS 像素） */
-  R.measure=function(str,o){const px=Math.max(6,Math.round(o.size*dpr)),wt=o.weight||400;let w=0;
+  R.measure=function(str,o){const px=qpx(o.size),wt=o.weight||400;let w=0;
     for(const ch of chars(str))w+=glyph(ch,o.font||'ui',wt,px,0).adv;return w/dpr*(o.scale||1)};
   /* 画文字：y 是行中线；o={size,font,weight,color,align,scale,outline:[颜色,宽度]} */
   R.text=function(str,x,y,o){
-    const sc=o.scale||1,px=Math.max(6,Math.round(o.size*dpr)),wt=o.weight||400,f=o.font||'ui';
+    const sc=o.scale||1,px=qpx(o.size),wt=o.weight||400,f=o.font||'ui';
     const cs=chars(str);let tw=0;const gs=cs.map(ch=>{const g=glyph(ch,f,wt,px,0);tw+=g.adv;return g});
     tw=tw/dpr*sc;let cx=o.align==='center'?x-tw/2:o.align==='right'?x-tw:x;const x0=cx;
     if(o.outline){const ow=Math.max(1,Math.round(o.outline[1]*dpr));let ox=x0;

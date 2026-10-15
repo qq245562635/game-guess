@@ -102,5 +102,5 @@ function bindInput(){
   P.onKey(e=>{if(!G||G.demo||G.over||G.modal||UI.state!=='play')return;
     if(e.code==='Space'){e.preventDefault();setSpeed(paused?1:0)}else if(e.key==='1')setSpeed(1);else if(e.key==='2')setSpeed(2);
     else if(e.key==='e'||e.key==='E')setTool(tool==='erase'?'road':'erase');else if(e.key==='Escape')setTool('road');
-    else if(e.key==='m'||e.key==='M')toggleMute();else if(e.key==='z'||e.key==='Z'){e.preventDefault();undo()}});
+    else if(e.key==='m'||e.key==='M')toggleMute();else if(e.key==='p'||e.key==='P')UI.pause();else if(e.key==='z'||e.key==='Z'){e.preventDefault();undo()}});
 }

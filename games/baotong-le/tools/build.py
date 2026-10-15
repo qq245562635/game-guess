@@ -6,7 +6,7 @@ import json, re, shutil
 from pathlib import Path
 root = Path(__file__).resolve().parent.parent
 src = root / 'src'
-ORDER = ['core.js', 'gl.js', 'view.js', 'ui.js', 'input.js', 'main.js']
+ORDER = ['core.js', 'levels.js', 'gl.js', 'view.js', 'ui.js', 'input.js', 'main.js']
 body = '\n'.join((src / f).read_text(encoding='utf-8') for f in ORDER)
 
 def check(name, code, wx=False):

@@ -43,22 +43,25 @@ const SPR={
 };
 
 function render(){
-  const nt=G?0.5-0.5*Math.cos(2*Math.PI*G.t/CFG.dayCycle):0;
+  const nt=G?0.5-0.5*Math.cos(2*Math.PI*G.t/K.dayCycle):0;
   const land=sky('land',nt);R.begin(land);
   if(!G){R.end();return}
   const px=i=>ox+(X(i)+.5)*S, py=i=>oy+(Y(i)+.5)*S, now=P.now();
   const INK=C('#1b2a4a'),PAPER=C('#fffdf7');
-  // 网格
-  const gc=sky('grid',nt);
-  for(let x=0;x<=cols;x++)R.rect(ox+x*S-.5,oy,1,rows*S,0,gc);
-  for(let y=0;y<=rows;y++)R.rect(ox,oy+y*S-.5,cols*S,1,0,gc);
+  // 网格（只画当前城区）
+  const gc=sky('grid',nt),A=G.area,ax=ox+A.x0*S,ay=oy+A.y0*S,aw=(A.x1-A.x0)*S,ah=(A.y1-A.y0)*S;
+  for(let x=A.x0;x<=A.x1;x++)R.rect(ox+x*S-.5,ay,1,ah,0,gc);
+  for(let y=A.y0;y<=A.y1;y++)R.rect(ax,oy+y*S-.5,aw,1,0,gc);
   // 河：先岸再水
   const we=sky('waterEdge',nt),wa=sky('water',nt),e=S*0.14;
   for(let i=0;i<cols*rows;i++)if(G.water[i])R.rect(ox+X(i)*S-e,oy+Y(i)*S-e,S+2*e,S+2*e,0,we);
   for(let i=0;i<cols*rows;i++)if(G.water[i])R.rect(ox+X(i)*S-.5,oy+Y(i)*S-.5,S+1,S+1,0,wa);
   if(G.flashWater>0){G.flashWater-=1/60;const fw=CA('#ffffff',0.45*Math.abs(Math.sin(G.flashWater*6)));
     for(let i=0;i<cols*rows;i++)if(G.water[i])R.rect(ox+X(i)*S-.5,oy+Y(i)*S-.5,S+1,S+1,0,fw)}
-  R.rect(ox-1,oy-1,cols*S+2,rows*S+2,0,gc,{stroke:2});
+  // 城区外：盖一层雾，还没开发的地块（和河）隐约可见
+  {const fog=CA(nt>.5?'#1b2a4a':'#f5f1e8',.78),mx=ox,my=oy,mw=cols*S,mh=rows*S;
+   R.rect(mx,my,mw,ay-my,0,fog);R.rect(mx,ay+ah,mw,my+mh-ay-ah,0,fog);R.rect(mx,ay,ax-mx,ah,0,fog);R.rect(ax+aw,ay,mx+mw-ax-aw,ah,0,fog)}
+  R.rect(ax-1,ay-1,aw+2,ah+2,0,gc,{stroke:2});
 
   const shA=sky('shadow',nt),shO=opaque(land,shA),road=sky('road',nt),rail=sky('rail',nt),sh=S*0.16;
   // 道路阴影 / 桥栏 / 路面
@@ -100,6 +103,18 @@ function render(){
   if(tool==='mw'&&G.mwStart>=0){const x1=px(G.mwStart),y1=py(G.mwStart),L=Math.hypot(ptr.x-x1,ptr.y-y1),st=S*.35;
     for(let d=0;d<L;d+=st){const e2=Math.min(L,d+S*.2);R.line(x1+(ptr.x-x1)*d/L,y1+(ptr.y-y1)*d/L,x1+(ptr.x-x1)*e2/L,y1+(ptr.y-y1)*e2/L,S*.22,C(MW_C))}}
 
+  // 第一关：示范路线（虚线 + 移动的小圆点），接通后消失
+  if(G.lv&&G.lv.ghost&&!G.served.size&&!G.over){
+    if(!G.ghost||G.ghost.n!==G.nodes.size){const h=G.houses[0],d=h&&G.dests.find(d=>d.color===h.color);let path=null;
+      if(d){const pr=new Map([[h.idx,-1]]),q=[h.idx];while(q.length){const u=q.shift();if(u===d.door)break;
+          for(const v of N4(u)){if(pr.has(v)||G.occ[v]>=0||G.water[v]||!inArea(v))continue;const n=G.nodes.get(v);if(n&&n.kind!=='road'&&v!==d.door)continue;pr.set(v,u);q.push(v)}}
+        if(pr.has(d.door)){path=[d.door];let k=d.door;while(pr.get(k)!==-1){k=pr.get(k);path.push(k)}path.reverse()}}
+      G.ghost={n:G.nodes.size,path}}
+    const gp=G.ghost.path;
+    if(gp){const pts=gp.map(q=>[px(q),py(q)]),L=gp.length-1,ph=(now/600)%1,col=CA('#1b2a4a',.35);
+      for(let k=0;k<L;k++){const a=pts[k],b=pts[k+1];for(let f=ph*0.5;f<1;f+=0.5){const f2=Math.min(1,f+0.25);R.line(a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[0]+(b[0]-a[0])*f2,a[1]+(b[1]-a[1])*f2,S*.14,col)}}
+      const t=(now/1800)%1.25,fi=Math.min(L,t*L),i0=Math.floor(fi),i1=Math.min(L,i0+1),fr=fi-i0,fx=pts[i0][0]+(pts[i1][0]-pts[i0][0])*fr,fy=pts[i0][1]+(pts[i1][1]-pts[i0][1])*fr;
+      R.circle(fx,fy,S*.24,CA('#f5a623',.85));R.ring(fx,fy,S*.24,S*.06,PAPER)}}
   // 小区：米色楼群 + 门口分类桶
   const top=sky('bldTop',nt),side=sky('bldSide',nt);
   for(const h of G.houses){
@@ -134,11 +149,11 @@ function render(){
     if(d.pins>d.cap){const rowsN=Math.ceil(shown/per);
       R.text('+'+(d.pins-d.cap),cx+((Math.min(per,shown)-1)/2)*gap+S*.28,baseY-(rowsN-1)*rowH,{size:S*.32,font:'num',weight:700,color:nt>.5?PAPER:INK})}
     // 督导员检查圈
-    if(G.insp&&G.insp.d===d){const Rr=S*1.5,f=G.insp.left/CFG.inspTime;
+    if(G.insp&&G.insp.d===d){const Rr=S*1.5,f=G.insp.left/K.inspTime;
       R.ring(cx,cy,Rr,S*.08,C(MW_C),{dash:29,phase:-G.t*1.9});R.arc(cx,cy,Rr,S*.16,-Math.PI/2,f*Math.PI*2,C(MW_C));
       const gx=cx-Rr*.72,gy=cy+Rr*.72;R.circle(gx,gy,S*.3,C(MW_C));R.text('督',gx,gy,{size:S*.3,font:'ui',weight:700,color:INK,align:'center'})}
     // 投诉倒计时
-    if(d.timer>0){const Rr=S*1.32,f=d.timer/CFG.timerMax,pulse=0.5+0.5*Math.sin(G.t*8);
+    if(d.timer>0){const Rr=S*1.32,f=d.timer/K.timerMax,pulse=0.5+0.5*Math.sin(G.t*8);
       R.ring(cx,cy,Rr,S*(.3+.12*pulse),CA('#d9443a',.18+.22*pulse));R.arc(cx,cy,Rr,S*.16,-Math.PI/2,f*Math.PI*2,C('#d9443a'));
       const ex=cx+Rr*.72,ey=cy+Rr*.72;R.circle(ex,ey,S*(.28+.04*pulse),C('#d9443a'));R.text('!',ex,ey,{size:S*.38,font:'num',weight:700,color:C('#ffffff'),align:'center'})}
   }

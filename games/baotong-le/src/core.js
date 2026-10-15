@@ -33,7 +33,10 @@ const SKY={
 
 let G=null, cols=14, rows=20, S=30, ox=0, oy=0, W=0, H=0, dpr=1;
 let tool='road', speed=1, paused=false, hover=-1, ptr={x:0,y:0}, drag=null;
-const rnd=Math.random;
+let K=CFG;   // 本局生效的数值：CFG 合并关卡的 cfg 覆盖
+/* 随机数：关卡用固定种子（同一关每次地图一样，之后的刷新随玩家节奏自然分岔）；无尽模式随机 */
+let rnd=Math.random;
+function seedRng(seed){let a=seed>>>0;rnd=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const I=(x,y)=>y*cols+x, X=i=>i%cols, Y=i=>(i/cols)|0;
 const inB=(x,y)=>x>=0&&y>=0&&x<cols&&y<rows;
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
@@ -74,31 +77,55 @@ function sfx(name,gap){
 function unlockAudio(){P.unlockAudio()}
 
 /* ===== world setup ===== */
-function newGame(){
-  const sz=P.size(), land=sz.w>sz.h*1.05;
-  cols=land?22:14; rows=land?14:20; if(typeof layout==='function')layout();
-  G={t:0,score:0,roads:CFG.startRoads,items:{bridge:CFG.startBridges,ra:0,light:0,mw:0},week:1,nextWeek:CFG.weekLen,
+function newGame(lvIdx){
+  const lv=lvIdx===undefined||lvIdx===null?null:LEVELS[lvIdx];
+  K=Object.assign({},CFG,lv&&lv.cfg||{});
+  seedRng(lv?lvIdx*7919+1013:(Math.random()*4294967296)>>>0);
+  const sz=P.size(), land=sz.w>sz.h*1.05, base=lv?lv.size:[14,20];
+  cols=land?base[1]:base[0]; rows=land?base[0]:base[1];
+  const items=Object.assign({bridge:lv?0:K.startBridges,ra:0,light:0,mw:0},lv&&lv.items||{});
+  G={t:0,score:0,roads:K.startRoads,items,week:1,nextWeek:K.weekLen,
     water:new Uint8Array(cols*rows),occ:new Int16Array(cols*rows).fill(-1),
     nodes:new Map(),adj:new Map(),mws:[],mwSeq:1,mwDeg:new Map(),dests:[],houses:[],cars:[],
-    colorsActive:2,nextHouse:10,nextDest:CFG.destFirst,strokes:[],flash:[],served:new Set(),live:new Set(),heat:new Map(),sweeps:[],floats:[],dirty:false,over:false,bridgeSeq:1,dispatchT:0,mwStart:-1,modal:false,fx:[],demo:false,
-    insp:null,nextInsp:range(CFG.inspFirst),inspCount:0,inspPassed:0,beepT:0};
-  genRiver();
-  for(let k=0;k<2;k++){const c=ORDER[k];const d=spawnDest(c,'sq');spawnHouse(c,d);spawnHouse(c,d);}
-  tool='road'; speed=1; paused=false; drag=null; UI.reset();
+    colorsActive:lv?lv.colors:2,nextHouse:10,nextDest:K.destFirst,strokes:[],flash:[],served:new Set(),live:new Set(),heat:new Map(),sweeps:[],floats:[],dirty:false,over:false,bridgeSeq:1,dispatchT:0,mwStart:-1,modal:false,fx:[],demo:false,
+    insp:null,nextInsp:lv&&!lv.insp?Infinity:range(K.inspFirst),inspCount:0,inspPassed:0,beepT:0,
+    lv,lvIdx:lv?lvIdx:null,land,won:false,everTimer:false,area:{x0:0,y0:0,x1:cols,y1:rows}};
+  if(lv&&lv.area){const[w,h]=land?[lv.area.start[1],lv.area.start[0]]:lv.area.start;
+    G.area={x0:(cols-w)>>1,y0:(rows-h)>>1,x1:((cols-w)>>1)+w,y1:((rows-h)>>1)+h}}
+  G.view=Object.assign({},G.area);
+  genRiver(lv?lv.river:1);
+  for(let k=0;k<G.colorsActive;k++){const c=ORDER[k];const d=spawnDest(c,'sq');spawnHouse(c,d);spawnHouse(c,d);}
+  tool='road'; speed=1; paused=false; drag=null;
+  if(typeof layout==='function')layout();
+  UI.reset();
 }
-function genRiver(){
-  const portrait=rows>cols, L=portrait?rows:cols, Sd=portrait?cols:rows, ph=rnd()*6;
-  const base=Sd*(rnd()<.5?0.68:0.32);
-  for(let u=0;u<L;u++){
-    const c=base+Math.sin(u*0.36+ph)*1.6+Math.sin(u*0.11+ph*2)*0.9;
-    for(let v=0;v<Sd;v++) if(Math.abs(v+0.5-c)<1.05) G.water[portrait?I(v,u):I(u,v)]=1;
-  }
+/* 城区扩张：按关卡的 step 向四周扩，不超出地图 */
+function growArea(){
+  const a=G.area,lv=G.lv;if(!lv||!lv.area)return false;
+  const[sw,sh]=G.land?[lv.area.step[1],lv.area.step[0]]:lv.area.step;
+  const w=Math.min(cols,a.x1-a.x0+sw),h=Math.min(rows,a.y1-a.y0+sh);
+  if(w===a.x1-a.x0&&h===a.y1-a.y0)return false;
+  const cx=(a.x0+a.x1)/2,cy=(a.y0+a.y1)/2;
+  let x0=Math.round(cx-w/2),y0=Math.round(cy-h/2);x0=Math.max(0,Math.min(cols-w,x0));y0=Math.max(0,Math.min(rows-h,y0));
+  G.area={x0,y0,x1:x0+w,y1:y0+h};return true;
 }
-const isFree=i=>!G.water[i]&&G.occ[i]<0&&!G.nodes.has(i);
+const inArea=i=>{const a=G.area,x=X(i),y=Y(i);return x>=a.x0&&x<a.x1&&y>=a.y0&&y<a.y1};
+function genRiver(n){
+  if(!n)return;
+  const portrait=rows>cols;
+  const lay=(along,base,amp)=>{ // along=true：沿长边流
+    const L=along?(portrait?rows:cols):(portrait?cols:rows),Sd=along?(portrait?cols:rows):(portrait?rows:cols),ph=rnd()*6,b=Sd*base;
+    for(let u=0;u<L;u++){const c=b+Math.sin(u*0.36+ph)*amp+Math.sin(u*0.11+ph*2)*amp*0.56;
+      for(let v=0;v<Sd;v++)if(Math.abs(v+0.5-c)<1.05){const vert=along===portrait;G.water[vert?I(v,u):I(u,v)]=1}}};
+  lay(true,rnd()<.5?0.68:0.32,Math.min(1.6,(portrait?cols:rows)*0.11));
+  if(n>1)lay(false,rnd()<.5?0.62:0.38,Math.min(1.2,(portrait?rows:cols)*0.06));
+}
+const isFree=i=>!G.water[i]&&G.occ[i]<0&&!G.nodes.has(i)&&inArea(i);
 function spawnDest(color,shape){
   const before=reachableHouses(),cands=[];
   for(let k=0;k<500;k++){
-    const x=1+(rnd()*(cols-3)|0), y=1+(rnd()*(rows-3)|0);
+    const A=G.area,x=A.x0+(rnd()*(A.x1-A.x0-1)|0), y=A.y0+(rnd()*(A.y1-A.y0-1)|0);
+    if(x+1>=A.x1||y+1>=A.y1)continue;
     const fp=[I(x,y),I(x+1,y),I(x,y+1),I(x+1,y+1)];
     if(!fp.every(isFree))continue;
     let ok=true;
@@ -117,7 +144,7 @@ function spawnDest(color,shape){
   if(!cands.length)return null;
   {const{x,y,dd,fp}=cands.sort((a,b)=>b.sc-a.sc)[0];
     const id=G.dests.length;
-    const d={id,x,y,color,shape,cap:shape==='sq'?7:10,door:I(dd[0],dd[1]),inner:I(dd[2],dd[3]),pins:0,assigned:0,timer:0,nextPin:range(CFG.firstPin),born:G.t};
+    const d={id,x,y,color,shape,cap:shape==='sq'?7:10,door:I(dd[0],dd[1]),inner:I(dd[2],dd[3]),pins:0,assigned:0,timer:0,nextPin:range(K.firstPin),born:G.t};
     fp.forEach(i=>G.occ[i]=id);
     G.nodes.set(d.door,{kind:'door',dest:d}); G.adj.set(d.door,new Set());
     G.dests.push(d); return d;
@@ -166,7 +193,7 @@ function spawnHouse(color,near){
   const before=reachableHouses(), fits=i=>placementOK(new Set([i]),before,[i,color]);
   const idx=pool.find(fits);if(idx===undefined)return null;
   const h={idx,color,cars:[],born:G.t,seed:rnd()};
-  for(let k=0;k<CFG.carsPerHouse;k++)h.cars.push({house:h,color,state:'idle',path:null,i:0,p:0,px:0,py:0,hx:1,hy:0});
+  for(let k=0;k<K.carsPerHouse;k++)h.cars.push({house:h,color,state:'idle',path:null,i:0,p:0,px:0,py:0,hx:1,hy:0});
   G.houses.push(h); G.cars.push(...h.cars);
   G.nodes.set(idx,{kind:'house',house:h}); G.adj.set(idx,new Set()); return h;
 }
@@ -176,7 +203,7 @@ function nearDoor(x,y){for(const d of G.dests){const dx=X(d.door),dy=Y(d.door);i
    要求新小区能通到同色处理厂入口，且原本能通的小区不被这次放置切断。 */
 const N4=i=>{const x=X(i),y=Y(i),r=[];if(x>0)r.push(i-1);if(x<cols-1)r.push(i+1);if(y>0)r.push(i-cols);if(y<rows-1)r.push(i+cols);return r};
 function reachability(block,extraDoor){
-  const walk=j=>!block.has(j)&&G.occ[j]<0&&(!G.nodes.has(j)||G.nodes.get(j).kind==='road');
+  const walk=j=>!block.has(j)&&G.occ[j]<0&&inArea(j)&&(!G.nodes.has(j)||G.nodes.get(j).kind==='road');
   const comp=new Int32Array(cols*rows).fill(-1),colors=[];let n=0;
   for(let s=0;s<cols*rows;s++){if(comp[s]>=0||!walk(s))continue;comp[s]=n;colors.push(new Set());const q=[s];
     while(q.length){const u=q.pop();for(const v of N4(u))if(comp[v]<0&&walk(v)){comp[v]=n;q.push(v)}}n++}
@@ -186,7 +213,7 @@ function reachability(block,extraDoor){
 }
 function landFrom(src){ // 不过河能走到的格子
   const seen=new Set([src]),q=[src];
-  while(q.length){const u=q.pop();for(const v of N4(u))if(!seen.has(v)&&!G.water[v]&&G.occ[v]<0&&(!G.nodes.has(v)||G.nodes.get(v).kind==='road')){seen.add(v);q.push(v)}}
+  while(q.length){const u=q.pop();for(const v of N4(u))if(!seen.has(v)&&!G.water[v]&&G.occ[v]<0&&inArea(v)&&(!G.nodes.has(v)||G.nodes.get(v).kind==='road')){seen.add(v);q.push(v)}}
   return seen;
 }
 function reachableHouses(){const ok=reachability(new Set());return G.houses.filter(h=>ok(h.idx,h.color))}
@@ -216,7 +243,7 @@ function dijkstra(src,target){
     const nu=G.nodes.get(u); if(!nu||(u!==src&&nu.kind!=='road'))continue;
     const relax=(v,w)=>{if(done.has(v)||!G.nodes.has(v))return;const nd=dist.get(u)+w+junctionPen(v);if(!dist.has(v)||nd<dist.get(v)){dist.set(v,nd);prev.set(v,u);open.push(v)}};
     for(const v of G.adj.get(u))relax(v,1);
-    for(const m of G.mws){if(m.a===u)relax(m.b,m.len/CFG.mwBoost);else if(m.b===u)relax(m.a,m.len/CFG.mwBoost)}
+    for(const m of G.mws){if(m.a===u)relax(m.b,m.len/K.mwBoost);else if(m.b===u)relax(m.a,m.len/K.mwBoost)}
   }
   return{dist,prev,order};
 }
@@ -224,7 +251,7 @@ function findPath(a,b){if(a===b)return[a];const{dist,prev}=dijkstra(a,b);if(!dis
 
 /* ===== building roads ===== */
 function tryConnect(a,b){
-  if(G.occ[b]>=0)return false;
+  if(G.occ[b]>=0||!inArea(b))return false;
   const na=G.nodes.get(a), nb=G.nodes.get(b); if(!na)return false;
   if(G.adj.get(a).has(b))return true;
   if(na.kind==='house'&&G.adj.get(a).size>=1)return false;
@@ -274,7 +301,7 @@ function sendHome(c,from){
 }
 function arrive(c){
   const at=c.path[c.path.length-1];
-  if(c.state==='out'){const d=c.dest;d.pins=Math.max(0,d.pins-1);d.assigned--;G.score++;d.timer=Math.max(0,d.timer-3);
+  if(c.state==='out'){const d=c.dest;d.pins=Math.max(0,d.pins-1);d.assigned--;G.score++;d.timer=Math.max(0,d.timer-3);if(G.lv&&!G.won&&G.score>=G.lv.goal)levelWin();
     G.fx.push({x:X(d.door)+.5,y:Y(d.door)+.5,t:0,c:PAL[d.color].c});
     const now=P.now();d.bump=now;G.floats.push({x:X(d.door)+.5,y:Y(d.door)+.1,text:'+1',color:PAL[d.color].d,t:now,small:true});bumpScore();
     if(G.insp&&G.insp.d===d)inspProgress();
@@ -321,7 +348,7 @@ function updateCar(c,dt){
     if(c.state==='stuck'&&c.stuckT>10)c.state='idle';return;
   }
   const a=c.path[c.i],b=c.path[c.i+1];const grid=nb(a).has(b);const L=segLen(a,b);
-  let v=CFG.carSpeed*(grid?1:CFG.mwBoost);
+  let v=K.carSpeed*(grid?1:K.mwBoost);
   if(grid){
     const na=G.nodes.get(a),nb=G.nodes.get(b);
     const f=n=>n.ra?0.85:n.light?1:0.42;
@@ -398,20 +425,20 @@ function startInsp(){
   const cand=G.dests.filter(d=>G.t-d.born>15&&d.timer<=0&&reachable(d));
   if(!cand.length){G.nextInsp=G.t+12;return}
   const d=cand[rnd()*cand.length|0];
-  const need=Math.min(CFG.inspNeedMax,CFG.inspNeed+CFG.inspNeedStep*G.inspCount);
-  G.insp={d,need,got:0,left:CFG.inspTime};G.inspCount++;
+  const need=Math.min(K.inspNeedMax,K.inspNeed+K.inspNeedStep*G.inspCount);
+  G.insp={d,need,got:0,left:K.inspTime};G.inspCount++;
   toast(`督导员突击检查${PAL[d.color].plant}：90 秒内清运 ${need} 袋`);sfx('beep');
 }
 function inspProgress(){const s=G.insp;s.got++;if(s.got>=s.need)endInsp(true)}
 function endInsp(ok){
   const s=G.insp;G.insp=null;
-  G.nextInsp=G.t+range(CFG.inspEvery)*CFG.weekLen;
+  G.nextInsp=G.t+range(K.inspEvery)*K.weekLen;
   if(ok){
-    const k=Object.keys(ITEMS)[rnd()*4|0];G.items[k]+=1;G.roads+=CFG.inspReward;G.inspPassed++;
-    toast(`检查通过！奖励 ${CFG.inspReward} 路段 + 1 ${ITEMS[k].name}`);sfx('ding2');
+    const pool=G.lv?G.lv.pool:Object.keys(ITEMS),k=pool.length?pool[rnd()*pool.length|0]:null;if(k)G.items[k]+=1;G.roads+=K.inspReward;G.inspPassed++;
+    toast(`检查通过！奖励 ${K.inspReward} 路段`+(k?` + 1 ${ITEMS[k].name}`:''));sfx('ding2');
     G.fx.push({x:s.d.x+1,y:s.d.y+1,t:0,c:MW_C,big:true});
   }else{
-    s.d.pins+=CFG.inspPenalty;toast(`检查不合格，${PAL[s.d.color].plant}被追加 ${CFG.inspPenalty} 袋`);sfx('fail');
+    s.d.pins+=K.inspPenalty;toast(`检查不合格，${PAL[s.d.color].plant}被追加 ${K.inspPenalty} 袋`);sfx('fail');
   }
   syncHud(true);
 }
@@ -426,20 +453,20 @@ function pickHouseColor(){
 function update(dt){
   G.t+=dt;
   if(G.t>=G.nextWeek){openWeek();return}
-  G.nextHouse-=dt;if(G.nextHouse<=0){G.nextHouse=CFG.houseEvery*(0.8+rnd()*0.4);spawnHouse(pickHouseColor())}
-  G.nextDest-=dt;if(G.nextDest<=0){G.nextDest=CFG.destEvery*(0.85+rnd()*0.3);
-    const col=ORDER[rnd()*G.colorsActive|0],shape=G.week>=3&&rnd()<0.35?'ci':'sq';const d=spawnDest(col,shape);if(d)spawnHouse(col,d)}
+  G.nextHouse-=dt;if(G.nextHouse<=0){G.nextHouse=K.houseEvery*(0.8+rnd()*0.4);spawnHouse(pickHouseColor())}
+  G.nextDest-=dt;if(G.nextDest<=0){G.nextDest=K.destEvery*(0.85+rnd()*0.3);
+    const col=ORDER[rnd()*G.colorsActive|0],cf=G.lv?G.lv.circle||0:3,shape=cf&&G.week>=cf&&rnd()<0.35?'ci':'sq';const d=spawnDest(col,shape);if(d)spawnHouse(col,d)}
   // inspection
   if(!G.insp&&G.t>=G.nextInsp)startInsp();
   if(G.insp){G.insp.left-=dt;if(G.insp.left<=0)endInsp(false)}
-  const iv=CFG.pinBase/(1+G.t/CFG.pinScale);
+  const iv=K.pinBase/(1+G.t/K.pinScale);
   let warn=0;
   for(const d of G.dests){
-    d.nextPin-=dt*(G.insp&&G.insp.d===d?CFG.inspPinRate:1);
+    d.nextPin-=dt*(G.insp&&G.insp.d===d?K.inspPinRate:1);
     if(d.nextPin<=0){d.pins++;d.nextPin=iv*(0.7+rnd()*0.6);sfx('pop',0.25)}
-    if(d.pins>d.cap){if(d.timer===0)G.beepT=0;d.timer+=dt}else d.timer=Math.max(0,d.timer-dt*CFG.timerRecover);
-    warn=Math.max(warn,d.pins>d.cap?d.timer/CFG.timerMax:0);
-    if(d.timer>=CFG.timerMax){gameOver(d);return}
+    if(d.pins>d.cap){if(d.timer===0)G.beepT=0;d.timer+=dt;G.everTimer=true}else d.timer=Math.max(0,d.timer-dt*K.timerRecover);
+    warn=Math.max(warn,d.pins>d.cap?d.timer/K.timerMax:0);
+    if(d.timer>=K.timerMax){gameOver(d);return}
   }
   if(warn>0){G.beepT-=dt;if(G.beepT<=0){sfx('beep');G.beepT=3.2-2.2*warn}}
   if(G.dirty){replanAll();G.dirty=false;checkConnections(false)}
@@ -452,23 +479,41 @@ function update(dt){
 
 /* ===== 每周市政拨款 ===== */
 function openWeek(){
+  const pool=G.lv?G.lv.pool:Object.keys(ITEMS);
+  if(!pool.length){G.roads+=20;closeWeek();toast(`本周拨款：路段 +20`);sfx('ding');return}  // 早期关卡没有设施可选，直接发路段
   G.modal=true;
-  const keys=shuffle(Object.keys(ITEMS));
-  G.weekOpts=[{item:keys[0],tiles:15},rnd()<0.8?{item:keys[1],tiles:15}:{item:null,tiles:30}];
+  const keys=shuffle(pool.slice());
+  G.weekOpts=keys.length>1?[{item:keys[0],tiles:15},rnd()<0.8?{item:keys[1],tiles:15}:{item:null,tiles:30}]:[{item:keys[0],tiles:15},{item:null,tiles:30}];
   UI.week();sfx('ding');
 }
 function chooseWeek(o){if(o.item)G.items[o.item]+=ITEMS[o.item].n;G.roads+=o.tiles;closeWeek()}
 function closeWeek(){
-  G.modal=false;G.week++;G.nextWeek+=CFG.weekLen;
-  if(G.week%2===0&&G.colorsActive<PAL.length){const col=ORDER[G.colorsActive++];const d=spawnDest(col,'sq');if(d){spawnHouse(col,d);spawnHouse(col,d)}toast(`新片区开始分类投放：${PAL[col].name}！`)}
+  G.modal=false;G.week++;G.nextWeek+=K.weekLen;
+  let msg='';
+  if(G.lv&&G.lv.area&&(G.week-1)%G.lv.area.every===0&&growArea())msg='城区扩大了，新地块上会出现小区和处理厂';
+  const addNow=G.lv?(G.lv.addColors||[]).indexOf(G.week)>=0:G.week%2===0;
+  if(addNow&&G.colorsActive<PAL.length){const col=ORDER[G.colorsActive++];const d=spawnDest(col,'sq');if(d){spawnHouse(col,d);spawnHouse(col,d)}msg=`新片区开始分类投放：${PAL[col].name}！`}
+  if(msg)toast(msg);
   syncHud(true);
+}
+/* ===== 关卡进度：每关最好星数，存在本地 ===== */
+function loadProgress(){try{const v=JSON.parse(P.store.get('btl-levels')||'{}');return{stars:Array.isArray(v.stars)?v.stars:[]}}catch(e){return{stars:[]}}}
+function saveProgress(p){P.store.set('btl-levels',JSON.stringify(p))}
+const levelUnlocked=(p,i)=>i===0||(p.stars[i-1]||0)>0;
+function levelWin(){
+  G.won=true;G.over=true;G.insp=null;
+  const stars=[true,!G.everTimer,G.week<=G.lv.weeks3];
+  const n=stars.filter(Boolean).length,p=loadProgress();
+  const prev=p.stars[G.lvIdx]||0;if(n>prev){p.stars[G.lvIdx]=n;saveProgress(p)}
+  G.winInfo={stars,n,prev,score:G.score,week:G.week};
+  sfx('combo');setTimeout(()=>UI.win(),900);
 }
 function gameOver(d){
   G.over=true;G.insp=null;
-  let best=+P.store.get('btl-best')||0;if(G.score>best){best=G.score;P.store.set('btl-best',best)}
+  let best=+P.store.get('btl-best')||0;if(!G.lv&&G.score>best){best=G.score;P.store.set('btl-best',best)}
   G.failed=d;
-  G.overInfo={score:G.score,week:G.week,best,insp:G.inspPassed,
-    why:(G.score>=best&&G.score>0?'新纪录！不过':'')+`${PAL[d.color].plant}门口的垃圾袋堆成山，居民投诉打爆了热线。`};
+  G.overInfo={score:G.score,week:G.week,best,insp:G.inspPassed,goal:G.lv?G.lv.goal:0,
+    why:(!G.lv&&G.score>=best&&G.score>0?'新纪录！不过':'')+`${PAL[d.color].plant}门口的垃圾袋堆成山，居民投诉打爆了热线。`};
   sfx('fail');setTimeout(()=>UI.over(),700);
 }
 

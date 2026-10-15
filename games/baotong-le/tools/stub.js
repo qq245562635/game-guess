@@ -3,7 +3,7 @@ const fs=require('fs'),path=require('path');
 module.exports=function run(extra,w,h){
   global.P={kind:'node',now:()=>0,size:()=>({w:w||400,h:h||800,dpr:1,safe:{top:0,bottom:0,left:0,right:0}}),
     store:{get:()=>null,set(){}},audio:()=>null,unlockAudio(){},vibrate(){}};
-  global.UI={reset(){},toast(){},week(){},over(){},bump(){}};
-  const src=fs.readFileSync(path.join(__dirname,'..','src','core.js'),'utf8');
-  eval(src+'\n'+extra);
+  global.UI={reset(){},toast(){},week(){},over(){},bump(){},win(){}};
+  const rd=f=>fs.readFileSync(path.join(__dirname,'..','src',f),'utf8');
+  eval(rd('core.js')+'\n'+rd('levels.js')+'\n'+extra);
 };
