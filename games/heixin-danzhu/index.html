@@ -376,11 +376,38 @@ const Sfx = (() => {
   }
   function savePref() { try { localStorage.setItem('pachinko-audio', JSON.stringify(pref)); } catch (e) {} }
 
+  // iOS：静音键会把 Web Audio 一起静音。把音频会话设成「播放」类型（iOS 17+），
+  // 老系统再循环播放一段无声 <audio>，让页面走媒体通道，这样静音键打开也能出声。
+  let silentEl = null;
+  function silentWav() {
+    const n = 800, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 16000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    w(36, 'data'); v.setUint32(40, n * 2, true);
+    let bin = ''; const u = new Uint8Array(buf); for (let i = 0; i < u.length; i++) bin += String.fromCharCode(u[i]);
+    return 'data:audio/wav;base64,' + btoa(bin);
+  }
+  function unlockIOS() {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    try {
+      if (!silentEl) { silentEl = document.createElement('audio'); silentEl.src = silentWav(); silentEl.loop = true; silentEl.setAttribute('playsinline', ''); silentEl.preload = 'auto'; }
+      if (silentEl.paused) { const pr = silentEl.play(); if (pr && pr.catch) pr.catch(() => {}); }
+    } catch (e) {}
+  }
+  // 浏览器只在 click / touchend / pointerup / keydown 里允许开声音（触屏的 pointerdown 不算），
+  // 所以每次这些手势都尝试恢复，并播一个空 buffer 解锁老版 iOS。
   function init() {
-    if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+    unlockIOS();
+    if (ac) {
+      if (ac.state !== 'running') { const pr = ac.resume(); if (pr && pr.catch) pr.catch(() => {}); poke(); }
+      return;
+    }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     ac = new AC();
+    poke();
     master = ac.createGain(); master.gain.value = 0.9;
     const comp = ac.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
     master.connect(comp); comp.connect(ac.destination);
@@ -393,9 +420,17 @@ const Sfx = (() => {
     const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 380;
     humGain = ac.createGain(); humGain.gain.value = 0;
     hum.connect(lp); lp.connect(humGain); humGain.connect(sfxBus); hum.start();
-    document.addEventListener('visibilitychange', () => { if (!ac) return; document.hidden ? ac.suspend() : ac.resume(); });
+    document.addEventListener('visibilitychange', () => {
+      if (!ac) return;
+      if (document.hidden) { ac.suspend(); if (silentEl) silentEl.pause(); } else { ac.resume(); unlockIOS(); }
+    });
   }
-  const ready = () => ac && ac.state === 'running';
+  function poke() {
+    try { const src = ac.createBufferSource(); src.buffer = ac.createBuffer(1, 1, 22050); src.connect(ac.destination); src.start(0); } catch (e) {}
+  }
+  ['click', 'touchend', 'pointerup', 'keydown'].forEach(ev => document.addEventListener(ev, init, { capture: true, passive: true }));
+  const ready = () => !!ac && ac.state === 'running';
+  function state() { return ac ? ac.state : 'none'; }
   const mf = m => 440 * Math.pow(2, (m - 69) / 12);
   function throttle(key, ms) { const n = performance.now(); if (last[key] && n - last[key] < ms) return true; last[key] = n; return false; }
 
@@ -586,7 +621,7 @@ const Sfx = (() => {
     if (k === 'sfx') sfxBus.gain.setTargetAtTime(v ? 1 : 0, ac.currentTime, 0.02);
     if (k === 'music') musicBus.gain.setTargetAtTime(v ? 0.5 : 0, ac.currentTime, 0.05);
   }
-  return { init, fx, music, pref, setPref };
+  return { init, fx, music, pref, setPref, state };
 })();
 // ===== end audio =====
 
@@ -749,7 +784,6 @@ $('#speed').addEventListener('click', () => { Sfx.fx.click(); S.speed = S.speed 
 $('#pause').addEventListener('click', togglePause);
 function togglePause() { Sfx.fx.click(); S.paused = !S.paused; $('#pause').textContent = S.paused ? '▶' : '❚❚'; $('#pause').setAttribute('aria-label', S.paused ? '继续' : '暂停'); }
 document.addEventListener('keydown', e => { if (e.code === 'Space' && S.phase !== 'start') { e.preventDefault(); togglePause(); } if (e.key === 'Escape') { setPlacing(null); S.sel = null; } });
-document.addEventListener('pointerdown', () => Sfx.init());
 $('#startBtn').addEventListener('click', startDay);
 $('#nextBtn').addEventListener('click', nextDay);
 $('#againBtn').addEventListener('click', () => { $('#ovOver').hidden = true; newGame(); startDay(); });

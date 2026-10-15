@@ -155,7 +155,6 @@ $('#speed').addEventListener('click', () => { Sfx.fx.click(); S.speed = S.speed 
 $('#pause').addEventListener('click', togglePause);
 function togglePause() { Sfx.fx.click(); S.paused = !S.paused; $('#pause').textContent = S.paused ? '▶' : '❚❚'; $('#pause').setAttribute('aria-label', S.paused ? '继续' : '暂停'); }
 document.addEventListener('keydown', e => { if (e.code === 'Space' && S.phase !== 'start') { e.preventDefault(); togglePause(); } if (e.key === 'Escape') { setPlacing(null); S.sel = null; } });
-document.addEventListener('pointerdown', () => Sfx.init());
 $('#startBtn').addEventListener('click', startDay);
 $('#nextBtn').addEventListener('click', nextDay);
 $('#againBtn').addEventListener('click', () => { $('#ovOver').hidden = true; newGame(); startDay(); });
