@@ -60,22 +60,24 @@ m.tx=bb.x;m.ty=bb.y;run(4);addDelGhost(bb);run(4);
 ok(!bAt(bb.x,bb.y)&&G.inv.belt===10-6+1-0&&G.inv.iron_ore===1,'拆除：带和带上的矿都回到背包（传送带 '+G.inv.belt+'）');
 
 console.log('3 手搓');
-newGame(7);G.done.add('auto_mining');G.inv={iron_plate:20,copper_plate:10};
+newGame(7);G.inv={iron_plate:20,copper_plate:10};
 ok(planCraft('miner',1),'背包只有铁板铜板也能排「采矿机」');
 console.log('     队列：'+G.craftQ.map(j=>j.r+'×'+j.n).join(' → '));
 run(20);
 ok(G.inv.miner===1,'20 秒后做好 1 台采矿机，剩铁板 '+(G.inv.iron_plate||0));
 G.inv={iron_ore:3};ok(!planCraft('miner',1),'材料不够时不排队');
+newGame(7);G.inv={copper_plate:8};ok(!planCraft('copper_plate',1)&&G.craftMiss&&G.craftMiss.it==='copper_ore'&&G.craftQ.length===0,'背包已有铜板、没有铜矿：手搓铜板失败并指出缺铜矿（以前会误报已排队）');
+G.inv={copper_plate:8,copper_ore:2};ok(planCraft('copper_plate',1)&&G.craftQ.length===1,'有铜矿时手搓铜板真的进队列');run(2);ok(G.inv.copper_plate===9,'做出来了：铜板 '+G.inv.copper_plate);
 newGame(7);G.inv={iron_plate:30,copper_plate:30,brick:10};const gw=addGhost('wind',Math.floor(G.mech.x)+2,Math.floor(G.mech.y)+2,0);G.inv.wind=0;delete G.inv.wind;
 run(15);ok(!G.ghosts.has(gw.id)&&G.b.size===1,'放了风机蓝图但背包没有风机 → 自动手搓再施工');
 
 console.log('4 科研');
-newGame(7);G.inv={iron_plate:10,copper_plate:10};
-ok(payTech('auto_mining')&&G.done.has('auto_mining')&&!G.inv.iron_plate,'手动科技扣背包物品');
-for(const t of ['automation','em'])G.done.add(t);
+newGame(7);G.inv={iron_plate:20,copper_plate:10};
+ok(payTech('automation')&&G.done.has('automation')&&!G.inv.iron_plate,'手动科技扣背包物品');
+for(const t of ['em'])G.done.add(t);
 const lab=addBuilding('lab',130,140,0);addBuilding('wind',132,140,0);addBuilding('wind',133,140,0);addBuilding('pole',131,142,0);
 ok(startResearch('drones1'),'科研站研究「无人机扩编」');lab.in.matrix1=20;run(70);
-ok(G.done.has('drones1')&&G.drones.length===6,'20 个矩阵 × 3 秒后完成，无人机 '+G.drones.length+' 架');
+ok(G.done.has('drones1')&&G.drones.length===6,'10 个矩阵 × 3 秒后完成，无人机 '+G.drones.length+' 架');
 
 console.log('5 存档');
 newGame(42);L=line(3);run(60);G.inv.gear=7;startResearch;const s1=serialize(1000);

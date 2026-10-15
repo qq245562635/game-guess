@@ -14,6 +14,8 @@ const INPUT=(()=>{
   const anchor=(type,px,py)=>{const s=BLD[type].size;return[Math.floor(wxOf(px)-s/2+0.5),Math.floor(wyOf(py)-s/2+0.5)]};
   /* 分拣器、采矿机自动朝向：当前朝向不合适而附近有合适的就自动转过去 */
   function rotFor(type,x,y){const k=BLD[type].k;
+    /* 放在引导闪烁的位置上：用引导给的朝向 */
+    const ga=UI.guide&&UI.guide.area;if(ga&&ga.type===type&&ga.x===x&&ga.y===y&&ga.rot!==undefined)return ga.rot;
     if(k==='sorter'){const rs=sorterRots(x,y);if(rs.length&&rs.indexOf(UI.brot)<0)return rs[0]}
     if(k==='miner'){const rs=minerRots(x,y);if(rs.length&&rs.indexOf(UI.brot)<0)return rs[0]}
     return UI.brot}
@@ -35,10 +37,10 @@ const INPUT=(()=>{
     const [tx,ty]=tileOf(px,py),wx=wxOf(px),wy=wyOf(py);
     VIEW.fxAdd({kind:'tap',px,py,dur:350,x:0,y:0});
     if(!inB(tx,ty))return;
-    const b=bAt(tx,ty),g=ghostAt(tx,ty);
+    const b=bAt(tx,ty),g=ghostAt(tx,ty),m0=G.mech;
     if(UI.demolish){if(b){if(G.delG.has(b.id))cancelGhost(G.delG.get(b.id));else{addDelGhost(b);SFX.play('remove')}}else if(g)cancelGhost(g);return}
     if(b){UI.openDetail(b);return}
-    if(g){UI.openGhost(g);return}
+    if(g){if(!g.del&&!inRange(g)){const S=BLD[g.type].size;m0.mine=-1;m0.tx=g.x+S/2;m0.ty=g.y+S+0.8;CAM.follow=true;UI.toast('机甲飞过去施工');return}UI.openGhost(g);return}
     const m=G.mech,i=idx(tx,ty);
     if(G.ore[i]){m.mine=i;m.tx=null;m.ty=null;m.mineT=0;CAM.follow=true;return}
     m.mine=-1;m.tx=wx;m.ty=wy;CAM.follow=true;
@@ -122,7 +124,7 @@ const INPUT=(()=>{
     if(UI.state!=='play')return;
     if(k==='r'&&UI.tool){UI.brot=(UI.brot+1)%4;if(hover)previewAt(hover[0],hover[1])}
     else if(k==='escape'){if(UI.panel)UI.panel=null;else if(UI.tool)setTool(null);else if(VIEW.select){VIEW.select=null;UI.selCount=0}else UI.demolish=false}
-    else if(k>='1'&&k<='8'){const t=QUICKBAR[+k-1];if(bldOK(t))setTool(UI.tool===t?null:t)}
+    else if(k>='1'&&k<='8'){const t=quickList()[+k-1];if(t)setTool(UI.tool===t?null:t)}
     else if(k==='x'){UI.demolish=!UI.demolish;UI.tool=null}
     else if('wasd'.indexOf(k)>=0||k.indexOf('arrow')===0){const s=6/CAM.z*10;CAM.follow=false;
       if(k==='w'||k==='arrowup')CAM.y-=s;if(k==='s'||k==='arrowdown')CAM.y+=s;if(k==='a'||k==='arrowleft')CAM.x-=s;if(k==='d'||k==='arrowright')CAM.x+=s}

@@ -7,7 +7,7 @@ const UI={state:'start',tool:null,brot:0,firstX:null,demolish:false,panel:null,d
 const C={panel:col('#121722',0.97),panel2:col('#1a2130'),line:col('#2a3346'),ink:col('#e6ebf3'),muted:col('#8b95a8'),
   accent:col('#5cc8ff'),accentInk:col('#06121c'),dim:col('#000000',0.45),chip:col('#232b3b'),good:col('#4fd18b'),bad:col('#f2555a'),warn:col('#f2b544')};
 let HITS=[];
-const hit=(x,y,w,h,fn,clip)=>HITS.push({x,y,w,h,fn,clip});
+const hit=(x,y,w,h,fn,clip,tag)=>HITS.push({x,y,w,h,fn,clip,tag});
 UI.hitTest=function(px,py){
   for(let k=HITS.length-1;k>=0;k--){const h=HITS[k];if(px<h.x||py<h.y||px>h.x+h.w||py>h.y+h.h)continue;
     if(h.clip&&(px<h.clip.x||py<h.clip.y||px>h.clip.x+h.clip.w||py>h.clip.y+h.clip.h))continue;return h}
@@ -36,7 +36,7 @@ function btn(x,y,w,h,label,fn,o){o=o||{};
   let tx=x+w/2;
   if(o.icon){if(label){icon(o.icon,x+w/2,y+h/2-7,20,ink);R.text(label,x+w/2,y+h-11,11,ink,'center')}else icon(o.icon,x+w/2,y+h/2,o.iconSize||22,ink)}
   else R.text(label,tx,y+h/2,o.size||14,ink,'center',o.weight||600);
-  if(fn&&!o.disabled)hit(x,y,w,h,fn,o.clip);
+  if(fn&&!o.disabled)hit(x,y,w,h,fn,o.clip,o.tag||label);
 }
 function chipItem(it,n,x,y,clip,need){ /* 物品小标签：图标 + 数量，返回宽度 */
   const s=String(n),w=26+R.measure(s,12,600);R.rect(x,y,w,22,6,C.chip);drawItem(it,x+12,y+11,14);
@@ -66,18 +66,17 @@ function drawTop(){
   const e=G.mech.e/emax(),ex=W-84;
   R.text('能量',ex,y+13,10,C.muted,'left');R.rect(ex,y+24,42,6,3,C.chip);R.rect(ex,y+24,42*e,6,3,e<0.15?C.bad:C.accent);
   btn(W-44,y+2,36,36,'',()=>openPanel('menu'),{icon:'menu',bg:col('#000000',0),iconSize:20});
-  /* 引导目标 */
-  const gy=y+46;
-  if(G.goal<GOALS.length){const g=GOALS[G.goal],[a,b]=g.check(G);
-    if(UI.goalOpen){const lines=R.wrap(g.text,W-120,13,500),h=24+lines.length*18;
-      R.rect(8,gy,W-16,h,12,col('#162238',0.95));R.rect(8,gy,W-16,h,12,withA(C.accent,0.35),1);
-      R.text('目标 '+(G.goal+1)+'/'+GOALS.length,20,gy+14,11,C.accent,'left',700);
-      lines.forEach((l,k)=>R.text(l,20,gy+33+k*18,13,C.ink,'left',500));
-      const p=Math.min(1,a/b);R.text(Math.min(a,b)+'/'+b,W-22,gy+14,11,C.muted,'right',600);
-      R.rect(W-90,gy+h-12,68,4,2,C.chip);R.rect(W-90,gy+h-12,68*p,4,2,C.accent);
+  /* 新手引导：第几步 + 这一步为什么 + 下一下点哪里 */
+  const gy=y+46,gd=UI.guide;
+  if(G.goal<GOALS.length){const g=GOALS[G.goal],[a,b]=g.check(G),head='第 '+(G.goal+1)+'/'+GOALS.length+' 步 · '+g.title;
+    if(UI.goalOpen){const lines=gd?R.wrap(gd.t,W-48,14,500):[],h=34+lines.length*20;
+      R.rect(8,gy,W-16,h,12,col('#162238',0.96));R.rect(8,gy,W-16,h,12,withA(C.accent,0.25+0.25*Math.sin(G.t*3)),1.5);
+      R.text(head,20,gy+15,12,C.accent,'left',700);
+      if(b>1){R.text(Math.min(a,b)+'/'+b,W-22,gy+15,11,C.muted,'right',600)}
+      lines.forEach((l,k)=>R.text(l,20,gy+36+k*20,14,C.ink,'left',500));
       hit(8,gy,W-16,h,()=>{UI.goalOpen=false});L.topEnd=gy+h;
-    }else{const s='目标 '+(G.goal+1)+' · '+Math.min(a,b)+'/'+b,w=R.measure(s,11,600)+20;
-      R.rect(8,gy,w,24,12,col('#162238',0.95));R.text(s,18,gy+12,11,C.accent,'left',600);hit(8,gy,w,24,()=>{UI.goalOpen=true});L.topEnd=gy+24}
+    }else{const w=R.measure(head,11,600)+20;
+      R.rect(8,gy,w,24,12,col('#162238',0.95));R.text(head,18,gy+12,11,C.accent,'left',600);hit(8,gy,w,24,()=>{UI.goalOpen=true});L.topEnd=gy+24}
   }else L.topEnd=y+40;
   if(VIEW.hl){const by=L.topEnd+6,s='高亮 '+ITEMS[VIEW.hl].name+'：绿=产出 红=消耗',w=R.measure(s,12,600)+56;
     R.rect(8,by,w,30,10,C.panel);drawItem(VIEW.hl,24,by+15,14);R.text(s,36,by+15,12,C.ink,'left',600);
@@ -86,13 +85,14 @@ function drawTop(){
 
 /* ===== 底部：功能行 + 快捷栏 ===== */
 function drawBottom(){
+  const gd=UI.guide;
   const L=UI.L,qh=58,qy=H-L.safeB-qh-6,ry=qy-50;L.barTop=ry;
   /* 功能行 */
   if(UI.tool){
     const def=BLD[UI.tool],n=G.inv[UI.tool]||0;
     R.rect(8,ry,W-16,44,12,C.panel);
     R.text(def.name,20,ry+15,13,C.ink,'left',700);R.text('背包 '+n+(n?'':' · 会自动手搓'),20,ry+31,11,n?C.muted:C.warn,'left');
-    let x=W-8-82;btn(x,ry+4,76,36,'完成',()=>setTool(null),{active:true});
+    let x=W-8-82;btn(x,ry+4,76,36,'完成',()=>setTool(null),{active:true,tag:'done'});if(gd&&gd.btn==='done')guideMark(x,ry+4,76,36);
     const k=def.k;
     if(k==='belt'){x-=56;const lab=UI.firstX===null?'自动':UI.firstX?'先横':'先竖';btn(x,ry+4,50,36,lab,()=>{UI.firstX=UI.firstX===null?true:UI.firstX?false:null},{icon:'corner'})}
     if(k==='belt'||k==='sorter'||k==='miner'){x-=56;btn(x,ry+4,50,36,'旋转',()=>{UI.brot=(UI.brot+1)%4;INPUT.refreshPreview()},{icon:'rotate'})}
@@ -104,7 +104,10 @@ function drawBottom(){
     const items=[['bag','背包',()=>openPanel('inv')],['tech','科技',()=>openPanel('tech')],['chart','产能',()=>openPanel('stats')],
       ['build','建筑',()=>openPanel('more')],['hammer','拆除',()=>{UI.demolish=!UI.demolish;if(UI.demolish)UI.toast('拆除模式：点建筑标记拆除，长按拖动框选')}]];
     const bw=(W-16-4*6)/5;
-    items.forEach(([ic,lab,fn],k)=>btn(8+k*(bw+6),ry,bw,44,lab,fn,{icon:ic,bg:C.panel,active:ic==='hammer'&&UI.demolish,activeCol:C.bad}));
+    const keys=['inv','tech','stats','more','demolish'],ql=quickList();
+    const want=gd&&!UI.panel?(gd.btn||(gd.slot&&ql.indexOf(gd.slot)<0?'more':null)):null;
+    items.forEach(([ic,lab,fn],k)=>{btn(8+k*(bw+6),ry,bw,44,lab,fn,{tag:keys[k],icon:ic,bg:C.panel,active:ic==='hammer'&&UI.demolish,activeCol:C.bad});
+      if(want===keys[k])guideMark(8+k*(bw+6),ry,bw,44)});
     if(G.research){const t=TECH[G.research.id],p=G.research.prog/t.cost.matrix1;R.rect(8+bw+6+6,ry+39,bw-12,3,2,C.chip);R.rect(8+bw+6+6,ry+39,(bw-12)*p,3,2,col(CAT.research.color))}
   }
   /* 回到机甲 */
@@ -112,16 +115,25 @@ function drawBottom(){
   /* 快捷栏 8 格 */
   R.rect(8,qy,W-16,qh,14,C.panel);
   const cw=(W-16-8)/8;
-  QUICKBAR.forEach((t,k)=>{
+  quickList().forEach((t,k)=>{
     let type=t;if(t==='belt'&&UI.tool==='belt2')type='belt2';if(t==='sorter'&&UI.tool==='sorter2')type='sorter2';
-    const x=8+4+k*cw,on=UI.tool===type,unl=bldOK(type),c=col(CAT[BLD[type].cat].color),n=G.inv[type]||0;
+    const x=8+4+k*cw,on=UI.tool===type,c=col(CAT[BLD[type].cat].color),n=G.inv[type]||0;
     if(on)R.rect(x+2,qy+4,cw-4,qh-8,10,withA(c,0.22));
     if(on)R.rect(x+2,qy+4,cw-4,qh-8,10,c,1.5);
-    icon(unl?type:'lock',x+cw/2,qy+24,unl?24:18,unl?(n?c:withA(c,0.55)):C.muted);
-    R.text(unl?String(n):'未解锁',x+cw/2,qy+46,unl?11:9,unl?(n?C.ink:C.muted):C.muted,'center',600);
-    hit(x,qy,cw,qh,()=>{if(!unl){UI.toast(BLD[type].name+'：研究「'+TECH[BLD[type].tech].name+'」解锁');return}setTool(UI.tool===type?null:type)});
+    icon(type,x+cw/2,qy+22,24,n?c:withA(c,0.55));
+    R.text(BLD[type].name.length>3?BLD[type].name.slice(-3):BLD[type].name,x+cw/2,qy+40,9,on?C.ink:C.muted,'center');
+    R.text(String(n),x+cw/2,qy+51,10,n?C.ink:C.muted,'center',700);
+    hit(x,qy,cw,qh,()=>setTool(UI.tool===type?null:type),null,'slot:'+type);
+    if(gd&&!UI.panel&&gd.slot===t&&UI.tool!==type)guideMark(x+2,qy+4,cw-4,qh-8,true);
   });
 }
+/* 快捷栏：按 QUICK_ORDER 取已解锁的前 8 个 */
+function quickList(){return QUICK_ORDER.filter(bldOK).slice(0,8)}
+/* 引导高亮：闪烁边框 + 上方跳动的箭头 */
+function guideMark(x,y,w,h,noArrow){const p=0.5+0.5*Math.sin(G.t*6),ac=col('#ffd75a');
+  R.rect(x,y,w,h,10,withA(ac,0.10+0.14*p));R.rect(x-2,y-2,w+4,h+4,12,withA(ac,0.5+0.5*p),2.5);if(noArrow)return;
+  const ax=x+w/2,ay=y-10-6*Math.abs(Math.sin(G.t*4));
+  R.line(ax,ay-14,ax,ay,3,ac);R.line(ax-7,ay-7,ax,ay,3,ac);R.line(ax+7,ay-7,ax,ay,3,ac)}
 function setTool(t){UI.tool=t;UI.demolish=false;UI.firstX=null;VIEW.preview=null;if(t)UI.panel=null;SFX.play('tap')}
 function openPanel(p,b){UI.panel=p;UI.scroll=0;UI.detail=b||null;UI.detailGhost=null;UI.confirmNew=0;if(p!=='detail')UI.tool=null;SFX.play('tap')}
 UI.openDetail=b=>openPanel('detail',b);
@@ -163,15 +175,17 @@ function panelInv(){
     list.forEach((it,k)=>{const cx=x+(k%6)*cw,cy=y+((k/6)|0)*64;R.rect(cx+2,cy,cw-4,58,10,C.panel2);
       drawItem(it,cx+cw/2,cy+20,22);R.text(String(G.inv[it]),cx+cw/2,cy+40,12,C.ink,'center',700);R.text(ITEMS[it].name,cx+cw/2,cy+52,9,C.muted,'center')});
     y+=Math.ceil(list.length/6)*64+10;
-    R.text('手搓（缺的零件会一起做）',x,y+10,12,C.muted,'left');y+=22;
+    R.text('手搓：点一下做一个（缺的齿轮、电路板会一起做）',x,y+10,12,C.muted,'left');y+=22;
     const rs=Object.keys(RECIPES).filter(r=>RECIPES[r].hand&&recipeOK(r));
     const cw2=Math.floor(w/4);
-    rs.forEach((r,k)=>{const o=Object.keys(RECIPES[r].out)[0],cx=x+(k%4)*cw2,cy=y+((k/4)|0)*74,can=planCraft(o,1,false,true);
-      R.rect(cx+2,cy,cw2-4,68,10,can?C.panel2:withA(C.panel2,0.5));drawItem(o,cx+cw2/2,cy+22,24,can?1:0.4);
-      R.text(ITEMS[o].name,cx+cw2/2,cy+46,11,can?C.ink:C.muted,'center',600);
-      R.text(RECIPES[r].t+' 秒'+(RECIPES[r].out[o]>1?' ×'+RECIPES[r].out[o]:''),cx+cw2/2,cy+60,9,C.muted,'center');
-      hit(cx,cy,cw2,68,()=>{if(planCraft(o,1)){UI.toast('已排队：'+ITEMS[o].name);SFX.play('tap')}else{UI.toast('材料不够：'+ITEMS[o].name,C.bad);SFX.play('fail')}},clip)});
-    y+=Math.ceil(rs.length/4)*74;
+    rs.forEach((r,k)=>{const rc=RECIPES[r],o=Object.keys(rc.out)[0],cx=x+(k%4)*cw2,cy=y+((k/4)|0)*86,can=planCraft(o,1,false,true);
+      R.rect(cx+2,cy,cw2-4,80,10,can?C.panel2:withA(C.panel2,0.5));drawItem(o,cx+cw2/2,cy+18,22,can?1:0.4);
+      R.text(ITEMS[o].name+(rc.out[o]>1?' ×'+rc.out[o]:''),cx+cw2/2,cy+40,11,can?C.ink:C.muted,'center',600);
+      /* 原料：背包里不够的标红（缺的中间件会自动一起做，只要最底层的够） */
+      const ks=Object.keys(rc.in);let iw=0;const parts=ks.map(it=>{const s2=String(rc.in[it]),ww=12+R.measure(s2,9,600);iw+=ww+3;return[it,s2,ww]});
+      let ix=cx+cw2/2-iw/2+1;for(const [it,s2,ww] of parts){drawItem(it,ix+5,cy+60,9);R.text(s2,ix+11,cy+60,9,invHas(it,rc.in[it])?C.muted:C.bad,'left',600);ix+=ww+3}
+      hit(cx,cy,cw2,80,()=>{if(planCraft(o,1)){UI.toast('已排队：'+ITEMS[o].name);SFX.play('tap')}else{UI.toast(missText(G.craftMiss,o),C.bad);SFX.play('fail')}},clip,'craft:'+o)});
+    y+=Math.ceil(rs.length/4)*86;
     return y-y0;
   },s=>btn(W-170,s.y+12,112,32,G.handAuto?'自动手搓：开':'自动手搓：关',()=>{G.handAuto=!G.handAuto},{size:12,active:G.handAuto}));
 }
@@ -193,9 +207,9 @@ function panelTech(){
       else if(!av){const need=t.req.filter(r=>!G.done.has(r)).map(r=>TECH[r].name).join('、');R.text('需要：'+need,x+12,y+58,11,C.muted,'left')}
       else{let cx=x+12;for(const k in t.cost)cx+=chipItem(k,t.cost[k],cx,y+47,clip,t.hand)+6;
         if(t.hand){const can=Object.keys(t.cost).every(k=>invHas(k,t.cost[k]));
-          btn(x+w-82,y+40,72,30,'研究',()=>{if(payTech(t.id)){SFX.play('tech')}},{disabled:!can,active:can,clip,size:13})}
+          btn(x+w-82,y+40,72,30,'研究',()=>{if(payTech(t.id)){SFX.play('tech')}},{disabled:!can,active:can,clip,size:13,tag:'tech:'+t.id})}
         else{if(G.research&&!cur&&G.paused[t.id])R.text('已暂停 '+G.paused[t.id],x+w-90,y+15,11,C.muted,'right');
-          btn(x+w-82,y+40,72,30,cur?'研究中':'开始',()=>{startResearch(t.id);if(!G.L||!G.L.lab.length)UI.toast('还需要放科研站，并给它送初阶矩阵',C.warn)},{active:!cur,disabled:cur,clip,size:13})}}
+          btn(x+w-82,y+40,72,30,cur?'研究中':'开始',()=>{startResearch(t.id);if(!G.L||!G.L.lab.length)UI.toast('还需要放科研站，并给它送初阶矩阵',C.warn)},{active:!cur,disabled:cur,clip,size:13,tag:'tech:'+t.id})}}
       y+=82;
     }
     return y-y0;
@@ -216,6 +230,7 @@ function panelStats(){
       R.text((d>=0?'+':'')+fmtRate(Math.abs(d)<0.05?0:d).replace('+-','-'),c3-6,y+20,13,short?C.bad:C.good,'right',700);
       hit(x,y,w,40,()=>{VIEW.hl=k;UI.panel=null},clip);y+=46}
     if(allGood&&!G.cnt.allGreen){G.cnt.allGreen=true}
+    G.cnt.statsSeen=true;
     return y-y0;
   });
 }
@@ -227,7 +242,7 @@ function panelMore(){
       R.rect(cx+3,cy,cw-6,78,12,C.panel2);icon(unl?t:'lock',cx+cw/2,cy+26,unl?28:20,unl?c:C.muted);
       R.text(BLD[t].name,cx+cw/2,cy+52,11,unl?C.ink:C.muted,'center',600);
       R.text(unl?'背包 '+(G.inv[t]||0):TECH[BLD[t].tech].name,cx+cw/2,cy+67,9,C.muted,'center');
-      hit(cx,cy,cw,78,()=>{if(!unl){UI.toast('研究「'+TECH[BLD[t].tech].name+'」解锁');return}setTool(t)},clip)});
+      hit(cx,cy,cw,78,()=>{if(!unl){UI.toast('研究「'+TECH[BLD[t].tech].name+'」解锁');return}setTool(t)},clip,'build:'+t)});
     return Math.ceil(ALL_BUILD.length/4)*84+(y-y0);
   });
 }
@@ -259,7 +274,7 @@ function panelDetail(){
       R.text(b.kind==='smelt'?'配方（送什么矿就炼什么，也可以手选）':'配方：点一下切换',x,y+8,11,C.muted,'left');y+=20;
       rs.forEach((r,k)=>{const cx=x+(k%6)*cw,cy=y+((k/6)|0)*52,on=b.recipe===r,o=Object.keys(RECIPES[r].out)[0];
         R.rect(cx+2,cy,cw-4,48,10,on?withA(C.accent,0.25):C.panel2);if(on)R.rect(cx+2,cy,cw-4,48,10,C.accent,1.5);
-        drawItem(o,cx+cw/2,cy+18,18);R.text(ITEMS[o].name,cx+cw/2,cy+38,9,C.ink,'center');hit(cx,cy,cw,48,()=>setRecipe(b,r),clip)});
+        drawItem(o,cx+cw/2,cy+18,18);R.text(ITEMS[o].name,cx+cw/2,cy+38,9,C.ink,'center');hit(cx,cy,cw,48,()=>setRecipe(b,r),clip,'recipe:'+r)});
       y+=Math.ceil(rs.length/6)*52+8;
       if(b.recipe){const rc=RECIPES[b.recipe];let cx=x;R.text('每次',x,y+8,11,C.muted,'left');cx+=34;
         for(const k in rc.in)cx+=chipItem(k,rc.in[k],cx,y-3,clip)+4;R.text('→',cx+4,y+8,12,C.muted,'left');cx+=20;
@@ -335,15 +350,21 @@ function drawStart(){
   btn(W/2-120,y,240,50,UI.hasSave?(UI.confirmNew?'再点一次：清除进度':'新的星球'):'开始',()=>{if(UI.hasSave&&!UI.confirmNew){UI.confirmNew=1;return}MAIN.fresh()},{active:!UI.hasSave,size:16,bg:UI.hasSave?C.chip:undefined});
   R.text('竖屏单手 · 进度自动保存 · 离线也在生产',W/2,H-UI.L.safeB-30,11,col('#5a6478'),'center');
 }
+/* 手搓失败：说清楚缺什么、去哪弄 */
+function missText(m,it){if(!m)return '做不了：'+ITEMS[it].name;const nm=ITEMS[m.it].name;
+  if(m.locked)return nm+' 还没解锁';
+  if(ITEMS[m.it].shape==='ore')return '缺 '+nm+' ×'+m.n+'：点'+nm+'矿脉让机甲去采，或放采矿机';
+  return '缺 '+nm+' ×'+m.n}
 /* 事件：建成光圈、研究完成、目标完成、采矿飘字 */
 function drainEvents(){
   for(const e of G.ev){
     if(e.k==='built'){VIEW.fxAdd({kind:'ring',x:e.x,y:e.y,r:BLD[e.type].size*0.6,c:GHOST,dur:450});SFX.play('build')}
     else if(e.k==='removed'){VIEW.fxAdd({kind:'ring',x:e.x,y:e.y,r:0.8,c:BAD,dur:400});SFX.play('remove')}
-    else if(e.k==='tech'){UI.toast('研究完成：'+TECH[e.id].name,col(CAT.research.color));SFX.play('tech')}
+    else if(e.k==='tech'){UI.toast('研究完成：'+TECH[e.id].name,col(CAT.research.color));SFX.play('tech');
+      if(e.gift)for(const k in e.gift)UI.toast('获得 '+ITEMS[k].name+' ×'+e.gift[k],C.good)}
     else if(e.k==='goal'){UI.toast('目标完成 ✓',C.good);SFX.play('goal');UI.goalOpen=true}
     else if(e.k==='mine')VIEW.fxAdd({kind:'text',x:e.x,y:e.y-0.4,s:'+1 '+ITEMS[e.it].name,c:col(ITEMS[e.it].color),dur:700});
-    else if(e.k==='craftFail'){UI.toast('材料不够：'+ITEMS[e.it].name,C.warn)}
+    else if(e.k==='craftFail'){UI.toast(missText(e.miss,e.it),C.warn)}
   }
   G.ev.length=0;
 }
@@ -351,6 +372,8 @@ UI.draw=function(){
   HITS=[];
   if(UI.state==='start'){drawStart();return}
   drainEvents();
+  UI.guide=null;try{UI.guide=tutHint()}catch(e){}
+  guideCamera();
   drawTop();drawBottom();
   if(UI.panel==='inv')panelInv();else if(UI.panel==='tech')panelTech();else if(UI.panel==='stats')panelStats();
   else if(UI.panel==='more')panelMore();else if(UI.panel==='detail')panelDetail();else if(UI.panel==='menu')panelMenu();
@@ -361,4 +384,8 @@ UI.draw=function(){
     ty-=36;R.alpha=a;R.rect((W-w)/2,ty,w,30,15,col('#0d1119',0.92));R.text(t.s,W/2,ty+15,13,t.c,'center',600);R.alpha=1}
   if(UI.offline)drawOffline();
 };
+/* 引导要放的位置不在屏幕上时，镜头移过去（每个位置只移一次） */
+function guideCamera(){const a=UI.guide&&UI.guide.area;if(!a)return;const k=a.x+','+a.y+','+(a.type||'');if(UI.guideKey===k)return;UI.guideKey=k;
+  const cx=a.x+a.w/2,cy=a.y+a.h/2,px=sx(cx),py=sy(cy);
+  if(px<40||px>W-40||py<UI.L.topEnd+40||py>UI.L.barTop-30){CAM.follow=false;CAM.x=cx;CAM.y=cy+1.5}}
 UI.layout=function(sz){const rs=UI.reserve(sz);UI.L.top=rs.top;UI.L.safeB=Math.max(rs.bottom,6);UI.L.topEnd=rs.top+40;UI.L.barTop=H-rs.bottom-120};

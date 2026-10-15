@@ -98,17 +98,18 @@ const BLD={
   belt2:    {name:'高速传送带',k:'belt',    cat:'logistics', size:1, speed:3.0, tier:2, tech:'fast_belt'},
   sorter:   {name:'分拣器',    k:'sorter',  cat:'logistics', size:1, period:0.6, tier:1, power:18, tech:null},
   sorter2:  {name:'高速分拣器',k:'sorter',  cat:'logistics', size:1, period:0.3, tier:2, power:36, tech:'fast_sorter'},
-  miner:    {name:'采矿机',    k:'miner',   cat:'gather',    size:2, rate:0.25, power:360, tech:'auto_mining'},
+  miner:    {name:'采矿机',    k:'miner',   cat:'gather',    size:2, rate:0.25, power:360, tech:null},
   smelter:  {name:'熔炉',      k:'machine', cat:'process',   size:2, speed:1, power:360, kind:'smelt', tech:null},
   assembler:{name:'组装机',    k:'machine', cat:'process',   size:2, speed:0.75, power:270, kind:'asm', tech:'automation'},
-  wind:     {name:'风机',      k:'wind',    cat:'power',     size:1, gen:300, tech:null},
+  wind:     {name:'风机',      k:'wind',    cat:'power',     size:1, gen:400, tech:null},
   pole:     {name:'电线杆',    k:'pole',    cat:'power',     size:1, cover:4.5, link:10, tech:null},
   thermal:  {name:'火电站',    k:'thermal', cat:'power',     size:2, gen:2160, fuelKJ:2700, tech:'thermal_power'},
   lab:      {name:'科研站',    k:'lab',     cat:'research',  size:2, period:3, power:480, tech:'em'},
   box:      {name:'储物箱',    k:'box',     cat:'logistics', size:1, cap:200, tech:null},
 };
 /* 底部快捷栏 8 格 */
-const QUICKBAR=['belt','sorter','miner','smelter','assembler','wind','pole','lab'];
+/* 底部快捷栏 8 格：按这个顺序取已解锁的前 8 个，其余在「建筑」面板里 */
+const QUICK_ORDER=['miner','belt','sorter','smelter','wind','pole','box','assembler','lab','thermal','belt2','sorter2'];
 /* 「更多」里能放的全部建筑（快捷栏 + 其余） */
 const ALL_BUILD=['belt','belt2','sorter','sorter2','miner','smelter','assembler','wind','pole','thermal','lab','box'];
 
@@ -125,7 +126,7 @@ const RECIPES={
   belt2:       {in:{belt:3,coil:1,gear:1}, out:{belt2:3}, t:1, kind:'asm', hand:true, tech:'fast_belt'},
   sorter:      {in:{iron_plate:1,circuit:1}, out:{sorter:1}, t:1, kind:'asm', hand:true},
   sorter2:     {in:{sorter:2,coil:2}, out:{sorter2:2}, t:1, kind:'asm', hand:true, tech:'fast_sorter'},
-  miner:       {in:{iron_plate:4,gear:2,circuit:2}, out:{miner:1}, t:3, kind:'asm', hand:true, tech:'auto_mining'},
+  miner:       {in:{iron_plate:4,gear:2,circuit:2}, out:{miner:1}, t:3, kind:'asm', hand:true},
   smelter:     {in:{iron_plate:4,brick:2,coil:4}, out:{smelter:1}, t:3, kind:'asm', hand:true},
   assembler:   {in:{iron_plate:4,gear:4,circuit:4}, out:{assembler:1}, t:3, kind:'asm', hand:true, tech:'automation'},
   wind:        {in:{iron_plate:6,gear:2,coil:3}, out:{wind:1}, t:4, kind:'asm', hand:true},
@@ -140,12 +141,11 @@ const RECIPE_FOR={};for(const id in RECIPES)for(const o in RECIPES[id].out)RECIP
 /* 科技。hand=true：直接用背包里的物品研究（前期）；否则消耗初阶矩阵，由科研站完成。
    eff：解锁后的效果（在 core.js 的 applyTech 里生效） */
 const TECHS=[
-  {id:'auto_mining', name:'自动采矿',   hand:true, cost:{iron_plate:10,copper_plate:10}, req:[], desc:'解锁采矿机：放在矿脉上自动开采'},
-  {id:'automation',  name:'自动化组装', hand:true, cost:{gear:10,circuit:10}, req:['auto_mining'], desc:'解锁组装机：自动制造零件和建筑'},
-  {id:'em',          name:'电磁学',     hand:true, cost:{coil:10,circuit:10}, req:['automation'], desc:'解锁科研站和初阶矩阵，之后的科技都靠矩阵研究'},
-  {id:'thermal_power',name:'火力发电',  cost:{matrix1:20}, req:['em'], desc:'解锁火电站：烧煤发电，功率是风机的 7 倍'},
-  {id:'drones1',     name:'无人机扩编', cost:{matrix1:20}, req:['em'], desc:'建造无人机 +2', eff:{drones:2}},
-  {id:'mech_speed',  name:'机甲推进',   cost:{matrix1:20}, req:['em'], desc:'机甲移动速度 +40%', eff:{mechSpeed:1.4}},
+  {id:'automation',  name:'自动化组装', hand:true, cost:{iron_plate:20,copper_plate:10}, req:[], gift:{assembler:1}, desc:'解锁组装机：自动制造零件和建筑（送 1 台）'},
+  {id:'em',          name:'电磁学',     hand:true, cost:{iron_plate:20,copper_plate:20,gear:10}, req:['automation'], gift:{lab:1}, desc:'解锁科研站和初阶矩阵，之后的科技靠矩阵研究（送 1 座科研站）'},
+  {id:'thermal_power',name:'火力发电',  cost:{matrix1:20}, req:['em'], desc:'解锁火电站：烧煤发电，功率是风机的 5 倍多'},
+  {id:'drones1',     name:'无人机扩编', cost:{matrix1:10}, req:['em'], desc:'建造无人机 +2', eff:{drones:2}},
+  {id:'mech_speed',  name:'机甲推进',   cost:{matrix1:10}, req:['em'], desc:'机甲移动速度 +40%', eff:{mechSpeed:1.4}},
   {id:'storage',     name:'储物扩容',   cost:{matrix1:30}, req:['em'], desc:'储物箱容量翻倍', eff:{boxCap:2}},
   {id:'drone_speed', name:'无人机引擎', cost:{matrix1:30}, req:['drones1'], desc:'无人机飞行速度 +50%', eff:{droneSpeed:1.5}},
   {id:'build_range', name:'施工范围',   cost:{matrix1:30}, req:['mech_speed'], desc:'施工范围 +8 格', eff:{range:8}},
@@ -160,26 +160,140 @@ const TECHS=[
 ];
 const TECH={};for(const t of TECHS)TECH[t.id]=t;
 
-/* 开局背包 */
-const START_INV={wind:2, smelter:1, pole:4, iron_plate:16, copper_plate:8};
+/* 开局背包：一条铁板线 + 一条铜板线的建筑都给齐，引导里不用先攒材料 */
+const START_INV={miner:2, belt:30, sorter:6, smelter:2, wind:5, pole:8, box:2, iron_plate:10, copper_plate:5};
 
 /* 机甲与无人机基础数值 */
 const MECH={speed:7, range:14, emax:100, regen:0.5, gridRegen:6, moveCost:0.3, jobCost:0.6, mineTime:0.8,
   drones:4, droneSpeed:11, buildTime:0.35};
 
-/* 引导目标卡片：前 30 分钟每隔几分钟一个。check 返回 [当前, 目标] */
+/* ===== 新手引导 =====
+   一步一个目标，一步只教一件事，先说「为什么」再说「点哪里」。
+   check(G) 返回 [当前, 目标]；hint(G) 按当前状态告诉玩家下一下点哪里：
+     t 文字 · slot 高亮快捷栏里的建筑 · btn 高亮底栏按钮（inv/tech/stats/more）
+     area 地图上闪烁的格子 {x,y,w,h,type,rot}：有 type = 把这个建筑放这里；tap = 点这里
+   推荐位置以 G.tut.i（铁矿上的采矿机位）为原点，整条线往东排：
+     采矿机 x · 传送带 x+2..x+6 · 分拣器 x+7 · 熔炉 x+8 · 分拣器 x+10 · 储物箱 x+11
+     风机 (x+2,y+3) · 电线杆 (x+3,y+2) (x+8,y+2) (x+13,y+2) · 组装机 x+13 · 科研站 (x+13,y+3) */
+function tutHas(type,ghost){for(const b of G.b.values())if(b.type===type)return b;
+  if(ghost)for(const g of G.ghosts.values())if(!g.del&&g.type===type)return g;return null}
+function tutCount(type){let n=0;for(const b of G.b.values())if(b.type===type)n++;for(const g of G.ghosts.values())if(!g.del&&g.type===type)n++;return n}
+/* 「选中这个建筑 → 放到闪烁处」两段提示 */
+function tutPlace(type,x,y,rot,t1,t2){const area={x,y,w:BLD[type].size,h:BLD[type].size,type,rot:rot||0};return UI.tool!==type?{t:t1,slot:type,area}:{t:t2,area}}
+function tutTap(b,t){return b?{t,area:{x:b.x,y:b.y,w:b.s,h:b.s,tap:true}}:{t}}
+/* 哪里能拿到 it：优先有这个物品的储物箱，其次产出它的机器 */
+function tutSource(it){let best=null;for(const b of G.b.values()){if(b.k==='box'&&b.inv[it]>0)return b;if(!best&&b.out&&b.out[it]>0)best=b}return best}
+/* 研究缺材料时：指向能拿到缺的那种东西的建筑 */
+function tutPay(id,ready){const c=TECH[id].cost,need=Object.keys(c).filter(k=>!invHas(k,c[k]));
+  if(!need.length)return ready;const it=need[0],src=tutSource(it),txt='研究「'+TECH[id].name+'」要 '+Object.keys(c).map(k=>c[k]+' '+ITEMS[k].name).join(' + ')+'。';
+  if(UI.panel==='detail'&&UI.detail&&src===UI.detail)return{t:txt+'点「取出」'};
+  return src?tutTap(src,txt+'还差'+ITEMS[it].name+'，点这里「取出」'):{t:txt+'还差'+ITEMS[it].name+'，等产线多攒一些'}}
+/* 蓝图迟迟不开工时，说清楚为什么：范围外 / 背包里没有、材料也不够手搓 */
+function tutWait(type){
+  let g=null;for(const x of G.ghosts.values())if(!x.del&&x.type===type){g=x;break}
+  if(!g)return{t:'无人机正在施工…'};const S=BLD[type].size;
+  if(!inRange(g))return{t:'蓝图在施工范围外（变灰了）。点一下蓝图，机甲会飞过去',area:{x:g.x,y:g.y,w:S,h:S,tap:true}};
+  if(!g.paid&&!invHas(type)&&!G.craftQ.some(j=>RECIPES[j.r].out[type])){
+    G.noHandSmelt=true;planCraft(type,1,false,true);G.noHandSmelt=false;const m=G.craftMiss;
+    if(m){const src=tutSource(m.it),txt='背包里没有'+BLD[type].name+'，手搓还缺'+ITEMS[m.it].name;
+      if(UI.panel==='detail'&&UI.detail&&src===UI.detail)return{t:txt+'：点「取出」'};
+      return src?tutTap(src,txt+'：点这里「取出」'):{t:txt+'，等产线多攒一些'}}}
+  return{t:'无人机正在施工…'}}
+/* 要手搓 items 前先看材料：不够就指向能「取出」缺料的建筑；够了返回 null */
+function tutCraftNeed(items,why){
+  for(const it of items){G.noHandSmelt=true;const ok=planCraft(it,2,false,true);G.noHandSmelt=false;if(ok)continue;
+    const m=G.craftMiss;if(!m)continue;const src=tutSource(m.it),txt=why+'手搓'+ITEMS[it].name+'还缺'+ITEMS[m.it].name;
+    if(UI.panel==='detail'&&UI.detail&&src===UI.detail)return{t:txt+'：点「取出」'};
+    return src?tutTap(src,txt+'：点这里「取出」'):{t:txt+'，等产线多攒一些'}}
+  return null}
+function tutCanPay(id){const c=TECH[id].cost;return Object.keys(c).every(k=>invHas(k,c[k]))}
+/* 一条产线的标准布局：朝东时的相对坐标（采矿机占 (0,0)-(1,1)），[类型, dx, dy, 宽, 高] */
+const TUT_LINE=[['miner',0,0,2,2],['wind',2,3,1,1],['pole',3,2,1,1],['belt',2,0,5,1],['sorter',7,0,1,1],
+  ['smelter',8,0,2,2],['pole',8,2,1,1],['sorter',10,0,1,1],['box',11,0,1,1]];
+/* 把朝东的相对矩形绕采矿机中心顺时针转 d×90°（0 东 1 南 2 西 3 北），返回绝对的 {x,y,w,h} */
+function tutRect(o,d,dx,dy,w,h){let a=[dx,dy],b=[dx+w,dy+h];
+  for(let k=0;k<d;k++){a=[2-a[1],a[0]];b=[2-b[1],b[0]]}
+  return{x:o[0]+Math.min(a[0],b[0]),y:o[1]+Math.min(a[1],b[1]),w:Math.abs(a[0]-b[0]),h:Math.abs(a[1]-b[1])}}
+/* 整条线占的范围（外扩 1 格） */
+function tutBox(o,d){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const [,dx,dy,w,h] of TUT_LINE){const r=tutRect(o,d,dx,dy,w,h);x0=Math.min(x0,r.x);y0=Math.min(y0,r.y);x1=Math.max(x1,r.x+r.w);y1=Math.max(y1,r.y+r.h)}
+  return[x0-1,y0-1,x1-x0+2,y1-y0+2]}
+/* 按顺序检查一整条线，返回第一个还没放的部件的提示（铜板那条线用，朝向 d 随地形选） */
+function tutLine(o,d,name){
+  const pend=[],dir='右下左上'[d];
+  const ok=(t,px,py)=>{const b=bAt(px,py);if(b&&b.type===t)return true;const g=ghostAt(px,py);if(g&&g.type===t){pend.push(t);return true}return false};
+  const why={miner:[name+'矿在闪烁处。先放「采矿机」','放在闪烁处，盖住矿'],wind:['这条线单独供电：放「风机」','放在闪烁处'],
+    pole:['放「电线杆」，黄圈罩住的建筑才有电','放在闪烁处'],sorter:['放「分拣器」，箭头朝产线前进的方向','放在闪烁处'],
+    smelter:['放「熔炉」','放在闪烁处'],box:['放「储物箱」装'+name+'板','放在闪烁处']};
+  for(const [t,dx,dy,w,h] of TUT_LINE){const r=tutRect(o,d,dx,dy,w,h);
+    if(t==='belt'){let all=true;for(let j=0;j<r.h;j++)for(let i=0;i<r.w;i++)if(!ok('belt',r.x+i,r.y+j))all=false;if(all)continue;
+      const ba={x:r.x,y:r.y,w:r.w,h:r.h,type:'belt',rot:d};
+      if(UI.tool!=='belt')return{t:'接「传送带」把矿运出来',slot:'belt',area:ba};
+      return{t:'从采矿机箭头那边按住，往'+dir+'拖到框的末端再松手',area:ba}}
+    if(!ok(t,r.x,r.y))return tutPlace(t,r.x,r.y,d,why[t][0],why[t][1])}
+  if(pend.length)return tutWait(pend[0]);
+  return null}
+/* 电不够时：在缺电的电网里找一根电线杆，旁边找个空位放风机 */
+function tutPower(){for(const g of G.grids){if(g.sat>=0.99||!g.poles.length)continue;
+  for(const p of g.poles)for(let r=1;r<=4;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const x=p.x+dx,y=p.y+dy;
+    if(Math.hypot(dx,dy)<=BLD.pole.cover-0.5&&canPlace('wind',x,y))return tutPlace('wind',x,y,0,'电不够了（左上角变红），建筑都在降速。多放一台「风机」','放在闪烁处，靠近电线杆')}}
+  return null}
+/* 当前提示：第 3 步起，只要有电网缺电，先提示补风机 */
+function tutHint(){if(G.goal>=GOALS.length)return null;let h=null;if(G.goal>=2)h=tutPower();if(!h)h=GOALS[G.goal].hint(G);
+  /* 要点底栏按钮或点地图上的建筑，但还在建造模式里：先退出 */
+  if(h&&UI.tool&&(h.btn||h.area&&h.area.tap))return{t:'先点右下角「完成」退出建造模式，然后'+h.t,btn:'done'};
+  return h}
 const GOALS=[
-  {text:'点一块蓝灰色的铁矿，机甲会飞过去采集', check:G=>[G.cnt.handMine,8]},
-  {text:'放下风机和熔炉，用电线杆把它们连进电网', check:G=>[G.cnt.poweredSmelter?1:0,1]},
-  {text:'点熔炉 →「放入」铁矿，炼出 10 块铁板', check:G=>[G.cnt.smeltPlate,10]},
-  {text:'打开「科技」，研究「自动采矿」', check:G=>[G.done.has('auto_mining')?1:0,1]},
-  {text:'在矿脉上放采矿机，出口接一条传送带', check:G=>[G.cnt.minerToBelt,10]},
-  {text:'用分拣器把传送带上的矿送进熔炉', check:G=>[G.cnt.sorterToMachine,10]},
-  {text:'再用分拣器把熔炉产出送进储物箱', check:G=>[G.cnt.boxIn,20]},
-  {text:'研究「自动化组装」，用组装机做齿轮', check:G=>[G.cnt.asmMade,10]},
-  {text:'研究「电磁学」，让组装机生产初阶矩阵', check:G=>[G.cnt.matrixMade,5]},
-  {text:'用科研站完成一项矩阵科技', check:G=>[G.cnt.labTechs,1]},
-  {text:'打开「产能」面板，让每种物品都不缺', check:G=>[G.cnt.allGreen?1:0,1]},
+  {title:'放下采矿机', check:G=>[tutHas('miner')?1:0,1], hint:G=>{const [x,y]=G.tut.i;
+    if(tutHas('miner',true)){const w=tutWait('miner');return w.area||w.t!=='无人机正在施工…'?w:{t:'放下的是蓝图（虚线框），机甲身边的小无人机会飞过去把它建起来'}}
+    return tutPlace('miner',x,y,0,'工厂从采矿开始。点底部的「采矿机」','点地图上闪烁的框：采矿机要压在矿上，盖住的矿越多挖得越快')}},
+  {title:'给采矿机通电', check:G=>{const m=tutHas('miner');return[m&&m.grid>=0&&G.grids[m.grid]&&G.grids[m.grid].supply>0?1:0,1]}, hint:G=>{const [x,y]=G.tut.i;
+    if(!tutHas('wind',true))return tutPlace('wind',x+2,y+3,0,'采矿机要用电才会动。点「风机」','把风机放在闪烁处，它负责发电');
+    if(!tutHas('pole',true))return tutPlace('pole',x+3,y+2,0,'风机发的电要靠「电线杆」送过去','把电线杆放在闪烁处：黄圈罩住的建筑都会接上电');
+    if(G.ghosts.size)return tutWait(tutHas('pole')?'wind':'pole');
+    return{t:'电线杆的黄圈要同时罩住风机和采矿机，挪近一点'}}},
+  {title:'用传送带把矿运出来', check:G=>[Math.min(G.cnt.minerToBelt,3),3], hint:G=>{const [x,y]=G.tut.i;
+    const ba={x:x+2,y,w:5,h:1,type:'belt',rot:0};
+    if(UI.tool!=='belt')return{t:'采矿机开工了，挖出的矿要用传送带运走。点「传送带」',slot:'belt',area:ba};
+    return{t:'从采矿机箭头那一侧开始，按住往右拖到框的末端再松手',area:ba}}},
+  {title:'放熔炉', check:G=>[G.cnt.poweredSmelter?1:0,1], hint:G=>{const [x,y]=G.tut.i;
+    if(!tutHas('smelter',true))return tutPlace('smelter',x+8,y,0,'熔炉把矿石炼成铁板。点「熔炉」','把熔炉放在闪烁处：和传送带末端之间空一格');
+    if(!tutHas('smelter'))return tutWait('smelter');
+    return tutPlace('pole',x+8,y+2,0,'熔炉离电线杆太远，还没电。再放一根「电线杆」','放在熔炉下面：两根电线杆离得够近，会自动连成一张电网')}},
+  {title:'用分拣器把矿送进熔炉', check:G=>[Math.min(G.cnt.sorterToMachine,3),3], hint:G=>{const [x,y]=G.tut.i;
+    const s=bAt(x+7,y);if(s&&s.k==='sorter')return{t:'分拣器的箭头要从传送带指向熔炉。不对的话点它 →「旋转」'};
+    return tutPlace('sorter',x+7,y,0,'传送带不会自己把矿倒进熔炉，要靠「分拣器」','放在传送带和熔炉中间的空格：分拣器从身后抓、往身前放')}},
+  {title:'把铁板装进箱子', check:G=>[Math.min(G.cnt.boxIn,5),5], hint:G=>{const [x,y]=G.tut.i;
+    if(!tutHas('box',true))return tutPlace('box',x+11,y,0,'熔炉开始出铁板了，先放一个「储物箱」来装','把储物箱放在闪烁处');
+    if(!bAt(x+10,y)&&!ghostAt(x+10,y))return tutPlace('sorter',x+10,y,0,'再用一个「分拣器」把熔炉里的铁板抓进箱子','放在熔炉和箱子中间');
+    return{t:'铁板正在装箱…'}}},
+  {title:'把铁板拿到背包', check:G=>[Math.min(G.cnt.taken,10),10], hint:G=>{
+    if(UI.panel==='detail'&&UI.detail&&UI.detail.k==='box')return{t:'点「取出」，箱子里的东西就进了背包'};
+    return tutTap(tutHas('box'),'点一下储物箱，看看里面')}},
+  {title:'再搭一条铜板线', check:G=>[Math.min(G.cnt.copperPlate,5),5], hint:G=>{
+    if(!G.tut.c)return{t:'在附近找一块橙色的铜矿，照铁那条线再搭一遍'};
+    return tutLine(G.tut.c,G.tut.cd,'铜')||{t:'铜板线搭好了，等它出铜板…（没动静就点建筑看看缺什么）'}}},
+  {title:'研究「自动化组装」', check:G=>[G.done.has('automation')?1:0,1], hint:G=>tutPay('automation',{t:'材料够了。打开「科技」，研究「自动化组装」',btn:'tech'})},
+  {title:'用组装机做齿轮', check:G=>[Math.min(G.cnt.gearMade,5),5], hint:G=>{const [x,y]=G.tut.i,a=tutHas('assembler',true);
+    if(!a)return tutPlace('assembler',x+13,y,0,'组装机能把铁板做成零件。点「组装机」','放在铁板箱子右边，中间空一格');
+    if(!G.b.has(a.id))return tutWait('assembler');
+    if(a.recipe!=='gear')return tutTap(a,'点组装机，配方选「齿轮」');
+    if(a.grid<0)return tutPlace('pole',x+13,y+2,0,'组装机还没电，再放一根「电线杆」','放在组装机下面');
+    if(!bAt(x+12,y)&&!ghostAt(x+12,y))return tutPlace('sorter',x+12,y,0,'用「分拣器」把箱子里的铁板送进组装机','放在箱子和组装机中间');
+    return{t:'组装机在做齿轮…'}}},
+  {title:'研究「电磁学」', check:G=>[G.done.has('em')?1:0,1], hint:G=>tutPay('em',{t:'材料够了。打开「科技」，研究「电磁学」，解锁科研站和初阶矩阵',btn:'tech'})},
+  {title:'做出初阶矩阵', check:G=>[Math.min(G.cnt.matrixMade,3),3], hint:G=>{const a=tutHas('assembler');
+    if(a&&a.recipe!=='matrix1')return tutTap(a,'矩阵是研究用的「燃料」。点组装机，配方切到「初阶矩阵」');
+    if(a&&(a.in.coil>0&&a.in.circuit>0||a.working))return{t:'组装机在做矩阵…'};
+    if(!invHas('coil')||!invHas('circuit'))return tutCraftNeed(['coil','circuit'],'矩阵要线圈 + 电路板。')||{t:'矩阵要线圈 + 电路板：打开「背包」，在手搓里各点几下',btn:'inv'};
+    return tutTap(a,'点组装机「放入」，把线圈和电路板放进去')}},
+  {title:'用科研站研究', check:G=>[Math.min(G.cnt.labUsed,3),3], hint:G=>{const [x,y]=G.tut.i,l=tutHas('lab',true);
+    if(!l)return tutPlace('lab',x+13,y+3,0,'科研站吃矩阵、出科技。点「科研站」','放在组装机下面');
+    if(!G.b.has(l.id))return tutWait('lab');
+    if(!G.research)return{t:'打开「科技」，选一项点「开始」，比如「无人机扩编」',btn:'tech'};
+    if(!(l.in.matrix1>0)&&!l.working)return invHas('matrix1')?tutTap(l,'点科研站「放入」矩阵'):tutTap(tutSource('matrix1')||tutHas('assembler'),'先点组装机「取出」做好的矩阵');
+    return{t:'研究进行中，进度在「科技」按钮下面'}}},
+  {title:'看懂产能面板', check:G=>[G.cnt.statsSeen?1:0,1], hint:G=>({t:'打开「产能」：每种物品每分钟产出多少、用掉多少。红色的是不够用的，多搭几条线把它补上。引导到这里结束，之后自由发展',btn:'stats'})},
 ];
 
 /* 恒星工坊 · 模拟层
@@ -230,6 +344,20 @@ function genMap(seed){
   return {ore,amt,shade};
 }
 
+/* 引导用的推荐位置：离出生点最近、2×2 全是铁矿的位置，铁板线往东排；
+   铜矿另找一块整 2×2，铜板线朝四个方向里不压到铁板线、不出地图的那个 */
+function tutSpots(){
+  const c=MAP/2,hit=(a,b)=>a[0]<b[0]+b[2]&&b[0]<a[0]+a[2]&&a[1]<b[1]+b[3]&&b[1]<a[1]+a[3];
+  const inMap=r=>r[0]>=0&&r[1]>=0&&r[0]+r[2]<=MAP&&r[1]+r[3]<=MAP;
+  const spots=(t,R)=>{const out=[];for(let y=c-R;y<c+R;y++)for(let x=c-R;x<c+R;x++){let n=0;for(const i of tilesOf(x,y,2))if(G.ore[i]===t)n++;
+    if(n===4)out.push([x,y,Math.hypot(x+1-c,y+1-c)])}return out.sort((a,b)=>a[2]-b[2])};
+  let i=null;for(const s of spots(1,30))if(inMap(tutBox(s,0))){i=[s[0],s[1]];break}
+  if(!i)i=[c-8,c-2];
+  const ib=tutBox(i,0);
+  for(const R of [30,60])for(const s of spots(2,R))for(let d=0;d<4;d++){const b=tutBox(s,d);
+    if(inMap(b)&&!hit(b,ib))return{i,c:[s[0],s[1]],cd:d}}
+  return{i,c:null,cd:0};
+}
 /* ================= 新游戏 ================= */
 function newGame(seed){
   seed=seed||((Math.random()*1e9)|0);
@@ -243,10 +371,13 @@ function newGame(seed){
     drones:[],done:new Set(),research:null,paused:{},
     mods:{drones:0,droneSpeed:1,mechSpeed:1,range:0,emax:0,regen:1,mine:1,smelt:1,asm:1,boxCap:1},
     st:{cur:{p:{},c:{},box:{},res:0},hist:[],acc:0},
-    cnt:{handMine:0,poweredSmelter:false,smeltPlate:0,minerToBelt:0,sorterToMachine:0,boxIn:0,asmMade:0,matrixMade:0,labTechs:0,allGreen:false},
+    cnt:{handMine:0,poweredSmelter:false,smeltPlate:0,copperPlate:0,minerToBelt:0,sorterToMachine:0,boxIn:0,taken:0,asmMade:0,gearMade:0,matrixMade:0,labTechs:0,labUsed:0,allGreen:false,statsSeen:false},
     goal:0,ev:[],mapDirty:[],handAuto:true};
   for(let k=0;k<NCH*NCH;k++)G.chunks.push(new Set());
   for(const k in START_INV)G.inv[k]=START_INV[k];
+  G.tut=tutSpots();
+  /* 机甲从引导那条铁板线的中间出发，整条线都在施工范围内 */
+  const mc=G.mech;mc.x=mc.px=G.tut.i[0]+7;mc.y=mc.py=G.tut.i[1]+2.5;
   syncDrones();
   return G;
 }
@@ -485,6 +616,8 @@ function tickMiner(b){
   if(n>0)for(const [tx,ty] of minerFront(b)){const t=beltAt(tx,ty);
     if(t&&b.out[b.ore]>0&&t.rot!==(b.rot+2)%4&&beltInsert(t,b.ore,t.rot===b.rot?0.1:0.5)){b.out[b.ore]--;G.cnt.minerToBelt++}}
 }
+/* 产物缓存：没接分拣器时也能攒一些，玩家点「取出」拿走 */
+function outCap(rc,k){return Math.max(rc.out[k]*5,10)}
 function tickMachine(b){
   const def=BLD[b.type];
   if(b.kind==='smelt'&&b.grid>=0&&G.grids[b.grid].supply>0)G.cnt.poweredSmelter=true;
@@ -492,7 +625,7 @@ function tickMachine(b){
   const rc=RECIPES[b.recipe],f=pw(b);
   if(!b.working){
     let ok=true;for(const k in rc.in)if((b.in[k]||0)<rc.in[k]){ok=false;break}
-    let room=true;for(const k in rc.out)if((b.out[k]||0)+rc.out[k]>Math.max(rc.out[k]*3,4)){room=false;break}
+    let room=true;for(const k in rc.out)if((b.out[k]||0)+rc.out[k]>outCap(rc,k)){room=false;break}
     if(ok&&room){for(const k in rc.in){b.in[k]-=rc.in[k];cons(k,rc.in[k])}b.working=true;b.prog=0}
     else{b.on=false;b.why=!room?'产物已满':'缺少原料';draw(b,def.power*0.05);return}
   }
@@ -500,18 +633,20 @@ function tickMachine(b){
   draw(b,def.power);b.on=f>0;b.why=f>0?'':'无电';
   b.prog+=TICK*spd*f;
   if(b.prog>=rc.t){
-    let room=true;for(const k in rc.out)if((b.out[k]||0)+rc.out[k]>Math.max(rc.out[k]*3,4))room=false;
+    let room=true;for(const k in rc.out)if((b.out[k]||0)+rc.out[k]>outCap(rc,k))room=false;
     if(!room){b.prog=rc.t;b.why='产物已满';return}
     for(const k in rc.out){b.out[k]=(b.out[k]||0)+rc.out[k];prod(k,rc.out[k])}
     b.working=false;b.prog=0;
     if(b.recipe==='iron_plate')G.cnt.smeltPlate++;
+    if(b.recipe==='copper_plate')G.cnt.copperPlate++;
+    if(b.recipe==='gear')G.cnt.gearMade++;
     if(b.kind==='asm'){G.cnt.asmMade++;if(b.recipe==='matrix1')G.cnt.matrixMade++}
   }
 }
 function tickLab(b){
   const def=BLD.lab,R=G.research,f=pw(b);
   if(!R||TECH[R.id].hand){b.on=false;b.why=R?'':'未选研究';b.working=false;return}
-  if(!b.working){if((b.in.matrix1||0)>0){b.in.matrix1--;cons('matrix1',1);b.working=true;b.prog=0}
+  if(!b.working){if((b.in.matrix1||0)>0){b.in.matrix1--;cons('matrix1',1);G.cnt.labUsed++;b.working=true;b.prog=0}
     else{b.on=false;b.why='缺少矩阵';draw(b,def.power*0.05);return}}
   draw(b,def.power);b.on=f>0;b.why=f>0?'':'无电';
   b.prog+=TICK*f;
@@ -619,17 +754,20 @@ function planCraft(item,count,auto,dry){
   for(const j of G.craftQ){const rc=RECIPES[j.r];for(const k in rc.out)inv[k]=(inv[k]||0)+rc.out[k]*j.n;
     if(!j.started)for(const k in rc.in)inv[k]=(inv[k]||0)-rc.in[k]*j.n;
     else for(const k in rc.in)inv[k]=(inv[k]||0)-rc.in[k]*(j.n-1)}
-  const plan=[];
-  const need=(it,n,depth)=>{
-    const have=Math.max(0,inv[it]||0);if(have>=n){inv[it]-=n;return true}
-    const rid=RECIPE_FOR[it];if(!rid||depth>5||!RECIPES[rid].hand||!recipeOK(rid))return false;
-    const rc=RECIPES[rid],runs=Math.ceil((n-have)/rc.out[it]);
+  const plan=[];let miss=null;
+  /* make：一定要新做 n 个；need：先用已有的，不够再做 */
+  const make=(it,n,depth)=>{
+    const rid=RECIPE_FOR[it];
+    if(!rid||depth>5||!RECIPES[rid].hand||!recipeOK(rid)||(G.noHandSmelt&&RECIPES[rid].kind==='smelt')){if(!miss)miss={it,n,locked:!!rid&&!recipeOK(rid)};return false}
+    const rc=RECIPES[rid],runs=Math.ceil(n/rc.out[it]);
     for(const k in rc.in)if(!need(k,rc.in[k]*runs,depth+1))return false;
-    inv[it]=(inv[it]||0)+runs*rc.out[it]-n;plan.push({r:rid,n:runs,started:false,auto:!!auto});return true;
+    inv[it]=(inv[it]||0)+runs*rc.out[it];plan.push({r:rid,n:runs,started:false,auto:!!auto});return true;
   };
-  if(!need(item,count,0)){if(!auto&&!dry)ev('craftFail',{it:item});return false}
+  const need=(it,n,depth)=>{const have=Math.max(0,inv[it]||0);
+    if(have<n&&!make(it,n-have,depth))return false;inv[it]=(inv[it]||0)-n;return true};
+  G.craftMiss=null;
+  if(!make(item,count,0)){G.craftMiss=miss;if(!auto&&!dry)ev('craftFail',{it:item,miss});return false}
   if(dry)return true;
-  /* 只排真正要做的（need 会先把已有的扣掉） */
   for(const j of plan){const last=G.craftQ[G.craftQ.length-1];if(last&&last.r===j.r&&!last.started)last.n+=j.n;else G.craftQ.push(j)}
   return true;
 }
@@ -657,7 +795,8 @@ function applyTech(id){const e=TECH[id].eff;if(!e)return;const M=G.mods;
   if(e.drones)M.drones+=e.drones;if(e.droneSpeed)M.droneSpeed*=e.droneSpeed;if(e.mechSpeed)M.mechSpeed*=e.mechSpeed;
   if(e.range)M.range+=e.range;if(e.emax)M.emax+=e.emax;if(e.regen)M.regen*=e.regen;if(e.mine)M.mine*=e.mine;
   if(e.smelt)M.smelt*=e.smelt;if(e.asm)M.asm*=e.asm;if(e.boxCap)M.boxCap*=e.boxCap}
-function finishTech(id){if(G.done.has(id))return;G.done.add(id);applyTech(id);syncDrones();ev('tech',{id})}
+function finishTech(id){if(G.done.has(id))return;G.done.add(id);applyTech(id);syncDrones();
+  const gift=TECH[id].gift;if(gift)for(const k in gift)invAdd(k,gift[k]);ev('tech',{id,gift})}
 
 /* ================= 统计（每秒一个桶，保留 60 秒） ================= */
 function tickStats(){
@@ -746,7 +885,7 @@ function fillFromInv(b){
   return n;
 }
 function takeAll(b){let n=0;const src=b.k==='box'?b.inv:b.out;if(!src)return 0;
-  for(const k in src){if(src[k]>0){invAdd(k,src[k]);n+=src[k];if(b.k==='box')G.st.cur.box[k]=(G.st.cur.box[k]||0)-src[k]}delete src[k]}return n}
+  for(const k in src){if(src[k]>0){invAdd(k,src[k]);n+=src[k];if(b.k==='box')G.st.cur.box[k]=(G.st.cur.box[k]||0)-src[k]}delete src[k]}G.cnt.taken+=n;return n}
 function setRecipe(b,rid){if(b.k!=='machine'||b.recipe===rid)return;
   for(const k in b.in)if(b.in[k]>0)invAdd(k,b.in[k]);b.in={};
   if(b.working){const rc=RECIPES[b.recipe];for(const k in rc.in)invAdd(k,rc.in[k])}
@@ -774,15 +913,15 @@ function serialize(now){
     bs.push([b.type,b.x,b.y,b.rot,o])}
   const oreD=[];for(const i of G.oreChanged)oreD.push(i,G.amt[i]);
   const gh=sortedGhosts().map(g=>g.del?['D',g.x,g.y]:[g.type,g.x,g.y,g.rot]);
-  return JSON.stringify({v:1,seed:G.seed,t:G.t,inv:G.inv,cq:G.craftQ.filter(j=>!j.started).map(j=>[j.r,j.n]),
+  return JSON.stringify({v:2,seed:G.seed,t:G.t,inv:G.inv,cq:G.craftQ.filter(j=>!j.started).map(j=>[j.r,j.n]),
     mech:[G.mech.x,G.mech.y,G.mech.e],done:[...G.done],research:G.research,paused:G.paused||{},goal:G.goal,cnt:G.cnt,
     oreD,b:bs,gh,off:offlineRates(),at:now||0,auto:G.handAuto});
 }
 function deserialize(str,now){
-  const d=JSON.parse(str);if(!d||d.v!==1)throw new Error('存档版本不对');
+  const d=JSON.parse(str);if(!d||d.v!==2)throw new Error('存档版本不对');
   newGame(d.seed);G.t=d.t;G.inv=d.inv||{};G.goal=d.goal||0;
   for(const k in d.cnt)G.cnt[k]=d.cnt[k];
-  for(const id of d.done||[]){G.done.add(id);applyTech(id)}syncDrones();
+  for(const id of d.done||[])if(TECH[id]){G.done.add(id);applyTech(id)}syncDrones();
   G.research=d.research;G.paused=d.paused||{};G.handAuto=d.auto!==false;
   for(let k=0;k<d.oreD.length;k+=2){const i=d.oreD[k];G.amt[i]=d.oreD[k+1];G.oreChanged.add(i);if(G.amt[i]<=0){G.ore[i]=0}}
   /* 先放建筑（不放进存档的旧 id 映射，拆除蓝图按顺序对应） */
@@ -1269,6 +1408,17 @@ VIEW.draw=function(){
   if(UI.detail&&G.b.has(UI.detail.id)){const b=UI.detail;R.rect(sx(b.x)-2,sy(b.y)-2,b.s*z+4,b.s*z+4,z*0.2,col('#ffffff',0.85),2)}
   /* 蓝图（显示排队序号） */
   if(G.ghosts.size){let rank=0;for(const g of sortedGhosts()){rank++;if(g.x+BLD[g.type].size<x0||g.x>x1||g.y+BLD[g.type].size<y0||g.y>y1)continue;drawGhost(g,z,g.del?0:rank)}}
+  /* 新手引导：闪烁的推荐位置 */
+  const ga=UI.guide&&UI.guide.area;
+  if(ga){const p=0.5+0.5*Math.sin(G.t*5),ac=col('#ffd75a'),x=sx(ga.x),y=sy(ga.y),w=ga.w*z,h=ga.h*z;
+    R.rect(x-3,y-3,w+6,h+6,z*0.2,withA(ac,0.10+0.12*p));
+    R.dashRect(x-3,y-3,w+6,h+6,Math.max(2,z*0.07),withA(ac,0.6+0.4*p),Math.max(4,z*0.18));
+    if(ga.type){const k=BLD[ga.type].k;
+      if(k==='belt'||k==='sorter'||k==='miner'){const dx=DX[ga.rot],dy=DY[ga.rot];
+        const n=k==='belt'?Math.max(ga.w,ga.h):1;for(let i=0;i<n;i++){const cx=x+(k==='belt'?(i+0.5)*z*Math.abs(dx)+(dy?w/2:0):w/2),cy=y+(k==='belt'?(i+0.5)*z*Math.abs(dy)+(dx?h/2:0):h/2),s=z*0.18;
+          R.line(cx-dx*s-dy*s,cy-dy*s+dx*s,cx+dx*s*0.6,cy+dy*s*0.6,Math.max(1.5,z*0.07),withA(ac,0.8));R.line(cx-dx*s+dy*s,cy-dy*s-dx*s,cx+dx*s*0.6,cy+dy*s*0.6,Math.max(1.5,z*0.07),withA(ac,0.8))}}
+      if(k!=='belt'&&z>=8)icon(ga.type,x+w/2,y+h/2+(k==='miner'?z*0.25:0),Math.min(w,h)*0.45,withA(ac,0.55))}
+    const lab=ga.tap?'点这里':'放这里',ly=y-10-4*p;R.rect(x+w/2-26,ly-11,52,22,11,col('#0d1119',0.9));R.text(lab,x+w/2,ly,12,ac,'center',700)}
   /* 施工范围：机甲周围淡色圆圈 */
   const m=G.mech,mx=sx(lerp(m.px,m.x,ALPHA)),my=sy(lerp(m.py,m.y,ALPHA));
   if(UI.tool||G.ghosts.size)R.ring(mx,my,mechRange()*z,Math.max(1,z*0.04),withA(GHOST,0.28),Math.round(mechRange()*3),G.t*0.03);
@@ -1311,7 +1461,7 @@ const UI={state:'start',tool:null,brot:0,firstX:null,demolish:false,panel:null,d
 const C={panel:col('#121722',0.97),panel2:col('#1a2130'),line:col('#2a3346'),ink:col('#e6ebf3'),muted:col('#8b95a8'),
   accent:col('#5cc8ff'),accentInk:col('#06121c'),dim:col('#000000',0.45),chip:col('#232b3b'),good:col('#4fd18b'),bad:col('#f2555a'),warn:col('#f2b544')};
 let HITS=[];
-const hit=(x,y,w,h,fn,clip)=>HITS.push({x,y,w,h,fn,clip});
+const hit=(x,y,w,h,fn,clip,tag)=>HITS.push({x,y,w,h,fn,clip,tag});
 UI.hitTest=function(px,py){
   for(let k=HITS.length-1;k>=0;k--){const h=HITS[k];if(px<h.x||py<h.y||px>h.x+h.w||py>h.y+h.h)continue;
     if(h.clip&&(px<h.clip.x||py<h.clip.y||px>h.clip.x+h.clip.w||py>h.clip.y+h.clip.h))continue;return h}
@@ -1340,7 +1490,7 @@ function btn(x,y,w,h,label,fn,o){o=o||{};
   let tx=x+w/2;
   if(o.icon){if(label){icon(o.icon,x+w/2,y+h/2-7,20,ink);R.text(label,x+w/2,y+h-11,11,ink,'center')}else icon(o.icon,x+w/2,y+h/2,o.iconSize||22,ink)}
   else R.text(label,tx,y+h/2,o.size||14,ink,'center',o.weight||600);
-  if(fn&&!o.disabled)hit(x,y,w,h,fn,o.clip);
+  if(fn&&!o.disabled)hit(x,y,w,h,fn,o.clip,o.tag||label);
 }
 function chipItem(it,n,x,y,clip,need){ /* 物品小标签：图标 + 数量，返回宽度 */
   const s=String(n),w=26+R.measure(s,12,600);R.rect(x,y,w,22,6,C.chip);drawItem(it,x+12,y+11,14);
@@ -1370,18 +1520,17 @@ function drawTop(){
   const e=G.mech.e/emax(),ex=W-84;
   R.text('能量',ex,y+13,10,C.muted,'left');R.rect(ex,y+24,42,6,3,C.chip);R.rect(ex,y+24,42*e,6,3,e<0.15?C.bad:C.accent);
   btn(W-44,y+2,36,36,'',()=>openPanel('menu'),{icon:'menu',bg:col('#000000',0),iconSize:20});
-  /* 引导目标 */
-  const gy=y+46;
-  if(G.goal<GOALS.length){const g=GOALS[G.goal],[a,b]=g.check(G);
-    if(UI.goalOpen){const lines=R.wrap(g.text,W-120,13,500),h=24+lines.length*18;
-      R.rect(8,gy,W-16,h,12,col('#162238',0.95));R.rect(8,gy,W-16,h,12,withA(C.accent,0.35),1);
-      R.text('目标 '+(G.goal+1)+'/'+GOALS.length,20,gy+14,11,C.accent,'left',700);
-      lines.forEach((l,k)=>R.text(l,20,gy+33+k*18,13,C.ink,'left',500));
-      const p=Math.min(1,a/b);R.text(Math.min(a,b)+'/'+b,W-22,gy+14,11,C.muted,'right',600);
-      R.rect(W-90,gy+h-12,68,4,2,C.chip);R.rect(W-90,gy+h-12,68*p,4,2,C.accent);
+  /* 新手引导：第几步 + 这一步为什么 + 下一下点哪里 */
+  const gy=y+46,gd=UI.guide;
+  if(G.goal<GOALS.length){const g=GOALS[G.goal],[a,b]=g.check(G),head='第 '+(G.goal+1)+'/'+GOALS.length+' 步 · '+g.title;
+    if(UI.goalOpen){const lines=gd?R.wrap(gd.t,W-48,14,500):[],h=34+lines.length*20;
+      R.rect(8,gy,W-16,h,12,col('#162238',0.96));R.rect(8,gy,W-16,h,12,withA(C.accent,0.25+0.25*Math.sin(G.t*3)),1.5);
+      R.text(head,20,gy+15,12,C.accent,'left',700);
+      if(b>1){R.text(Math.min(a,b)+'/'+b,W-22,gy+15,11,C.muted,'right',600)}
+      lines.forEach((l,k)=>R.text(l,20,gy+36+k*20,14,C.ink,'left',500));
       hit(8,gy,W-16,h,()=>{UI.goalOpen=false});L.topEnd=gy+h;
-    }else{const s='目标 '+(G.goal+1)+' · '+Math.min(a,b)+'/'+b,w=R.measure(s,11,600)+20;
-      R.rect(8,gy,w,24,12,col('#162238',0.95));R.text(s,18,gy+12,11,C.accent,'left',600);hit(8,gy,w,24,()=>{UI.goalOpen=true});L.topEnd=gy+24}
+    }else{const w=R.measure(head,11,600)+20;
+      R.rect(8,gy,w,24,12,col('#162238',0.95));R.text(head,18,gy+12,11,C.accent,'left',600);hit(8,gy,w,24,()=>{UI.goalOpen=true});L.topEnd=gy+24}
   }else L.topEnd=y+40;
   if(VIEW.hl){const by=L.topEnd+6,s='高亮 '+ITEMS[VIEW.hl].name+'：绿=产出 红=消耗',w=R.measure(s,12,600)+56;
     R.rect(8,by,w,30,10,C.panel);drawItem(VIEW.hl,24,by+15,14);R.text(s,36,by+15,12,C.ink,'left',600);
@@ -1390,13 +1539,14 @@ function drawTop(){
 
 /* ===== 底部：功能行 + 快捷栏 ===== */
 function drawBottom(){
+  const gd=UI.guide;
   const L=UI.L,qh=58,qy=H-L.safeB-qh-6,ry=qy-50;L.barTop=ry;
   /* 功能行 */
   if(UI.tool){
     const def=BLD[UI.tool],n=G.inv[UI.tool]||0;
     R.rect(8,ry,W-16,44,12,C.panel);
     R.text(def.name,20,ry+15,13,C.ink,'left',700);R.text('背包 '+n+(n?'':' · 会自动手搓'),20,ry+31,11,n?C.muted:C.warn,'left');
-    let x=W-8-82;btn(x,ry+4,76,36,'完成',()=>setTool(null),{active:true});
+    let x=W-8-82;btn(x,ry+4,76,36,'完成',()=>setTool(null),{active:true,tag:'done'});if(gd&&gd.btn==='done')guideMark(x,ry+4,76,36);
     const k=def.k;
     if(k==='belt'){x-=56;const lab=UI.firstX===null?'自动':UI.firstX?'先横':'先竖';btn(x,ry+4,50,36,lab,()=>{UI.firstX=UI.firstX===null?true:UI.firstX?false:null},{icon:'corner'})}
     if(k==='belt'||k==='sorter'||k==='miner'){x-=56;btn(x,ry+4,50,36,'旋转',()=>{UI.brot=(UI.brot+1)%4;INPUT.refreshPreview()},{icon:'rotate'})}
@@ -1408,7 +1558,10 @@ function drawBottom(){
     const items=[['bag','背包',()=>openPanel('inv')],['tech','科技',()=>openPanel('tech')],['chart','产能',()=>openPanel('stats')],
       ['build','建筑',()=>openPanel('more')],['hammer','拆除',()=>{UI.demolish=!UI.demolish;if(UI.demolish)UI.toast('拆除模式：点建筑标记拆除，长按拖动框选')}]];
     const bw=(W-16-4*6)/5;
-    items.forEach(([ic,lab,fn],k)=>btn(8+k*(bw+6),ry,bw,44,lab,fn,{icon:ic,bg:C.panel,active:ic==='hammer'&&UI.demolish,activeCol:C.bad}));
+    const keys=['inv','tech','stats','more','demolish'],ql=quickList();
+    const want=gd&&!UI.panel?(gd.btn||(gd.slot&&ql.indexOf(gd.slot)<0?'more':null)):null;
+    items.forEach(([ic,lab,fn],k)=>{btn(8+k*(bw+6),ry,bw,44,lab,fn,{tag:keys[k],icon:ic,bg:C.panel,active:ic==='hammer'&&UI.demolish,activeCol:C.bad});
+      if(want===keys[k])guideMark(8+k*(bw+6),ry,bw,44)});
     if(G.research){const t=TECH[G.research.id],p=G.research.prog/t.cost.matrix1;R.rect(8+bw+6+6,ry+39,bw-12,3,2,C.chip);R.rect(8+bw+6+6,ry+39,(bw-12)*p,3,2,col(CAT.research.color))}
   }
   /* 回到机甲 */
@@ -1416,16 +1569,25 @@ function drawBottom(){
   /* 快捷栏 8 格 */
   R.rect(8,qy,W-16,qh,14,C.panel);
   const cw=(W-16-8)/8;
-  QUICKBAR.forEach((t,k)=>{
+  quickList().forEach((t,k)=>{
     let type=t;if(t==='belt'&&UI.tool==='belt2')type='belt2';if(t==='sorter'&&UI.tool==='sorter2')type='sorter2';
-    const x=8+4+k*cw,on=UI.tool===type,unl=bldOK(type),c=col(CAT[BLD[type].cat].color),n=G.inv[type]||0;
+    const x=8+4+k*cw,on=UI.tool===type,c=col(CAT[BLD[type].cat].color),n=G.inv[type]||0;
     if(on)R.rect(x+2,qy+4,cw-4,qh-8,10,withA(c,0.22));
     if(on)R.rect(x+2,qy+4,cw-4,qh-8,10,c,1.5);
-    icon(unl?type:'lock',x+cw/2,qy+24,unl?24:18,unl?(n?c:withA(c,0.55)):C.muted);
-    R.text(unl?String(n):'未解锁',x+cw/2,qy+46,unl?11:9,unl?(n?C.ink:C.muted):C.muted,'center',600);
-    hit(x,qy,cw,qh,()=>{if(!unl){UI.toast(BLD[type].name+'：研究「'+TECH[BLD[type].tech].name+'」解锁');return}setTool(UI.tool===type?null:type)});
+    icon(type,x+cw/2,qy+22,24,n?c:withA(c,0.55));
+    R.text(BLD[type].name.length>3?BLD[type].name.slice(-3):BLD[type].name,x+cw/2,qy+40,9,on?C.ink:C.muted,'center');
+    R.text(String(n),x+cw/2,qy+51,10,n?C.ink:C.muted,'center',700);
+    hit(x,qy,cw,qh,()=>setTool(UI.tool===type?null:type),null,'slot:'+type);
+    if(gd&&!UI.panel&&gd.slot===t&&UI.tool!==type)guideMark(x+2,qy+4,cw-4,qh-8,true);
   });
 }
+/* 快捷栏：按 QUICK_ORDER 取已解锁的前 8 个 */
+function quickList(){return QUICK_ORDER.filter(bldOK).slice(0,8)}
+/* 引导高亮：闪烁边框 + 上方跳动的箭头 */
+function guideMark(x,y,w,h,noArrow){const p=0.5+0.5*Math.sin(G.t*6),ac=col('#ffd75a');
+  R.rect(x,y,w,h,10,withA(ac,0.10+0.14*p));R.rect(x-2,y-2,w+4,h+4,12,withA(ac,0.5+0.5*p),2.5);if(noArrow)return;
+  const ax=x+w/2,ay=y-10-6*Math.abs(Math.sin(G.t*4));
+  R.line(ax,ay-14,ax,ay,3,ac);R.line(ax-7,ay-7,ax,ay,3,ac);R.line(ax+7,ay-7,ax,ay,3,ac)}
 function setTool(t){UI.tool=t;UI.demolish=false;UI.firstX=null;VIEW.preview=null;if(t)UI.panel=null;SFX.play('tap')}
 function openPanel(p,b){UI.panel=p;UI.scroll=0;UI.detail=b||null;UI.detailGhost=null;UI.confirmNew=0;if(p!=='detail')UI.tool=null;SFX.play('tap')}
 UI.openDetail=b=>openPanel('detail',b);
@@ -1467,15 +1629,17 @@ function panelInv(){
     list.forEach((it,k)=>{const cx=x+(k%6)*cw,cy=y+((k/6)|0)*64;R.rect(cx+2,cy,cw-4,58,10,C.panel2);
       drawItem(it,cx+cw/2,cy+20,22);R.text(String(G.inv[it]),cx+cw/2,cy+40,12,C.ink,'center',700);R.text(ITEMS[it].name,cx+cw/2,cy+52,9,C.muted,'center')});
     y+=Math.ceil(list.length/6)*64+10;
-    R.text('手搓（缺的零件会一起做）',x,y+10,12,C.muted,'left');y+=22;
+    R.text('手搓：点一下做一个（缺的齿轮、电路板会一起做）',x,y+10,12,C.muted,'left');y+=22;
     const rs=Object.keys(RECIPES).filter(r=>RECIPES[r].hand&&recipeOK(r));
     const cw2=Math.floor(w/4);
-    rs.forEach((r,k)=>{const o=Object.keys(RECIPES[r].out)[0],cx=x+(k%4)*cw2,cy=y+((k/4)|0)*74,can=planCraft(o,1,false,true);
-      R.rect(cx+2,cy,cw2-4,68,10,can?C.panel2:withA(C.panel2,0.5));drawItem(o,cx+cw2/2,cy+22,24,can?1:0.4);
-      R.text(ITEMS[o].name,cx+cw2/2,cy+46,11,can?C.ink:C.muted,'center',600);
-      R.text(RECIPES[r].t+' 秒'+(RECIPES[r].out[o]>1?' ×'+RECIPES[r].out[o]:''),cx+cw2/2,cy+60,9,C.muted,'center');
-      hit(cx,cy,cw2,68,()=>{if(planCraft(o,1)){UI.toast('已排队：'+ITEMS[o].name);SFX.play('tap')}else{UI.toast('材料不够：'+ITEMS[o].name,C.bad);SFX.play('fail')}},clip)});
-    y+=Math.ceil(rs.length/4)*74;
+    rs.forEach((r,k)=>{const rc=RECIPES[r],o=Object.keys(rc.out)[0],cx=x+(k%4)*cw2,cy=y+((k/4)|0)*86,can=planCraft(o,1,false,true);
+      R.rect(cx+2,cy,cw2-4,80,10,can?C.panel2:withA(C.panel2,0.5));drawItem(o,cx+cw2/2,cy+18,22,can?1:0.4);
+      R.text(ITEMS[o].name+(rc.out[o]>1?' ×'+rc.out[o]:''),cx+cw2/2,cy+40,11,can?C.ink:C.muted,'center',600);
+      /* 原料：背包里不够的标红（缺的中间件会自动一起做，只要最底层的够） */
+      const ks=Object.keys(rc.in);let iw=0;const parts=ks.map(it=>{const s2=String(rc.in[it]),ww=12+R.measure(s2,9,600);iw+=ww+3;return[it,s2,ww]});
+      let ix=cx+cw2/2-iw/2+1;for(const [it,s2,ww] of parts){drawItem(it,ix+5,cy+60,9);R.text(s2,ix+11,cy+60,9,invHas(it,rc.in[it])?C.muted:C.bad,'left',600);ix+=ww+3}
+      hit(cx,cy,cw2,80,()=>{if(planCraft(o,1)){UI.toast('已排队：'+ITEMS[o].name);SFX.play('tap')}else{UI.toast(missText(G.craftMiss,o),C.bad);SFX.play('fail')}},clip,'craft:'+o)});
+    y+=Math.ceil(rs.length/4)*86;
     return y-y0;
   },s=>btn(W-170,s.y+12,112,32,G.handAuto?'自动手搓：开':'自动手搓：关',()=>{G.handAuto=!G.handAuto},{size:12,active:G.handAuto}));
 }
@@ -1497,9 +1661,9 @@ function panelTech(){
       else if(!av){const need=t.req.filter(r=>!G.done.has(r)).map(r=>TECH[r].name).join('、');R.text('需要：'+need,x+12,y+58,11,C.muted,'left')}
       else{let cx=x+12;for(const k in t.cost)cx+=chipItem(k,t.cost[k],cx,y+47,clip,t.hand)+6;
         if(t.hand){const can=Object.keys(t.cost).every(k=>invHas(k,t.cost[k]));
-          btn(x+w-82,y+40,72,30,'研究',()=>{if(payTech(t.id)){SFX.play('tech')}},{disabled:!can,active:can,clip,size:13})}
+          btn(x+w-82,y+40,72,30,'研究',()=>{if(payTech(t.id)){SFX.play('tech')}},{disabled:!can,active:can,clip,size:13,tag:'tech:'+t.id})}
         else{if(G.research&&!cur&&G.paused[t.id])R.text('已暂停 '+G.paused[t.id],x+w-90,y+15,11,C.muted,'right');
-          btn(x+w-82,y+40,72,30,cur?'研究中':'开始',()=>{startResearch(t.id);if(!G.L||!G.L.lab.length)UI.toast('还需要放科研站，并给它送初阶矩阵',C.warn)},{active:!cur,disabled:cur,clip,size:13})}}
+          btn(x+w-82,y+40,72,30,cur?'研究中':'开始',()=>{startResearch(t.id);if(!G.L||!G.L.lab.length)UI.toast('还需要放科研站，并给它送初阶矩阵',C.warn)},{active:!cur,disabled:cur,clip,size:13,tag:'tech:'+t.id})}}
       y+=82;
     }
     return y-y0;
@@ -1520,6 +1684,7 @@ function panelStats(){
       R.text((d>=0?'+':'')+fmtRate(Math.abs(d)<0.05?0:d).replace('+-','-'),c3-6,y+20,13,short?C.bad:C.good,'right',700);
       hit(x,y,w,40,()=>{VIEW.hl=k;UI.panel=null},clip);y+=46}
     if(allGood&&!G.cnt.allGreen){G.cnt.allGreen=true}
+    G.cnt.statsSeen=true;
     return y-y0;
   });
 }
@@ -1531,7 +1696,7 @@ function panelMore(){
       R.rect(cx+3,cy,cw-6,78,12,C.panel2);icon(unl?t:'lock',cx+cw/2,cy+26,unl?28:20,unl?c:C.muted);
       R.text(BLD[t].name,cx+cw/2,cy+52,11,unl?C.ink:C.muted,'center',600);
       R.text(unl?'背包 '+(G.inv[t]||0):TECH[BLD[t].tech].name,cx+cw/2,cy+67,9,C.muted,'center');
-      hit(cx,cy,cw,78,()=>{if(!unl){UI.toast('研究「'+TECH[BLD[t].tech].name+'」解锁');return}setTool(t)},clip)});
+      hit(cx,cy,cw,78,()=>{if(!unl){UI.toast('研究「'+TECH[BLD[t].tech].name+'」解锁');return}setTool(t)},clip,'build:'+t)});
     return Math.ceil(ALL_BUILD.length/4)*84+(y-y0);
   });
 }
@@ -1563,7 +1728,7 @@ function panelDetail(){
       R.text(b.kind==='smelt'?'配方（送什么矿就炼什么，也可以手选）':'配方：点一下切换',x,y+8,11,C.muted,'left');y+=20;
       rs.forEach((r,k)=>{const cx=x+(k%6)*cw,cy=y+((k/6)|0)*52,on=b.recipe===r,o=Object.keys(RECIPES[r].out)[0];
         R.rect(cx+2,cy,cw-4,48,10,on?withA(C.accent,0.25):C.panel2);if(on)R.rect(cx+2,cy,cw-4,48,10,C.accent,1.5);
-        drawItem(o,cx+cw/2,cy+18,18);R.text(ITEMS[o].name,cx+cw/2,cy+38,9,C.ink,'center');hit(cx,cy,cw,48,()=>setRecipe(b,r),clip)});
+        drawItem(o,cx+cw/2,cy+18,18);R.text(ITEMS[o].name,cx+cw/2,cy+38,9,C.ink,'center');hit(cx,cy,cw,48,()=>setRecipe(b,r),clip,'recipe:'+r)});
       y+=Math.ceil(rs.length/6)*52+8;
       if(b.recipe){const rc=RECIPES[b.recipe];let cx=x;R.text('每次',x,y+8,11,C.muted,'left');cx+=34;
         for(const k in rc.in)cx+=chipItem(k,rc.in[k],cx,y-3,clip)+4;R.text('→',cx+4,y+8,12,C.muted,'left');cx+=20;
@@ -1639,15 +1804,21 @@ function drawStart(){
   btn(W/2-120,y,240,50,UI.hasSave?(UI.confirmNew?'再点一次：清除进度':'新的星球'):'开始',()=>{if(UI.hasSave&&!UI.confirmNew){UI.confirmNew=1;return}MAIN.fresh()},{active:!UI.hasSave,size:16,bg:UI.hasSave?C.chip:undefined});
   R.text('竖屏单手 · 进度自动保存 · 离线也在生产',W/2,H-UI.L.safeB-30,11,col('#5a6478'),'center');
 }
+/* 手搓失败：说清楚缺什么、去哪弄 */
+function missText(m,it){if(!m)return '做不了：'+ITEMS[it].name;const nm=ITEMS[m.it].name;
+  if(m.locked)return nm+' 还没解锁';
+  if(ITEMS[m.it].shape==='ore')return '缺 '+nm+' ×'+m.n+'：点'+nm+'矿脉让机甲去采，或放采矿机';
+  return '缺 '+nm+' ×'+m.n}
 /* 事件：建成光圈、研究完成、目标完成、采矿飘字 */
 function drainEvents(){
   for(const e of G.ev){
     if(e.k==='built'){VIEW.fxAdd({kind:'ring',x:e.x,y:e.y,r:BLD[e.type].size*0.6,c:GHOST,dur:450});SFX.play('build')}
     else if(e.k==='removed'){VIEW.fxAdd({kind:'ring',x:e.x,y:e.y,r:0.8,c:BAD,dur:400});SFX.play('remove')}
-    else if(e.k==='tech'){UI.toast('研究完成：'+TECH[e.id].name,col(CAT.research.color));SFX.play('tech')}
+    else if(e.k==='tech'){UI.toast('研究完成：'+TECH[e.id].name,col(CAT.research.color));SFX.play('tech');
+      if(e.gift)for(const k in e.gift)UI.toast('获得 '+ITEMS[k].name+' ×'+e.gift[k],C.good)}
     else if(e.k==='goal'){UI.toast('目标完成 ✓',C.good);SFX.play('goal');UI.goalOpen=true}
     else if(e.k==='mine')VIEW.fxAdd({kind:'text',x:e.x,y:e.y-0.4,s:'+1 '+ITEMS[e.it].name,c:col(ITEMS[e.it].color),dur:700});
-    else if(e.k==='craftFail'){UI.toast('材料不够：'+ITEMS[e.it].name,C.warn)}
+    else if(e.k==='craftFail'){UI.toast(missText(e.miss,e.it),C.warn)}
   }
   G.ev.length=0;
 }
@@ -1655,6 +1826,8 @@ UI.draw=function(){
   HITS=[];
   if(UI.state==='start'){drawStart();return}
   drainEvents();
+  UI.guide=null;try{UI.guide=tutHint()}catch(e){}
+  guideCamera();
   drawTop();drawBottom();
   if(UI.panel==='inv')panelInv();else if(UI.panel==='tech')panelTech();else if(UI.panel==='stats')panelStats();
   else if(UI.panel==='more')panelMore();else if(UI.panel==='detail')panelDetail();else if(UI.panel==='menu')panelMenu();
@@ -1665,6 +1838,10 @@ UI.draw=function(){
     ty-=36;R.alpha=a;R.rect((W-w)/2,ty,w,30,15,col('#0d1119',0.92));R.text(t.s,W/2,ty+15,13,t.c,'center',600);R.alpha=1}
   if(UI.offline)drawOffline();
 };
+/* 引导要放的位置不在屏幕上时，镜头移过去（每个位置只移一次） */
+function guideCamera(){const a=UI.guide&&UI.guide.area;if(!a)return;const k=a.x+','+a.y+','+(a.type||'');if(UI.guideKey===k)return;UI.guideKey=k;
+  const cx=a.x+a.w/2,cy=a.y+a.h/2,px=sx(cx),py=sy(cy);
+  if(px<40||px>W-40||py<UI.L.topEnd+40||py>UI.L.barTop-30){CAM.follow=false;CAM.x=cx;CAM.y=cy+1.5}}
 UI.layout=function(sz){const rs=UI.reserve(sz);UI.L.top=rs.top;UI.L.safeB=Math.max(rs.bottom,6);UI.L.topEnd=rs.top+40;UI.L.barTop=H-rs.bottom-120};
 
 /* 恒星工坊 · 输入
@@ -1683,6 +1860,8 @@ const INPUT=(()=>{
   const anchor=(type,px,py)=>{const s=BLD[type].size;return[Math.floor(wxOf(px)-s/2+0.5),Math.floor(wyOf(py)-s/2+0.5)]};
   /* 分拣器、采矿机自动朝向：当前朝向不合适而附近有合适的就自动转过去 */
   function rotFor(type,x,y){const k=BLD[type].k;
+    /* 放在引导闪烁的位置上：用引导给的朝向 */
+    const ga=UI.guide&&UI.guide.area;if(ga&&ga.type===type&&ga.x===x&&ga.y===y&&ga.rot!==undefined)return ga.rot;
     if(k==='sorter'){const rs=sorterRots(x,y);if(rs.length&&rs.indexOf(UI.brot)<0)return rs[0]}
     if(k==='miner'){const rs=minerRots(x,y);if(rs.length&&rs.indexOf(UI.brot)<0)return rs[0]}
     return UI.brot}
@@ -1704,10 +1883,10 @@ const INPUT=(()=>{
     const [tx,ty]=tileOf(px,py),wx=wxOf(px),wy=wyOf(py);
     VIEW.fxAdd({kind:'tap',px,py,dur:350,x:0,y:0});
     if(!inB(tx,ty))return;
-    const b=bAt(tx,ty),g=ghostAt(tx,ty);
+    const b=bAt(tx,ty),g=ghostAt(tx,ty),m0=G.mech;
     if(UI.demolish){if(b){if(G.delG.has(b.id))cancelGhost(G.delG.get(b.id));else{addDelGhost(b);SFX.play('remove')}}else if(g)cancelGhost(g);return}
     if(b){UI.openDetail(b);return}
-    if(g){UI.openGhost(g);return}
+    if(g){if(!g.del&&!inRange(g)){const S=BLD[g.type].size;m0.mine=-1;m0.tx=g.x+S/2;m0.ty=g.y+S+0.8;CAM.follow=true;UI.toast('机甲飞过去施工');return}UI.openGhost(g);return}
     const m=G.mech,i=idx(tx,ty);
     if(G.ore[i]){m.mine=i;m.tx=null;m.ty=null;m.mineT=0;CAM.follow=true;return}
     m.mine=-1;m.tx=wx;m.ty=wy;CAM.follow=true;
@@ -1791,7 +1970,7 @@ const INPUT=(()=>{
     if(UI.state!=='play')return;
     if(k==='r'&&UI.tool){UI.brot=(UI.brot+1)%4;if(hover)previewAt(hover[0],hover[1])}
     else if(k==='escape'){if(UI.panel)UI.panel=null;else if(UI.tool)setTool(null);else if(VIEW.select){VIEW.select=null;UI.selCount=0}else UI.demolish=false}
-    else if(k>='1'&&k<='8'){const t=QUICKBAR[+k-1];if(bldOK(t))setTool(UI.tool===t?null:t)}
+    else if(k>='1'&&k<='8'){const t=quickList()[+k-1];if(t)setTool(UI.tool===t?null:t)}
     else if(k==='x'){UI.demolish=!UI.demolish;UI.tool=null}
     else if('wasd'.indexOf(k)>=0||k.indexOf('arrow')===0){const s=6/CAM.z*10;CAM.follow=false;
       if(k==='w'||k==='arrowup')CAM.y-=s;if(k==='s'||k==='arrowdown')CAM.y+=s;if(k==='a'||k==='arrowleft')CAM.x-=s;if(k==='d'||k==='arrowright')CAM.x+=s}
@@ -1804,7 +1983,7 @@ const INPUT=(()=>{
 /* 恒星工坊 · 启动、布局、主循环、存档
    逻辑固定每秒 15 tick，渲染锁 30fps，tick 之间插值（ALPHA）。
    存档：每 60 秒和切到后台时存一次本地（云存档留给平台层，第一版没做）。 */
-const SAVE={key:'hxgf.save.v1',
+const SAVE={key:'hxgf.save.v2',
   now(){if(UI.state!=='play')return;try{P.store.set(SAVE.key,serialize(Date.now()))}catch(e){}},
   has(){return !!P.store.get(SAVE.key)}};
 function layout(){const sz=P.size();W=sz.w;H=sz.h;R.resize(W,H,sz.dpr);UI.layout(sz);

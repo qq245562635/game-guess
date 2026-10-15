@@ -1,7 +1,7 @@
 /* 恒星工坊 · 启动、布局、主循环、存档
    逻辑固定每秒 15 tick，渲染锁 30fps，tick 之间插值（ALPHA）。
    存档：每 60 秒和切到后台时存一次本地（云存档留给平台层，第一版没做）。 */
-const SAVE={key:'hxgf.save.v1',
+const SAVE={key:'hxgf.save.v2',
   now(){if(UI.state!=='play')return;try{P.store.set(SAVE.key,serialize(Date.now()))}catch(e){}},
   has(){return !!P.store.get(SAVE.key)}};
 function layout(){const sz=P.size();W=sz.w;H=sz.h;R.resize(W,H,sz.dpr);UI.layout(sz);

@@ -46,6 +46,20 @@ function genMap(seed){
   return {ore,amt,shade};
 }
 
+/* 引导用的推荐位置：离出生点最近、2×2 全是铁矿的位置，铁板线往东排；
+   铜矿另找一块整 2×2，铜板线朝四个方向里不压到铁板线、不出地图的那个 */
+function tutSpots(){
+  const c=MAP/2,hit=(a,b)=>a[0]<b[0]+b[2]&&b[0]<a[0]+a[2]&&a[1]<b[1]+b[3]&&b[1]<a[1]+a[3];
+  const inMap=r=>r[0]>=0&&r[1]>=0&&r[0]+r[2]<=MAP&&r[1]+r[3]<=MAP;
+  const spots=(t,R)=>{const out=[];for(let y=c-R;y<c+R;y++)for(let x=c-R;x<c+R;x++){let n=0;for(const i of tilesOf(x,y,2))if(G.ore[i]===t)n++;
+    if(n===4)out.push([x,y,Math.hypot(x+1-c,y+1-c)])}return out.sort((a,b)=>a[2]-b[2])};
+  let i=null;for(const s of spots(1,30))if(inMap(tutBox(s,0))){i=[s[0],s[1]];break}
+  if(!i)i=[c-8,c-2];
+  const ib=tutBox(i,0);
+  for(const R of [30,60])for(const s of spots(2,R))for(let d=0;d<4;d++){const b=tutBox(s,d);
+    if(inMap(b)&&!hit(b,ib))return{i,c:[s[0],s[1]],cd:d}}
+  return{i,c:null,cd:0};
+}
 /* ================= 新游戏 ================= */
 function newGame(seed){
   seed=seed||((Math.random()*1e9)|0);
@@ -59,10 +73,13 @@ function newGame(seed){
     drones:[],done:new Set(),research:null,paused:{},
     mods:{drones:0,droneSpeed:1,mechSpeed:1,range:0,emax:0,regen:1,mine:1,smelt:1,asm:1,boxCap:1},
     st:{cur:{p:{},c:{},box:{},res:0},hist:[],acc:0},
-    cnt:{handMine:0,poweredSmelter:false,smeltPlate:0,minerToBelt:0,sorterToMachine:0,boxIn:0,asmMade:0,matrixMade:0,labTechs:0,allGreen:false},
+    cnt:{handMine:0,poweredSmelter:false,smeltPlate:0,copperPlate:0,minerToBelt:0,sorterToMachine:0,boxIn:0,taken:0,asmMade:0,gearMade:0,matrixMade:0,labTechs:0,labUsed:0,allGreen:false,statsSeen:false},
     goal:0,ev:[],mapDirty:[],handAuto:true};
   for(let k=0;k<NCH*NCH;k++)G.chunks.push(new Set());
   for(const k in START_INV)G.inv[k]=START_INV[k];
+  G.tut=tutSpots();
+  /* 机甲从引导那条铁板线的中间出发，整条线都在施工范围内 */
+  const mc=G.mech;mc.x=mc.px=G.tut.i[0]+7;mc.y=mc.py=G.tut.i[1]+2.5;
   syncDrones();
   return G;
 }
@@ -301,6 +318,8 @@ function tickMiner(b){
   if(n>0)for(const [tx,ty] of minerFront(b)){const t=beltAt(tx,ty);
     if(t&&b.out[b.ore]>0&&t.rot!==(b.rot+2)%4&&beltInsert(t,b.ore,t.rot===b.rot?0.1:0.5)){b.out[b.ore]--;G.cnt.minerToBelt++}}
 }
+/* 产物缓存：没接分拣器时也能攒一些，玩家点「取出」拿走 */
+function outCap(rc,k){return Math.max(rc.out[k]*5,10)}
 function tickMachine(b){
   const def=BLD[b.type];
   if(b.kind==='smelt'&&b.grid>=0&&G.grids[b.grid].supply>0)G.cnt.poweredSmelter=true;
@@ -308,7 +327,7 @@ function tickMachine(b){
   const rc=RECIPES[b.recipe],f=pw(b);
   if(!b.working){
     let ok=true;for(const k in rc.in)if((b.in[k]||0)<rc.in[k]){ok=false;break}
-    let room=true;for(const k in rc.out)if((b.out[k]||0)+rc.out[k]>Math.max(rc.out[k]*3,4)){room=false;break}
+    let room=true;for(const k in rc.out)if((b.out[k]||0)+rc.out[k]>outCap(rc,k)){room=false;break}
     if(ok&&room){for(const k in rc.in){b.in[k]-=rc.in[k];cons(k,rc.in[k])}b.working=true;b.prog=0}
     else{b.on=false;b.why=!room?'产物已满':'缺少原料';draw(b,def.power*0.05);return}
   }
@@ -316,18 +335,20 @@ function tickMachine(b){
   draw(b,def.power);b.on=f>0;b.why=f>0?'':'无电';
   b.prog+=TICK*spd*f;
   if(b.prog>=rc.t){
-    let room=true;for(const k in rc.out)if((b.out[k]||0)+rc.out[k]>Math.max(rc.out[k]*3,4))room=false;
+    let room=true;for(const k in rc.out)if((b.out[k]||0)+rc.out[k]>outCap(rc,k))room=false;
     if(!room){b.prog=rc.t;b.why='产物已满';return}
     for(const k in rc.out){b.out[k]=(b.out[k]||0)+rc.out[k];prod(k,rc.out[k])}
     b.working=false;b.prog=0;
     if(b.recipe==='iron_plate')G.cnt.smeltPlate++;
+    if(b.recipe==='copper_plate')G.cnt.copperPlate++;
+    if(b.recipe==='gear')G.cnt.gearMade++;
     if(b.kind==='asm'){G.cnt.asmMade++;if(b.recipe==='matrix1')G.cnt.matrixMade++}
   }
 }
 function tickLab(b){
   const def=BLD.lab,R=G.research,f=pw(b);
   if(!R||TECH[R.id].hand){b.on=false;b.why=R?'':'未选研究';b.working=false;return}
-  if(!b.working){if((b.in.matrix1||0)>0){b.in.matrix1--;cons('matrix1',1);b.working=true;b.prog=0}
+  if(!b.working){if((b.in.matrix1||0)>0){b.in.matrix1--;cons('matrix1',1);G.cnt.labUsed++;b.working=true;b.prog=0}
     else{b.on=false;b.why='缺少矩阵';draw(b,def.power*0.05);return}}
   draw(b,def.power);b.on=f>0;b.why=f>0?'':'无电';
   b.prog+=TICK*f;
@@ -435,17 +456,20 @@ function planCraft(item,count,auto,dry){
   for(const j of G.craftQ){const rc=RECIPES[j.r];for(const k in rc.out)inv[k]=(inv[k]||0)+rc.out[k]*j.n;
     if(!j.started)for(const k in rc.in)inv[k]=(inv[k]||0)-rc.in[k]*j.n;
     else for(const k in rc.in)inv[k]=(inv[k]||0)-rc.in[k]*(j.n-1)}
-  const plan=[];
-  const need=(it,n,depth)=>{
-    const have=Math.max(0,inv[it]||0);if(have>=n){inv[it]-=n;return true}
-    const rid=RECIPE_FOR[it];if(!rid||depth>5||!RECIPES[rid].hand||!recipeOK(rid))return false;
-    const rc=RECIPES[rid],runs=Math.ceil((n-have)/rc.out[it]);
+  const plan=[];let miss=null;
+  /* make：一定要新做 n 个；need：先用已有的，不够再做 */
+  const make=(it,n,depth)=>{
+    const rid=RECIPE_FOR[it];
+    if(!rid||depth>5||!RECIPES[rid].hand||!recipeOK(rid)||(G.noHandSmelt&&RECIPES[rid].kind==='smelt')){if(!miss)miss={it,n,locked:!!rid&&!recipeOK(rid)};return false}
+    const rc=RECIPES[rid],runs=Math.ceil(n/rc.out[it]);
     for(const k in rc.in)if(!need(k,rc.in[k]*runs,depth+1))return false;
-    inv[it]=(inv[it]||0)+runs*rc.out[it]-n;plan.push({r:rid,n:runs,started:false,auto:!!auto});return true;
+    inv[it]=(inv[it]||0)+runs*rc.out[it];plan.push({r:rid,n:runs,started:false,auto:!!auto});return true;
   };
-  if(!need(item,count,0)){if(!auto&&!dry)ev('craftFail',{it:item});return false}
+  const need=(it,n,depth)=>{const have=Math.max(0,inv[it]||0);
+    if(have<n&&!make(it,n-have,depth))return false;inv[it]=(inv[it]||0)-n;return true};
+  G.craftMiss=null;
+  if(!make(item,count,0)){G.craftMiss=miss;if(!auto&&!dry)ev('craftFail',{it:item,miss});return false}
   if(dry)return true;
-  /* 只排真正要做的（need 会先把已有的扣掉） */
   for(const j of plan){const last=G.craftQ[G.craftQ.length-1];if(last&&last.r===j.r&&!last.started)last.n+=j.n;else G.craftQ.push(j)}
   return true;
 }
@@ -473,7 +497,8 @@ function applyTech(id){const e=TECH[id].eff;if(!e)return;const M=G.mods;
   if(e.drones)M.drones+=e.drones;if(e.droneSpeed)M.droneSpeed*=e.droneSpeed;if(e.mechSpeed)M.mechSpeed*=e.mechSpeed;
   if(e.range)M.range+=e.range;if(e.emax)M.emax+=e.emax;if(e.regen)M.regen*=e.regen;if(e.mine)M.mine*=e.mine;
   if(e.smelt)M.smelt*=e.smelt;if(e.asm)M.asm*=e.asm;if(e.boxCap)M.boxCap*=e.boxCap}
-function finishTech(id){if(G.done.has(id))return;G.done.add(id);applyTech(id);syncDrones();ev('tech',{id})}
+function finishTech(id){if(G.done.has(id))return;G.done.add(id);applyTech(id);syncDrones();
+  const gift=TECH[id].gift;if(gift)for(const k in gift)invAdd(k,gift[k]);ev('tech',{id,gift})}
 
 /* ================= 统计（每秒一个桶，保留 60 秒） ================= */
 function tickStats(){
@@ -562,7 +587,7 @@ function fillFromInv(b){
   return n;
 }
 function takeAll(b){let n=0;const src=b.k==='box'?b.inv:b.out;if(!src)return 0;
-  for(const k in src){if(src[k]>0){invAdd(k,src[k]);n+=src[k];if(b.k==='box')G.st.cur.box[k]=(G.st.cur.box[k]||0)-src[k]}delete src[k]}return n}
+  for(const k in src){if(src[k]>0){invAdd(k,src[k]);n+=src[k];if(b.k==='box')G.st.cur.box[k]=(G.st.cur.box[k]||0)-src[k]}delete src[k]}G.cnt.taken+=n;return n}
 function setRecipe(b,rid){if(b.k!=='machine'||b.recipe===rid)return;
   for(const k in b.in)if(b.in[k]>0)invAdd(k,b.in[k]);b.in={};
   if(b.working){const rc=RECIPES[b.recipe];for(const k in rc.in)invAdd(k,rc.in[k])}
@@ -590,15 +615,15 @@ function serialize(now){
     bs.push([b.type,b.x,b.y,b.rot,o])}
   const oreD=[];for(const i of G.oreChanged)oreD.push(i,G.amt[i]);
   const gh=sortedGhosts().map(g=>g.del?['D',g.x,g.y]:[g.type,g.x,g.y,g.rot]);
-  return JSON.stringify({v:1,seed:G.seed,t:G.t,inv:G.inv,cq:G.craftQ.filter(j=>!j.started).map(j=>[j.r,j.n]),
+  return JSON.stringify({v:2,seed:G.seed,t:G.t,inv:G.inv,cq:G.craftQ.filter(j=>!j.started).map(j=>[j.r,j.n]),
     mech:[G.mech.x,G.mech.y,G.mech.e],done:[...G.done],research:G.research,paused:G.paused||{},goal:G.goal,cnt:G.cnt,
     oreD,b:bs,gh,off:offlineRates(),at:now||0,auto:G.handAuto});
 }
 function deserialize(str,now){
-  const d=JSON.parse(str);if(!d||d.v!==1)throw new Error('存档版本不对');
+  const d=JSON.parse(str);if(!d||d.v!==2)throw new Error('存档版本不对');
   newGame(d.seed);G.t=d.t;G.inv=d.inv||{};G.goal=d.goal||0;
   for(const k in d.cnt)G.cnt[k]=d.cnt[k];
-  for(const id of d.done||[]){G.done.add(id);applyTech(id)}syncDrones();
+  for(const id of d.done||[])if(TECH[id]){G.done.add(id);applyTech(id)}syncDrones();
   G.research=d.research;G.paused=d.paused||{};G.handAuto=d.auto!==false;
   for(let k=0;k<d.oreD.length;k+=2){const i=d.oreD[k];G.amt[i]=d.oreD[k+1];G.oreChanged.add(i);if(G.amt[i]<=0){G.ore[i]=0}}
   /* 先放建筑（不放进存档的旧 id 映射，拆除蓝图按顺序对应） */

@@ -183,6 +183,17 @@ VIEW.draw=function(){
   if(UI.detail&&G.b.has(UI.detail.id)){const b=UI.detail;R.rect(sx(b.x)-2,sy(b.y)-2,b.s*z+4,b.s*z+4,z*0.2,col('#ffffff',0.85),2)}
   /* 蓝图（显示排队序号） */
   if(G.ghosts.size){let rank=0;for(const g of sortedGhosts()){rank++;if(g.x+BLD[g.type].size<x0||g.x>x1||g.y+BLD[g.type].size<y0||g.y>y1)continue;drawGhost(g,z,g.del?0:rank)}}
+  /* 新手引导：闪烁的推荐位置 */
+  const ga=UI.guide&&UI.guide.area;
+  if(ga){const p=0.5+0.5*Math.sin(G.t*5),ac=col('#ffd75a'),x=sx(ga.x),y=sy(ga.y),w=ga.w*z,h=ga.h*z;
+    R.rect(x-3,y-3,w+6,h+6,z*0.2,withA(ac,0.10+0.12*p));
+    R.dashRect(x-3,y-3,w+6,h+6,Math.max(2,z*0.07),withA(ac,0.6+0.4*p),Math.max(4,z*0.18));
+    if(ga.type){const k=BLD[ga.type].k;
+      if(k==='belt'||k==='sorter'||k==='miner'){const dx=DX[ga.rot],dy=DY[ga.rot];
+        const n=k==='belt'?Math.max(ga.w,ga.h):1;for(let i=0;i<n;i++){const cx=x+(k==='belt'?(i+0.5)*z*Math.abs(dx)+(dy?w/2:0):w/2),cy=y+(k==='belt'?(i+0.5)*z*Math.abs(dy)+(dx?h/2:0):h/2),s=z*0.18;
+          R.line(cx-dx*s-dy*s,cy-dy*s+dx*s,cx+dx*s*0.6,cy+dy*s*0.6,Math.max(1.5,z*0.07),withA(ac,0.8));R.line(cx-dx*s+dy*s,cy-dy*s-dx*s,cx+dx*s*0.6,cy+dy*s*0.6,Math.max(1.5,z*0.07),withA(ac,0.8))}}
+      if(k!=='belt'&&z>=8)icon(ga.type,x+w/2,y+h/2+(k==='miner'?z*0.25:0),Math.min(w,h)*0.45,withA(ac,0.55))}
+    const lab=ga.tap?'点这里':'放这里',ly=y-10-4*p;R.rect(x+w/2-26,ly-11,52,22,11,col('#0d1119',0.9));R.text(lab,x+w/2,ly,12,ac,'center',700)}
   /* 施工范围：机甲周围淡色圆圈 */
   const m=G.mech,mx=sx(lerp(m.px,m.x,ALPHA)),my=sy(lerp(m.py,m.y,ALPHA));
   if(UI.tool||G.ghosts.size)R.ring(mx,my,mechRange()*z,Math.max(1,z*0.04),withA(GHOST,0.28),Math.round(mechRange()*3),G.t*0.03);
