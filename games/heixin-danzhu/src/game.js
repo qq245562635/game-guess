@@ -3,9 +3,10 @@ const $ = s => document.querySelector(s);
 const PRICE = 2, DAY_LEN = 70, MAX_MECH = 5, PATROL = [0.45, 0.62];
 const rent = d => 12 + 8 * (d - 1);
 const MECH = {
-  fist: { name: '弹簧拳头', price: 10, desc: '放在钉阵里，弹珠路过时一拳打飞。点一下已放好的拳头可以换朝向。每出一拳，嫌疑 +3。' },
+  fist: { name: '弹簧拳头', price: 10, desc: '放在钉阵里，弹珠路过时一拳打飞。点已放好的拳头可以换朝向。每出一拳，嫌疑 +3。' },
   magnet: { name: '磁铁', price: 14, desc: '把附近的弹珠吸过去，放在「谢谢惠顾」上方最好用。吸住弹珠时嫌疑会持续上涨。' },
 };
+const MECH_TIP = '放错了点它撤掉：没用过全额退，用过回收一半。';
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // ---------- pixel sprites ----------
@@ -28,10 +29,13 @@ function bestDay() { try { return +localStorage.getItem('pachinko-best') || 0; }
 function saveBest(d) { try { if (d > bestDay()) localStorage.setItem('pachinko-best', d); } catch (e) {} }
 function newGame() {
   S = { money: 66, pop: 50, sus: 0, day: 1, t: 0, phase: 'start', speed: 1, paused: false, queue: [], arriveT: 0.6, launchCD: 0.5,
-    slapCD: 0, placing: null, floats: [], shake: 0, shakeDur: 1, shakeAmp: 0, flash: 0, mechId: 1, world: createWorld((Date.now() % 99991) + 1), lastMag: 0, ghost: null, stats: null };
+    slapCD: 0, placing: null, sel: null, mood: 'normal', magActive: false, floats: [], shake: 0, shakeDur: 1, shakeAmp: 0, flash: 0, mechId: 1, world: createWorld((Date.now() % 99991) + 1), lastMag: 0, ghost: null, stats: null };
   resetStats(); renderQueue();
 }
-function resetStats() { S.stats = { income: 0, payout: 0, spend: 0, balls: 0, big: 0 }; }
+function resetStats() { S.stats = { income: 0, payout: 0, spend: 0, refund: 0, balls: 0, big: 0 }; }
+const isUsed = m => m.used || (m.usedT || 0) > 0.1;
+const refundOf = m => isUsed(m) ? Math.floor(m.cost / 2) : m.cost;
+const selMech = () => S.sel == null ? null : S.world.mechs.find(m => m.id === S.sel) || null;
 const watchers = () => Math.max(1, Math.round(S.pop / 12));
 const inPatrol = () => S.phase === 'open' && S.t / DAY_LEN >= PATROL[0] && S.t / DAY_LEN < PATROL[1];
 function addSus(v) { const mult = (0.6 + watchers() * 0.12) * (inPatrol() ? 2 : 1); S.sus = Math.min(100, S.sus + v * mult); }
@@ -50,6 +54,7 @@ function frame(now) {
     acc += dt * S.speed;
     while (acc >= 1 / 60) { update(1 / 60); acc -= 1 / 60; }
   } else acc = 0;
+  Sfx.fx.hum(!S.paused && S.magActive && (S.phase === 'open' || S.phase === 'closing') ? 1 : 0);
   for (const f of S.floats) f.life -= dt; S.floats = S.floats.filter(f => f.life > 0);
   if (S.shake > 0) S.shake -= dt;
   if (S.flash > 0) S.flash -= dt;
@@ -73,7 +78,7 @@ function update(dt) {
     if (S.queue.length && w.balls.length < 3 && S.launchCD <= 0) {
       S.queue.shift(); renderQueue();
       S.money += PRICE; S.stats.income += PRICE; S.stats.balls++;
-      launchBall(w); float(B.laneX - 4, B.bottom - 30, '+¥2', '#9be36b', 12);
+      launchBall(w); float(B.laneX - 4, B.bottom - 30, '+¥2', '#9be36b', 12); Sfx.fx.coin(); Sfx.fx.launch();
       S.launchCD = 1.0;
     }
   }
@@ -85,30 +90,40 @@ function update(dt) {
         S.pop += ev.prize === 8 ? 6 : ev.prize === 3 ? 2 : 1;
         if (ev.prize === 8) { S.stats.big++; shake(0.25, 6); haptic(30); }
         float(ev.x, B.slotTop - 6, `赔 ¥${ev.prize}`, ev.prize === 8 ? '#ff6b5a' : '#f2c94c', ev.prize === 8 ? 16 : 13);
-      } else { S.pop -= 1.5; float(ev.x, B.slotTop - 6, '嘿嘿', '#c9b49a', 12); }
-    } else if (ev.type === 'fist') { addSus(3); float(ev.x, ev.y - 16, '嫌疑+', '#ff8a7a', 11); }
-    else if (ev.type === 'reload') launchBall(w);
+        Sfx.fx.payout(ev.prize);
+      } else { S.pop -= 1.5; float(ev.x, B.slotTop - 6, '嘿嘿', '#c9b49a', 12); Sfx.fx.miss(); }
+    } else if (ev.type === 'fist') { ev.mech.used = true; addSus(3); float(ev.x, ev.y - 16, '嫌疑+', '#ff8a7a', 11); Sfx.fx.fist(); }
+    else if (ev.type === 'hit') Sfx.fx.hit(ev.v);
+    else if (ev.type === 'reload') { launchBall(w); Sfx.fx.launch(); }
   }
   w.events.length = 0;
   const magDelta = w.magnetTime - S.lastMag; S.lastMag = w.magnetTime;
   if (magDelta > 0) addSus(magDelta * 4);
+  S.magActive = magDelta > 0;
   S.sus = Math.max(0, S.sus - 2 * dt);
   S.pop = Math.max(0, Math.min(100, S.pop));
   if (S.slapCD > 0) S.slapCD -= dt;
+  const mood = S.sus >= 75 ? 'danger' : inPatrol() ? 'patrol' : 'normal';
+  if (mood !== S.mood) {
+    if (mood === 'patrol' && S.mood === 'normal') Sfx.fx.whistle();
+    if (mood === 'danger') Sfx.fx.warn();
+    S.mood = mood; Sfx.music.mood(mood);
+  }
   if (S.sus >= 100) return gameOver('caught');
   if (S.phase === 'closing' && w.balls.length === 0) endDay();
 }
 
 // ---------- day flow ----------
-function startDay() { S.phase = 'open'; S.t = 0; S.arriveT = 0.6; S.launchCD = 0.5; resetStats(); $('#ovDay').hidden = true; $('#ovStart').hidden = true; }
+function startDay() { Sfx.init(); Sfx.music.start(); S.phase = 'open'; S.t = 0; S.arriveT = 0.6; S.launchCD = 0.5; resetStats(); $('#ovDay').hidden = true; $('#ovStart').hidden = true; }
 function endDay() {
   const r = rent(S.day); S.money -= r; S.phase = 'summary';
-  const st = S.stats, net = st.income - st.payout - st.spend - r;
+  const st = S.stats, net = st.income - st.payout - st.spend + st.refund - r;
+  S.sel = null; setPlacing(null); Sfx.fx.register();
   $('#dayTitle').textContent = `第 ${S.day} 天 收摊`;
   const row = (k, v, cls) => `<span class="${cls || ''}">${k}</span><span class="v ${cls || ''}">${v}</span>`;
   $('#ledger').innerHTML =
     row(`弹珠收入（${st.balls} 颗）`, `+¥${st.income}`, 'plus') + row(`赔出去的奖（大奖 ${st.big} 次）`, `-¥${st.payout}`, 'minus') +
-    row('买机关', `-¥${st.spend}`, 'minus') + row('摊位费', `-¥${r}`, 'minus') +
+    row('买机关', `-¥${st.spend}`, 'minus') + (st.refund ? row('撤掉机关退回', `+¥${st.refund}`, 'plus') : '') + row('摊位费', `-¥${r}`, 'minus') +
     row('今天净赚', `${net >= 0 ? '+' : '-'}¥${Math.abs(net)}`, 'total ' + (net >= 0 ? 'plus' : 'minus')) + row('手里还剩', `¥${S.money}`, 'total');
   if (S.money < 0) { gameOver('broke'); return; }
   saveBest(S.day);
@@ -117,7 +132,7 @@ function endDay() {
 }
 function nextDay() { S.day++; S.sus = 0; S.lastMag = S.world.magnetTime; startDay(); }
 function gameOver(kind) {
-  S.phase = 'over'; saveBest(S.day - (kind === 'broke' ? 1 : 0));
+  S.phase = 'over'; S.sel = null; Sfx.music.stop(); Sfx.fx.hum(0); Sfx.fx.fail(); saveBest(S.day - (kind === 'broke' ? 1 : 0));
   $('#ovDay').hidden = true;
   $('#overTitle').textContent = kind === 'caught' ? '摊子被掀了' : '交不起摊位费，破产了';
   $('#overText').textContent = kind === 'caught'
@@ -130,25 +145,61 @@ function gameOver(kind) {
 function slap() {
   if (S.phase !== 'open' && S.phase !== 'closing') return;
   if (S.slapCD > 0) return;
-  shake(0.45, 14); haptic([40, 30, 70]);
+  shake(0.45, 14); haptic([40, 30, 70]); Sfx.fx.slap();
   if (!S.world.balls.some(b => !b.inLane)) { float(B.cx, 250, '台上没珠子，白拍了', '#f6e7c8', 14); return; }
   slapTable(S.world); addSus(14); S.pop = Math.max(0, S.pop - 2); S.slapCD = 5;
   float(B.cx, 250, '啪！', '#ffffff', 28);
 }
 $('#slap').addEventListener('click', slap);
-$('#speed').addEventListener('click', () => { S.speed = S.speed === 1 ? 2 : S.speed === 2 ? 3 : 1; $('#speed').textContent = `${S.speed} 倍速`; });
+$('#speed').addEventListener('click', () => { Sfx.fx.click(); S.speed = S.speed === 1 ? 2 : S.speed === 2 ? 3 : 1; $('#speed').textContent = `${S.speed} 倍速`; });
 $('#pause').addEventListener('click', togglePause);
-function togglePause() { S.paused = !S.paused; $('#pause').textContent = S.paused ? '▶' : '❚❚'; $('#pause').setAttribute('aria-label', S.paused ? '继续' : '暂停'); }
-document.addEventListener('keydown', e => { if (e.code === 'Space' && S.phase !== 'start') { e.preventDefault(); togglePause(); } if (e.key === 'Escape') setPlacing(null); });
+function togglePause() { Sfx.fx.click(); S.paused = !S.paused; $('#pause').textContent = S.paused ? '▶' : '❚❚'; $('#pause').setAttribute('aria-label', S.paused ? '继续' : '暂停'); }
+document.addEventListener('keydown', e => { if (e.code === 'Space' && S.phase !== 'start') { e.preventDefault(); togglePause(); } if (e.key === 'Escape') { setPlacing(null); S.sel = null; } });
+document.addEventListener('pointerdown', () => Sfx.init());
 $('#startBtn').addEventListener('click', startDay);
 $('#nextBtn').addEventListener('click', nextDay);
 $('#againBtn').addEventListener('click', () => { $('#ovOver').hidden = true; newGame(); startDay(); });
 
 function setPlacing(type) {
-  S.placing = type;
+  S.placing = type; if (type) S.sel = null;
   document.querySelectorAll('.card').forEach(c => c.classList.toggle('on', c.dataset.type === type));
-  $('#hint').textContent = type ? `点钉阵放下${MECH[type].name}（¥${MECH[type].price}）· 再点一次卡片取消` : '点机关再点钉阵放置 · 长按机关看说明';
 }
+function removeMech(m) {
+  const r = refundOf(m);
+  S.world.mechs.splice(S.world.mechs.indexOf(m), 1);
+  S.money += r; S.stats.refund += r; S.sel = null;
+  float(m.x, m.y - 14, `+¥${r}`, '#9be36b', 14); Sfx.fx.remove();
+}
+function renderBar() {
+  const bar = $('#actbar'), m = selMech();
+  const sig = S.placing ? 'p' + S.placing : m ? `s${m.id}|${isUsed(m)}|${m.dir}` : 'idle';
+  if (bar.dataset.sig === sig) return; bar.dataset.sig = sig;
+  if (S.placing) {
+    bar.innerHTML = `<span class="hint-text">点钉阵放下${MECH[S.placing].name}（¥${MECH[S.placing].price}）</span><button class="mini" data-act="cancel">取消</button>`;
+  } else if (m) {
+    const used = isUsed(m), r = refundOf(m);
+    bar.innerHTML = (m.type === 'fist' ? `<button class="mini" data-act="turn">换朝向 ${m.dir > 0 ? '→' : '←'}</button>` : '') +
+      `<button class="mini warn" data-act="remove">${used ? '拆掉 · 回收' : '撤销 · 全额退'} ¥${r}</button><button class="mini ok" data-act="done">好了</button>`;
+  } else {
+    bar.innerHTML = '<span class="hint-text">点机关再点钉阵放置 · 点台上的机关可撤掉 · 长按看说明</span>';
+  }
+}
+$('#actbar').addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]'); if (!btn) return;
+  const act = btn.dataset.act, m = selMech();
+  if (act === 'cancel') { setPlacing(null); Sfx.fx.click(); }
+  else if (act === 'done') { S.sel = null; Sfx.fx.click(); }
+  else if (act === 'turn' && m) { m.dir *= -1; float(m.x, m.y - 18, m.dir > 0 ? '朝右' : '朝左', '#f6e7c8', 11); Sfx.fx.turn(); }
+  else if (act === 'remove' && m) removeMech(m);
+});
+const SOUND_STATES = [{ music: true, sfx: true, label: '全开' }, { music: false, sfx: true, label: '只音效' }, { music: false, sfx: false, label: '静音' }];
+const soundIdx = () => Sfx.pref.sfx ? (Sfx.pref.music ? 0 : 1) : 2;
+function renderSound() { $('#soundState').textContent = SOUND_STATES[soundIdx()].label; }
+$('#sound').addEventListener('click', () => {
+  Sfx.init();
+  const n = SOUND_STATES[(soundIdx() + 1) % 3];
+  Sfx.setPref('music', n.music); Sfx.setPref('sfx', n.sfx); renderSound(); Sfx.fx.click();
+});
 document.querySelectorAll('.card').forEach(card => {
   const type = card.dataset.type; let timer = null, long = false;
   drawMechIcon(card.querySelector('canvas'), type);
@@ -156,9 +207,9 @@ document.querySelectorAll('.card').forEach(card => {
   const end = () => { clearTimeout(timer); if (long) setTimeout(() => $('#tip').hidden = true, 1800); };
   card.addEventListener('pointerup', end); card.addEventListener('pointerleave', () => clearTimeout(timer));
   card.addEventListener('contextmenu', e => e.preventDefault());
-  card.addEventListener('click', e => { if (long) { long = false; return; } setPlacing(S.placing === type ? null : type); });
+  card.addEventListener('click', e => { if (long) { long = false; return; } Sfx.fx.click(); setPlacing(S.placing === type ? null : type); });
 });
-function showTip(type) { const t = $('#tip'); t.innerHTML = `<b>${MECH[type].name} · ¥${MECH[type].price}</b>${MECH[type].desc}`; t.hidden = false; }
+function showTip(type) { const t = $('#tip'); t.innerHTML = `<b>${MECH[type].name} · ¥${MECH[type].price}</b>${MECH[type].desc}${MECH_TIP}`; t.hidden = false; }
 
 // ---------- board canvas ----------
 const cv = $('#board'), ctx = cv.getContext('2d');
@@ -185,15 +236,18 @@ cv.addEventListener('pointerdown', e => {
   const p = toWorld(e);
   if (S.placing) {
     const err = canPlace(p);
-    if (err) { float(p.x, p.y, err, '#ff8a7a', 12); return; }
-    const price = MECH[S.placing].price;
-    S.world.mechs.push({ id: S.mechId++, type: S.placing, x: p.x, y: p.y, dir: p.x > B.cx ? -1 : 1, cd: 0, anim: 0 });
+    if (err) { float(p.x, p.y, err, '#ff8a7a', 12); Sfx.fx.deny(); return; }
+    const type = S.placing, price = MECH[type].price;
+    const m = { id: S.mechId++, type, x: p.x, y: p.y, dir: p.x > B.cx ? -1 : 1, cd: 0, anim: 0, cost: price, used: false, usedT: 0 };
+    S.world.mechs.push(m);
     S.money -= price; S.stats.spend += price; float(p.x, p.y - 18, `-¥${price}`, '#ff8a7a', 12);
-    setPlacing(null);
+    Sfx.fx.place(); setPlacing(null); S.sel = m.id;
     return;
   }
-  const m = S.world.mechs.find(m => m.type === 'fist' && Math.hypot(m.x - p.x, m.y - p.y) < 18);
-  if (m) { m.dir *= -1; float(m.x, m.y - 18, m.dir > 0 ? '朝右' : '朝左', '#f6e7c8', 11); }
+  let hit = null, best = 20;
+  for (const m of S.world.mechs) { const d = Math.hypot(m.x - p.x, m.y - p.y); if (d < best) { best = d; hit = m; } }
+  S.sel = hit && S.sel !== hit.id ? hit.id : null;
+  if (hit) Sfx.fx.click();
 });
 
 function boardPath(c, grow) {
@@ -309,6 +363,12 @@ function draw() {
     if (m.type === 'fist') drawFist(ctx, m);
     else drawMagnet(ctx, m, false, w.balls.some(b => Math.hypot(b.x - m.x, b.y - m.y) < 66 && (b.mt[m.id] || 0) < 1.1));
   }
+  const sm = selMech();
+  if (sm) {
+    ctx.save(); ctx.strokeStyle = '#f2c94c'; ctx.lineWidth = 1.6; ctx.setLineDash([4, 3]);
+    ctx.lineDashOffset = reduceMotion ? 0 : -performance.now() / 50;
+    ctx.beginPath(); ctx.arc(sm.x, sm.y, 16, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+  }
   if (S.placing && S.ghost) {
     const ok = !canPlace(S.ghost);
     if (S.placing === 'fist') drawFist(ctx, { ...S.ghost, dir: S.ghost.x > B.cx ? -1 : 1, anim: 0 }, true); else drawMagnet(ctx, S.ghost, true);
@@ -346,6 +406,7 @@ function hud() {
   const slapReady = live && S.slapCD <= 0;
   $('#slap').disabled = !slapReady;
   set('slapCd', 'w', '100%'); $('#slapCd').style.height = (S.slapCD > 0 ? S.slapCD / 5 * 100 : 0) + '%';
+  renderBar();
   for (const t of ['fist', 'magnet']) set('card-' + t, 'class', 'card' + (S.placing === t ? ' on' : '') + (S.money < MECH[t].price ? ' poor' : ''));
 }
 function renderQueue() {
@@ -354,7 +415,7 @@ function renderQueue() {
 }
 { const z = $('#zone'); z.style.left = PATROL[0] * 100 + '%'; z.style.width = (PATROL[1] - PATROL[0]) * 100 + '%'; $('#patrolFlag').style.left = `calc(${PATROL[0] * 100}% - ${PATROL[0] * 6}px)`; }
 
-newGame();
+newGame(); renderSound();
 const b = bestDay(); if (b) $('#best').textContent = `最好成绩：撑过 ${b} 天`;
 resize();
 if (document.fonts) document.fonts.ready.then(buildStatic);

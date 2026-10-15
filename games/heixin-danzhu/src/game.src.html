@@ -77,8 +77,16 @@ body {
 .card.on { background: #6b4b1f; box-shadow: inset 0 0 0 2px var(--gold), 0 3px 0 #000; }
 .card.poor span { color: var(--sus); }
 .card:focus-visible, .btn:focus-visible, .cta:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.hint { font-size: 12px; color: var(--muted); text-align: center; min-height: 16px; }
-.row { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 8px; }
+.actbar { min-height: 36px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.hint-text { font-size: 12px; color: var(--muted); text-align: center; }
+.mini { appearance: none; border: 2px solid #000; background: #4d3f3a; color: var(--ink); font: inherit; font-size: 13px; font-weight: 700; padding: 5px 10px; box-shadow: inset 0 0 0 2px #6a5952, 0 2px 0 #000; cursor: pointer; touch-action: manipulation; white-space: nowrap; }
+.mini:active { transform: translateY(1px); }
+.mini.warn { background: #7a2a1f; box-shadow: inset 0 0 0 2px #b4483a, 0 2px 0 #000; }
+.mini.ok { background: var(--gold); color: #3a1f0e; box-shadow: inset 0 0 0 2px #c99a2a, 0 2px 0 #000; }
+.mini:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.row { display: grid; grid-template-columns: 1fr 1.3fr auto auto; gap: 8px; }
+.btn.sound { width: 58px; font-size: 13px; line-height: 1.15; padding: 6px 4px; }
+.btn.sound small { display: block; font-size: 11px; color: var(--gold); }
 .btn { appearance: none; border: 2px solid #000; font: inherit; color: var(--ink); background: #4d3f3a; box-shadow: inset 0 0 0 2px #6a5952, 0 3px 0 #000; padding: 8px 10px; font-weight: 700; cursor: pointer; position: relative; overflow: hidden; touch-action: manipulation; }
 .btn:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px #6a5952, 0 1px 0 #000; }
 .btn.slap { background: #c4671f; box-shadow: inset 0 0 0 2px #e89a4f, 0 3px 0 #000; font-family: var(--display); font-size: 18px; line-height: 1; }
@@ -147,7 +155,7 @@ body {
 
   <div class="tray">
     <div class="tip" id="tip" hidden></div>
-    <div class="hint" id="hint">点机关再点钉阵放置 · 长按机关看说明</div>
+    <div class="actbar" id="actbar" aria-live="polite"></div>
     <div class="cards">
       <button class="card" id="card-fist" data-type="fist"><canvas class="px" width="20" height="20"></canvas><b>弹簧拳头</b><span>¥10</span></button>
       <button class="card" id="card-magnet" data-type="magnet"><canvas class="px" width="20" height="20"></canvas><b>磁铁</b><span>¥14</span></button>
@@ -155,6 +163,7 @@ body {
     <div class="row">
       <button class="btn slap" id="slap">拍桌子<small>拍飞一批</small><i class="cd" id="slapCd"></i></button>
       <button class="btn speed" id="speed">1 倍速</button>
+      <button class="btn sound" id="sound" aria-label="切换声音">声音<small id="soundState">全开</small></button>
       <button class="btn pause" id="pause" aria-label="暂停">❚❚</button>
     </div>
   </div>
@@ -170,6 +179,7 @@ body {
       <li>黄旗那一段<em>城管巡逻</em>，嫌疑翻倍。</li>
       <li>顾客老是不中奖，<em>人气</em>就掉，人气低了没人来玩。</li>
       <li>每天收摊交摊位费，钱不够就破产。</li>
+      <li>机关放错了，点它就能撤掉：<em>还没用过全额退钱</em>，用过的回收一半。</li>
     </ul>
     <button class="cta" id="startBtn">开张</button>
     <p class="small" id="best"></p>
@@ -193,6 +203,9 @@ body {
 
 <script>
 /*ENGINE*/
+</script>
+<script>
+/*AUDIO*/
 </script>
 <script>
 /*GAME*/

@@ -3,6 +3,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parent.parent
 src = (root / 'src' / 'game.src.html').read_text(encoding='utf-8')
 src = src.replace('/*ENGINE*/', (root / 'src' / 'engine.js').read_text(encoding='utf-8'))
+src = src.replace('/*AUDIO*/', (root / 'src' / 'audio.js').read_text(encoding='utf-8'))
 src = src.replace('/*GAME*/', (root / 'src' / 'game.js').read_text(encoding='utf-8'))
 page = ('<!doctype html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'

@@ -51,15 +51,16 @@ function launchBall(w, power) {
 
 function collideCircle(b, px, py, pr, e, w) {
   const dx = b.x - px, dy = b.y - py, d2 = dx * dx + dy * dy, m = BR + pr;
-  if (d2 >= m * m || d2 === 0) return false;
+  if (d2 >= m * m || d2 === 0) return 0;
   const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
   b.x = px + nx * m; b.y = py + ny * m;
   const vn = b.vx * nx + b.vy * ny;
   if (vn < 0) {
     b.vx -= (1 + e) * vn * nx; b.vy -= (1 + e) * vn * ny;
     const j = (w.rng() - 0.5) * 36; b.vx += -ny * j; b.vy += nx * j;
+    return -vn;
   }
-  return true;
+  return 0;
 }
 
 function collideSeg(b, s, e, w) {
@@ -87,7 +88,7 @@ function substep(w, h) {
       if (d < 66 && used < 1.1 && b.y > B.laneTop - 10 && b.x < B.laneX) {
         const f = 1500 * (1 - d / 66) + 260;
         ax += dx / (d + 0.01) * f; ay += dy / (d + 0.01) * f;
-        b.mt[m.id] = used + h; w.magnetTime += h;
+        b.mt[m.id] = used + h; w.magnetTime += h; m.usedT = (m.usedT || 0) + h;
         b.vx *= 0.995; b.vy *= 0.995;
       }
     }
@@ -107,7 +108,10 @@ function substep(w, h) {
     if (b.x < B.L + BR) { b.x = B.L + BR; if (b.vx < 0) b.vx = -b.vx * 0.4; }
     if (b.x > B.R - BR) { b.x = B.R - BR; if (b.vx > 0) b.vx = -b.vx * 0.4; }
     if (b.inLane && b.y < B.laneTop - BR) b.inLane = false;
-    if (b.y > 170 && b.y < B.slotTop + 10) for (const p of w.pegs) collideCircle(b, p.x, p.y, PEG_R, 0.5, w);
+    if (b.y > 170 && b.y < B.slotTop + 10) for (const p of w.pegs) {
+      const v = collideCircle(b, p.x, p.y, PEG_R, 0.5, w);
+      if (v > 70) w.events.push({ type: 'hit', v });
+    }
     for (const s of w.segs) if (b.y > s.y1 - 10) collideSeg(b, s, 0.3, w);
     // fists
     for (const m of w.mechs) {
