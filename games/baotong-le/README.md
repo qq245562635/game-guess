@@ -4,7 +4,10 @@
 
 ## 运行
 
-浏览器直接打开 `index.html`。横屏 22×14，竖屏 14×20。
+- **网页**：浏览器直接打开 `index.html`（GitHub Pages 上就是这个文件）。横屏 22×14，竖屏 14×20。
+- **微信小游戏**：微信开发者工具 → 导入项目 → 选 `minigame/`，AppID 选测试号。详见 [minigame/README.md](minigame/README.md)（含真机检查清单）。
+
+两边是同一套代码，v4 起渲染全部改成纯 WebGL（不依赖引擎），界面也画在画布里。
 
 ## 元素映射
 
@@ -65,13 +68,28 @@ v1 是第 2 周就来、要 6–14 袋，自动连路的模拟里 40 局通过 3
 - 清运车去程车斗上驮着垃圾袋；送达飘 "+1"，厂房一缩一弹，右上角清运量跳一下。
 - 车流染色：车刚跑过的路段留一道本色，约 2 秒褪掉，繁忙干道看起来是彩色流动的。
 
+## v4 纯 WebGL + 微信小游戏
+
+为了上微信小游戏（没有 DOM，只有一块画布），渲染和界面整个重写成 WebGL，规则层一行没动。
+
+- **规则层** `src/core.js`：地图、刷新、路网、派车、督导员、周拨款、接通判定。不碰 DOM、不画图，模拟脚本只加载这一个文件。
+- **渲染器** `src/gl.js`：WebGL1，一个 SDF 着色器画圆角矩形、胶囊线段、圆弧（可虚线）和贴图，全部合批，通常一帧一次 draw call。文字按字缓存进 2048² 图集，垃圾袋、厂房图标、工具栏图标用离屏 2D 画布画一次后进图集。
+- **画面** `src/view.js`：逐项对应原 Canvas 版（网格、河、道路、高架、小区、处理厂、车、扫光、飘字）。
+- **界面** `src/ui.js`：顶部栏、督导员横幅、工具栏、提示条、三张卡片，全部画在画布里，自己做点击判定。微信里顶部栏放在右上角胶囊按钮下方。
+- **输入** `src/input.js`：v2 的铺路手感原样保留。
+- **平台层** `src/platform.web.js` / `src/platform.wx.js`：画布、触摸、存档、音效（WebAudio / `wx.createWebAudioContext`）、震动、字体、分享。
+- **构建** `tools/build.py`：同时产出 `index.html` 和 `minigame/`；会检查小游戏包里没有 `document`/`window` 等浏览器对象，也没有老 JS 引擎不认的 `?.` `??` `{...}`。
+
+包体：小游戏约 80 KB（系统字体），加上快乐体子集约 300 KB 左右，主包上限 4 MB。
+验证：浏览器里跑通开始 → 铺路 → 一笔接通 → 撤销 → 周拨款 → 投诉爆表 → 重新上岗；另外用模拟的 `wx` 环境（把 `document`、`window`、`navigator`、`localStorage`、`performance` 全部置空）跑 `minigame/game.js`，启动、点按钮、拖路、震动、音效都正常。后期满屏每帧 JS 渲染约 1 ms。真机还没测。
+
 ## 刷新规则
 
 - 刷小区和处理厂前会先试放，按可修路格划分连通区域：新小区必须能通到同色处理厂，原本能通的小区不能被切断；找不到合适位置就这次不刷。保证不会出现永远连不上的小区。
 
 ## v2 节奏（试玩反馈：太难、太快）
 
-数值都在 `src/game.js` 顶部的 `CFG`，注释里留着 v1 的原值。
+数值都在 `src/core.js` 顶部的 `CFG`，注释里留着 v1 的原值。
 
 | | v1 | v2 |
 |---|---|---|
@@ -109,10 +127,21 @@ v1 是第 2 周就来、要 6–14 袋，自动连路的模拟里 40 局通过 3
 ## 目录
 
 ```
-index.html          构建产物，单文件可玩版本
-src/game.js         游戏逻辑
-src/game.src.html   页面模板与样式，构建时内联 src/game.js
-tools/build.py      生成 index.html：python3 tools/build.py
+index.html          构建产物：网页版，单文件
+minigame/           构建产物：微信小游戏工程（game.js / game.json / project.config.json）
+src/core.js         规则层
+src/gl.js           WebGL 渲染器
+src/view.js         世界画面
+src/ui.js           界面（画在画布里）
+src/input.js        输入 / 铺路手感
+src/main.js         启动、布局、主循环
+src/platform.web.js 平台层：网页
+src/platform.wx.js  平台层：微信小游戏
+src/game.src.html   网页外壳
+fonts/              （可选）小游戏用的字体子集，tools/subset_font.py 生成
+tools/build.py      构建：python3 tools/build.py
+tools/subset_font.py 字体子集：python3 tools/subset_font.py <字体文件> display|num
+tools/stub.js       在 Node 里加载 core.js 的假平台，给下面几个脚本用
 tools/sim.js        无头模拟：跑一周 + 删路重新寻路 + 40 局督导员检查通过率 + 小区可达回归
 tools/bot.js        难度基准机器人：node tools/bot.js [局数] [宽] [高] [每次接路间隔秒]
 tools/spawn_stats.js 刷点分布统计：node tools/spawn_stats.js [局数] [分钟] [宽] [高]

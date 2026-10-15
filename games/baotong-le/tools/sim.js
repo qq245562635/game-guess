@@ -1,9 +1,5 @@
-const fs=require('fs');const src=fs.readFileSync(require('path').join(__dirname,'..','src','game.js'),'utf8');
-const el=()=>({style:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},setAttribute(){},getBoundingClientRect:()=>({width:400,height:800,left:0,top:0}),getContext:()=>new Proxy({},{get:()=>()=>{}}),appendChild(){},set onclick(f){},hidden:true,textContent:'',innerHTML:''});
-global.document={getElementById:el,querySelectorAll:()=>[],querySelector:el,createElement:el};
-global.window={devicePixelRatio:1};global.addEventListener=()=>{};global.requestAnimationFrame=()=>{};global.performance={now:()=>0};
-global.localStorage={getItem:()=>0,setItem(){}};global.setTimeout=()=>0;global.clearTimeout=()=>{};
-eval(src+`
+
+require('./stub')(`
 function bfs(a,b){const q=[a],pr=new Map([[a,-1]]);while(q.length){const u=q.shift();if(u===b)break;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const x=X(u)+dx,y=Y(u)+dy;if(!inB(x,y))continue;const v=I(x,y);if(pr.has(v)||G.occ[v]>=0)continue;const n=G.nodes.get(v);if(n&&n.kind==='house'&&v!==b)continue;if(n&&n.kind==='door'&&v!==b)continue;pr.set(v,u);q.push(v)}}if(!pr.has(b))return null;const p=[b];let k=b;while(pr.get(k)!==-1){k=pr.get(k);p.push(k)}return p.reverse()}
 function connectAll(){for(const h of G.houses){if(G.adj.get(h.idx).size)continue;const d=G.dests.find(d=>d.color===h.color);const p=bfs(h.idx,d.door);if(!p)continue;for(let k=0;k<p.length-1;k++)if(!tryConnect(p[k],p[k+1]))break}}
 // 1) 基础循环：自动连路跑一周
@@ -28,4 +24,4 @@ console.log('samples',gots.slice(0,12).join(' '));
 {let bad=0,total=0;for(let g=0;g<40;g++){newGame();for(let k=0;k<40;k++)spawnHouse(pickHouseColor());for(let k=0;k<5;k++){G.t+=1;const d=spawnDest(G.dests[k%G.dests.length].color,'sq');if(d)spawnHouse(d.color,d)}for(let k=0;k<25;k++)spawnHouse(pickHouseColor());
   const ok=reachability(new Set());for(const h of G.houses){total++;if(!ok(h.idx,h.color))bad++}}
  console.log('unreachable houses',bad,'/',total);if(bad)process.exitCode=1}
-`);
+`,400,800);

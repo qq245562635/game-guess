@@ -1,13 +1,7 @@
 // 刷点分布统计：跑 N 局到第 M 分钟（自动处理周拨款，不连路），看同色小区是否成团。
 // 用法：node tools/spawn_stats.js [局数=150] [分钟=4] [宽=400] [高=800]
-const fs=require('fs'),path=require('path');
-const src=fs.readFileSync(path.join(__dirname,'..','src','game.js'),'utf8');
-const N=+process.argv[2]||150,M=+process.argv[3]||4,Wd=+process.argv[4]||400,Ht=+process.argv[5]||800;
-const el=()=>({style:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},setAttribute(){},getBoundingClientRect:()=>({width:Wd,height:Ht,left:0,top:0}),getContext:()=>new Proxy({},{get:()=>()=>{}}),appendChild(){},set onclick(f){},hidden:true,textContent:'',innerHTML:''});
-global.document={getElementById:el,querySelectorAll:()=>[],querySelector:el,createElement:el};global.window={devicePixelRatio:1};
-global.addEventListener=()=>{};global.requestAnimationFrame=()=>{};global.performance={now:()=>0};global.localStorage={getItem:()=>0,setItem(){}};
-global.setTimeout=()=>0;global.clearTimeout=()=>{};global.navigator={};
-eval(src+`
+Object.assign(global,{N:+process.argv[2]||150,M:+process.argv[3]||4,Wd:+process.argv[4]||400,Ht:+process.argv[5]||800});
+require('./stub')(`
 CFG.timerMax=1e9;CFG.inspFirst=[1e9,1e9];
 let tot=0,nnSame=0,touchSame=0,iso=0,touchOther=0,clusters=0,sizes=0,ms=0,spawns=0;
 for(let g=0;g<N;g++){newGame();
@@ -25,4 +19,4 @@ for(let g=0;g<N;g++){newGame();
 }
 const pc=v=>(100*v/tot).toFixed(0)+'%';
 console.log(\`\${Wd}x\${Ht} 第\${M}分钟 \${N}局 平均\${(tot/N).toFixed(1)}户：紧挨着有同色 \${pc(touchSame)}，最近邻同色 \${pc(nnSame)}，2.5格内无同色 \${pc(iso)}，紧挨着有别色 \${pc(touchOther)}\${typeof clusterSizes==='function'?'，平均团大小 '+(sizes/clusters).toFixed(1):''}，刷一户平均 \${(ms/spawns).toFixed(1)}ms\`);
-`);
+`,Wd,Ht);

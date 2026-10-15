@@ -1,14 +1,8 @@
 // 难度基准：一个"普通玩家"机器人，用有限路段把新小区接到同色路网，跑到投诉爆表为止。
 // 不放环岛/红绿灯/高架；每 T 秒只能接一个小区（模拟玩家看图、画路的时间），周拨款总选路段更多的那项。
 // 用法：node tools/bot.js [局数=40] [宽=400] [高=800] [T=5]
-const fs=require('fs'),path=require('path');
-const src=fs.readFileSync(path.join(__dirname,'..','src','game.js'),'utf8');
-const N=+process.argv[2]||40, Wd=+process.argv[3]||400, Ht=+process.argv[4]||800, T=+process.argv[5]||5;
-const el=()=>({style:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},setAttribute(){},getBoundingClientRect:()=>({width:Wd,height:Ht,left:0,top:0}),getContext:()=>new Proxy({},{get:()=>()=>{}}),appendChild(){},set onclick(f){},hidden:true,textContent:'',innerHTML:'',querySelector:()=>null});
-global.document={getElementById:el,querySelectorAll:()=>[],querySelector:el,createElement:el};
-global.window={devicePixelRatio:1};global.addEventListener=()=>{};global.requestAnimationFrame=()=>{};global.performance={now:()=>0};
-global.localStorage={getItem:()=>0,setItem(){}};global.setTimeout=()=>0;global.clearTimeout=()=>{};global.navigator={};
-eval(src+`
+Object.assign(global,{N:+process.argv[2]||40,Wd:+process.argv[3]||400,Ht:+process.argv[4]||800,T:+process.argv[5]||5});
+require('./stub')(`
 function nbrs(i){const r=[];const x=X(i),y=Y(i);if(x>0)r.push(i-1);if(x<cols-1)r.push(i+1);if(y>0)r.push(i-cols);if(y<rows-1)r.push(i+cols);return r}
 function comps(){ // 路网连通块 -> 包含的处理厂颜色 / 已接入小区颜色
   const comp=new Map();let n=0;const doors=[],homes=[];
@@ -63,4 +57,4 @@ for(let g=0;g<N;g++){
 res.sort((a,b)=>a.t-b.t);const q=f=>res[Math.floor(f*(res.length-1))];
 const fmt=r=>(r.t/60).toFixed(1)+'分钟/第'+Math.ceil(r.t/CFG.weekLen)+'周/'+r.score+'袋';
 console.log(\`\${Wd}x\${Ht} \${N}局  最差 \${fmt(res[0])}  25% \${fmt(q(.25))}  中位 \${fmt(q(.5))}  75% \${fmt(q(.75))}  撑满15周 \${res.filter(r=>r.wk>=15).length}局  早死(<3分钟) \${res.filter(r=>r.t<180).length}局 原因 \${res.filter(r=>r.t<180).map(r=>r.why).join(',')}\`);
-`);
+`,Wd,Ht);
