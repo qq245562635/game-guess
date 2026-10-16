@@ -1,0 +1,8 @@
+{
+  "description": "未寄之夜 · 卧室版 Demo（纯 WebGL 微信小游戏）",
+  "compileType": "game",
+  "appid": "touristappid",
+  "projectname": "weiji-zhiye",
+  "setting": { "es6": true, "minified": true, "enhance": true, "postcss": false },
+  "libVersion": "3.0.0"
+}

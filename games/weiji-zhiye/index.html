@@ -1,0 +1,2395 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>未寄之夜 · 卧室版 Demo</title>
+<style>
+html,body{margin:0;height:100%;background:#0b0c10;overflow:hidden}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#game{display:block;touch-action:none;width:min(100vw,calc(100vh * 9 / 19.5));height:min(100vh,calc(100vw * 19.5 / 9))}
+@media (min-width:600px){#game{border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.6);height:min(92vh,880px);width:calc(min(92vh,880px) * 9 / 19.5)}}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game"></canvas></div>
+<script>
+var __defs={},__cache={};function __req(n){n=n.replace(/^\.\//,"").replace(/\.js$/,"");if(__cache[n])return __cache[n].exports;var m={exports:{}};__cache[n]=m;__defs[n](m,m.exports,__req);return m.exports;}
+__defs["art"]=function(module,exports,require){
+// 占位美术：全部用 2D 画布程序绘制后上传为纹理。正式美术通过 data.ART_OVERRIDES 替换。
+const T = require('./text');
+const P = require('./platform');
+const D = require('./data');
+
+let R = null;
+const PI = Math.PI;
+
+// ---------- 绘图工具 ----------
+function rr(c, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+function ell(c, x, y, rx, ry) {
+  c.beginPath();
+  c.save(); c.translate(x, y); c.scale(rx, ry); c.arc(0, 0, 1, 0, PI * 2); c.restore();
+  c.closePath();
+}
+function lg(c, x0, y0, x1, y1, stops) {
+  const g = c.createLinearGradient(x0, y0, x1, y1);
+  stops.forEach((s, i) => g.addColorStop(Array.isArray(s) ? s[0] : i / (stops.length - 1), Array.isArray(s) ? s[1] : s));
+  return g;
+}
+function fill(c, style) { c.fillStyle = style; c.fill(); }
+function stroke(c, style, lw) { c.strokeStyle = style; c.lineWidth = lw; c.stroke(); }
+function line(c, x0, y0, x1, y1, style, lw) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); stroke(c, style, lw); }
+function poly(c, pts) { c.beginPath(); c.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) c.lineTo(pts[i], pts[i + 1]); c.closePath(); }
+function shadow(c, x, y, rx, ry, a) { ell(c, x, y, rx, ry); fill(c, 'rgba(0,0,0,' + (a || 0.35) + ')'); }
+function sparkle(c, x, y, s) {
+  c.beginPath(); c.moveTo(x, y - s); c.lineTo(x + s * 0.22, y - s * 0.22); c.lineTo(x + s, y); c.lineTo(x + s * 0.22, y + s * 0.22);
+  c.lineTo(x, y + s); c.lineTo(x - s * 0.22, y + s * 0.22); c.lineTo(x - s, y); c.lineTo(x - s * 0.22, y - s * 0.22); c.closePath();
+  fill(c, 'rgba(255,255,255,0.95)');
+}
+
+const W = { d: '#3a251b', m: '#56382a', l: '#71503d', hl: '#8c6650' };
+const GOLD = '#c8a46a';
+
+function bake(w, h, k, draw) {
+  const s = T.scratch(w * k, h * k);
+  s.ctx.scale(k, k);
+  draw(s.ctx, w, h);
+  return R.texFromCanvas(s.c);
+}
+
+// ---------- 卧室底图 ----------
+function drawRoom(c) {
+  c.fillStyle = '#12141c'; c.fillRect(0, 0, 750, 1000);
+  // 后墙
+  c.fillStyle = lg(c, 0, 60, 0, 380, ['#283041', '#38425a']);
+  c.fillRect(150, 60, 600, 322);
+  c.fillStyle = 'rgba(255,255,255,0.028)';
+  for (let x = 156; x < 750; x += 26) c.fillRect(x, 64, 9, 316);
+  c.fillStyle = '#4a3a33'; c.fillRect(150, 50, 600, 14);
+  c.fillStyle = '#5e4a40'; c.fillRect(150, 50, 600, 3);
+  // 左墙
+  poly(c, [0, 0, 150, 50, 150, 382, 0, 566]);
+  fill(c, lg(c, 0, 0, 150, 0, ['#1f2532', '#2c3446']));
+  c.save(); poly(c, [0, 0, 150, 50, 150, 382, 0, 566]); c.clip();
+  c.fillStyle = 'rgba(255,255,255,0.02)';
+  for (let x = 6; x < 150; x += 26) c.fillRect(x, 0, 8, 600);
+  c.restore();
+  // 地板
+  const floor = [0, 566, 150, 382, 750, 382, 750, 1000, 0, 1000];
+  poly(c, floor); fill(c, lg(c, 0, 382, 0, 1000, ['#2e2019', '#4a3326']));
+  c.save(); poly(c, floor); c.clip();
+  for (let y = 382, i = 0; y < 1000; y += 30 + i * 0.6, i++) {
+    line(c, 0, y, 750, y, 'rgba(0,0,0,0.28)', 1.2);
+    const off = (i * 97) % 180;
+    for (let x = off; x < 750; x += 180) line(c, x, y, x - 6, y + 30 + i * 0.6, 'rgba(0,0,0,0.2)', 1);
+    c.fillStyle = 'rgba(255,220,180,0.025)'; c.fillRect(0, y + 2, 750, 6);
+  }
+  // 墙角阴影
+  c.fillStyle = lg(c, 0, 382, 0, 470, ['rgba(0,0,0,0.45)', 'rgba(0,0,0,0)']); c.fillRect(0, 382, 750, 90);
+  c.restore();
+  // 踢脚线
+  c.fillStyle = '#231a14'; c.fillRect(150, 372, 600, 11);
+  line(c, 150, 382, 0, 566, '#231a14', 9);
+  line(c, 150, 50, 150, 382, 'rgba(0,0,0,0.35)', 3);
+  // 窗户
+  const wn = D.SPOTS.window;
+  rr(c, wn.x - 10, wn.y - 10, wn.w + 20, wn.h + 20, 4); fill(c, '#5f4a3d');
+  c.fillStyle = lg(c, 0, wn.y, 0, wn.y + wn.h, ['#17223a', '#2d4064']);
+  c.fillRect(wn.x, wn.y, wn.w, wn.h);
+  c.fillStyle = 'rgba(160,190,230,0.08)';
+  poly(c, [wn.x + 20, wn.y, wn.x + 70, wn.y, wn.x + 30, wn.y + wn.h, wn.x - 20 + 20, wn.y + wn.h]); c.fill();
+  c.fillStyle = '#5f4a3d';
+  c.fillRect(wn.x + wn.w / 2 - 3, wn.y, 6, wn.h);
+  c.fillRect(wn.x, wn.y + wn.h / 2 - 3, wn.w, 6);
+  rr(c, wn.x - 18, wn.y + wn.h + 6, wn.w + 36, 10, 2); fill(c, '#6f5848');
+  // 门口
+  poly(c, [0, 880, 118, 900, 118, 1000, 0, 1000]); fill(c, 'rgba(0,0,0,0.42)');
+  line(c, 118, 900, 118, 1000, 'rgba(255,200,140,0.25)', 3);
+  line(c, 0, 880, 118, 900, 'rgba(255,200,140,0.12)', 2);
+  // 暗角
+  const g = c.createRadialGradient(390, 560, 220, 390, 560, 760);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.55)');
+  c.fillStyle = g; c.fillRect(0, 0, 750, 1000);
+}
+
+// ---------- 24 张贴纸 ----------
+function nightstand(c, w, h, right) {
+  shadow(c, 40, 88, 40, 5);
+  rr(c, 6, 74, 8, 16, 2); fill(c, W.d); rr(c, 66, 74, 8, 16, 2); fill(c, W.d);
+  rr(c, 4, 10, 72, 68, 4); fill(c, lg(c, 0, 10, 0, 78, [W.m, W.d]));
+  rr(c, 0, 0, 80, 14, 4); fill(c, lg(c, 0, 0, 0, 14, [W.hl, W.m]));
+  rr(c, 10, 20, 60, 22, 3); stroke(c, 'rgba(0,0,0,0.4)', 2);
+  if (!right) {
+    c.beginPath(); c.arc(40, 31, 3.6, 0, PI * 2); fill(c, GOLD);
+    rr(c, 10, 48, 60, 22, 3); stroke(c, 'rgba(0,0,0,0.4)', 2);
+    c.beginPath(); c.arc(40, 59, 3.6, 0, PI * 2); fill(c, GOLD);
+  } else {
+    rr(c, 27, 29, 26, 4, 2); fill(c, GOLD);
+    rr(c, 10, 48, 60, 24, 3); fill(c, '#1e140e');
+    rr(c, 16, 56, 8, 16, 1); fill(c, '#6b3a3a'); rr(c, 25, 58, 7, 14, 1); fill(c, '#3d5566');
+  }
+}
+function pillow(c, w, h, dir) {
+  c.save(); c.translate(w / 2, h / 2); c.rotate(dir * 0.08);
+  shadow(c, 0, 16, 40, 6, 0.25);
+  rr(c, -42, -20, 84, 40, 16); fill(c, lg(c, 0, -20, 0, 20, ['#f5f6f8', '#cdd4dd']));
+  c.beginPath(); c.moveTo(-30, -6); c.quadraticCurveTo(0, 4, 30, -6); stroke(c, 'rgba(0,0,0,0.08)', 2);
+  if (dir > 0) { rr(c, 14, -16, 22, 6, 3); fill(c, '#8fa0b6'); }
+  else { ell(c, -16, 2, 10, 6); fill(c, 'rgba(0,0,0,0.05)'); }
+  c.restore();
+}
+function curtainHalf(c) {
+  c.beginPath(); c.moveTo(6, 12); c.lineTo(80, 12);
+  c.quadraticCurveTo(58, 95, 72, 122); c.quadraticCurveTo(84, 162, 64, 200);
+  c.lineTo(0, 200); c.closePath();
+  fill(c, lg(c, 0, 0, 80, 0, ['#3b475a', '#5c6c84', '#46546a', '#56667d']));
+  [18, 34, 50, 64].forEach((x, i) => line(c, x, 14, x - 8 + i, 200, 'rgba(0,0,0,0.22)', 2));
+  rr(c, 0, 116, 74, 8, 4); fill(c, GOLD);
+}
+
+const STICKERS = {
+  R01(c, w, h) {
+    poly(c, [40, 0, 360, 0, 400, h, 0, h]); fill(c, lg(c, 0, 0, 0, h, ['#6a4450', '#82535e']));
+    poly(c, [54, 12, 346, 12, 383, h - 12, 17, h - 12]); stroke(c, '#c9a27a', 4);
+    poly(c, [66, 24, 334, 24, 368, h - 24, 32, h - 24]); stroke(c, '#a17b5c', 2);
+    ell(c, 200, h / 2, 74, 40); fill(c, '#8e6068'); stroke(c, '#d4b08a', 3);
+    ell(c, 200, h / 2, 32, 17); fill(c, 'rgba(201,162,122,0.75)');
+    for (let x = 44; x <= 356; x += 8) line(c, x, 0, x, -5, '#cdb79a', 1.5);
+    for (let x = 4; x <= 396; x += 8) line(c, x, h, x, h + 5, '#cdb79a', 1.5);
+  },
+  R02(c, w, h) {
+    shadow(c, 150, 250, 150, 13);
+    rr(c, 8, 70, 284, 178, 10); fill(c, W.d);
+    rr(c, 16, 62, 268, 168, 10); fill(c, lg(c, 0, 62, 0, 230, ['#e3e7ec', '#b8c2ce']));
+    rr(c, 16, 202, 268, 28, 8); fill(c, '#a7b1be');
+    rr(c, 18, 0, 264, 82, 16); fill(c, lg(c, 0, 0, 0, 82, [W.hl, W.d]));
+    rr(c, 34, 12, 232, 58, 12); fill(c, lg(c, 0, 12, 0, 70, ['#5d6c80', '#435066']));
+    for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) {
+      c.beginPath(); c.arc(56 + i * 38, 30 + j * 22, 2.6, 0, PI * 2); fill(c, '#323c4b');
+    }
+    rr(c, 4, 226, 292, 32, 8); fill(c, lg(c, 0, 226, 0, 258, [W.l, W.d]));
+    line(c, 14, 232, 286, 232, 'rgba(255,255,255,0.12)', 2);
+  },
+  R03(c, w, h) { nightstand(c, w, h, false); },
+  R04(c, w, h) { nightstand(c, w, h, true); },
+  R05(c, w, h) {
+    shadow(c, 65, 278, 66, 6);
+    rr(c, 10, 270, 14, 10, 2); fill(c, W.d); rr(c, 106, 270, 14, 10, 2); fill(c, W.d);
+    rr(c, 4, 12, 122, 262, 4); fill(c, lg(c, 4, 0, 126, 0, [W.m, W.d]));
+    rr(c, 0, 0, 130, 18, 3); fill(c, lg(c, 0, 0, 0, 18, [W.hl, W.m]));
+    [12, 68].forEach((x) => {
+      rr(c, x, 28, 50, 234, 3); fill(c, lg(c, x, 0, x + 50, 0, [W.l, W.m])); stroke(c, 'rgba(0,0,0,0.4)', 1.5);
+      rr(c, x + 8, 40, 34, 92, 2); stroke(c, 'rgba(255,255,255,0.09)', 1.5);
+      rr(c, x + 8, 146, 34, 104, 2); stroke(c, 'rgba(255,255,255,0.09)', 1.5);
+    });
+    rr(c, 56, 132, 3.5, 26, 1.5); fill(c, GOLD); rr(c, 71, 132, 3.5, 26, 1.5); fill(c, GOLD);
+  },
+  R06(c, w, h) {
+    shadow(c, 75, 198, 72, 6);
+    ell(c, 75, 44, 50, 44); fill(c, lg(c, 25, 0, 125, 88, ['#d2b277', '#8f6f3d']));
+    ell(c, 75, 44, 42, 36); fill(c, lg(c, 0, 8, 0, 80, ['#a9bccf', '#4c5c72']));
+    c.save(); ell(c, 75, 44, 42, 36); c.clip();
+    poly(c, [52, 0, 72, 0, 44, 90, 24, 90]); fill(c, 'rgba(255,255,255,0.2)');
+    poly(c, [80, 0, 88, 0, 60, 90, 52, 90]); fill(c, 'rgba(255,255,255,0.12)');
+    c.restore();
+    rr(c, 66, 82, 18, 9, 2); fill(c, '#8f6f3d');
+    rr(c, 10, 134, 9, 64, 3); fill(c, W.d); rr(c, 131, 134, 9, 64, 3); fill(c, W.d);
+    rr(c, 6, 100, 138, 36, 3); fill(c, lg(c, 0, 100, 0, 136, [W.m, W.d]));
+    rr(c, 40, 106, 70, 22, 3); stroke(c, 'rgba(0,0,0,0.45)', 2);
+    c.beginPath(); c.arc(75, 117, 3.6, 0, PI * 2); fill(c, GOLD);
+    rr(c, 0, 88, 150, 14, 4); fill(c, lg(c, 0, 88, 0, 102, [W.hl, W.m]));
+  },
+  R07(c, w, h) {
+    shadow(c, 70, 146, 70, 7);
+    rr(c, 16, 130, 8, 18, 2); fill(c, W.d); rr(c, 116, 130, 8, 18, 2); fill(c, W.d);
+    rr(c, 20, 0, 100, 98, 34); fill(c, lg(c, 0, 0, 0, 98, ['#7f3a48', '#55222e']));
+    [[46, 30], [70, 26], [94, 30], [58, 54], [82, 54]].forEach((p) => { c.beginPath(); c.arc(p[0], p[1], 2.4, 0, PI * 2); fill(c, '#3e1820'); });
+    rr(c, 22, 76, 96, 46, 12); fill(c, lg(c, 0, 76, 0, 122, ['#8a4554', '#5d2733']));
+    rr(c, 0, 48, 34, 86, 16); fill(c, lg(c, 0, 0, 34, 0, ['#4a1c26', '#6b2f3a']));
+    rr(c, 106, 48, 34, 86, 16); fill(c, lg(c, 106, 0, 140, 0, ['#6b2f3a', '#4a1c26']));
+    rr(c, 4, 50, 26, 10, 5); fill(c, 'rgba(255,255,255,0.08)'); rr(c, 110, 50, 26, 10, 5); fill(c, 'rgba(255,255,255,0.08)');
+  },
+  R08(c, w, h) {
+    curtainHalf(c);
+    c.save(); c.translate(w, 0); c.scale(-1, 1); curtainHalf(c); c.restore();
+    rr(c, 0, 4, 250, 7, 3); fill(c, GOLD);
+    c.beginPath(); c.arc(3, 7.5, 6, 0, PI * 2); fill(c, GOLD); c.beginPath(); c.arc(247, 7.5, 6, 0, PI * 2); fill(c, GOLD);
+    c.beginPath(); c.moveTo(0, 12); c.lineTo(250, 12); c.lineTo(250, 34);
+    for (let x = 250; x > 0; x -= 25) c.quadraticCurveTo(x - 12.5, 46, x - 25, 34);
+    c.closePath(); fill(c, lg(c, 0, 12, 0, 44, ['#56667d', '#3f4c60']));
+  },
+  R09(c, w, h) {
+    rr(c, 0, 8, 290, 132, 18); fill(c, lg(c, 0, 8, 0, 140, ['#7d90a8', '#55667d']));
+    c.beginPath(); c.moveTo(40, 60); c.quadraticCurveTo(110, 90, 150, 70); stroke(c, 'rgba(0,0,0,0.15)', 3);
+    c.beginPath(); c.moveTo(170, 100); c.quadraticCurveTo(220, 80, 262, 110); stroke(c, 'rgba(0,0,0,0.13)', 3);
+    c.beginPath(); c.moveTo(60, 116); c.quadraticCurveTo(100, 104, 130, 126); stroke(c, 'rgba(255,255,255,0.08)', 3);
+    rr(c, 0, 0, 290, 34, 14); fill(c, lg(c, 0, 0, 0, 34, ['#dbe1e9', '#b2bdcb']));
+    line(c, 10, 30, 280, 30, 'rgba(0,0,0,0.12)', 2);
+  },
+  R10(c, w, h) { pillow(c, w, h, -1); },
+  R11(c, w, h) { pillow(c, w, h, 1); },
+  R12(c, w, h) {
+    ell(c, 24, 60, 14, 4); fill(c, '#8f6f3d');
+    rr(c, 22, 28, 4, 32, 2); fill(c, GOLD);
+    poly(c, [9, 4, 39, 4, 46, 32, 2, 32]); fill(c, lg(c, 0, 4, 0, 32, ['#fbe5b8', '#e2a861']));
+    ell(c, 24, 4, 15, 2.6); fill(c, '#fff1d4');
+    ell(c, 24, 32, 22, 3); fill(c, '#c88e48');
+  },
+  R13(c, w, h) {
+    rr(c, 0, 14, 52, 7, 2); fill(c, '#284035');
+    rr(c, 2, 7, 48, 9, 1); fill(c, '#e8e0cf');
+    for (let y = 9; y < 16; y += 2) line(c, 4, y, 48, y, 'rgba(0,0,0,0.12)', 0.6);
+    rr(c, 0, 2, 52, 7, 2); fill(c, '#33553f');
+    line(c, 38, 6, 40, 22, '#b2323f', 2.6);
+  },
+  R14(c, w, h) {
+    shadow(c, 85, 66, 84, 5);
+    rr(c, 10, 38, 8, 30, 2); fill(c, W.d); rr(c, 152, 38, 8, 30, 2); fill(c, W.d);
+    rr(c, 4, 30, 162, 12, 3); fill(c, W.m);
+    rr(c, 0, 0, 170, 36, 14); fill(c, lg(c, 0, 0, 0, 36, ['#a39282', '#76665a']));
+    [40, 85, 130].forEach((x) => { c.beginPath(); c.arc(x, 16, 2.4, 0, PI * 2); fill(c, '#5e5047'); });
+  },
+  R15(c, w, h) {
+    rr(c, 0, 0, 150, 90, 4); fill(c, lg(c, 0, 0, 150, 90, ['#d3ab68', '#8a6a3a']));
+    c.fillStyle = lg(c, 0, 10, 0, 80, ['#22324d', '#7a8aa3']); c.fillRect(10, 10, 130, 70);
+    c.beginPath(); c.arc(108, 28, 8, 0, PI * 2); fill(c, '#f0e6c8');
+    c.beginPath(); c.moveTo(10, 62); c.quadraticCurveTo(50, 36, 82, 58); c.quadraticCurveTo(110, 44, 140, 60); c.lineTo(140, 80); c.lineTo(10, 80); c.closePath(); fill(c, '#25343a');
+    c.fillStyle = 'rgba(240,230,200,0.25)'; c.fillRect(30, 70, 90, 3);
+  },
+  R16(c, w, h) {
+    [[26, 22, -0.15], [64, 19, 0.12]].forEach((p) => {
+      c.save(); c.translate(p[0], p[1]); c.rotate(p[2]);
+      shadow(c, 0, 4, 17, 14, 0.25);
+      ell(c, 0, 0, 16, 15); fill(c, lg(c, 0, -15, 0, 15, ['#c7b9aa', '#a29384']));
+      ell(c, 0, 4, 9.5, 8); fill(c, '#7f7164');
+      c.restore();
+    });
+  },
+  R17(c, w, h) {
+    c.beginPath(); c.moveTo(14, 18); c.lineTo(92, 18); c.lineTo(88, 50); c.quadraticCurveTo(54, 56, 20, 52); c.closePath();
+    fill(c, lg(c, 0, 18, 0, 54, ['#f4f6f8', '#c6ced8']));
+    line(c, 52, 20, 52, 52, 'rgba(0,0,0,0.12)', 1.5);
+    [28, 38, 48].forEach((y) => { c.beginPath(); c.arc(55, y, 1.4, 0, PI * 2); fill(c, '#9aa4b0'); });
+    rr(c, 0, 0, 110, 24, 11); fill(c, lg(c, 0, 0, 0, 24, ['#ffffff', '#dfe4ea']));
+    c.save(); c.translate(96, 30); c.rotate(0.12);
+    rr(c, -9, -14, 18, 38, 7); fill(c, lg(c, -9, 0, 9, 0, ['#e7ebf0', '#c3cbd5']));
+    rr(c, -9, 18, 18, 8, 3); fill(c, '#dfe4ea'); c.beginPath(); c.arc(0, 22, 1.6, 0, PI * 2); fill(c, GOLD);
+    c.restore();
+  },
+  R18(c, w, h) {
+    c.beginPath(); c.moveTo(0, 12); c.bezierCurveTo(40, 2, 90, 16, 140, 8); c.lineTo(136, 30);
+    c.bezierCurveTo(96, 38, 46, 26, 4, 32); c.closePath();
+    fill(c, lg(c, 0, 4, 0, 36, ['#cdb8d8', '#9a83ab']));
+    for (let x = 12; x < 130; x += 14) { c.beginPath(); c.arc(x, 20 + Math.sin(x) * 3, 1.5, 0, PI * 2); fill(c, 'rgba(255,255,255,0.35)'); }
+    for (let x = 6; x < 136; x += 5) line(c, x, 31 + Math.sin(x * 0.05) * 3, x, 38 + Math.sin(x * 0.05) * 3, '#a892b8', 1.2);
+  },
+  R19(c, w, h) {
+    shadow(c, 22, 19, 21, 6, 0.3);
+    ell(c, 22, 15, 21, 10); fill(c, lg(c, 0, 5, 0, 25, ['#e3c17c', '#957233']));
+    ell(c, 22, 14, 16, 7); fill(c, '#5a2a33');
+    c.beginPath(); c.arc(18, 11, 3.4, 0, PI * 2); stroke(c, '#eef2f6', 1.6);
+    c.beginPath(); c.arc(20, 16.5, 2.8, 0, PI * 2); fill(c, '#f7f9fb');
+    sparkle(c, 25, 9, 3);
+  },
+  R20(c, w, h) {
+    shadow(c, 20, 30, 19, 3, 0.3);
+    rr(c, 2, 11, 36, 19, 3); fill(c, lg(c, 0, 11, 0, 30, ['#7a2a37', '#4f1a24']));
+    rr(c, 0, 2, 40, 12, 4); fill(c, lg(c, 0, 2, 0, 14, ['#9a3a49', '#62202c']));
+    line(c, 1, 13, 39, 13, GOLD, 1.5);
+    rr(c, 17, 10, 6, 7, 1.5); fill(c, GOLD);
+  },
+  R21(c, w, h) {
+    ell(c, 12, 27, 12, 3.4); fill(c, '#6b5545');
+    poly(c, [3, 2, 21, 2, 19, 26, 5, 26]); fill(c, 'rgba(190,215,235,0.32)');
+    poly(c, [4, 12, 20, 12, 19, 26, 5, 26]); fill(c, 'rgba(140,185,220,0.35)');
+    poly(c, [3, 2, 21, 2, 19, 26, 5, 26]); stroke(c, 'rgba(235,245,255,0.85)', 1.2);
+    line(c, 7, 5, 8, 22, 'rgba(255,255,255,0.7)', 1.4);
+  },
+  R22(c, w, h) {
+    ell(c, 14, 22, 14, 4); fill(c, '#e6e1d8'); ell(c, 14, 22, 9, 2.4); fill(c, '#cfc8bc');
+    c.beginPath(); c.arc(23.5, 12, 5, -1.3, 1.3); stroke(c, '#ddd6cb', 3);
+    rr(c, 3, 4, 20, 18, 5); fill(c, lg(c, 3, 0, 23, 0, ['#f6f3ee', '#c9c1b4']));
+    ell(c, 13, 5, 10, 2.6); fill(c, '#6d5440');
+    line(c, 4, 13, 22, 13, 'rgba(70,90,130,0.6)', 1.6);
+  },
+  R23(c, w, h) {
+    rr(c, 2, 4, 26, 8, 2); fill(c, lg(c, 2, 0, 28, 0, ['#8a5530', '#5f3a20', '#8a5530']));
+    for (let x = 4; x < 28; x += 2.4) line(c, x, 12, x, 17, '#6f4527', 1.1);
+    line(c, 27, 15, 42, 6, '#d4b06a', 2);
+    c.beginPath(); c.arc(41.5, 6, 2.8, 0, PI * 2); fill(c, '#f5f2ea');
+  },
+  R24(c, w, h) {
+    poly(c, [6, 2, 56, 2, 50, 24, 0, 24]); fill(c, lg(c, 0, 2, 0, 24, ['#f6f7f9', '#d8dde4']));
+    poly(c, [9, 5, 52, 5, 47, 21, 4, 21]); stroke(c, '#5a7598', 1.6);
+    line(c, 28, 2, 24, 24, 'rgba(0,0,0,0.1)', 1.2);
+    c.beginPath(); c.arc(40, 16, 1.8, 0, PI * 2); fill(c, '#5a7598');
+  },
+};
+
+// ---------- 立绘 ----------
+const PW = 520, PH = 880;
+function drawPortraitBase(c) {
+  const skin = '#f1d9c9', hair = '#1c1d24';
+  // 后发
+  ell(c, 260, 285, 118, 116); fill(c, hair);
+  c.beginPath(); c.moveTo(146, 300); c.quadraticCurveTo(140, 380, 162, 410); c.lineTo(180, 330); c.closePath(); fill(c, hair);
+  c.beginPath(); c.moveTo(374, 300); c.quadraticCurveTo(380, 380, 358, 410); c.lineTo(340, 330); c.closePath(); fill(c, hair);
+  // 身体
+  c.beginPath(); c.moveTo(18, 880); c.lineTo(36, 650); c.quadraticCurveTo(54, 566, 176, 530); c.lineTo(344, 530);
+  c.quadraticCurveTo(466, 566, 484, 650); c.lineTo(502, 880); c.closePath();
+  fill(c, lg(c, 0, 520, 0, 880, ['#2c3240', '#1a1e27']));
+  // 颈
+  rr(c, 228, 430, 64, 120, 20); fill(c, '#e5c6b2');
+  ell(c, 260, 468, 40, 14); fill(c, 'rgba(0,0,0,0.12)');
+  // 衬衫 V 区
+  poly(c, [196, 530, 260, 720, 324, 530]); fill(c, lg(c, 0, 530, 0, 720, ['#f2f4f6', '#cfd5dc']));
+  poly(c, [212, 512, 196, 560, 250, 552]); fill(c, '#e9edf1');
+  poly(c, [308, 512, 324, 560, 270, 552]); fill(c, '#e9edf1');
+  // 领带
+  poly(c, [248, 548, 272, 548, 268, 566, 252, 566]); fill(c, '#4b1d29');
+  poly(c, [252, 566, 268, 566, 280, 700, 260, 736, 240, 700]); fill(c, lg(c, 240, 0, 280, 0, ['#5d2433', '#3f1622']));
+  // 翻领
+  c.beginPath(); c.moveTo(176, 530); c.lineTo(250, 760); stroke(c, 'rgba(255,255,255,0.13)', 3);
+  c.beginPath(); c.moveTo(344, 530); c.lineTo(270, 760); stroke(c, 'rgba(255,255,255,0.13)', 3);
+  // 胸袋手帕
+  rr(c, 346, 640, 70, 6, 2); fill(c, 'rgba(255,255,255,0.15)');
+  poly(c, [356, 640, 372, 618, 384, 640]); fill(c, '#eef2f6');
+  poly(c, [372, 640, 392, 622, 402, 640]); fill(c, '#d6dde6');
+  // 耳朵
+  ell(c, 168, 348, 11, 20); fill(c, '#e5c6b2'); ell(c, 352, 348, 11, 20); fill(c, '#e5c6b2');
+  // 脸
+  c.beginPath(); c.moveTo(170, 300); c.bezierCurveTo(168, 420, 222, 472, 260, 480);
+  c.bezierCurveTo(298, 472, 352, 420, 350, 300); c.bezierCurveTo(350, 196, 170, 196, 170, 300); c.closePath();
+  fill(c, lg(c, 0, 220, 0, 480, [skin, '#ead0bf']));
+  // 鼻
+  c.beginPath(); c.moveTo(262, 352); c.quadraticCurveTo(268, 382, 256, 390); stroke(c, 'rgba(150,100,80,0.45)', 2.2);
+  // 前发：柔和的发束
+  c.beginPath(); c.moveTo(150, 320); c.quadraticCurveTo(136, 184, 262, 176); c.quadraticCurveTo(392, 186, 374, 322);
+  const tips = [[374, 322], [352, 238], [342, 306], [320, 232], [300, 296], [278, 226], [254, 302], [232, 232], [212, 298], [192, 242], [168, 330]];
+  for (let i = 1; i < tips.length; i++) {
+    const a = tips[i - 1], b = tips[i];
+    c.quadraticCurveTo((a[0] + b[0]) / 2 + 8, (a[1] + b[1]) / 2 + (i % 2 ? -6 : 10), b[0], b[1]);
+  }
+  c.quadraticCurveTo(156, 300, 150, 320); c.closePath();
+  fill(c, hair);
+  c.beginPath(); c.moveTo(196, 214); c.quadraticCurveTo(250, 196, 300, 210); stroke(c, 'rgba(120,130,160,0.35)', 4);
+}
+// 表情层：覆盖在 (140,260) 处，尺寸 240×170
+function drawFace(c, kind) {
+  const eye = (x, y, open, look) => {
+    c.save(); c.translate(x, y);
+    c.beginPath(); c.moveTo(-22, 0); c.quadraticCurveTo(0, -open, 22, 0); c.quadraticCurveTo(0, open * 0.7, -22, 0); c.closePath();
+    fill(c, '#f7f2ef');
+    c.save(); c.clip();
+    c.beginPath(); c.arc(look, 0, 8.5, 0, PI * 2); fill(c, '#2a2833');
+    c.beginPath(); c.arc(look - 2.5, -3, 2.4, 0, PI * 2); fill(c, '#ffffff');
+    c.restore();
+    c.beginPath(); c.moveTo(-24, 1); c.quadraticCurveTo(0, -open - 1, 24, -1); stroke(c, '#16161c', 3.4);
+    c.restore();
+  };
+  const brow = (x, y, tilt) => {
+    c.beginPath(); c.moveTo(x - 22, y + tilt); c.quadraticCurveTo(x, y - 4, x + 22, y - tilt); stroke(c, '#1c1d24', 4.2);
+  };
+  if (kind === 'calm') {
+    eye(78, 76, 11, 0); eye(162, 76, 11, 0);
+    brow(78, 46, 2); brow(162, 46, -2);
+    c.beginPath(); c.moveTo(108, 150); c.quadraticCurveTo(120, 153, 132, 150); stroke(c, '#a76a5e', 2.6);
+  } else if (kind === 'smile') {
+    eye(78, 78, 8, 0); eye(162, 78, 8, 0);
+    brow(78, 46, 1); brow(162, 46, -1);
+    c.beginPath(); c.moveTo(104, 146); c.quadraticCurveTo(120, 158, 138, 145); stroke(c, '#a76a5e', 2.8);
+  } else if (kind === 'avoid') {
+    eye(78, 78, 10, -9); eye(162, 78, 10, -9);
+    brow(78, 44, -3); brow(162, 44, 3);
+    c.beginPath(); c.moveTo(110, 152); c.lineTo(128, 150); stroke(c, '#a76a5e', 2.4);
+  } else { // serious
+    eye(78, 78, 8.5, 0); eye(162, 78, 8.5, 0);
+    brow(78, 52, -5); brow(162, 52, 5);
+    c.beginPath(); c.moveTo(104, 150); c.lineTo(136, 150); stroke(c, '#9a5e52', 3);
+  }
+}
+
+// ---------- 近景与记忆 ----------
+function earringPiece(c, x, y, s) {
+  c.beginPath(); c.arc(x, y - 40 * s, 22 * s, PI * 0.85, PI * 2.15); stroke(c, '#dfe5eb', 5 * s);
+  line(c, x, y - 18 * s, x, y + 2 * s, '#cfd6de', 3 * s);
+  c.beginPath(); c.arc(x, y + 20 * s, 20 * s, 0, PI * 2);
+  stroke(c, lg(c, x - 24 * s, 0, x + 24 * s, 0, ['#f4f7fa', '#9aa6b3', '#eef2f6']), 7 * s);
+  line(c, x, y + 40 * s, x, y + 44 * s, '#cfd6de', 3 * s);
+  const g = c.createRadialGradient(x - 5 * s, y + 46 * s, 2 * s, x, y + 52 * s, 16 * s);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#c8d0da');
+  c.beginPath(); c.arc(x, y + 54 * s, 14 * s, 0, PI * 2); fill(c, g);
+}
+function drawEarring(c, w, h) {
+  c.fillStyle = lg(c, 0, 0, 0, h, ['#2e2019', '#120c09']); c.fillRect(0, 0, w, h);
+  for (let y = 8; y < h; y += 14) line(c, 0, y, w, y + Math.sin(y) * 6, 'rgba(255,220,180,0.035)', 2);
+  const gl0 = c.createRadialGradient(160, 60, 10, 160, 60, 480);
+  gl0.addColorStop(0, 'rgba(255,200,130,0.35)'); gl0.addColorStop(1, 'rgba(255,200,130,0)');
+  c.fillStyle = gl0; c.fillRect(0, 0, w, h);
+  shadow(c, 300, 322, 220, 112, 0.45);
+  ell(c, 300, 296, 214, 112); fill(c, lg(c, 0, 184, 0, 408, ['#ead08e', '#8a6a33']));
+  ell(c, 300, 290, 184, 90); fill(c, lg(c, 0, 200, 0, 380, ['#64303a', '#3a161e']));
+  // 盘中耳饰
+  c.save(); c.beginPath(); c.arc(262, 300, 28, 0, PI * 2); fill(c, 'rgba(0,0,0,0.25)'); c.restore();
+  earringPiece(c, 260, 262, 1);
+  sparkle(c, 236, 278, 9); sparkle(c, 282, 316, 6);
+  // 女主的手，捏着另一只
+  c.beginPath(); c.moveTo(690, 70); c.quadraticCurveTo(590, 80, 548, 128); c.quadraticCurveTo(522, 158, 540, 182);
+  c.quadraticCurveTo(600, 196, 690, 190); c.closePath(); fill(c, lg(c, 520, 0, 690, 0, ['#f3d8c6', '#d9b49d']));
+  rr(c, 500, 118, 70, 22, 11); fill(c, '#f1d3c0');
+  rr(c, 506, 150, 64, 20, 10); fill(c, '#ecccb8');
+  c.beginPath(); c.arc(504, 130, 9, 0, PI * 2); fill(c, 'rgba(255,255,255,0.15)');
+  earringPiece(c, 506, 196, 0.85);
+  sparkle(c, 486, 236, 7);
+  const v = c.createRadialGradient(w / 2, h / 2, h * 0.35, w / 2, h / 2, w * 0.7);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.5)');
+  c.fillStyle = v; c.fillRect(0, 0, w, h);
+}
+function drawMemory(c, w, h) {
+  const g = c.createRadialGradient(130, 70, 10, 200, 160, 620);
+  g.addColorStop(0, '#ffe0a0'); g.addColorStop(0.25, '#c98a4a'); g.addColorStop(0.65, '#5a3320'); g.addColorStop(1, '#1e100a');
+  c.fillStyle = g; c.fillRect(0, 0, w, h);
+  poly(c, [84, 20, 150, 20, 166, 72, 68, 72]); fill(c, 'rgba(255,240,200,0.85)');
+  // 床沿
+  c.beginPath(); c.moveTo(0, 336); c.quadraticCurveTo(320, 300, 690, 318); c.lineTo(690, 480); c.lineTo(0, 480); c.closePath();
+  fill(c, lg(c, 0, 300, 0, 480, ['#f3e2c8', '#b89a78']));
+  c.beginPath(); c.moveTo(80, 380); c.quadraticCurveTo(260, 360, 360, 410); stroke(c, 'rgba(90,60,40,0.25)', 5);
+  c.beginPath(); c.moveTo(420, 360); c.quadraticCurveTo(540, 380, 640, 440); stroke(c, 'rgba(90,60,40,0.2)', 5);
+  // 他的衣袖
+  c.beginPath(); c.moveTo(690, 150); c.quadraticCurveTo(540, 168, 404, 214); c.lineTo(420, 292); c.quadraticCurveTo(560, 270, 690, 262); c.closePath();
+  fill(c, lg(c, 0, 150, 0, 292, ['#f4efe6', '#bdb2a2']));
+  line(c, 460, 220, 470, 282, 'rgba(0,0,0,0.12)', 3);
+  rr(c, 396, 206, 34, 92, 8); fill(c, '#ece5d9');
+  // 她抓住衣袖的手
+  c.save(); c.translate(452, 250); c.rotate(-0.25);
+  [[-38, -34], [-38, -12], [-36, 10], [-30, 30]].forEach((p, i) => { rr(c, p[0], p[1], 76 - i * 6, 20, 10); fill(c, i % 2 ? '#efcdb6' : '#f5d8c4'); });
+  rr(c, 20, -40, 70, 86, 30); fill(c, '#eecbb4');
+  c.restore();
+  const v = c.createRadialGradient(w / 2, h / 2, h * 0.25, w / 2, h / 2, w * 0.68);
+  v.addColorStop(0, 'rgba(40,20,10,0)'); v.addColorStop(1, 'rgba(40,20,10,0.75)');
+  c.fillStyle = v; c.fillRect(0, 0, w, h);
+  c.fillStyle = 'rgba(255,230,190,0.05)';
+  for (let i = 0; i < 400; i++) c.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+}
+
+// ---------- 宅邸示意图 ----------
+const MAP_W = 690, MAP_H = 600;
+const MAP_BEDROOM = { x: 362, y: 44, w: 300, h: 360 };
+function drawMap(c, w, h) {
+  rr(c, 0, 0, w, h, 18); fill(c, '#1a1f2b');
+  c.save(); rr(c, 0, 0, w, h, 18); c.clip();
+  c.strokeStyle = 'rgba(140,160,190,0.06)'; c.lineWidth = 1;
+  for (let x = 0; x < w; x += 24) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+  for (let y = 0; y < h; y += 24) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+  c.restore();
+  const room = (x, y, rw, rh, name, locked) => {
+    rr(c, x, y, rw, rh, 6);
+    fill(c, locked ? 'rgba(120,130,150,0.06)' : 'rgba(200,170,120,0.08)');
+    stroke(c, locked ? 'rgba(140,155,180,0.35)' : 'rgba(220,190,140,0.6)', 2);
+    if (locked) {
+      c.save(); rr(c, x, y, rw, rh, 6); c.clip();
+      for (let k = -rh; k < rw; k += 16) line(c, x + k, y + rh, x + k + rh, y, 'rgba(140,155,180,0.07)', 2);
+      c.restore();
+    }
+    if (name) {
+      c.font = '22px ' + T.FONT; c.fillStyle = locked ? 'rgba(170,180,200,0.55)' : 'rgba(230,210,170,0.9)';
+      c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(name, x + rw / 2, y + rh / 2);
+    }
+  };
+  room(28, 44, 300, 170, '书房', true);
+  room(28, 232, 140, 172, '楼梯', true);
+  room(186, 232, 142, 172, '小客厅', true);
+  room(28, 422, 300, 150, '花厅', true);
+  room(346, 422, 316, 150, '门厅', true);
+  // 走廊
+  c.fillStyle = 'rgba(140,155,180,0.08)'; c.fillRect(334, 44, 22, 528);
+  room(MAP_BEDROOM.x, MAP_BEDROOM.y, MAP_BEDROOM.w, MAP_BEDROOM.h, '', false);
+  c.font = '18px ' + T.FONT; c.fillStyle = 'rgba(170,180,200,0.45)'; c.textAlign = 'left';
+  c.fillText('陆宅 · 二层东翼（示意）', 28, 22);
+}
+
+// ---------- 对外接口 ----------
+const STK_K = 2.4, STK_M = 6;
+
+const Art = {
+  st: {}, room: null, glow: null, faces: {}, portrait: null, earring: null, memory: null, map: null,
+  PW, PH, MAP_W, MAP_H, MAP_BEDROOM, STK_M,
+  panels: new Map(),
+
+  init(renderer) {
+    R = renderer;
+    const k = Math.max(1.2, Math.min(2, R.pxPerUnit));
+    this.room = bake(750, 1000, Math.min(1.6, k), drawRoom);
+    D.ITEMS.forEach((it) => {
+      const fn = STICKERS[it.id];
+      this.st[it.id] = {
+        t: bake(it.w + STK_M * 2, it.h + STK_M * 2, STK_K, (c) => { c.translate(STK_M, STK_M); fn(c, it.w, it.h); }),
+        w: it.w + STK_M * 2, h: it.h + STK_M * 2,
+      };
+    });
+    this.glow = bake(128, 128, 2, (c) => {
+      const g = c.createRadialGradient(64, 64, 0, 64, 64, 64);
+      g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,0.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+    });
+    this.portrait = bake(PW, PH, k, drawPortraitBase);
+    ['calm', 'smile', 'avoid', 'serious'].forEach((e) => { this.faces[e] = bake(240, 170, k, (c) => drawFace(c, e)); });
+    this.earring = bake(690, 480, k, drawEarring);
+    this.memory = bake(690, 480, k, drawMemory);
+    this.map = bake(MAP_W, MAP_H, k, drawMap);
+    this.applyOverrides();
+  },
+
+  // 圆角面板纹理（UI 用）
+  panel(w, h, r, fillStyle, strokeStyle, lw) {
+    const key = [w, h, r, fillStyle, strokeStyle, lw].join('|');
+    let t = this.panels.get(key);
+    if (!t) {
+      const k = R.pxPerUnit;
+      t = bake(w + 4, h + 4, k, (c) => {
+        rr(c, 2, 2, w, h, r);
+        if (fillStyle) fill(c, fillStyle);
+        if (strokeStyle) stroke(c, strokeStyle, lw || 2);
+      });
+      this.panels.set(key, t);
+    }
+    return t;
+  },
+  drawPanel(x, y, w, h, r, fillStyle, strokeStyle, lw, alpha) {
+    const t = this.panel(w, h, r, fillStyle, strokeStyle, lw);
+    R.draw(t, x - 2, y - 2, w + 4, h + 4, { alpha: alpha === undefined ? 1 : alpha });
+  },
+
+  applyOverrides() {
+    const map = D.ART_OVERRIDES || {};
+    Object.keys(map).forEach((id) => {
+      P.loadImage(map[id], (img) => {
+        if (this.st[id]) {
+          const it = D.BY_ID[id];
+          const old = this.st[id].t;
+          this.st[id].t = bake(it.w + STK_M * 2, it.h + STK_M * 2, STK_K, (c) => c.drawImage(img, STK_M, STK_M, it.w, it.h));
+          R.deleteTex(old);
+        } else if (id === 'room' || id === 'earring' || id === 'memory' || id === 'map') {
+          const dims = { room: [750, 1000], earring: [690, 480], memory: [690, 480], map: [MAP_W, MAP_H] }[id];
+          const old = this[id];
+          this[id] = bake(dims[0], dims[1], 1.5, (c) => c.drawImage(img, 0, 0, dims[0], dims[1]));
+          R.deleteTex(old);
+        } else if (id === 'portrait_base') {
+          const old = this.portrait; this.portrait = bake(PW, PH, 1.5, (c) => c.drawImage(img, 0, 0, PW, PH)); R.deleteTex(old);
+        } else if (id.indexOf('face_') === 0) {
+          const e = id.slice(5), old = this.faces[e];
+          this.faces[e] = bake(240, 170, 1.5, (c) => c.drawImage(img, 0, 0, 240, 170)); R.deleteTex(old);
+        }
+      });
+    });
+  },
+};
+
+module.exports = Art;
+
+};
+__defs["audio"]=function(module,exports,require){
+// 音效：全部运行时合成为 AudioBuffer，只依赖 BufferSource + Gain，兼容微信 WebAudioContext
+const P = require('./platform');
+
+function lp(arr, fc, sr) {
+  const a = 1 - Math.exp(-2 * Math.PI * fc / sr);
+  let y = 0;
+  for (let i = 0; i < arr.length; i++) { y += a * (arr[i] - y); arr[i] = y; }
+  return arr;
+}
+function noise(n) { const a = new Float32Array(n); for (let i = 0; i < n; i++) a[i] = Math.random() * 2 - 1; return a; }
+
+function synth(sr) {
+  const S = {};
+  const N = (d) => Math.floor(sr * d);
+  const TAU = Math.PI * 2;
+
+  { // 纸张揭取
+    const n = N(0.17), a = noise(n), l = lp(Float32Array.from(a), 1800, sr);
+    for (let i = 0; i < n; i++) {
+      const t = i / n;
+      let v = (a[i] - l[i]) * Math.pow(Math.sin(Math.PI * t), 0.6) * 0.35;
+      if (Math.random() < 0.004) v += (Math.random() - 0.5) * 0.8;
+      a[i] = v;
+    }
+    S.peel = a;
+  }
+  { // 落定轻响
+    const n = N(0.16), a = new Float32Array(n), c = noise(n);
+    for (let i = 0; i < n; i++) {
+      const t = i / sr;
+      a[i] = Math.sin(TAU * 165 * t) * Math.exp(-t * 32) * 0.55 + c[i] * Math.exp(-t * 260) * 0.25 + Math.sin(TAU * 990 * t) * Math.exp(-t * 60) * 0.06;
+    }
+    S.snap = a;
+  }
+  { // 弹回
+    const n = N(0.2), a = new Float32Array(n);
+    let ph = 0;
+    for (let i = 0; i < n; i++) { const t = i / sr; ph += TAU * (320 - 600 * t) / sr; a[i] = Math.sin(ph) * Math.exp(-t * 14) * 0.18; }
+    S.miss = a;
+  }
+  { // 翻页
+    const n = N(0.42), a = lp(noise(n), 2600, sr);
+    for (let i = 0; i < n; i++) { const t = i / n; a[i] *= Math.sin(Math.PI * t) * (0.5 + 0.5 * Math.sin(t * 9)) * 0.7; }
+    S.flip = a;
+  }
+  { // 完成提示
+    const n = N(2.0), a = new Float32Array(n);
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    for (let i = 0; i < n; i++) {
+      const t = i / sr; let v = 0;
+      notes.forEach((f, j) => {
+        const st = j * 0.13; if (t < st) return;
+        const tt = t - st;
+        v += (Math.sin(TAU * f * tt) + 0.25 * Math.sin(TAU * f * 2 * tt)) * Math.exp(-tt * 2.4) * Math.min(1, tt * 200) * 0.13;
+      });
+      a[i] = v;
+    }
+    S.chime = a;
+  }
+  { // 衣料
+    const n = N(0.5), a = lp(lp(noise(n), 900, sr), 1400, sr);
+    for (let i = 0; i < n; i++) { const t = i / n; a[i] *= Math.pow(Math.sin(Math.PI * t), 1.5) * 1.4; }
+    S.cloth = a;
+  }
+  { // 转折
+    const n = N(2.2), a = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const t = i / sr;
+      a[i] = (Math.sin(TAU * 98 * t) + 0.6 * Math.sin(TAU * 146.8 * t) + 0.25 * Math.sin(TAU * 196.4 * t)) * Math.exp(-t * 1.4) * Math.min(1, t * 15) * 0.2;
+    }
+    S.sting = a;
+  }
+  { // 点击
+    const n = N(0.06), a = noise(n);
+    for (let i = 0; i < n; i++) { const t = i / sr; a[i] = a[i] * Math.exp(-t * 220) * 0.12 + Math.sin(TAU * 1400 * t) * Math.exp(-t * 90) * 0.06; }
+    S.tap = a;
+  }
+  { // 雨声循环
+    const n = N(4), w = noise(n);
+    const lo = lp(Float32Array.from(w), 180, sr), hi = lp(Float32Array.from(w), 1500, sr);
+    const a = new Float32Array(n);
+    for (let i = 0; i < n; i++) a[i] = (hi[i] - lo[i]) * 0.55;
+    for (let d = 0; d < 90; d++) {
+      const st = Math.floor(Math.random() * (n - sr * 0.05)), f = 2500 + Math.random() * 3000, amp = 0.02 + Math.random() * 0.05;
+      for (let i = 0; i < sr * 0.03; i++) a[st + i] += Math.sin(TAU * f * i / sr) * Math.exp(-i / sr * 160) * amp;
+    }
+    // 首尾交叉淡化，避免循环接缝
+    const fade = N(0.2);
+    for (let i = 0; i < fade; i++) { const k = i / fade; a[i] = a[i] * k + a[n - fade + i] * (1 - k); }
+    S.rain = a.subarray(0, n - fade);
+  }
+  return S;
+}
+
+const A = {
+  ctx: null, bufs: {}, on: true, rainSrc: null, rainGain: null, rainLevel: 0.5, master: null,
+
+  unlock() {
+    if (!this.ctx) {
+      this.ctx = P.createAudio();
+      if (!this.ctx) return;
+      try {
+        const sr = this.ctx.sampleRate || 44100;
+        const raw = synth(sr);
+        for (const k in raw) {
+          const b = this.ctx.createBuffer(1, raw[k].length, sr);
+          b.getChannelData(0).set(raw[k]);
+          this.bufs[k] = b;
+        }
+        this.master = this.ctx.createGain();
+        this.master.gain.value = this.on ? 1 : 0;
+        this.master.connect(this.ctx.destination);
+      } catch (e) { this.ctx = null; return; }
+    }
+    try { if (this.ctx.state === 'suspended' && this.ctx.resume) this.ctx.resume(); } catch (e) { /* ignore */ }
+    if (!this.rainSrc) this.startRain();
+  },
+
+  startRain() {
+    try {
+      const s = this.ctx.createBufferSource();
+      s.buffer = this.bufs.rain; s.loop = true;
+      const g = this.ctx.createGain(); g.gain.value = this.rainLevel;
+      s.connect(g); g.connect(this.master);
+      s.start(0);
+      this.rainSrc = s; this.rainGain = g;
+    } catch (e) { /* ignore */ }
+  },
+
+  setRain(level) {
+    this.rainLevel = level;
+    if (this.rainGain) this.rainGain.gain.value = level;
+  },
+
+  play(name, vol) {
+    if (!this.ctx || !this.on || !this.bufs[name]) return;
+    try {
+      const s = this.ctx.createBufferSource();
+      s.buffer = this.bufs[name];
+      const g = this.ctx.createGain(); g.gain.value = vol === undefined ? 1 : vol;
+      s.connect(g); g.connect(this.master);
+      s.start(0);
+    } catch (e) { /* ignore */ }
+  },
+
+  setOn(on) {
+    this.on = on;
+    if (this.master) this.master.gain.value = on ? 1 : 0;
+  },
+};
+
+module.exports = A;
+
+};
+__defs["data"]=function(module,exports,require){
+// 关卡与剧情数据（对应策划案 §4、§6、§8）
+// 世界坐标：卧室 750 × 1000，(x,y) 为贴纸中心
+
+const ROOM_W = 750, ROOM_H = 1000;
+
+const GROUPS = ['第一组 · 搭起房间', '第二组 · 恢复生活感', '第三组 · 出现两个人的痕迹'];
+
+const ITEMS = [
+  // 第一组
+  { id: 'R01', g: 0, name: '地毯', x: 380, y: 760, w: 400, h: 200, z: 0 },
+  { id: 'R02', g: 0, name: '床架与床垫', x: 400, y: 470, w: 300, h: 260, z: 2 },
+  { id: 'R03', g: 0, name: '左床头柜', x: 215, y: 410, w: 80, h: 90, z: 2 },
+  { id: 'R04', g: 0, name: '右床头柜', x: 585, y: 410, w: 80, h: 90, z: 2 },
+  { id: 'R05', g: 0, name: '衣柜', x: 85, y: 330, w: 130, h: 280, z: 1 },
+  { id: 'R06', g: 0, name: '梳妆台与镜子', x: 100, y: 700, w: 150, h: 200, z: 2 },
+  { id: 'R07', g: 0, name: '扶手椅', x: 650, y: 700, w: 140, h: 150, z: 3 },
+  { id: 'R08', g: 0, name: '窗帘', x: 600, y: 225, w: 250, h: 200, z: 1 },
+  // 第二组
+  { id: 'R09', g: 1, name: '被子', x: 400, y: 530, w: 290, h: 140, z: 4 },
+  { id: 'R10', g: 1, name: '左枕头', x: 350, y: 425, w: 90, h: 50, z: 4 },
+  { id: 'R11', g: 1, name: '右枕头', x: 450, y: 425, w: 90, h: 50, z: 4 },
+  { id: 'R12', g: 1, name: '床头台灯', x: 205, y: 335, w: 48, h: 64, z: 4 },
+  { id: 'R13', g: 1, name: '书与书签', x: 603, y: 358, w: 52, h: 22, z: 4 },
+  { id: 'R14', g: 1, name: '换衣凳', x: 520, y: 890, w: 170, h: 70, z: 3 },
+  { id: 'R15', g: 1, name: '壁画', x: 400, y: 240, w: 150, h: 90, z: 1 },
+  { id: 'R16', g: 1, name: '一双拖鞋', x: 290, y: 640, w: 90, h: 40, z: 3 },
+  // 第三组
+  { id: 'R17', g: 2, name: '男士衬衫', x: 655, y: 645, w: 110, h: 55, z: 5 },
+  { id: 'R18', g: 2, name: '女式披肩', x: 520, y: 868, w: 140, h: 40, z: 5 },
+  { id: 'R19', g: 2, name: '小收纳盘', x: 58, y: 690, w: 44, h: 26, z: 5 },
+  { id: 'R20', g: 2, name: '首饰盒', x: 146, y: 684, w: 40, h: 32, z: 5 },
+  { id: 'R21', g: 2, name: '玻璃水杯', x: 243, y: 362, w: 24, h: 30, z: 5 },
+  { id: 'R22', g: 2, name: '陶瓷水杯', x: 565, y: 362, w: 30, h: 26, z: 5 },
+  { id: 'R23', g: 2, name: '梳子与发夹', x: 102, y: 694, w: 44, h: 20, z: 5 },
+  { id: 'R24', g: 2, name: '折起的手帕', x: 480, y: 505, w: 56, h: 26, z: 5 },
+];
+
+const BY_ID = {};
+ITEMS.forEach((it) => { BY_ID[it.id] = it; });
+
+// 世界内关键位置
+const SPOTS = {
+  lamp: { x: 205, y: 318 },
+  window: { x: 510, y: 140, w: 180, h: 160 },
+  vanity: { x: 100, y: 690 },
+};
+
+// 剧情节点
+// t: cap 字幕 | say 对白 | act 动作叙述 | choice 选择 | goal 目标卡 | end 章节卡 | label | goto
+// 附加字段（进入节点时生效）：e 表情 show/hide 立绘 bg 背景 focus 镜头 img 近景 fx near/back sfx 音效 rain 雨声
+const SCRIPTS = {
+  intro: [
+    { t: 'cap', s: '一年前，一名医生死在这间卧室。', bg: 'empty', hide: 1 },
+    { t: 'cap', s: '你失去了那晚的部分记忆。\n陪你回来的人，曾是嫌疑人。' },
+    { t: 'act', s: '卧室门口。窗外下着雨，你手里拿着旧照片与物件记录。' },
+    { t: 'say', w: '林栖', s: '记录说，我那晚也来过这里。', show: 1, e: 'calm' },
+    { t: 'say', w: '陆沉舟', s: '来过。', e: 'calm' },
+    { t: 'say', w: '林栖', s: '这是当时安置我的客房？' },
+    { t: 'act', s: '他看了一眼房门。', e: 'avoid' },
+    { t: 'say', w: '陆沉舟', s: '……先看看你能认出什么。', e: 'avoid' },
+    { t: 'act', s: '你走近衣柜，袖口勾住了把手。他停在你身侧。', fx: 'near', sfx: 'cloth', e: 'calm' },
+    { t: 'say', w: '陆沉舟', s: '别急，线勾住了。我帮你？', e: 'calm' },
+    { t: 'say', w: '林栖', s: '只许碰袖口。' },
+    { t: 'act', s: '他解开勾住的线，随即松手。', fx: 'back', sfx: 'cloth' },
+    { t: 'say', w: '陆沉舟', s: '你以前也这么防着我。', e: 'smile' },
+    { t: 'say', w: '林栖', s: '客房里的东西，你也这么熟？' },
+    { t: 'say', w: '陆沉舟', s: '你想先听解释，还是自己看？', e: 'serious' },
+    { t: 'say', w: '林栖', s: '我先自己看。等房间还原好，你把省略的部分补上。' },
+    { t: 'say', w: '陆沉舟', s: '好。我在这里。', e: 'calm' },
+    { t: 'goal', hide: 1 },
+  ],
+  outro: [
+    { t: 'act', s: '还原好的卧室里，你的目光停在梳妆台上。', bg: 'full', focus: 'vanity', hide: 1 },
+    { t: 'say', w: '林栖', s: '等等。盘里那只耳饰……' },
+    { t: 'act', s: '收纳盘里是一只银色耳饰。你取出自己保存的另一只——两者成对。', img: 'earring' },
+    { t: 'say', w: '林栖', s: '我一直以为，另一只早就丢了。' },
+    { t: 'say', w: '陆沉舟', s: '那晚它勾住了你的披肩。你让我帮你取下来。', img: 0, focus: 'none', show: 1, e: 'calm' },
+    { t: 'say', w: '林栖', s: '我的披肩、你的衬衫，都留在这里。这里到底是谁的房间？' },
+    { t: 'act', s: '他看向床侧，没有再回避。', e: 'serious', sfx: 'sting' },
+    { t: 'say', w: '陆沉舟', s: '我的。这里一直是我的卧室。', e: 'serious' },
+    { t: 'say', w: '林栖', s: '你刚才为什么不纠正我？' },
+    { t: 'say', w: '陆沉舟', s: '我怕你知道以后，就不肯再进来。', e: 'avoid' },
+    { t: 'say', w: '林栖', s: '那晚呢？我为什么会来？' },
+    { t: 'say', w: '陆沉舟', s: '你说有人要杀你。你不肯回自己的房间。', e: 'serious' },
+    { t: 'act', s: '暖色台灯。床沿。你抓住了一截衣袖。', img: 'memory', mem: 1, sfx: 'cloth' },
+    { t: 'say', w: '林栖（记忆）', s: '今晚……你能不能别走？', mem: 1 },
+    { t: 'say', w: '陆沉舟（记忆）', s: '好。我在。', mem: 1 },
+    { t: 'act', s: '回到现在。他向前一步，你抬眼，他停下。', img: 0, fx: 'nearback', e: 'calm' },
+    { t: 'say', w: '林栖', s: '是我让你留下的。' },
+    { t: 'say', w: '陆沉舟', s: '是。', e: 'calm' },
+    { t: 'say', w: '林栖', s: '那医生遇害的时候，你还在这里吗？' },
+    { t: 'act', s: '室内的声音淡下去，只剩雨声。', rain: 0.9, sfx: 'sting', e: 'serious' },
+    { t: 'say', w: '陆沉舟', s: '我答应过不走。但那晚，我确实离开过。', e: 'serious' },
+    {
+      t: 'choice', q: '你要怎么回应？', rain: 0.5,
+      opts: [
+        { k: 'A', s: '坐下，把你离开的原因说清楚。', go: 'A' },
+        { k: 'B', s: '这次，你还会走吗？', go: 'B' },
+      ],
+    },
+    { t: 'label', id: 'A' },
+    { t: 'act', s: '你指向扶手椅，自己坐在床边，保持能看清他的距离。' },
+    { t: 'say', w: '林栖', s: '这次别省略。我自己判断。' },
+    { t: 'say', w: '陆沉舟', s: '好。从叫我出去的那条消息开始。', e: 'serious' },
+    { t: 'goto', id: 'common' },
+    { t: 'label', id: 'B' },
+    { t: 'act', s: '你拉住他的领带，让他停在一步以内。你们对视，他没有再贴近。', fx: 'near', sfx: 'cloth', e: 'calm' },
+    { t: 'say', w: '陆沉舟', s: '你要我留下？', e: 'smile' },
+    { t: 'say', w: '林栖', s: '留下解释。别把这当成我已经信了你。' },
+    { t: 'say', w: '陆沉舟', s: '好。这次听你的。', e: 'calm', fx: 'back' },
+    { t: 'label', id: 'common' },
+    { t: 'act', s: '他坐到扶手椅上。你把耳饰放回盘中，坐下与他交谈。', e: 'calm' },
+    { t: 'say', w: '林栖', s: '先从我为什么害怕说起。' },
+    {
+      t: 'end', hide: 1,
+      title: '你找回了耳饰，\n也记起了自己曾向他求助。',
+      record: '你要求他留下，把过去讲清楚。',
+    },
+  ],
+};
+
+const CHOICE_TEXT = { A: '「坐下，把你离开的原因说清楚。」', B: '「这次，你还会走吗？」' };
+
+// 正式美术替换：在此登记 id → 图片路径，加载成功后自动替换程序占位图
+// 例：R01: 'images/R01.png', room: 'images/room.png', portrait_base: 'images/lu_base.png'
+const ART_OVERRIDES = {};
+
+module.exports = { ROOM_W, ROOM_H, GROUPS, ITEMS, BY_ID, SPOTS, SCRIPTS, CHOICE_TEXT, ART_OVERRIDES };
+
+};
+__defs["main"]=function(module,exports,require){
+// 入口：主循环、输入分发、UI 原件、场景切换
+const P = require('./platform');
+const Renderer = require('./renderer');
+const T = require('./text');
+const Art = require('./art');
+const A = require('./audio');
+const S = require('./save');
+
+const DESIGN_W = 750;
+
+const G = {
+  R: null, T, Art, A, S, P,
+  view: { w: DESIGN_W, h: 1334, safeTop: 0, safeBottom: 0 },
+  t: 0,
+  scene: null,
+  ui: { cur: [], last: [] },
+  press: {},          // pointerId -> { id }
+  modal: null,
+  fade: { a: 1, dir: -1, next: null },
+  toastMsg: null,
+  scenes: {},         // 由各场景模块注册，避免循环引用
+
+  get save() { return S.d; },
+  persist() { S.write(); },
+
+  // ---------- UI ----------
+  button(id, x, y, w, h, label, o) {
+    o = o || {};
+    const style = o.style || 'ghost';
+    const pressed = Object.keys(this.press).some((k) => this.press[k].id === id);
+    const sc = pressed && !o.disabled ? 0.97 : 1;
+    const cx = x + w / 2, cy = y + h / 2;
+    const bw = w * sc, bh = h * sc, bx = cx - bw / 2, by = cy - bh / 2;
+    const alpha = (o.alpha === undefined ? 1 : o.alpha) * (o.disabled ? 0.4 : 1);
+    let fillS, strokeS, color;
+    if (style === 'primary') { fillS = '#c9a27a'; strokeS = '#e6c9a2'; color = '#1d1611'; }
+    else if (style === 'selected') { fillS = 'rgba(201,162,122,0.28)'; strokeS = '#e6c9a2'; color = '#fff3e0'; }
+    else if (style === 'text') { fillS = null; strokeS = null; color = o.color || '#cdbfa8'; }
+    else { fillS = 'rgba(18,20,28,0.82)'; strokeS = 'rgba(214,190,156,0.55)'; color = '#efe3cf'; }
+    if (fillS || strokeS) Art.drawPanel(Math.round(bx), Math.round(by), Math.round(bw), Math.round(bh), Math.min(h / 2, o.r || 22), fillS, strokeS, 2, alpha);
+    const t = T.make(label, { size: o.size || 30, color, weight: o.weight || (style === 'primary' ? 'bold' : 'normal'), maxW: w - 40, align: 'center' });
+    this.R.draw(t.t, cx - t.w / 2 * sc, cy - t.h / 2 * sc, t.w * sc, t.h * sc, { alpha });
+    if (!o.disabled) this.ui.cur.push({ id, x, y, w, h, fn: o.onClick, modal: !!o.modal });
+  },
+
+  text(str, x, y, o) { return T.draw(str, x, y, o); },
+
+  go(make) {
+    if (this.fade.next) return;
+    this.fade.next = make;
+    this.fade.dir = 1;
+  },
+
+  toast(msg) { this.toastMsg = { s: msg, t: 2.2 }; },
+
+  // buttons: [{label, style, fn}]
+  openModal(title, body, buttons) { this.modal = { title, body, buttons }; },
+  closeModal() { this.modal = null; },
+};
+
+// ---------- 模态框与提示 ----------
+function drawModal() {
+  const m = G.modal; if (!m) return;
+  const R = G.R, v = G.view;
+  R.rect(0, 0, v.w, v.h, [0, 0, 0, 0.6]);
+  const bodyT = m.body ? T.make(m.body, { size: 28, color: '#d9cdb9', maxW: 560, lineH: 1.6 }) : null;
+  const titleT = T.make(m.title, { size: 36, color: '#f4e6cf', weight: 'bold', maxW: 560, align: 'center' });
+  const bh = 96 * m.buttons.length;
+  const h = 60 + titleT.h + 20 + (bodyT ? bodyT.h + 20 : 0) + bh + 30;
+  const y = (v.h - h) / 2;
+  Art.drawPanel(55, y, 640, h, 26, 'rgba(24,24,32,0.97)', 'rgba(214,190,156,0.5)', 2);
+  let cy = y + 44;
+  R.draw(titleT.t, 375 - titleT.w / 2, cy, titleT.w, titleT.h); cy += titleT.h + 16;
+  if (bodyT) { R.draw(bodyT.t, 95 - bodyT.pad, cy, bodyT.w, bodyT.h); cy += bodyT.h + 20; }
+  m.buttons.forEach((b, i) => {
+    G.button('m:' + i, 95, cy + i * 96, 560, 80, b.label, {
+      style: b.style || 'ghost', modal: true, size: 30,
+      onClick: () => { if (b.keep !== true) G.closeModal(); b.fn && b.fn(); },
+    });
+  });
+}
+function drawToast(dt) {
+  const t = G.toastMsg; if (!t) return;
+  t.t -= dt; if (t.t <= 0) { G.toastMsg = null; return; }
+  const a = Math.min(1, t.t * 3, (2.2 - t.t) * 6);
+  const tt = T.make(t.s, { size: 28, color: '#f4e6cf', maxW: 600, align: 'center' });
+  const y = G.view.safeTop + 140;
+  Art.drawPanel(375 - tt.w / 2 - 30, y, tt.w + 60, tt.h + 24, 30, 'rgba(18,20,28,0.92)', 'rgba(214,190,156,0.5)', 2, a);
+  G.R.draw(tt.t, 375 - tt.w / 2, y + 12, tt.w, tt.h, { alpha: a });
+}
+
+// ---------- 输入 ----------
+let scale = 1;
+const toDesign = (x, y) => ({ x: x * scale, y: y * scale });
+const downAt = {};
+
+function hitButton(p) {
+  const list = G.ui.last;
+  for (let i = list.length - 1; i >= 0; i--) {
+    const b = list[i];
+    if (G.modal && !b.modal) continue;
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) return b;
+  }
+  return null;
+}
+
+function onDown(id, x, y) {
+  A.unlock();
+  const p = toDesign(x, y);
+  p.id = id;
+  downAt[id] = p;
+  if (G.fade.next) return;
+  const b = hitButton(p);
+  if (b) { G.press[id] = { id: b.id }; return; }
+  if (G.modal) return;
+  G.scene && G.scene.onDown && G.scene.onDown(p);
+}
+function onMove(id, x, y) {
+  const p = toDesign(x, y); p.id = id;
+  if (G.press[id]) return;
+  if (G.modal) return;
+  G.scene && G.scene.onMove && G.scene.onMove(p);
+}
+function onUp(id, x, y) {
+  const p = toDesign(x, y); p.id = id;
+  const pr = G.press[id];
+  if (pr) {
+    delete G.press[id];
+    const b = hitButton(p);
+    if (b && b.id === pr.id && b.fn) { A.play('tap', 0.8); b.fn(); }
+    return;
+  }
+  const d = downAt[id];
+  p.tap = d ? Math.hypot(p.x - d.x, p.y - d.y) < 24 : false;
+  delete downAt[id];
+  if (G.modal) return;
+  G.scene && G.scene.onUp && G.scene.onUp(p);
+}
+function onWheel(x, y, dy) {
+  if (G.modal) return;
+  const p = toDesign(x, y);
+  G.scene && G.scene.onWheel && G.scene.onWheel(p, dy);
+}
+
+// ---------- 主循环 ----------
+let canvas, lastT = 0, lastKey = '';
+
+function resize() {
+  const m = P.metrics();
+  const key = [m.w, m.h, m.dpr].join('x');
+  if (key === lastKey) return;
+  lastKey = key;
+  canvas.width = Math.round(m.w * m.dpr);
+  canvas.height = Math.round(m.h * m.dpr);
+  scale = DESIGN_W / m.w;
+  G.view.w = DESIGN_W;
+  G.view.h = m.h * scale;
+  G.view.safeTop = m.safeTop * scale;
+  G.view.safeBottom = m.safeBottom * scale;
+  G.R.pxPerUnit = canvas.width / DESIGN_W;
+  if (G.scene && G.scene.onResize) G.scene.onResize();
+}
+
+function frame() {
+  const now = P.now();
+  const dt = Math.min(0.05, Math.max(0, (now - lastT) / 1000));
+  lastT = now;
+  G.t += dt;
+  resize();
+  const R = G.R;
+  R.begin(G.view.w, G.view.h, canvas.width, canvas.height);
+  G.ui.cur = [];
+
+  const f = G.fade;
+  if (f.next) {
+    f.a = Math.min(1, f.a + dt * 4);
+    if (f.a >= 1) { G.scene = f.next(); f.next = null; f.dir = -1; G.press = {}; }
+  } else if (f.dir < 0) {
+    f.a = Math.max(0, f.a - dt * 3);
+  }
+
+  if (G.scene) { G.scene.update && G.scene.update(dt); G.scene.draw(); }
+  drawModal();
+  drawToast(dt);
+  if (f.a > 0) R.rect(0, 0, G.view.w, G.view.h, [0, 0, 0, f.a]);
+  R.end();
+  G.ui.last = G.ui.cur;
+  P.raf(frame);
+}
+
+function boot() {
+  canvas = P.createMainCanvas();
+  G.R = new Renderer(canvas);
+  resize();
+  T.init(G.R);
+  Art.init(G.R);
+  S.load();
+  A.on = S.d.sound;
+  A.setOn(S.d.sound);
+
+  require('./room');
+  require('./story');
+  require('./world');
+  G.scene = G.scenes.title();
+  P.onTouch({ down: onDown, move: onMove, up: onUp, wheel: onWheel });
+  P.onHide(() => S.write());
+  lastT = P.now();
+  P.raf(frame);
+}
+
+module.exports = G;
+G.boot = boot;
+
+};
+__defs["platform"]=function(module,exports,require){
+// 平台适配层：微信小游戏 / 浏览器预览
+const isWx = typeof wx !== 'undefined' && typeof wx.createCanvas === 'function';
+let mainCanvas = null;
+
+const P = {
+  isWx,
+
+  createMainCanvas() {
+    if (isWx) {
+      mainCanvas = wx.createCanvas(); // 首次调用为上屏 canvas
+    } else {
+      mainCanvas = document.getElementById('game');
+    }
+    return mainCanvas;
+  },
+
+  metrics() {
+    if (isWx) {
+      const si = wx.getSystemInfoSync();
+      const sa = si.safeArea || { top: 0, bottom: si.windowHeight };
+      return {
+        w: si.windowWidth, h: si.windowHeight,
+        dpr: Math.min(si.pixelRatio || 2, 3),
+        safeTop: sa.top || 0,
+        safeBottom: Math.max(0, si.windowHeight - (sa.bottom || si.windowHeight)),
+      };
+    }
+    const r = mainCanvas.getBoundingClientRect();
+    return { w: r.width, h: r.height, dpr: Math.min(window.devicePixelRatio || 1, 3), safeTop: 0, safeBottom: 0 };
+  },
+
+  createOffscreen(w, h) {
+    const c = isWx ? wx.createCanvas() : document.createElement('canvas');
+    c.width = w; c.height = h;
+    return c;
+  },
+
+  storageGet(k) {
+    try { return isWx ? (wx.getStorageSync(k) || null) : localStorage.getItem(k); } catch (e) { return null; }
+  },
+  storageSet(k, v) {
+    try { if (isWx) wx.setStorageSync(k, v); else localStorage.setItem(k, v); } catch (e) { /* ignore */ }
+  },
+
+  raf(fn) {
+    if (typeof requestAnimationFrame !== 'undefined') return requestAnimationFrame(fn);
+    return setTimeout(() => fn(Date.now()), 16);
+  },
+  now() {
+    return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  },
+
+  // handlers: { down(id,x,y), move(id,x,y), up(id,x,y), wheel(x,y,dy) }，坐标为 CSS px
+  onTouch(h) {
+    if (isWx) {
+      const each = (fn) => (res) => {
+        const ts = res.changedTouches || [];
+        for (let i = 0; i < ts.length; i++) fn(ts[i].identifier, ts[i].clientX, ts[i].clientY);
+      };
+      wx.onTouchStart(each(h.down));
+      wx.onTouchMove(each(h.move));
+      wx.onTouchEnd(each(h.up));
+      wx.onTouchCancel(each(h.up));
+      return;
+    }
+    const c = mainCanvas;
+    const pos = (e) => { const r = c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    c.addEventListener('pointerdown', (e) => {
+      try { c.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      const p = pos(e); h.down(e.pointerId, p[0], p[1]); e.preventDefault();
+    });
+    c.addEventListener('pointermove', (e) => { const p = pos(e); h.move(e.pointerId, p[0], p[1]); });
+    const up = (e) => { const p = pos(e); h.up(e.pointerId, p[0], p[1]); };
+    c.addEventListener('pointerup', up);
+    c.addEventListener('pointercancel', up);
+    c.addEventListener('wheel', (e) => { const p = pos(e); h.wheel && h.wheel(p[0], p[1], e.deltaY); e.preventDefault(); }, { passive: false });
+    c.addEventListener('contextmenu', (e) => e.preventDefault());
+  },
+
+  createAudio() {
+    try {
+      if (isWx) return wx.createWebAudioContext ? wx.createWebAudioContext() : null;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      return AC ? new AC() : null;
+    } catch (e) { return null; }
+  },
+
+  vibrate() {
+    try { if (isWx && wx.vibrateShort) wx.vibrateShort({ type: 'light' }); } catch (e) { /* ignore */ }
+  },
+
+  loadImage(src, ok, fail) {
+    const img = isWx ? wx.createImage() : new Image();
+    img.onload = () => ok(img);
+    img.onerror = () => fail && fail();
+    img.src = src;
+  },
+
+  onHide(fn) {
+    if (isWx && wx.onHide) wx.onHide(fn);
+    else if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.hidden) fn(); });
+  },
+};
+
+module.exports = P;
+
+};
+__defs["renderer"]=function(module,exports,require){
+// 纯 WebGL 2D 批渲染器：一个着色器，按纹理/混合模式自动分批
+const VS = 'attribute vec2 aPos;attribute vec2 aUV;attribute vec4 aCol;attribute float aMix;' +
+  'uniform vec2 uView;varying vec2 vUV;varying vec4 vCol;varying float vMix;' +
+  'void main(){vec2 p=aPos/uView*2.0-1.0;gl_Position=vec4(p.x,-p.y,0.0,1.0);vUV=aUV;vCol=aCol;vMix=aMix;}';
+const FS = 'precision mediump float;varying vec2 vUV;varying vec4 vCol;varying float vMix;uniform sampler2D uTex;' +
+  'void main(){vec4 t=texture2D(uTex,vUV);vec3 c=mix(t.rgb*vCol.rgb,vCol.rgb,vMix);gl_FragColor=vec4(c,t.a*vCol.a);}';
+
+const FLOATS = 9;
+const MAXQ = 2000;
+
+class Renderer {
+  constructor(canvas) {
+    const opts = { alpha: false, antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: false };
+    const gl = canvas.getContext('webgl', opts) || canvas.getContext('experimental-webgl', opts);
+    if (!gl) throw new Error('WebGL 不可用');
+    this.gl = gl;
+    this.canvas = canvas;
+    const sh = (type, src) => {
+      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+      return s;
+    };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+    this.prog = prog;
+    this.uView = gl.getUniformLocation(prog, 'uView');
+
+    this.data = new Float32Array(MAXQ * 4 * FLOATS);
+    this.vbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, this.data.byteLength, gl.DYNAMIC_DRAW);
+    const idx = new Uint16Array(MAXQ * 6);
+    for (let i = 0; i < MAXQ; i++) {
+      idx.set([i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3], i * 6);
+    }
+    const ibo = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+
+    const stride = FLOATS * 4;
+    const attr = (name, size, off) => {
+      const loc = gl.getAttribLocation(prog, name);
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, size, gl.FLOAT, false, stride, off * 4);
+    };
+    attr('aPos', 2, 0); attr('aUV', 2, 2); attr('aCol', 4, 4); attr('aMix', 1, 8);
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.disable(gl.DEPTH_TEST);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+
+    this.n = 0;
+    this.curTex = null;
+    this.blend = 'alpha';
+    this.tx = 0; this.ty = 0; this.ts = 1;
+    this.white = this.texFromPixels(new Uint8Array([255, 255, 255, 255]), 1, 1);
+    this.drawCalls = 0;
+  }
+
+  _newTex() {
+    const gl = this.gl;
+    const t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return t;
+  }
+  texFromPixels(px, w, h) {
+    const gl = this.gl;
+    const t = this._newTex();
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    this.curTex = null;
+    return { tex: t, w, h };
+  }
+  texFromCanvas(c) {
+    this.flush();
+    const gl = this.gl;
+    const t = this._newTex();
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+    this.curTex = null;
+    return { tex: t, w: c.width, h: c.height };
+  }
+  deleteTex(t) {
+    if (!t) return;
+    this.flush();
+    this.gl.deleteTexture(t.tex);
+    this.curTex = null;
+  }
+
+  begin(viewW, viewH, pxW, pxH) {
+    const gl = this.gl;
+    this.viewW = viewW; this.viewH = viewH;
+    gl.viewport(0, 0, pxW, pxH);
+    gl.clearColor(0.06, 0.065, 0.09, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.uniform2f(this.uView, viewW, viewH);
+    this.drawCalls = 0;
+    this.resetTransform();
+  }
+  end() { this.flush(); }
+
+  setTransform(s, tx, ty) { this.ts = s; this.tx = tx; this.ty = ty; }
+  resetTransform() { this.ts = 1; this.tx = 0; this.ty = 0; }
+
+  setBlend(mode) {
+    if (mode === this.blend) return;
+    this.flush();
+    const gl = this.gl;
+    if (mode === 'add') gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+    else gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    this.blend = mode;
+  }
+
+  flush() {
+    if (!this.n) return;
+    const gl = this.gl;
+    gl.bindTexture(gl.TEXTURE_2D, this.curTex.tex);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data.subarray(0, this.n * 4 * FLOATS));
+    gl.drawElements(gl.TRIANGLES, this.n * 6, gl.UNSIGNED_SHORT, 0);
+    this.n = 0;
+    this.drawCalls++;
+  }
+
+  // x,y 为左上角；o: alpha, color[r,g,b], mix, rot(绕中心), uv[u0,v0,u1,v1]
+  draw(t, x, y, w, h, o) {
+    if (!t) return;
+    o = o || {};
+    if (this.curTex !== t || this.n >= MAXQ) { this.flush(); this.curTex = t; }
+    const s = this.ts, ox = this.tx, oy = this.ty;
+    const col = o.color || [1, 1, 1];
+    const a = o.alpha === undefined ? 1 : o.alpha;
+    const m = o.mix || 0;
+    const uv = o.uv || [0, 0, 1, 1];
+    let px, py;
+    if (o.rot) {
+      const cx = x + w / 2, cy = y + h / 2, c = Math.cos(o.rot), sn = Math.sin(o.rot);
+      const hw = w / 2, hh = h / 2;
+      const pts = [-hw, -hh, hw, -hh, hw, hh, -hw, hh];
+      px = []; py = [];
+      for (let i = 0; i < 4; i++) {
+        px.push(cx + pts[i * 2] * c - pts[i * 2 + 1] * sn);
+        py.push(cy + pts[i * 2] * sn + pts[i * 2 + 1] * c);
+      }
+    } else {
+      px = [x, x + w, x + w, x]; py = [y, y, y + h, y + h];
+    }
+    const us = [uv[0], uv[2], uv[2], uv[0]], vs = [uv[1], uv[1], uv[3], uv[3]];
+    let k = this.n * 4 * FLOATS;
+    const d = this.data;
+    for (let i = 0; i < 4; i++) {
+      d[k++] = px[i] * s + ox; d[k++] = py[i] * s + oy;
+      d[k++] = us[i]; d[k++] = vs[i];
+      d[k++] = col[0]; d[k++] = col[1]; d[k++] = col[2]; d[k++] = a;
+      d[k++] = m;
+    }
+    this.n++;
+  }
+
+  rect(x, y, w, h, rgba) {
+    this.draw(this.white, x, y, w, h, { color: rgba, alpha: rgba[3] === undefined ? 1 : rgba[3] });
+  }
+}
+
+module.exports = Renderer;
+
+};
+__defs["room"]=function(module,exports,require){
+// 卧室：场景绘制 + 贴纸关卡（策划案 §5–§7）
+const G = require('./main');
+const D = require('./data');
+const Art = require('./art');
+const T = require('./text');
+const A = require('./audio');
+const P = require('./platform');
+
+const SORTED = D.ITEMS.slice().sort((a, b) => (a.z - b.z) || (a.y - b.y));
+const ALL = new Set(D.ITEMS.map((i) => i.id));
+const NONE = new Set();
+const LIFT = 72;          // 拖动时贴纸偏移到指尖上方（设计单位）
+
+function camXform(cam) { return [cam.z, cam.cx - cam.x * cam.z, cam.cy - cam.y * cam.z]; }
+
+// 绘制房间（世界坐标）。o: t, light, gray, ghosts[{id,a,color}], pose{id:{x,y,sc}}, hide
+function drawRoomWorld(cam, placed, o) {
+  const R = G.R; o = o || {};
+  const xf = camXform(cam);
+  R.setTransform(xf[0], xf[1], xf[2]);
+  const tint = o.gray ? [0.42, 0.44, 0.5] : [1, 1, 1];
+  R.draw(Art.room, 0, 0, 750, 1000, { color: tint });
+  const wn = D.SPOTS.window;
+  if (!o.gray) {
+    const t = o.t || 0;
+    for (let i = 0; i < 30; i++) {
+      const x = wn.x + 4 + ((i * 37.7) % (wn.w - 8));
+      const len = 14 + (i % 3) * 5;
+      const y = wn.y + ((t * (360 + (i % 4) * 40) + i * 61) % (wn.h + len)) - len;
+      const y0 = Math.max(wn.y, y), y1 = Math.min(wn.y + wn.h, y + len);
+      if (y1 > y0) R.rect(x, y0, 1.4, y1 - y0, [0.72, 0.82, 0.98, 0.32]);
+    }
+  }
+  for (const it of SORTED) {
+    if (!placed.has(it.id) || (o.hide && o.hide === it.id)) continue;
+    const s = Art.st[it.id];
+    const ps = o.pose && o.pose[it.id];
+    const cx = ps ? ps.x : it.x, cy = ps ? ps.y : it.y, sc = ps ? ps.sc : 1;
+    R.draw(s.t, cx - s.w / 2 * sc, cy - s.h / 2 * sc, s.w * sc, s.h * sc, { color: tint });
+  }
+  if (o.ghosts) {
+    for (const g of o.ghosts) {
+      const it = D.BY_ID[g.id], s = Art.st[it.id];
+      R.draw(s.t, it.x - s.w / 2, it.y - s.h / 2, s.w, s.h, { color: g.color || [0.86, 0.9, 1], mix: 1, alpha: g.a });
+    }
+  }
+  if (!o.gray) {
+    const light = o.light || 0;
+    R.rect(-200, -200, 1150, 1400, [0.02, 0.04, 0.1, 0.3 * (1 - light)]);
+    R.setBlend('add');
+    R.draw(Art.glow, wn.x - 70, wn.y - 50, wn.w + 140, wn.h + 140, { color: [0.45, 0.6, 1], alpha: 0.13 });
+    if (placed.has('R12')) {
+      const l = D.SPOTS.lamp;
+      R.draw(Art.glow, l.x - 180, l.y - 150, 360, 320, { color: [1, 0.72, 0.4], alpha: 0.36 + 0.18 * light });
+    }
+    if (light > 0) R.draw(Art.glow, -80, 40, 920, 900, { color: [1, 0.74, 0.46], alpha: 0.16 * light });
+    R.setBlend('alpha');
+  }
+  R.resetTransform();
+}
+
+// 预览缩略图（世界入口用）
+function drawRoomThumb(x, y, w, h, placed, o) {
+  const z = Math.min(w / 750, h / 1000);
+  drawRoomWorld({ x: 375, y: 500, z, cx: x + w / 2, cy: y + h / 2 }, placed, o);
+}
+
+class RoomScene {
+  // mode: 'play' 贴纸 | 'done' 完成全景 | 'view' 回访欣赏
+  constructor(mode) {
+    this.mode = mode;
+    const sv = G.save;
+    this.placed = new Set(sv.placed);
+    this.group = sv.group;
+    this.pointers = new Map();
+    this.drag = null;
+    this.anims = {};
+    this.hint = null;
+    this.bookSlide = mode === 'play' ? 0 : 1;
+    this.bookAnim = null;
+    this.light = mode === 'play' ? 0 : 1;
+    this.doneT = mode === 'done' ? 1 : 0;
+    this.saveTimer = 0;
+    this.layout();
+    this.cam = { x: 375, y: 500, z: this.fitZ, cx: this.cx, cy: this.cy };
+    this.camT = null;
+    if (mode === 'view') { sv.stats.revisits++; G.persist(); }
+    this.fixGroup();
+  }
+
+  fixGroup() {
+    // 保证当前组与已放置数据一致（异常存档自愈）
+    while (this.group < 2 && this.groupItems(this.group).every((it) => this.placed.has(it.id))) this.group++;
+  }
+  groupItems(g) { return D.ITEMS.filter((it) => it.g === g); }
+
+  get bookH() { return 300 + G.view.safeBottom; }
+
+  layout() {
+    const v = G.view;
+    this.top = v.safeTop + 120;
+    this.bottom = this.mode === 'play' ? v.h - this.bookH - 6 : v.h - (this.mode === 'done' ? 170 : 40) - v.safeBottom;
+    this.fitZ = Math.min(v.w / 770, (this.bottom - this.top) / 1020);
+    this.minZ = this.fitZ; this.maxZ = this.fitZ * 2.8;
+    this.cx = v.w / 2; this.cy = (this.top + this.bottom) / 2;
+  }
+  onResize() { this.layout(); this.cam.cx = this.cx; this.cam.cy = this.cy; this.cam.z = Math.max(this.minZ, Math.min(this.maxZ, this.cam.z)); this.clamp(); }
+
+  clamp() {
+    const c = this.cam;
+    const hw = G.view.w / 2 / c.z, hh = (this.bottom - this.top) / 2 / c.z;
+    c.x = hw * 2 >= 750 ? 375 : Math.max(hw - 30, Math.min(780 - hw, c.x));
+    c.y = hh * 2 >= 1000 ? 500 : Math.max(hh - 30, Math.min(1030 - hh, c.y));
+  }
+  s2w(x, y) { const c = this.cam; return { x: (x - c.cx) / c.z + c.x, y: (y - c.cy) / c.z + c.y }; }
+  w2s(x, y) { const c = this.cam; return { x: (x - c.x) * c.z + c.cx, y: (y - c.y) * c.z + c.cy }; }
+
+  // ---------- 贴纸册布局 ----------
+  bookY() { return G.view.h - this.bookH + this.bookSlide * (this.bookH + 20); }
+  cellRect(i) {
+    const y0 = this.bookY() + 78;
+    return { x: 22 + (i % 4) * 177, y: y0 + Math.floor(i / 4) * 104, w: 170, h: 96 };
+  }
+  thumbSize(it, cell) {
+    const s = Math.min((cell.w - 24) / it.w, (cell.h - 34) / it.h, 2.4);
+    return { w: it.w * s, h: it.h * s };
+  }
+
+  snapR(it) { return Math.max(30, Math.min(it.w, it.h) * 0.55) + 22 / this.cam.z; }
+
+  // ---------- 输入 ----------
+  onDown(p) {
+    if (this.mode === 'play' && !this.bookAnim && !this.drag && p.y > this.bookY()) {
+      const items = this.groupItems(this.group);
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i], r = this.cellRect(i);
+        if (this.placed.has(it.id)) continue;
+        if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) {
+          this.drag = { id: it.id, pid: p.id, x: p.x, y: p.y, state: 'drag', cell: i };
+          A.play('peel', 0.9);
+          return;
+        }
+      }
+      return;
+    }
+    if (p.y < this.bottom || this.mode !== 'play') {
+      this.pointers.set(p.id, { x: p.x, y: p.y });
+      this.pinch = null;
+    }
+  }
+  onMove(p) {
+    const d = this.drag;
+    if (d && d.pid === p.id && d.state === 'drag') { d.x = p.x; d.y = p.y; return; }
+    const pt = this.pointers.get(p.id);
+    if (!pt) return;
+    if (this.pointers.size === 1) {
+      this.cam.x -= (p.x - pt.x) / this.cam.z;
+      this.cam.y -= (p.y - pt.y) / this.cam.z;
+      pt.x = p.x; pt.y = p.y;
+      this.camT = null;
+      this.clamp();
+    } else if (this.pointers.size >= 2) {
+      pt.x = p.x; pt.y = p.y;
+      const ps = Array.from(this.pointers.values()).slice(0, 2);
+      const mid = { x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2 };
+      const dist = Math.hypot(ps[0].x - ps[1].x, ps[0].y - ps[1].y);
+      if (!this.pinch) { this.pinch = { dist, z: this.cam.z, w: this.s2w(mid.x, mid.y) }; return; }
+      this.zoomAround(this.pinch.z * dist / this.pinch.dist, mid, this.pinch.w);
+    }
+  }
+  zoomAround(z, screen, world) {
+    const c = this.cam;
+    c.z = Math.max(this.minZ, Math.min(this.maxZ, z));
+    c.x = world.x - (screen.x - c.cx) / c.z;
+    c.y = world.y - (screen.y - c.cy) / c.z;
+    this.camT = null;
+    this.clamp();
+  }
+  onWheel(p, dy) {
+    if (p.y > this.bottom) return;
+    this.zoomAround(this.cam.z * (dy > 0 ? 0.9 : 1.1), p, this.s2w(p.x, p.y));
+  }
+  onUp(p) {
+    const d = this.drag;
+    if (d && d.pid === p.id && d.state === 'drag') { this.release(); return; }
+    this.pointers.delete(p.id);
+    this.pinch = null;
+  }
+
+  dragWorld() { const d = this.drag; return this.s2w(d.x, d.y - LIFT); }
+
+  release() {
+    const d = this.drag, it = D.BY_ID[d.id];
+    const wp = this.dragWorld();
+    const dist = Math.hypot(wp.x - it.x, wp.y - it.y);
+    if (dist <= this.snapR(it)) {
+      this.place(it, wp);
+      this.drag = null;
+    } else {
+      d.state = 'back'; d.t = 0; d.fx = d.x; d.fy = d.y - LIFT;
+      G.save.stats.misses++;
+      A.play('miss', 0.8);
+    }
+  }
+
+  place(it, from) {
+    this.placed.add(it.id);
+    this.anims[it.id] = { t: 0, fx: from.x, fy: from.y };
+    if (this.hint && this.hint.id === it.id) this.hint = null;
+    A.play('snap'); P.vibrate();
+    const sv = G.save;
+    sv.placed = Array.from(this.placed);
+    const groupDone = this.groupItems(this.group).every((x) => this.placed.has(x.id));
+    if (this.placed.size >= D.ITEMS.length) {
+      sv.phase = 'roomDone';
+      G.persist();
+      this.complete();
+    } else if (groupDone) {
+      sv.group = this.group + 1;
+      G.persist();
+      this.bookAnim = { t: 0, switched: false };
+    } else {
+      G.persist();
+    }
+  }
+
+  complete() {
+    this.mode = 'done';
+    this.doneT = 0;
+    this.bookAnim = null;
+    this.hint = null;
+    this.drag = null;
+    this.pointers.clear();
+    this.layout();
+    this.camT = { x: 375, y: 500, z: this.fitZ, cy: this.cy };
+    setTimeout(() => A.play('chime'), 260);
+  }
+
+  useHint() {
+    const rest = this.groupItems(this.group).filter((it) => !this.placed.has(it.id));
+    if (!rest.length) return;
+    const it = rest[Math.floor(Math.random() * rest.length)];
+    this.hint = { id: it.id, t: 2.4 };
+    G.save.stats.hints++;
+    G.persist();
+    // 若目标不在视野内，镜头移过去
+    const s = this.w2s(it.x, it.y);
+    if (s.y < this.top || s.y > this.bottom || s.x < 0 || s.x > G.view.w) this.camT = { x: it.x, y: it.y, z: this.cam.z, cy: this.cy };
+  }
+
+  // ---------- 更新 ----------
+  update(dt) {
+    const sv = G.save;
+    if (this.mode === 'play') {
+      sv.stats.groupSec[this.group] += dt;
+      this.saveTimer += dt;
+      if (this.saveTimer > 5) { this.saveTimer = 0; G.persist(); }
+    }
+    for (const id in this.anims) { this.anims[id].t += dt; if (this.anims[id].t > 0.45) delete this.anims[id]; }
+    if (this.hint) { this.hint.t -= dt; if (this.hint.t <= 0) this.hint = null; }
+    const d = this.drag;
+    if (d && d.state === 'back') { d.t += dt; if (d.t >= 0.26) this.drag = null; }
+    if (this.bookAnim) {
+      const b = this.bookAnim; b.t += dt;
+      if (b.t < 0.35) this.bookSlide = 0;
+      else if (b.t < 0.7) this.bookSlide = (b.t - 0.35) / 0.35;
+      else if (!b.switched) { b.switched = true; this.group = G.save.group; this.bookSlide = 1; A.play('flip'); }
+      else if (b.t < 1.05) this.bookSlide = 1 - (b.t - 0.7) / 0.35;
+      else { this.bookSlide = 0; this.bookAnim = null; }
+    }
+    if (this.mode === 'done') {
+      this.doneT += dt;
+      this.bookSlide = Math.min(1, this.bookSlide + dt * 3);
+      this.light = Math.min(1, this.light + dt * 0.7);
+    }
+    if (this.camT) {
+      const c = this.cam, k = Math.min(1, dt * 5);
+      c.x += (this.camT.x - c.x) * k; c.y += (this.camT.y - c.y) * k; c.z += (this.camT.z - c.z) * k;
+      c.cy += (this.camT.cy - c.cy) * k;
+      this.clamp();
+      if (Math.abs(this.camT.z - c.z) < 0.002 && Math.abs(this.camT.x - c.x) < 0.5 && Math.abs(this.camT.cy - c.cy) < 0.5) { c.cy = this.camT.cy; this.camT = null; }
+    }
+  }
+
+  // ---------- 绘制 ----------
+  draw() {
+    const R = G.R, v = G.view, t = G.t;
+    const pose = {};
+    for (const id in this.anims) {
+      const a = this.anims[id], it = D.BY_ID[id];
+      const p1 = Math.min(1, a.t / 0.12);
+      const e = 1 - Math.pow(1 - p1, 3);
+      const x = a.fx + (it.x - a.fx) * e, y = a.fy + (it.y - a.fy) * e;
+      let sc = 1;
+      if (a.t > 0.12) { const q = (a.t - 0.12) / 0.33; sc = 1 + 0.07 * Math.sin(Math.PI * q) * (1 - q); }
+      pose[id] = { x, y, sc };
+    }
+    const ghosts = [];
+    if (this.mode === 'play' && !this.bookAnim) {
+      const dragIt = this.drag && this.drag.state === 'drag' ? D.BY_ID[this.drag.id] : null;
+      let near = false;
+      if (dragIt) { const wp = this.dragWorld(); near = Math.hypot(wp.x - dragIt.x, wp.y - dragIt.y) <= this.snapR(dragIt) * 1.7; }
+      for (const it of this.groupItems(this.group)) {
+        if (this.placed.has(it.id)) continue;
+        let a = 0.2, color = [0.86, 0.9, 1];
+        if (dragIt && dragIt.id === it.id) { a = near ? 0.5 + 0.15 * Math.sin(t * 10) : 0.32; color = near ? [1, 0.88, 0.62] : color; }
+        if (this.hint && this.hint.id === it.id) { a = 0.35 + 0.3 * Math.abs(Math.sin(t * 6)); color = [1, 0.88, 0.62]; }
+        ghosts.push({ id: it.id, a, color });
+      }
+    }
+    drawRoomWorld(this.cam, this.placed, { t, light: this.light, ghosts, pose });
+
+    // 顶部
+    R.rect(0, 0, v.w, v.safeTop + 110, [0.05, 0.055, 0.08, 0.75]);
+    G.button('back', 20, v.safeTop + 24, 150, 64, this.mode === 'view' ? '‹ 返回' : '‹ 宅邸', {
+      size: 28, onClick: () => { G.persist(); G.go(() => G.scenes.world()); },
+    });
+    const n = this.placed.size;
+    if (this.mode === 'play') {
+      T.draw('还原卧室 · ' + n + '/24', 375, v.safeTop + 56, { size: 32, color: '#f1e3c8', weight: 'bold', anchor: 'center' });
+    } else {
+      T.draw(this.mode === 'view' ? '卧室 · 已记录 24/24' : '卧室还原完成 · 24/24', 375, v.safeTop + 56, { size: 32, color: '#f1e3c8', weight: 'bold', anchor: 'center' });
+    }
+    if (this.mode === 'view') T.draw('双指缩放 · 拖动查看', 730, v.safeTop + 56, { size: 22, color: '#9a8f80', anchor: 'right' });
+
+    if (this.mode === 'play' || this.bookSlide < 1) this.drawBook();
+    this.drawDrag();
+
+    if (this.mode === 'done' && this.doneT > 0.9) {
+      const a = Math.min(1, (this.doneT - 0.9) * 3);
+      G.button('cont', 175, v.h - v.safeBottom - 140, 400, 92, '继续剧情', { style: 'primary', size: 34, alpha: a, onClick: () => this.toStory() });
+    }
+  }
+
+  toStory() {
+    const sv = G.save;
+    sv.phase = 'outro'; sv.outroIdx = 0; G.persist();
+    G.go(() => G.scenes.story('outro'));
+  }
+
+  drawBook() {
+    const R = G.R, v = G.view, t = G.t;
+    const y = this.bookY();
+    Art.drawPanel(10, y, 730, this.bookH + 30, 26, 'rgba(30,25,22,0.96)', 'rgba(201,162,122,0.4)', 2);
+    const items = this.groupItems(this.group);
+    const done = items.filter((it) => this.placed.has(it.id)).length;
+    T.draw(D.GROUPS[this.group], 38, y + 26, { size: 28, color: '#ead8ba', weight: 'bold' });
+    T.draw(done + '/8', 470, y + 26, { size: 26, color: '#a8998a' });
+    if (this.mode === 'play' && !this.bookAnim) {
+      G.button('hint', 586, y + 14, 132, 54, '提示', { size: 26, r: 27, onClick: () => this.useHint() });
+    }
+    items.forEach((it, i) => {
+      const c = this.cellRect(i);
+      const placed = this.placed.has(it.id);
+      const hinted = this.hint && this.hint.id === it.id;
+      Art.drawPanel(c.x, c.y, c.w, c.h, 14, placed ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.06)', hinted ? '#f0c98a' : 'rgba(255,255,255,0.08)', hinted ? 3 : 1.5);
+      if (placed) { T.draw('✓', c.x + c.w / 2, c.y + c.h / 2, { size: 30, color: '#6b6258', anchor: 'center' }); return; }
+      if (this.drag && this.drag.id === it.id) return;
+      const s = Art.st[it.id], ts = this.thumbSize(it, c);
+      const k = ts.w / it.w;
+      const bob = hinted ? Math.sin(t * 8) * 3 : 0;
+      R.draw(s.t, c.x + c.w / 2 - s.w * k / 2, c.y + (c.h - 26) / 2 + 4 - s.h * k / 2 + bob, s.w * k, s.h * k);
+      T.draw(it.name, c.x + c.w / 2, c.y + c.h - 14, { size: 19, color: '#b9ab98', anchor: 'center' });
+    });
+  }
+
+  drawDrag() {
+    const d = this.drag; if (!d) return;
+    const R = G.R;
+    const it = D.BY_ID[d.id], s = Art.st[it.id];
+    let k = this.cam.z * 1.1;
+    const minSide = Math.min(it.w, it.h) * k;
+    if (minSide < 56) k *= 56 / minSide;
+    let x = d.x, y = d.y - LIFT, alpha = 1;
+    if (d.state === 'back') {
+      const c = this.cellRect(d.cell), ts = this.thumbSize(it, c);
+      const p = Math.min(1, d.t / 0.26), e = 1 - Math.pow(1 - p, 3);
+      x = d.fx + (c.x + c.w / 2 - d.fx) * e;
+      y = d.fy + (c.y + (c.h - 26) / 2 + 4 - d.fy) * e;
+      k = k + (ts.w / it.w - k) * e;
+    }
+    const w = s.w * k, h = s.h * k;
+    R.draw(s.t, x - w / 2 + 8, y - h / 2 + 12, w, h, { color: [0, 0, 0], mix: 1, alpha: 0.32 * alpha });
+    R.draw(s.t, x - w / 2, y - h / 2, w, h, { alpha });
+  }
+}
+
+G.scenes.room = (mode) => new RoomScene(mode);
+module.exports = { drawRoomWorld, drawRoomThumb, RoomScene, ALL, NONE };
+
+};
+__defs["save"]=function(module,exports,require){
+// 存档：成功放置、剧情推进、作出选择后立即写入
+const P = require('./platform');
+const KEY = 'weiji_night_bedroom_demo_v1';
+
+function fresh() {
+  return {
+    v: 1,
+    phase: 'new',        // new | intro | room | roomDone | outro | done
+    introIdx: 0,
+    outroIdx: 0,
+    placed: [],          // 已放置贴纸 ID
+    group: 0,            // 当前组 0..2
+    choice: null,        // 'A' | 'B'
+    read: { intro: false, outro: false },
+    sound: true,
+    feedback: null,
+    stats: { groupSec: [0, 0, 0], misses: 0, hints: 0, revisits: 0, replays: 0 },
+  };
+}
+
+const S = {
+  d: fresh(),
+  load() {
+    const raw = P.storageGet(KEY);
+    if (raw) {
+      try {
+        const o = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const f = fresh();
+        this.d = Object.assign(f, o);
+        this.d.read = Object.assign(f.read, o.read || {});
+        this.d.stats = Object.assign(fresh().stats, o.stats || {});
+      } catch (e) { this.d = fresh(); }
+    }
+    return this.d;
+  },
+  write() { P.storageSet(KEY, JSON.stringify(this.d)); },
+  reset() { const snd = this.d.sound; this.d = fresh(); this.d.sound = snd; this.write(); },
+};
+
+module.exports = S;
+
+};
+__defs["story"]=function(module,exports,require){
+// 剧情：线性对白、立绘、近景、记忆、一次选择、目标卡与章节卡（策划案 §4、§8）
+const G = require('./main');
+const D = require('./data');
+const Art = require('./art');
+const T = require('./text');
+const A = require('./audio');
+const { drawRoomWorld, ALL, NONE } = require('./room');
+
+const NAME_COLOR = { '林栖': '#c9a27a', '陆沉舟': '#8197b4', '林栖（记忆）': '#d9a86a', '陆沉舟（记忆）': '#d9a86a' };
+
+class StoryScene {
+  // key: 'intro' | 'outro'；review: 回顾模式，不改存档
+  constructor(key, review) {
+    this.key = key;
+    this.review = !!review;
+    this.nodes = D.SCRIPTS[key];
+    this.labels = {};
+    this.nodes.forEach((n, i) => { if (n.t === 'label') this.labels[n.id] = i; });
+    this.por = { on: false, a: 0, e: 'calm', pe: null, x: 1, s: 1, sT: 1, back: 0 };
+    this.bg = 'empty';
+    this.focus = null;
+    this.img = null; this.imgA = 0; this.imgK = 0;
+    this.mem = false;
+    this.black = 0;
+    this.cur = null; this.idx = 0;
+    this.reveal = 0; this.nodeT = 0;
+    this.layoutCam();
+    this.cam = Object.assign({}, this.baseCam);
+    if (review) { G.save.stats.replays++; G.persist(); }
+    const start = review ? 0 : (G.save[key + 'Idx'] || 0);
+    if (start > 0) this.replayTo(start); else this.run(0);
+    this.cam = this.camTarget();
+    this.black = this.cur && this.cur.t === 'cap' ? 1 : 0;
+  }
+
+  layoutCam() {
+    const v = G.view;
+    const z = Math.max(v.w / 750, v.h * 0.74 / 1000);
+    this.baseCam = { x: 390, y: 520, z, cx: v.w / 2, cy: v.h * 0.4 };
+  }
+  onResize() { this.layoutCam(); }
+  camTarget() {
+    const b = this.baseCam;
+    if (this.focus === 'vanity') return { x: D.SPOTS.vanity.x + 30, y: D.SPOTS.vanity.y - 10, z: b.z * 2.3, cx: b.cx, cy: b.cy };
+    return Object.assign({}, b);
+  }
+
+  // 节点附带效果
+  apply(n, silent) {
+    if (n.bg) this.bg = n.bg;
+    if (n.focus) this.focus = n.focus === 'none' ? null : n.focus;
+    if (n.hide) this.por.on = false;
+    if (n.show) this.por.on = true;
+    if (n.e && n.e !== this.por.e) { this.por.pe = this.por.e; this.por.e = n.e; this.por.x = silent ? 1 : 0; }
+    if (n.img !== undefined) { if (n.img) { this.img = n.img; this.lastImg = n.img; this.imgK = silent ? 1 : 0; } else this.img = null; }
+    if (n.fx === 'near') this.por.sT = 1.12;
+    if (n.fx === 'back') this.por.sT = 1;
+    if (n.fx === 'nearback') { this.por.sT = 1.1; this.por.back = silent ? 0 : 0.7; if (silent) this.por.sT = 1; }
+    if (n.rain !== undefined) A.setRain(n.rain);
+    if (!silent && n.sfx) A.play(n.sfx);
+    if (silent) { this.por.a = this.por.on ? 1 : 0; this.por.s = this.por.sT; this.imgA = this.img ? 1 : 0; }
+  }
+
+  isBlocking(n) { return n.t !== 'label' && n.t !== 'goto'; }
+
+  run(i) {
+    let guard = 0;
+    while (i < this.nodes.length && guard++ < 200) {
+      const n = this.nodes[i];
+      this.apply(n, false);
+      if (n.t === 'label') { i++; continue; }
+      if (n.t === 'goto') { i = this.labels[n.id]; continue; }
+      this.enter(i);
+      return;
+    }
+  }
+
+  replayTo(target) {
+    let i = 0, guard = 0;
+    while (i < this.nodes.length && guard++ < 500) {
+      const n = this.nodes[i];
+      this.apply(n, true);
+      if (n.t === 'label') { i++; continue; }
+      if (n.t === 'goto') { i = this.labels[n.id]; continue; }
+      if (i === target) { this.enter(i, true); return; }
+      if (n.t === 'choice') {
+        const c = G.save.choice;
+        const opt = n.opts.find((o) => o.k === c);
+        if (!opt) { this.enter(i, true); return; }
+        i = this.labels[opt.go];
+        continue;
+      }
+      i++;
+    }
+    this.run(0);
+  }
+
+  enter(i, silent) {
+    this.idx = i;
+    this.cur = this.nodes[i];
+    this.mem = !!this.cur.mem;
+    this.reveal = 0;
+    this.nodeT = 0;
+    this.textObj = null;
+    if (!this.review) { G.save[this.key + 'Idx'] = i; G.persist(); }
+    if (silent) this.reveal = 1e9;
+  }
+
+  advance() {
+    const n = this.cur; if (!n) return;
+    if (this.nodeT < 0.18) return;
+    if (n.t === 'cap' || n.t === 'say' || n.t === 'act') {
+      if (this.textObj && this.reveal < this.textObj.count) { this.reveal = this.textObj.count; return; }
+      this.run(this.idx + 1);
+    }
+  }
+
+  choose(opt) {
+    if (!this.review) { G.save.choice = opt.k; G.persist(); }
+    A.play('tap');
+    this.run(this.labels[opt.go]);
+  }
+
+  finish() {
+    const sv = G.save;
+    if (this.review) { G.go(() => G.scenes.world()); return; }
+    if (this.key === 'intro') {
+      sv.phase = 'room'; sv.read.intro = true; G.persist();
+      G.go(() => G.scenes.room('play'));
+    } else {
+      sv.phase = 'done'; sv.read.outro = true; G.persist();
+      A.setRain(0.5);
+      G.go(() => G.scenes.world({ justDone: true }));
+    }
+  }
+
+  onDown(p) { this.downP = p; }
+  onUp(p) { if (p.tap) this.advance(); }
+
+  update(dt) {
+    this.nodeT += dt;
+    const n = this.cur;
+    if (n && (n.t === 'say' || n.t === 'act' || n.t === 'cap')) this.reveal += dt * (n.t === 'cap' ? 22 : 34);
+    const por = this.por;
+    por.a += ((por.on && !this.img ? 1 : 0) - por.a) * Math.min(1, dt * 7);
+    por.x = Math.min(1, por.x + dt * 5);
+    if (por.back > 0) { por.back -= dt; if (por.back <= 0) por.sT = 1; }
+    por.s += (por.sT - por.s) * Math.min(1, dt * 6);
+    this.imgA += ((this.img ? 1 : 0) - this.imgA) * Math.min(1, dt * 6);
+    this.imgK = Math.min(1, this.imgK + dt * 2.5);
+    this.black += ((n && n.t === 'cap' ? 1 : 0) - this.black) * Math.min(1, dt * 4);
+    const ct = this.camTarget(), c = this.cam, k = Math.min(1, dt * 2.2);
+    c.x += (ct.x - c.x) * k; c.y += (ct.y - c.y) * k; c.z += (ct.z - c.z) * k; c.cx = ct.cx; c.cy = ct.cy;
+    if (this.review && n && n.t === 'choice' && this.nodeT > 1.6) {
+      const opt = n.opts.find((o) => o.k === G.save.choice) || n.opts[0];
+      this.run(this.labels[opt.go]);
+    }
+  }
+
+  draw() {
+    const R = G.R, v = G.view;
+    const n = this.cur;
+    drawRoomWorld(this.cam, this.bg === 'full' ? ALL : NONE, { t: G.t, light: this.bg === 'full' ? 1 : 0 });
+    R.rect(0, 0, v.w, v.h, [0.02, 0.02, 0.05, 0.28]);
+    if (this.mem) R.rect(0, 0, v.w, v.h, [0.35, 0.18, 0.05, 0.35]);
+
+    const boxY = v.h - v.safeBottom - 330;
+    this.drawPortrait(boxY);
+    this.drawImage(boxY);
+
+    if (this.black > 0.01) R.rect(0, 0, v.w, v.h, [0, 0, 0, this.black]);
+
+    if (!n) return;
+    if (n.t === 'cap') this.drawCaption(n);
+    else if (n.t === 'say' || n.t === 'act') this.drawBox(n, boxY);
+    else if (n.t === 'choice') this.drawChoice(n);
+    else if (n.t === 'goal') this.drawGoal();
+    else if (n.t === 'end') this.drawEnd(n);
+
+    if (this.review) {
+      T.draw('回顾中', 40, v.safeTop + 40, { size: 24, color: '#9a8f80' });
+      G.button('skip', 580, v.safeTop + 24, 150, 60, '返回 ›', { size: 26, onClick: () => G.go(() => G.scenes.world()) });
+    }
+  }
+
+  drawPortrait(boxY) {
+    const p = this.por; if (p.a < 0.01) return;
+    const R = G.R, s = p.s;
+    const w = Art.PW * s * 1.06, h = Art.PH * s * 1.06;
+    const x = 375 - w / 2, y = boxY + 70 - h;
+    const k = s * 1.06;
+    R.draw(Art.portrait, x, y, w, h, { alpha: p.a });
+    const fx = x + 140 * k, fy = y + 260 * k, fw = 240 * k, fh = 170 * k;
+    if (p.pe && p.x < 1) R.draw(Art.faces[p.pe], fx, fy, fw, fh, { alpha: p.a * (1 - p.x) });
+    R.draw(Art.faces[p.e], fx, fy, fw, fh, { alpha: p.a * (p.pe ? p.x : 1) });
+  }
+
+  drawImage(boxY) {
+    if (this.imgA < 0.01 || !this.lastImg) return;
+    const R = G.R, v = G.view, a = this.imgA;
+    R.rect(0, 0, v.w, v.h, [0, 0, 0, 0.5 * a]);
+    const sc = 0.95 + 0.05 * (1 - Math.pow(1 - this.imgK, 3));
+    const w = 690 * sc, h = 480 * sc;
+    const y = Math.max(v.safeTop + 130, (boxY - 480) / 2 + 20);
+    const x = 375 - w / 2;
+    const isMem = this.lastImg === 'memory';
+    Art.drawPanel(x - 8, y - 8, w + 16, h + 16, 12, isMem ? 'rgba(90,55,25,0.9)' : 'rgba(30,26,22,0.95)', isMem ? 'rgba(240,190,120,0.5)' : 'rgba(214,190,156,0.5)', 2, a);
+    R.draw(isMem ? Art.memory : Art.earring, x, y, w, h, { alpha: a });
+    if (isMem) T.draw('— 记忆 —', 375, y + h + 36, { size: 24, color: '#e8c48e', anchor: 'center', alpha: a });
+  }
+
+  drawCaption(n) {
+    const a = Math.min(1, this.nodeT * 2);
+    const t = T.make(n.s, { size: 36, color: '#ece3d4', maxW: 600, lineH: 1.7, align: 'center' });
+    this.textObj = t;
+    const x = 375 - t.w / 2 + t.pad, y = G.view.h * 0.42 - t.h / 2 + t.pad;
+    T.drawReveal(t, x, y, Math.floor(this.reveal), a);
+    if (this.reveal >= t.count) T.draw('轻触继续', 375, G.view.h * 0.42 + t.h / 2 + 70, { size: 22, color: '#7d7468', anchor: 'center', alpha: 0.5 + 0.5 * Math.sin(G.t * 3) });
+  }
+
+  drawBox(n, y) {
+    const R = G.R;
+    const mem = this.mem;
+    Art.drawPanel(20, y, 710, 290, 22, mem ? 'rgba(62,38,20,0.93)' : 'rgba(16,18,26,0.92)', mem ? 'rgba(240,190,120,0.5)' : 'rgba(201,162,122,0.4)', 2);
+    if (n.t === 'say') {
+      const nt = T.make(n.w, { size: 28, color: '#17120e', weight: 'bold' });
+      const nw = nt.w + 36;
+      Art.drawPanel(44, y - 28, nw, 58, 16, NAME_COLOR[n.w] || '#c9a27a', null);
+      R.draw(nt.t, 44 + 18 - nt.pad, y - 28 + 29 - nt.h / 2, nt.w, nt.h);
+    }
+    const color = n.t === 'act' ? (mem ? '#e9c897' : '#aeb9ca') : (mem ? '#f8e1b8' : '#f2ebdf');
+    const t = T.make(n.s, { size: n.t === 'act' ? 31 : 34, color, maxW: 640, lineH: 1.6, italic: n.t === 'act' });
+    this.textObj = t;
+    T.drawReveal(t, 56, y + 50, Math.floor(this.reveal), 1);
+    if (this.reveal >= t.count) {
+      const a = 0.5 + 0.5 * Math.sin(G.t * 4);
+      T.draw('▼', 690, y + 248, { size: 22, color: '#c9a27a', anchor: 'center', alpha: a });
+    }
+  }
+
+  drawChoice(n) {
+    const R = G.R, v = G.view;
+    R.rect(0, 0, v.w, v.h, [0, 0, 0, 0.45]);
+    const mid = v.h * 0.48;
+    T.draw(n.q, 375, mid - 200, { size: 32, color: '#e9dcc6', anchor: 'center' });
+    n.opts.forEach((o, i) => {
+      const chosen = G.save.choice === o.k;
+      const style = this.review ? (chosen ? 'selected' : 'ghost') : 'ghost';
+      G.button('ch_' + o.k, 55, mid - 120 + i * 150, 640, 120, o.s, {
+        style, size: 32, disabled: this.review && !chosen,
+        onClick: () => (this.review ? this.run(this.labels[o.go]) : this.choose(o)),
+      });
+    });
+  }
+
+  drawGoal() {
+    const R = G.R, v = G.view;
+    R.rect(0, 0, v.w, v.h, [0, 0, 0, 0.5]);
+    const a = Math.min(1, this.nodeT * 2.5);
+    const y = v.h * 0.5 - 220;
+    Art.drawPanel(75, y, 600, 420, 28, 'rgba(26,24,30,0.97)', 'rgba(214,190,156,0.6)', 2, a);
+    T.draw('关卡目标', 375, y + 58, { size: 24, color: '#9e9080', anchor: 'center', alpha: a });
+    T.draw('还原卧室 · 0/24', 375, y + 118, { size: 46, color: '#f4e4c8', weight: 'bold', anchor: 'center', alpha: a });
+    T.draw('依据旧照片、家具清单与保存物件，\n复原你曾停留的那一晚。', 375, y + 210, { size: 26, color: '#c4b8a6', maxW: 520, lineH: 1.6, align: 'center', anchor: 'center', alpha: a });
+    G.button('goal', 175, y + 296, 400, 90, this.review ? '返回宅邸' : '开始还原', { style: 'primary', size: 34, alpha: a, onClick: () => this.finish() });
+  }
+
+  drawEnd(n) {
+    const R = G.R, v = G.view;
+    R.rect(0, 0, v.w, v.h, [0, 0, 0, 0.55]);
+    const a = Math.min(1, this.nodeT * 2);
+    const y = v.h * 0.5 - 330;
+    Art.drawPanel(45, y, 660, 640, 28, 'rgba(26,24,30,0.97)', 'rgba(214,190,156,0.6)', 2, a);
+    T.draw('第一章 · 他的卧室，我的耳饰', 375, y + 56, { size: 24, color: '#9e9080', anchor: 'center', alpha: a });
+    T.draw(n.title, 375, y + 160, { size: 36, color: '#f4e4c8', weight: 'bold', maxW: 580, lineH: 1.6, align: 'center', anchor: 'center', alpha: a });
+    R.rect(125, y + 248, 500, 1.5, [0.8, 0.7, 0.55, 0.4 * a]);
+    T.draw('关系记录', 375, y + 290, { size: 24, color: '#9e9080', anchor: 'center', alpha: a });
+    T.draw('「' + n.record + '」', 375, y + 338, { size: 30, color: '#e6d3b3', maxW: 580, align: 'center', anchor: 'center', alpha: a });
+    const ch = D.CHOICE_TEXT[G.save.choice];
+    if (ch) T.draw('你的回应：' + ch, 375, y + 400, { size: 24, color: '#a9a090', maxW: 580, align: 'center', anchor: 'center', alpha: a });
+    T.draw('下一段：那条叫走他的消息，与你当时害怕的人。', 375, y + 450, { size: 22, color: '#8a8174', maxW: 580, align: 'center', anchor: 'center', alpha: a });
+    G.button('end', 155, y + 512, 440, 92, this.review ? '返回宅邸' : '保存这间房间', { style: 'primary', size: 34, alpha: a, onClick: () => this.finish() });
+  }
+}
+
+G.scenes.story = (key, review) => new StoryScene(key, review);
+module.exports = StoryScene;
+
+};
+__defs["text"]=function(module,exports,require){
+// 文字：用 2D 离屏画布排版后上传为 WebGL 纹理，LRU 缓存
+const P = require('./platform');
+
+const FONT = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif';
+const NO_START = '，。、？！；：」』）》…—,.!?;:)';
+
+let R = null;
+let scratch = null, sctx = null;
+const cache = new Map();
+const MAX = 160;
+
+function getScratch(w, h) {
+  if (!scratch) { scratch = P.createOffscreen(4, 4); sctx = scratch.getContext('2d'); }
+  scratch.width = Math.max(1, Math.ceil(w));
+  scratch.height = Math.max(1, Math.ceil(h));
+  sctx.setTransform(1, 0, 0, 1, 0, 0);
+  sctx.clearRect(0, 0, scratch.width, scratch.height);
+  return { c: scratch, ctx: sctx };
+}
+
+const T = {
+  FONT,
+  init(renderer) { R = renderer; },
+  scratch: getScratch,
+
+  // 返回 { t, w, h, lines:[{y,h,ends[]}], count }，尺寸为设计单位
+  make(str, o) {
+    o = o || {};
+    const size = o.size || 32, color = o.color || '#ffffff', weight = o.weight || 'normal';
+    const maxW = o.maxW || 10000, lh = o.lineH || 1.5, align = o.align || 'left';
+    const key = [str, size, color, weight, maxW, lh, align, o.italic ? 1 : 0, o.shadow ? 1 : 0, R.pxPerUnit].join('|');
+    const hit = cache.get(key);
+    if (hit) { cache.delete(key); cache.set(key, hit); return hit; }
+
+    const k = R.pxPerUnit;
+    const fs = Math.round(size * k);
+    const font = (o.italic ? 'italic ' : '') + weight + ' ' + fs + 'px ' + FONT;
+    const m = getScratch(4, 4).ctx;
+    m.font = font;
+    const maxPx = maxW * k;
+    const lines = [];
+    String(str).split('\n').forEach((para) => {
+      let cur = '', widths = [], w = 0;
+      for (const ch of para) {
+        const cw = m.measureText(ch).width;
+        if (w + cw > maxPx && cur.length && NO_START.indexOf(ch) < 0) {
+          lines.push({ text: cur, widths, w });
+          cur = ''; widths = []; w = 0;
+        }
+        cur += ch; w += cw; widths.push(w);
+      }
+      lines.push({ text: cur, widths, w });
+    });
+    const pad = Math.ceil(fs * 0.25);
+    const lhPx = Math.round(fs * lh);
+    const textW = Math.max(1, ...lines.map((l) => l.w));
+    const cw = Math.ceil((align === 'center' ? Math.min(textW, Math.max(textW, 1)) : textW) + pad * 2);
+    const ch = Math.ceil(lines.length * lhPx + pad * 2);
+    const s = getScratch(cw, ch);
+    const ctx = s.ctx;
+    ctx.font = font;
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    if (o.shadow) { ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = fs * 0.2; ctx.shadowOffsetY = fs * 0.06; }
+    const outLines = [];
+    let count = 0;
+    lines.forEach((l, i) => {
+      const x0 = align === 'center' ? (cw - l.w) / 2 : pad;
+      const y = pad + i * lhPx;
+      ctx.fillText(l.text, x0, y + lhPx / 2);
+      outLines.push({
+        y: y / k, h: lhPx / k, x0: x0 / k,
+        ends: l.widths.map((wd) => (x0 + wd) / k),
+      });
+      count += l.widths.length;
+    });
+    const t = R.texFromCanvas(s.c);
+    const res = { t, w: cw / k, h: ch / k, lines: outLines, count, pad: pad / k };
+    cache.set(key, res);
+    if (cache.size > MAX) {
+      const first = cache.keys().next().value;
+      R.deleteTex(cache.get(first).t);
+      cache.delete(first);
+    }
+    return res;
+  },
+
+  // 绘制；align: 'left' 时 x 为文字左上角（扣除 pad），'center' 时 x 为中心
+  draw(str, x, y, o) {
+    o = o || {};
+    const t = T.make(str, o);
+    let dx = x - t.pad, dy = y - t.pad;
+    if (o.anchor === 'center') { dx = x - t.w / 2; dy = y - t.h / 2; }
+    else if (o.anchor === 'top') { dx = x - t.w / 2; }
+    else if (o.anchor === 'right') { dx = x - t.w + t.pad; }
+    R.draw(t.t, dx, dy, t.w, t.h, { alpha: o.alpha === undefined ? 1 : o.alpha });
+    return t;
+  },
+
+  // 打字机效果：只显示前 n 个字符，不重新上传纹理
+  drawReveal(t, x, y, n, alpha) {
+    const dx = x - t.pad, dy = y - t.pad;
+    let left = n;
+    for (const l of t.lines) {
+      if (left <= 0) break;
+      const cnt = l.ends.length;
+      if (!cnt) continue;
+      const shown = Math.min(cnt, left);
+      const xEnd = l.ends[shown - 1] + (shown === cnt ? t.pad : 0.5);
+      const u1 = Math.min(1, xEnd / t.w);
+      R.draw(t.t, dx, dy + l.y, xEnd, l.h, { alpha, uv: [0, l.y / t.h, u1, (l.y + l.h) / t.h] });
+      left -= cnt;
+    }
+  },
+};
+
+module.exports = T;
+
+};
+__defs["world"]=function(module,exports,require){
+// 标题与宅邸入口：房间状态、回访、回顾、意愿反馈（策划案 §11）
+const G = require('./main');
+const D = require('./data');
+const Art = require('./art');
+const T = require('./text');
+const A = require('./audio');
+const { drawRoomWorld, drawRoomThumb, ALL, NONE } = require('./room');
+
+function roomStatus() {
+  const sv = G.save;
+  switch (sv.phase) {
+    case 'new': case 'intro': return { label: '待还原', gray: true, action: '进入卧室' };
+    case 'room': return { label: sv.placed.length + '/24', gray: false, action: '继续还原 · ' + sv.placed.length + '/24' };
+    case 'roomDone': case 'outro': return { label: '继续故事', gray: false, action: '继续故事' };
+    default: return { label: '已记录 · 24/24', gray: false, action: null };
+  }
+}
+
+function enterBedroom() {
+  const sv = G.save;
+  if (sv.phase === 'new') { sv.phase = 'intro'; sv.introIdx = 0; G.persist(); }
+  if (sv.phase === 'intro') G.go(() => G.scenes.story('intro'));
+  else if (sv.phase === 'room') G.go(() => G.scenes.room('play'));
+  else if (sv.phase === 'roomDone') G.go(() => G.scenes.room('done'));
+  else if (sv.phase === 'outro') G.go(() => G.scenes.story('outro'));
+  else G.go(() => G.scenes.room('view'));
+}
+
+function soundButton(x, y) {
+  G.button('snd', x, y, 130, 58, G.save.sound ? '声音 开' : '声音 关', {
+    size: 24, r: 29,
+    onClick: () => { const s = !G.save.sound; G.save.sound = s; A.setOn(s); G.persist(); },
+  });
+}
+
+class TitleScene {
+  constructor() { this.t = 0; }
+  update(dt) { this.t += dt; }
+  draw() {
+    const R = G.R, v = G.view;
+    const done = G.save.phase === 'done';
+    const z = Math.max(v.w / 750, v.h * 0.82 / 1000);
+    drawRoomWorld({ x: 390, y: 480 + Math.sin(this.t * 0.2) * 10, z, cx: v.w / 2, cy: v.h / 2 }, done ? ALL : NONE, { t: G.t, light: done ? 1 : 0 });
+    R.rect(0, 0, v.w, v.h, [0.02, 0.02, 0.04, 0.55]);
+    const a = Math.min(1, this.t * 1.2);
+    const y = v.h * 0.3;
+    T.draw('未寄之夜', 375, y, { size: 84, color: '#f1e2c6', weight: 'bold', anchor: 'center', alpha: a, shadow: true });
+    T.draw('— 他的卧室，我的耳饰 —', 375, y + 92, { size: 32, color: '#cbb894', anchor: 'center', alpha: a });
+    T.draw('卧室版 Demo', 375, y + 150, { size: 24, color: '#8d8476', anchor: 'center', alpha: a });
+    const isNew = G.save.phase === 'new';
+    G.button('start', 175, v.h * 0.66, 400, 96, isNew ? '开始 Demo' : '继续', {
+      style: 'primary', size: 36, alpha: a,
+      onClick: () => {
+        if (isNew) { G.save.phase = 'intro'; G.save.introIdx = 0; G.persist(); G.go(() => G.scenes.story('intro')); }
+        else G.go(() => G.scenes.world());
+      },
+    });
+    T.draw('竖屏体验 · 建议开启声音', 375, v.h * 0.66 + 140, { size: 22, color: '#7d7468', anchor: 'center', alpha: a });
+    soundButton(600, v.safeTop + 24);
+  }
+}
+
+class WorldScene {
+  constructor(opt) {
+    this.opt = opt || {};
+    this.t = 0;
+    if (this.opt.justDone) setTimeout(() => G.toast('卧室已记录 · 24/24'), 400);
+  }
+  update(dt) { this.t += dt; }
+  mapRect() {
+    const v = G.view;
+    return { x: 30, y: v.safeTop + 150, w: Art.MAP_W, h: Art.MAP_H };
+  }
+  bedRect() {
+    const m = this.mapRect(), b = Art.MAP_BEDROOM;
+    return { x: m.x + b.x, y: m.y + b.y, w: b.w, h: b.h };
+  }
+  onUp(p) {
+    if (!p.tap) return;
+    const r = this.bedRect();
+    if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) { A.play('tap'); enterBedroom(); }
+  }
+
+  draw() {
+    const R = G.R, v = G.view, sv = G.save;
+    R.rect(0, 0, v.w, v.h, [0.07, 0.075, 0.1, 1]);
+    T.draw('陆宅', 40, v.safeTop + 40, { size: 44, color: '#f1e2c6', weight: 'bold' });
+    T.draw('《未寄之夜》 卧室版 Demo', 40, v.safeTop + 100, { size: 22, color: '#8d8476' });
+    soundButton(600, v.safeTop + 34);
+
+    const m = this.mapRect();
+    R.draw(Art.map, m.x, m.y, m.w, m.h);
+    const st = roomStatus();
+    const b = this.bedRect();
+    const placed = sv.phase === 'done' ? ALL : new Set(sv.placed);
+    drawRoomThumb(b.x + 6, b.y + 6, b.w - 12, b.h - 64, placed, { gray: st.gray, light: sv.phase === 'done' ? 1 : 0, t: G.t });
+    const pulse = 0.5 + 0.5 * Math.sin(this.t * 3);
+    const done = sv.phase === 'done';
+    Art.drawPanel(b.x, b.y, b.w, b.h, 8, null, done ? '#e6c48e' : (st.gray ? 'rgba(160,170,190,0.5)' : '#c9a27a'), done ? 3 : 2, done ? 0.7 + 0.3 * pulse : 1);
+    if (this.opt.justDone && this.t < 3) {
+      R.setBlend('add');
+      R.draw(Art.glow, b.x - 80, b.y - 80, b.w + 160, b.h + 160, { color: [1, 0.78, 0.45], alpha: 0.35 * (1 - this.t / 3) });
+      R.setBlend('alpha');
+    }
+    R.rect(b.x + 2, b.y + b.h - 58, b.w - 4, 56, [0.06, 0.06, 0.08, 0.9]);
+    T.draw('卧室', b.x + 20, b.y + b.h - 44, { size: 26, color: '#f1e2c6', weight: 'bold' });
+    T.draw(st.label, b.x + b.w - 18, b.y + b.h - 42, { size: 22, color: done ? '#e6c48e' : (st.gray ? '#8e94a2' : '#d8b98c'), anchor: 'right' });
+    if (!done) T.draw('轻触进入', b.x + b.w / 2, b.y + (b.h - 60) / 2, { size: 26, color: '#ffffff', anchor: 'center', alpha: 0.5 + 0.4 * pulse, shadow: true });
+
+    let y = m.y + m.h + 34;
+    if (!done) {
+      G.button('enter', 135, y, 480, 96, st.action, { style: 'primary', size: 34, onClick: enterBedroom });
+      y += 130;
+    } else {
+      G.button('view', 40, y, 325, 86, '欣赏房间', { style: 'primary', size: 30, onClick: () => G.go(() => G.scenes.room('view')) });
+      G.button('rv1', 385, y, 325, 86, '回顾开场', { size: 30, onClick: () => G.go(() => G.scenes.story('intro', true)) });
+      G.button('rv2', 40, y + 106, 325, 86, '回顾后续', { size: 30, onClick: () => G.go(() => G.scenes.story('outro', true)) });
+      G.button('fb', 385, y + 106, 325, 86, '后续内容意愿反馈', { size: 26, onClick: () => this.feedback() });
+      y += 230;
+    }
+    const by = Math.min(v.h - v.safeBottom - 90, Math.max(y, v.h - v.safeBottom - 90));
+    G.button('stats', 40, by, 200, 60, '试玩记录', { style: 'text', size: 24, onClick: () => this.stats() });
+    G.button('reset', 510, by, 200, 60, '重新开始', { style: 'text', size: 24, color: '#a07a6a', onClick: () => this.reset() });
+  }
+
+  feedback() {
+    const sv = G.save;
+    const pick = (k) => () => { sv.feedback = k; G.persist(); G.toast('已记录，谢谢你的反馈'); };
+    G.openModal('后续内容意愿反馈',
+      '下一段将围绕「叫走他的那条消息」与「你当时害怕的人」展开。后续房间尚未制作。' + (sv.feedback ? '\n当前选择：' + sv.feedback : ''),
+      [
+        { label: '很想继续看', style: 'primary', fn: pick('很想继续看') },
+        { label: '有点兴趣', fn: pick('有点兴趣') },
+        { label: '暂时不想', fn: pick('暂时不想') },
+        { label: '关闭', style: 'text' },
+      ]);
+  }
+
+  stats() {
+    const s = G.save.stats, f = (x) => Math.round(x) + ' 秒';
+    const body = [
+      '贴纸用时：第一组 ' + f(s.groupSec[0]) + '，第二组 ' + f(s.groupSec[1]) + '，第三组 ' + f(s.groupSec[2]),
+      '合计：' + f(s.groupSec[0] + s.groupSec[1] + s.groupSec[2]),
+      '放错次数：' + s.misses + '　提示次数：' + s.hints,
+      '回访房间：' + s.revisits + '　回顾剧情：' + s.replays,
+      '选择：' + (G.save.choice ? G.save.choice + ' ' + D.CHOICE_TEXT[G.save.choice] : '—'),
+      '意愿：' + (G.save.feedback || '—'),
+    ].join('\n');
+    G.openModal('试玩记录', body, [{ label: '关闭' }]);
+  }
+
+  reset() {
+    G.openModal('重新开始？', '重开 Demo 会清除全部进度：已贴贴纸、剧情位置、选择与试玩记录。', [
+      { label: '确定清除并重开', style: 'primary', fn: () => { G.S.reset(); A.setOn(G.save.sound); A.setRain(0.5); G.go(() => G.scenes.title()); } },
+      { label: '取消' },
+    ]);
+  }
+}
+
+G.scenes.title = () => new TitleScene();
+G.scenes.world = (opt) => new WorldScene(opt);
+module.exports = { TitleScene, WorldScene };
+
+};
+window.__G=__req("main");window.__G.boot();
+</script>
+</body>
+</html>
