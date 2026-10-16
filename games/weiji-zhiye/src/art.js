@@ -584,14 +584,15 @@ function drawMap(c, w, h) {
 const STK_K = 2.4, STK_M = 6;
 
 const Art = {
-  st: {}, room: null, glow: null, chars: {}, imgs: {}, earring: null, memory: null, map: null,
+  st: {}, room: null, glow: null, chars: {}, imgs: {}, earring: null, memory: null, map: null, cover: null,
+  pending: 0,  // 正在加载的正式美术张数（启动时等它归零再进标题）
   PW, PH, MAP_W, MAP_H, MAP_BEDROOM, STK_M,
   panels: new Map(),
 
   init(renderer) {
     R = renderer;
     const k = Math.max(1.2, Math.min(2, R.pxPerUnit));
-    this.room = bake(750, 1000, Math.min(1.6, k), drawRoom);
+    this.room = bake(D.ROOM_W, D.ROOM_H, Math.min(1.6, k), drawRoom);
     D.ITEMS.forEach((it) => {
       const fn = STICKERS[it.id];
       this.st[it.id] = {
@@ -643,31 +644,41 @@ const Art = {
     const e = this.imgs[url];
     if (e) return e.t;
     this.imgs[url] = { t: null };
+    this.pending++;
     P.loadImage(url, (img) => {
+      this.pending--;
       const k = Math.min(2, R.pxPerUnit);
       const s = Math.min(PW / img.width, PH / img.height);
       const w = img.width * s, h = img.height * s;
       this.imgs[url].t = bake(PW, PH, k, (c) => c.drawImage(img, (PW - w) / 2, PH - h, w, h));
-    }, () => { this.imgs[url].failed = true; });
+    }, () => { this.pending--; this.imgs[url].failed = true; });
     return null;
   },
 
   applyOverrides() {
     const map = D.ART_OVERRIDES || {};
     Object.keys(map).forEach((id) => {
+      this.pending++;
       P.loadImage(map[id], (img) => {
+        this.pending--;
         if (this.st[id]) {
+          // 正式贴纸：按原图分辨率烘焙（小物件拖动时放大也清楚），上限 8 倍
           const it = D.BY_ID[id];
+          const k = Math.max(STK_K, Math.min(8, img.width / it.w));
           const old = this.st[id].t;
-          this.st[id].t = bake(it.w + STK_M * 2, it.h + STK_M * 2, STK_K, (c) => c.drawImage(img, STK_M, STK_M, it.w, it.h));
+          this.st[id].t = bake(it.w + STK_M * 2, it.h + STK_M * 2, k, (c) => c.drawImage(img, STK_M, STK_M, it.w, it.h));
           R.deleteTex(old);
         } else if (id === 'room' || id === 'earring' || id === 'memory' || id === 'map') {
-          const dims = { room: [750, 1000], earring: [690, 480], memory: [690, 480], map: [MAP_W, MAP_H] }[id];
+          const dims = { room: [D.ROOM_W, D.ROOM_H], earring: [690, 480], memory: [690, 480], map: [MAP_W, MAP_H] }[id];
+          const k = Math.max(1, Math.min(2, img.width / dims[0]));
           const old = this[id];
-          this[id] = bake(dims[0], dims[1], 1.5, (c) => c.drawImage(img, 0, 0, dims[0], dims[1]));
+          this[id] = bake(dims[0], dims[1], k, (c) => c.drawImage(img, 0, 0, dims[0], dims[1]));
           R.deleteTex(old);
+        } else if (id === 'cover') {
+          // 标题封面：按原图比例，cw × ch 为设计单位尺寸
+          this.cover = { t: bake(img.width, img.height, 1, (c) => c.drawImage(img, 0, 0)), w: img.width, h: img.height };
         }
-      });
+      }, () => { this.pending--; });
     });
   },
 };

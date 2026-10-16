@@ -40,9 +40,18 @@ class TitleScene {
   draw() {
     const R = G.R, v = G.view;
     const done = G.save.phase === 'done';
-    const z = Math.max(v.w / 750, v.h * 0.82 / 1000);
-    drawRoomWorld({ x: 390, y: 480 + Math.sin(this.t * 0.2) * 10, z, cx: v.w / 2, cy: v.h / 2 }, done ? ALL : NONE, { t: G.t, light: done ? 1 : 0 });
-    R.rect(0, 0, v.w, v.h, [0.02, 0.02, 0.04, 0.55]);
+    const cv = Art.cover;
+    if (cv) {
+      // 封面图铺满屏幕（等比裁切），缓慢推近
+      const k = Math.max(v.w / cv.w, v.h / cv.h) * (1.04 + 0.03 * Math.sin(this.t * 0.15));
+      const w = cv.w * k, h = cv.h * k;
+      R.draw(cv.t, (v.w - w) / 2, (v.h - h) / 2, w, h);
+      R.rect(0, 0, v.w, v.h, [0.02, 0.02, 0.04, 0.38]);
+    } else {
+      const z = Math.max(v.w / D.ROOM_W, v.h * 0.6 / D.ROOM_H);
+      drawRoomWorld({ x: D.ROOM_W / 2, y: D.ROOM_H / 2 + Math.sin(this.t * 0.2) * 10, z, cx: v.w / 2, cy: v.h / 2 }, done ? ALL : NONE, { t: G.t, light: done ? 1 : 0 });
+      R.rect(0, 0, v.w, v.h, [0.02, 0.02, 0.04, 0.55]);
+    }
     const a = Math.min(1, this.t * 1.2);
     const y = v.h * 0.3;
     T.draw('未寄之夜', 375, y, { size: 84, color: '#f1e2c6', weight: 'bold', anchor: 'center', alpha: a, shadow: true });

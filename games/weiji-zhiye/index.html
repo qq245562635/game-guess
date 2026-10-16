@@ -602,14 +602,15 @@ function drawMap(c, w, h) {
 const STK_K = 2.4, STK_M = 6;
 
 const Art = {
-  st: {}, room: null, glow: null, chars: {}, imgs: {}, earring: null, memory: null, map: null,
+  st: {}, room: null, glow: null, chars: {}, imgs: {}, earring: null, memory: null, map: null, cover: null,
+  pending: 0,  // 正在加载的正式美术张数（启动时等它归零再进标题）
   PW, PH, MAP_W, MAP_H, MAP_BEDROOM, STK_M,
   panels: new Map(),
 
   init(renderer) {
     R = renderer;
     const k = Math.max(1.2, Math.min(2, R.pxPerUnit));
-    this.room = bake(750, 1000, Math.min(1.6, k), drawRoom);
+    this.room = bake(D.ROOM_W, D.ROOM_H, Math.min(1.6, k), drawRoom);
     D.ITEMS.forEach((it) => {
       const fn = STICKERS[it.id];
       this.st[it.id] = {
@@ -661,31 +662,41 @@ const Art = {
     const e = this.imgs[url];
     if (e) return e.t;
     this.imgs[url] = { t: null };
+    this.pending++;
     P.loadImage(url, (img) => {
+      this.pending--;
       const k = Math.min(2, R.pxPerUnit);
       const s = Math.min(PW / img.width, PH / img.height);
       const w = img.width * s, h = img.height * s;
       this.imgs[url].t = bake(PW, PH, k, (c) => c.drawImage(img, (PW - w) / 2, PH - h, w, h));
-    }, () => { this.imgs[url].failed = true; });
+    }, () => { this.pending--; this.imgs[url].failed = true; });
     return null;
   },
 
   applyOverrides() {
     const map = D.ART_OVERRIDES || {};
     Object.keys(map).forEach((id) => {
+      this.pending++;
       P.loadImage(map[id], (img) => {
+        this.pending--;
         if (this.st[id]) {
+          // 正式贴纸：按原图分辨率烘焙（小物件拖动时放大也清楚），上限 8 倍
           const it = D.BY_ID[id];
+          const k = Math.max(STK_K, Math.min(8, img.width / it.w));
           const old = this.st[id].t;
-          this.st[id].t = bake(it.w + STK_M * 2, it.h + STK_M * 2, STK_K, (c) => c.drawImage(img, STK_M, STK_M, it.w, it.h));
+          this.st[id].t = bake(it.w + STK_M * 2, it.h + STK_M * 2, k, (c) => c.drawImage(img, STK_M, STK_M, it.w, it.h));
           R.deleteTex(old);
         } else if (id === 'room' || id === 'earring' || id === 'memory' || id === 'map') {
-          const dims = { room: [750, 1000], earring: [690, 480], memory: [690, 480], map: [MAP_W, MAP_H] }[id];
+          const dims = { room: [D.ROOM_W, D.ROOM_H], earring: [690, 480], memory: [690, 480], map: [MAP_W, MAP_H] }[id];
+          const k = Math.max(1, Math.min(2, img.width / dims[0]));
           const old = this[id];
-          this[id] = bake(dims[0], dims[1], 1.5, (c) => c.drawImage(img, 0, 0, dims[0], dims[1]));
+          this[id] = bake(dims[0], dims[1], k, (c) => c.drawImage(img, 0, 0, dims[0], dims[1]));
           R.deleteTex(old);
+        } else if (id === 'cover') {
+          // 标题封面：按原图比例，cw × ch 为设计单位尺寸
+          this.cover = { t: bake(img.width, img.height, 1, (c) => c.drawImage(img, 0, 0)), w: img.width, h: img.height };
         }
-      });
+      }, () => { this.pending--; });
     });
   },
 };
@@ -850,40 +861,41 @@ module.exports = A;
 };
 __defs["data"]=function(module,exports,require){
 // 关卡与剧情数据（对应策划案 §4、§6、§8）
-// 世界坐标：卧室 750 × 1000，(x,y) 为贴纸中心
+// 世界坐标：卧室 750 × 750（正式美术 images/room.jpg 为等距视角整图），(x,y) 为贴纸中心
+// 贴纸位置与尺寸按美术给的完整房间参考图量出；小物件放大 1.35 倍便于手机上看清
 
-const ROOM_W = 750, ROOM_H = 1000;
+const ROOM_W = 750, ROOM_H = 750;
 
 const GROUPS = ['第一组 · 搭起房间', '第二组 · 恢复生活感', '第三组 · 出现两个人的痕迹'];
 
 const ITEMS = [
   // 第一组
-  { id: 'R01', g: 0, name: '地毯', x: 380, y: 760, w: 400, h: 200, z: 0 },
-  { id: 'R02', g: 0, name: '床架与床垫', x: 400, y: 470, w: 300, h: 260, z: 2 },
-  { id: 'R03', g: 0, name: '左床头柜', x: 215, y: 410, w: 80, h: 90, z: 2 },
-  { id: 'R04', g: 0, name: '右床头柜', x: 585, y: 410, w: 80, h: 90, z: 2 },
-  { id: 'R05', g: 0, name: '衣柜', x: 85, y: 330, w: 130, h: 280, z: 1 },
-  { id: 'R06', g: 0, name: '梳妆台与镜子', x: 100, y: 700, w: 150, h: 200, z: 2 },
-  { id: 'R07', g: 0, name: '扶手椅', x: 650, y: 700, w: 140, h: 150, z: 3 },
-  { id: 'R08', g: 0, name: '窗帘', x: 600, y: 225, w: 250, h: 200, z: 1 },
+  { id: 'R01', g: 0, name: '地毯', x: 341, y: 512, w: 449, h: 218, z: 0 },
+  { id: 'R02', g: 0, name: '床架与床垫', x: 372, y: 334, w: 389, h: 354, z: 3 },
+  { id: 'R03', g: 0, name: '左床头柜', x: 295, y: 231, w: 86, h: 90, z: 2 },
+  { id: 'R04', g: 0, name: '右床头柜', x: 596, y: 323, w: 93, h: 98, z: 4 },
+  { id: 'R05', g: 0, name: '衣柜', x: 182, y: 196, w: 140, h: 256, z: 1 },
+  { id: 'R06', g: 0, name: '梳妆台与镜子', x: 89, y: 332, w: 118, h: 211, z: 2 },
+  { id: 'R07', g: 0, name: '扶手椅', x: 637, y: 493, w: 176, h: 171, z: 6 },
+  { id: 'R08', g: 0, name: '窗帘', x: 661, y: 221, w: 164, h: 263, z: 1 },
   // 第二组
-  { id: 'R09', g: 1, name: '被子', x: 400, y: 530, w: 290, h: 140, z: 4 },
-  { id: 'R10', g: 1, name: '左枕头', x: 350, y: 425, w: 90, h: 50, z: 4 },
-  { id: 'R11', g: 1, name: '右枕头', x: 450, y: 425, w: 90, h: 50, z: 4 },
-  { id: 'R12', g: 1, name: '床头台灯', x: 205, y: 335, w: 48, h: 64, z: 4 },
-  { id: 'R13', g: 1, name: '书与书签', x: 603, y: 358, w: 52, h: 22, z: 4 },
-  { id: 'R14', g: 1, name: '换衣凳', x: 520, y: 890, w: 170, h: 70, z: 3 },
-  { id: 'R15', g: 1, name: '壁画', x: 400, y: 240, w: 150, h: 90, z: 1 },
-  { id: 'R16', g: 1, name: '一双拖鞋', x: 290, y: 640, w: 90, h: 40, z: 3 },
+  { id: 'R09', g: 1, name: '被子', x: 355, y: 372, w: 339, h: 252, z: 4 },
+  { id: 'R10', g: 1, name: '左枕头', x: 389, y: 233, w: 117, h: 74, z: 5 },
+  { id: 'R11', g: 1, name: '右枕头', x: 477, y: 259, w: 113, h: 66, z: 5 },
+  { id: 'R12', g: 1, name: '床头台灯', x: 299, y: 175, w: 50, h: 69, z: 5 },
+  { id: 'R13', g: 1, name: '书与书签', x: 582, y: 293, w: 54, h: 45, z: 6 },
+  { id: 'R14', g: 1, name: '换衣凳', x: 310, y: 492, w: 269, h: 147, z: 6 },
+  { id: 'R15', g: 1, name: '壁画', x: 453, y: 119, w: 126, h: 92, z: 1 },
+  { id: 'R16', g: 1, name: '一双拖鞋', x: 250, y: 541, w: 71, h: 56, z: 7 },
   // 第三组
-  { id: 'R17', g: 2, name: '男士衬衫', x: 655, y: 645, w: 110, h: 55, z: 5 },
-  { id: 'R18', g: 2, name: '女式披肩', x: 520, y: 868, w: 140, h: 40, z: 5 },
-  { id: 'R19', g: 2, name: '小收纳盘', x: 58, y: 690, w: 44, h: 26, z: 5 },
-  { id: 'R20', g: 2, name: '首饰盒', x: 146, y: 684, w: 40, h: 32, z: 5 },
-  { id: 'R21', g: 2, name: '玻璃水杯', x: 243, y: 362, w: 24, h: 30, z: 5 },
-  { id: 'R22', g: 2, name: '陶瓷水杯', x: 565, y: 362, w: 30, h: 26, z: 5 },
-  { id: 'R23', g: 2, name: '梳子与发夹', x: 102, y: 694, w: 44, h: 20, z: 5 },
-  { id: 'R24', g: 2, name: '折起的手帕', x: 480, y: 505, w: 56, h: 26, z: 5 },
+  { id: 'R17', g: 2, name: '男士衬衫', x: 678, y: 478, w: 74, h: 111, z: 7 },
+  { id: 'R18', g: 2, name: '女式披肩', x: 354, y: 514, w: 99, h: 120, z: 7 },
+  { id: 'R19', g: 2, name: '小收纳盘', x: 60, y: 341, w: 52, h: 32, z: 6 },
+  { id: 'R20', g: 2, name: '首饰盒', x: 85, y: 324, w: 31, h: 30, z: 6 },
+  { id: 'R21', g: 2, name: '玻璃水杯', x: 279, y: 204, w: 21, h: 31, z: 6 },
+  { id: 'R22', g: 2, name: '陶瓷水杯', x: 617, y: 300, w: 32, h: 27, z: 7 },
+  { id: 'R23', g: 2, name: '梳子与发夹', x: 112, y: 313, w: 38, h: 24, z: 6 },
+  { id: 'R24', g: 2, name: '信封与录音笔', x: 255, y: 434, w: 71, h: 44, z: 7 },
 ];
 
 const BY_ID = {};
@@ -891,9 +903,9 @@ ITEMS.forEach((it) => { BY_ID[it.id] = it; });
 
 // 世界内关键位置
 const SPOTS = {
-  lamp: { x: 205, y: 318 },
-  window: { x: 510, y: 140, w: 180, h: 160 },
-  vanity: { x: 100, y: 690 },
+  lamp: { x: 299, y: 158 },
+  window: { x: 665, y: 150, w: 60, h: 210 },
+  vanity: { x: 70, y: 340 },
 };
 
 // 剧情与角色：来自 content/script.json（构建时生成 script_data 模块），可用配置工具编辑
@@ -907,7 +919,35 @@ const ACTIONS = {
 
 // 正式美术替换：在此登记 id → 图片路径，加载成功后自动替换程序占位图
 // 例：R01: 'images/R01.png', room: 'images/room.png', portrait_base: 'images/lu_base.png'
-const ART_OVERRIDES = {};
+const ART_OVERRIDES = {
+  room: 'images/room.jpg',
+  cover: 'images/cover.jpg',
+  earring: 'images/earring.jpg',
+  R01: 'images/R01.png',
+  R02: 'images/R02.png',
+  R03: 'images/R03.png',
+  R04: 'images/R04.png',
+  R05: 'images/R05.png',
+  R06: 'images/R06.png',
+  R07: 'images/R07.png',
+  R08: 'images/R08.png',
+  R09: 'images/R09.png',
+  R10: 'images/R10.png',
+  R11: 'images/R11.png',
+  R12: 'images/R12.png',
+  R13: 'images/R13.png',
+  R14: 'images/R14.png',
+  R15: 'images/R15.png',
+  R16: 'images/R16.png',
+  R17: 'images/R17.png',
+  R18: 'images/R18.png',
+  R19: 'images/R19.png',
+  R20: 'images/R20.png',
+  R21: 'images/R21.png',
+  R22: 'images/R22.png',
+  R23: 'images/R23.png',
+  R24: 'images/R24.png',
+};
 
 module.exports = { ROOM_W, ROOM_H, GROUPS, ITEMS, BY_ID, SPOTS, CONTENT, ACTIONS, ART_OVERRIDES };
 
@@ -1117,7 +1157,19 @@ function boot() {
   require('./room');
   require('./story');
   require('./world');
-  G.scene = G.scenes.title();
+  // 预加载剧本里登记的立绘，等正式美术全部到位（最多 10 秒）再进标题，避免先闪占位图
+  (G.content.characters || []).forEach((c) => {
+    const imgs = c.images || {};
+    Object.keys(imgs).forEach((k) => Art.charImage(imgs[k]));
+  });
+  G.scene = {
+    t: 0,
+    update(dt) { this.t += dt; if ((Art.pending <= 0 || this.t > 10) && !G.fade.next) G.go(() => G.scenes.title()); },
+    draw() {
+      G.R.rect(0, 0, G.view.w, G.view.h, [0.04, 0.045, 0.06, 1]);
+      if (this.t > 0.3) T.draw('加载中…', 375, G.view.h * 0.5, { size: 26, color: '#8d8476', anchor: 'center' });
+    },
+  };
   P.onTouch({ down: onDown, move: onMove, up: onUp, wheel: onWheel });
   P.onHide(() => S.write());
   // 配置工具预览：收到剧本后直接从指定句开始播放，不读写存档
@@ -1448,7 +1500,8 @@ function drawRoomWorld(cam, placed, o) {
   const xf = camXform(cam);
   R.setTransform(xf[0], xf[1], xf[2]);
   const tint = o.gray ? [0.42, 0.44, 0.5] : [1, 1, 1];
-  R.draw(Art.room, 0, 0, 750, 1000, { color: tint });
+  const RW = D.ROOM_W, RH = D.ROOM_H;
+  R.draw(Art.room, 0, 0, RW, RH, { color: tint });
   const wn = D.SPOTS.window;
   if (!o.gray) {
     const t = o.t || 0;
@@ -1475,14 +1528,14 @@ function drawRoomWorld(cam, placed, o) {
   }
   if (!o.gray) {
     const light = o.light || 0;
-    R.rect(-200, -200, 1150, 1400, [0.02, 0.04, 0.1, 0.3 * (1 - light)]);
+    R.rect(-200, -200, RW + 400, RH + 400, [0.02, 0.04, 0.1, 0.3 * (1 - light)]);
     R.setBlend('add');
     R.draw(Art.glow, wn.x - 70, wn.y - 50, wn.w + 140, wn.h + 140, { color: [0.45, 0.6, 1], alpha: 0.13 });
     if (placed.has('R12')) {
       const l = D.SPOTS.lamp;
       R.draw(Art.glow, l.x - 180, l.y - 150, 360, 320, { color: [1, 0.72, 0.4], alpha: 0.36 + 0.18 * light });
     }
-    if (light > 0) R.draw(Art.glow, -80, 40, 920, 900, { color: [1, 0.74, 0.46], alpha: 0.16 * light });
+    if (light > 0) R.draw(Art.glow, -80, -40, RW + 160, RH + 80, { color: [1, 0.74, 0.46], alpha: 0.16 * light });
     R.setBlend('alpha');
   }
   R.resetTransform();
@@ -1490,8 +1543,8 @@ function drawRoomWorld(cam, placed, o) {
 
 // 预览缩略图（世界入口用）
 function drawRoomThumb(x, y, w, h, placed, o) {
-  const z = Math.min(w / 750, h / 1000);
-  drawRoomWorld({ x: 375, y: 500, z, cx: x + w / 2, cy: y + h / 2 }, placed, o);
+  const z = Math.min(w / D.ROOM_W, h / D.ROOM_H);
+  drawRoomWorld({ x: D.ROOM_W / 2, y: D.ROOM_H / 2, z, cx: x + w / 2, cy: y + h / 2 }, placed, o);
 }
 
 class RoomScene {
@@ -1511,7 +1564,7 @@ class RoomScene {
     this.doneT = mode === 'done' ? 1 : 0;
     this.saveTimer = 0;
     this.layout();
-    this.cam = { x: 375, y: 500, z: this.fitZ, cx: this.cx, cy: this.cy };
+    this.cam = { x: D.ROOM_W / 2, y: D.ROOM_H / 2, z: this.fitZ, cx: this.cx, cy: this.cy };
     this.camT = null;
     if (mode === 'view') { sv.stats.revisits++; G.persist(); }
     this.fixGroup();
@@ -1529,7 +1582,7 @@ class RoomScene {
     const v = G.view;
     this.top = v.safeTop + 120;
     this.bottom = this.mode === 'play' ? v.h - this.bookH - 6 : v.h - (this.mode === 'done' ? 170 : 40) - v.safeBottom;
-    this.fitZ = Math.min(v.w / 770, (this.bottom - this.top) / 1020);
+    this.fitZ = Math.min(v.w / (D.ROOM_W + 20), (this.bottom - this.top) / (D.ROOM_H + 20));
     this.minZ = this.fitZ; this.maxZ = this.fitZ * 2.8;
     this.cx = v.w / 2; this.cy = (this.top + this.bottom) / 2;
   }
@@ -1538,8 +1591,9 @@ class RoomScene {
   clamp() {
     const c = this.cam;
     const hw = G.view.w / 2 / c.z, hh = (this.bottom - this.top) / 2 / c.z;
-    c.x = hw * 2 >= 750 ? 375 : Math.max(hw - 30, Math.min(780 - hw, c.x));
-    c.y = hh * 2 >= 1000 ? 500 : Math.max(hh - 30, Math.min(1030 - hh, c.y));
+    const W = D.ROOM_W, H = D.ROOM_H;
+    c.x = hw * 2 >= W ? W / 2 : Math.max(hw - 30, Math.min(W + 30 - hw, c.x));
+    c.y = hh * 2 >= H ? H / 2 : Math.max(hh - 30, Math.min(H + 30 - hh, c.y));
   }
   s2w(x, y) { const c = this.cam; return { x: (x - c.cx) / c.z + c.x, y: (y - c.cy) / c.z + c.y }; }
   w2s(x, y) { const c = this.cam; return { x: (x - c.x) * c.z + c.cx, y: (y - c.y) * c.z + c.cy }; }
@@ -1661,7 +1715,7 @@ class RoomScene {
     this.drag = null;
     this.pointers.clear();
     this.layout();
-    this.camT = { x: 375, y: 500, z: this.fitZ, cy: this.cy };
+    this.camT = { x: D.ROOM_W / 2, y: D.ROOM_H / 2, z: this.fitZ, cy: this.cy };
     setTimeout(() => A.play('chime'), 260);
   }
 
@@ -1942,8 +1996,8 @@ class StoryScene {
 
   layoutCam() {
     const v = G.view;
-    const z = Math.max(v.w / 750, v.h * 0.74 / 1000);
-    this.baseCam = { x: 390, y: 520, z, cx: v.w / 2, cy: v.h * 0.4 };
+    const z = Math.max(v.w / D.ROOM_W, v.h * 0.5 / D.ROOM_H);
+    this.baseCam = { x: D.ROOM_W / 2, y: D.ROOM_H / 2 - 10, z, cx: v.w / 2, cy: v.h * 0.4 };
   }
   onResize() { this.layoutCam(); }
   camTarget() {
@@ -2466,9 +2520,18 @@ class TitleScene {
   draw() {
     const R = G.R, v = G.view;
     const done = G.save.phase === 'done';
-    const z = Math.max(v.w / 750, v.h * 0.82 / 1000);
-    drawRoomWorld({ x: 390, y: 480 + Math.sin(this.t * 0.2) * 10, z, cx: v.w / 2, cy: v.h / 2 }, done ? ALL : NONE, { t: G.t, light: done ? 1 : 0 });
-    R.rect(0, 0, v.w, v.h, [0.02, 0.02, 0.04, 0.55]);
+    const cv = Art.cover;
+    if (cv) {
+      // 封面图铺满屏幕（等比裁切），缓慢推近
+      const k = Math.max(v.w / cv.w, v.h / cv.h) * (1.04 + 0.03 * Math.sin(this.t * 0.15));
+      const w = cv.w * k, h = cv.h * k;
+      R.draw(cv.t, (v.w - w) / 2, (v.h - h) / 2, w, h);
+      R.rect(0, 0, v.w, v.h, [0.02, 0.02, 0.04, 0.38]);
+    } else {
+      const z = Math.max(v.w / D.ROOM_W, v.h * 0.6 / D.ROOM_H);
+      drawRoomWorld({ x: D.ROOM_W / 2, y: D.ROOM_H / 2 + Math.sin(this.t * 0.2) * 10, z, cx: v.w / 2, cy: v.h / 2 }, done ? ALL : NONE, { t: G.t, light: done ? 1 : 0 });
+      R.rect(0, 0, v.w, v.h, [0.02, 0.02, 0.04, 0.55]);
+    }
     const a = Math.min(1, this.t * 1.2);
     const y = v.h * 0.3;
     T.draw('未寄之夜', 375, y, { size: 84, color: '#f1e2c6', weight: 'bold', anchor: 'center', alpha: a, shadow: true });
@@ -2591,7 +2654,7 @@ module.exports = { TitleScene, WorldScene };
 };
 __defs["script_data"]=function(module,exports,require){
 /* 由 tools/build.py 从 content/script.json 生成，请用配置工具或直接改 JSON */
-module.exports = {"version": 1, "stage": "speaker", "characters": [{"id": "lin", "name": "林栖", "color": "#c9a27a", "display": "full", "pos": "left", "expressions": ["calm", "doubt", "serious", "soft"], "images": {}}, {"id": "lu", "name": "陆沉舟", "color": "#8197b4", "display": "full", "pos": "right", "expressions": ["calm", "smile", "avoid", "serious"], "images": {}}], "scenes": {"intro": [{"t": "cap", "s": "一年前，一名医生死在这间卧室。", "bg": "empty", "clear": true}, {"t": "cap", "s": "你失去了那晚的部分记忆。\n陪你回来的人，曾是嫌疑人。"}, {"t": "act", "s": "卧室门口。窗外下着雨，你手里拿着旧照片与物件记录。"}, {"t": "say", "who": "lin", "s": "记录说，我那晚也来过这里。", "e": "calm", "act": "enter"}, {"t": "say", "who": "lu", "s": "来过。", "e": "calm", "act": "enter"}, {"t": "say", "who": "lin", "s": "这是当时安置我的客房？", "e": "doubt"}, {"t": "act", "s": "他看了一眼房门。", "who": "lu", "e": "avoid", "act": "sigh"}, {"t": "say", "who": "lu", "s": "……先看看你能认出什么。", "e": "avoid"}, {"t": "act", "s": "你走近衣柜，袖口勾住了把手。他停在你身侧。", "who": "lu", "e": "calm", "act": "near", "sfx": "cloth"}, {"t": "say", "who": "lu", "s": "别急，线勾住了。我帮你？", "e": "calm"}, {"t": "say", "who": "lin", "s": "只许碰袖口。", "e": "serious"}, {"t": "act", "s": "他解开勾住的线，随即松手。", "who": "lu", "act": "normal", "sfx": "cloth"}, {"t": "say", "who": "lu", "s": "你以前也这么防着我。", "e": "smile"}, {"t": "say", "who": "lin", "s": "客房里的东西，你也这么熟？", "e": "doubt"}, {"t": "say", "who": "lu", "s": "你想先听解释，还是自己看？", "e": "serious"}, {"t": "say", "who": "lin", "s": "我先自己看。等房间还原好，你把省略的部分补上。", "e": "serious", "act": "nod"}, {"t": "say", "who": "lu", "s": "好。我在这里。", "e": "calm", "act": "nod"}, {"t": "goal", "clear": true, "title": "还原卧室 · 0/24", "sub": "依据旧照片、家具清单与保存物件，\n复原你曾停留的那一晚。", "button": "开始还原"}], "outro": [{"t": "act", "s": "还原好的卧室里，你的目光停在梳妆台上。", "bg": "full", "focus": "vanity", "clear": true}, {"t": "say", "who": "lin", "s": "等等。盘里那只耳饰……", "e": "doubt"}, {"t": "act", "s": "收纳盘里是一只银色耳饰。你取出自己保存的另一只——两者成对。", "img": "earring"}, {"t": "say", "who": "lin", "s": "我一直以为，另一只早就丢了。", "e": "soft"}, {"t": "say", "who": "lu", "s": "那晚它勾住了你的披肩。你让我帮你取下来。", "e": "calm", "img": "", "focus": "none"}, {"t": "say", "who": "lin", "s": "我的披肩、你的衬衫，都留在这里。这里到底是谁的房间？", "e": "serious"}, {"t": "act", "s": "他看向床侧，没有再回避。", "who": "lu", "e": "serious", "sfx": "sting"}, {"t": "say", "who": "lu", "s": "我的。这里一直是我的卧室。", "e": "serious"}, {"t": "say", "who": "lin", "s": "你刚才为什么不纠正我？", "e": "doubt"}, {"t": "say", "who": "lu", "s": "我怕你知道以后，就不肯再进来。", "e": "avoid", "act": "sigh"}, {"t": "say", "who": "lin", "s": "那晚呢？我为什么会来？", "e": "serious"}, {"t": "say", "who": "lu", "s": "你说有人要杀你。你不肯回自己的房间。", "e": "serious"}, {"t": "act", "s": "暖色台灯。床沿。你抓住了一截衣袖。", "img": "memory", "mem": true, "sfx": "cloth"}, {"t": "say", "who": "lin", "s": "今晚……你能不能别走？", "name": "林栖（记忆）", "mem": true}, {"t": "say", "who": "lu", "s": "好。我在。", "name": "陆沉舟（记忆）", "mem": true}, {"t": "act", "s": "回到现在。他向前一步，你抬眼，他停下。", "who": "lu", "img": "", "e": "calm", "act": "nearback"}, {"t": "say", "who": "lin", "s": "是我让你留下的。", "e": "soft"}, {"t": "say", "who": "lu", "s": "是。", "e": "calm"}, {"t": "say", "who": "lin", "s": "那医生遇害的时候，你还在这里吗？", "e": "serious"}, {"t": "act", "s": "室内的声音淡下去，只剩雨声。", "who": "lu", "e": "serious", "rain": 0.9, "sfx": "sting"}, {"t": "say", "who": "lu", "s": "我答应过不走。但那晚，我确实离开过。", "e": "serious"}, {"t": "choice", "q": "你要怎么回应？", "rain": 0.5, "opts": [{"k": "A", "s": "坐下，把你离开的原因说清楚。", "go": "A"}, {"k": "B", "s": "这次，你还会走吗？", "go": "B"}]}, {"t": "label", "id": "A"}, {"t": "act", "s": "你指向扶手椅，自己坐在床边，保持能看清他的距离。", "who": "lin", "e": "serious"}, {"t": "say", "who": "lin", "s": "这次别省略。我自己判断。", "e": "serious"}, {"t": "say", "who": "lu", "s": "好。从叫我出去的那条消息开始。", "e": "serious", "act": "nod"}, {"t": "goto", "id": "common"}, {"t": "label", "id": "B"}, {"t": "act", "s": "你拉住他的领带，让他停在一步以内。你们对视，他没有再贴近。", "who": "lu", "e": "calm", "act": "near", "sfx": "cloth"}, {"t": "say", "who": "lu", "s": "你要我留下？", "e": "smile"}, {"t": "say", "who": "lin", "s": "留下解释。别把这当成我已经信了你。", "e": "serious"}, {"t": "say", "who": "lu", "s": "好。这次听你的。", "e": "calm", "act": "normal"}, {"t": "label", "id": "common"}, {"t": "act", "s": "他坐到扶手椅上。你把耳饰放回盘中，坐下与他交谈。", "who": "lu", "e": "calm", "act": "normal"}, {"t": "say", "who": "lin", "s": "先从我为什么害怕说起。", "e": "soft"}, {"t": "end", "clear": true, "chapter": "第一章 · 他的卧室，我的耳饰", "title": "你找回了耳饰，\n也记起了自己曾向他求助。", "record": "你要求他留下，把过去讲清楚。", "next": "下一段：那条叫走他的消息，与你当时害怕的人。", "button": "保存这间房间"}]}};
+module.exports = {"version": 1, "stage": "speaker", "characters": [{"id": "lin", "name": "林栖", "color": "#c9a27a", "display": "full", "pos": "left", "expressions": ["calm", "doubt", "serious", "soft"], "images": {"base": "images/lin_calm.png"}}, {"id": "lu", "name": "陆沉舟", "color": "#8197b4", "display": "full", "pos": "right", "expressions": ["calm", "smile", "avoid", "serious"], "images": {"calm": "images/lu_calm.png", "smile": "images/lu_smile.png", "avoid": "images/lu_avoid.png", "serious": "images/lu_serious.png"}}], "scenes": {"intro": [{"t": "cap", "s": "一年前，一名医生死在这间卧室。", "bg": "empty", "clear": true}, {"t": "cap", "s": "你失去了那晚的部分记忆。\n陪你回来的人，曾是嫌疑人。"}, {"t": "act", "s": "卧室门口。窗外下着雨，你手里拿着旧照片与物件记录。"}, {"t": "say", "who": "lin", "s": "记录说，我那晚也来过这里。", "e": "calm", "act": "enter"}, {"t": "say", "who": "lu", "s": "来过。", "e": "calm", "act": "enter"}, {"t": "say", "who": "lin", "s": "这是当时安置我的客房？", "e": "doubt"}, {"t": "act", "s": "他看了一眼房门。", "who": "lu", "e": "avoid", "act": "sigh"}, {"t": "say", "who": "lu", "s": "……先看看你能认出什么。", "e": "avoid"}, {"t": "act", "s": "你走近衣柜，袖口勾住了把手。他停在你身侧。", "who": "lu", "e": "calm", "act": "near", "sfx": "cloth"}, {"t": "say", "who": "lu", "s": "别急，线勾住了。我帮你？", "e": "calm"}, {"t": "say", "who": "lin", "s": "只许碰袖口。", "e": "serious"}, {"t": "act", "s": "他解开勾住的线，随即松手。", "who": "lu", "act": "normal", "sfx": "cloth"}, {"t": "say", "who": "lu", "s": "你以前也这么防着我。", "e": "smile"}, {"t": "say", "who": "lin", "s": "客房里的东西，你也这么熟？", "e": "doubt"}, {"t": "say", "who": "lu", "s": "你想先听解释，还是自己看？", "e": "serious"}, {"t": "say", "who": "lin", "s": "我先自己看。等房间还原好，你把省略的部分补上。", "e": "serious", "act": "nod"}, {"t": "say", "who": "lu", "s": "好。我在这里。", "e": "calm", "act": "nod"}, {"t": "goal", "clear": true, "title": "还原卧室 · 0/24", "sub": "依据旧照片、家具清单与保存物件，\n复原你曾停留的那一晚。", "button": "开始还原"}], "outro": [{"t": "act", "s": "还原好的卧室里，你的目光停在梳妆台上。", "bg": "full", "focus": "vanity", "clear": true}, {"t": "say", "who": "lin", "s": "等等。盘里那只耳饰……", "e": "doubt"}, {"t": "act", "s": "收纳盘里是一只银色耳饰。你取出自己保存的另一只——两者成对。", "img": "earring"}, {"t": "say", "who": "lin", "s": "我一直以为，另一只早就丢了。", "e": "soft"}, {"t": "say", "who": "lu", "s": "那晚它勾住了你的披肩。你让我帮你取下来。", "e": "calm", "img": "", "focus": "none"}, {"t": "say", "who": "lin", "s": "我的披肩、你的衬衫，都留在这里。这里到底是谁的房间？", "e": "serious"}, {"t": "act", "s": "他看向床侧，没有再回避。", "who": "lu", "e": "serious", "sfx": "sting"}, {"t": "say", "who": "lu", "s": "我的。这里一直是我的卧室。", "e": "serious"}, {"t": "say", "who": "lin", "s": "你刚才为什么不纠正我？", "e": "doubt"}, {"t": "say", "who": "lu", "s": "我怕你知道以后，就不肯再进来。", "e": "avoid", "act": "sigh"}, {"t": "say", "who": "lin", "s": "那晚呢？我为什么会来？", "e": "serious"}, {"t": "say", "who": "lu", "s": "你说有人要杀你。你不肯回自己的房间。", "e": "serious"}, {"t": "act", "s": "暖色台灯。床沿。你抓住了一截衣袖。", "img": "memory", "mem": true, "sfx": "cloth"}, {"t": "say", "who": "lin", "s": "今晚……你能不能别走？", "name": "林栖（记忆）", "mem": true}, {"t": "say", "who": "lu", "s": "好。我在。", "name": "陆沉舟（记忆）", "mem": true}, {"t": "act", "s": "回到现在。他向前一步，你抬眼，他停下。", "who": "lu", "img": "", "e": "calm", "act": "nearback"}, {"t": "say", "who": "lin", "s": "是我让你留下的。", "e": "soft"}, {"t": "say", "who": "lu", "s": "是。", "e": "calm"}, {"t": "say", "who": "lin", "s": "那医生遇害的时候，你还在这里吗？", "e": "serious"}, {"t": "act", "s": "室内的声音淡下去，只剩雨声。", "who": "lu", "e": "serious", "rain": 0.9, "sfx": "sting"}, {"t": "say", "who": "lu", "s": "我答应过不走。但那晚，我确实离开过。", "e": "serious"}, {"t": "choice", "q": "你要怎么回应？", "rain": 0.5, "opts": [{"k": "A", "s": "坐下，把你离开的原因说清楚。", "go": "A"}, {"k": "B", "s": "这次，你还会走吗？", "go": "B"}]}, {"t": "label", "id": "A"}, {"t": "act", "s": "你指向扶手椅，自己坐在床边，保持能看清他的距离。", "who": "lin", "e": "serious"}, {"t": "say", "who": "lin", "s": "这次别省略。我自己判断。", "e": "serious"}, {"t": "say", "who": "lu", "s": "好。从叫我出去的那条消息开始。", "e": "serious", "act": "nod"}, {"t": "goto", "id": "common"}, {"t": "label", "id": "B"}, {"t": "act", "s": "你拉住他的领带，让他停在一步以内。你们对视，他没有再贴近。", "who": "lu", "e": "calm", "act": "near", "sfx": "cloth"}, {"t": "say", "who": "lu", "s": "你要我留下？", "e": "smile"}, {"t": "say", "who": "lin", "s": "留下解释。别把这当成我已经信了你。", "e": "serious"}, {"t": "say", "who": "lu", "s": "好。这次听你的。", "e": "calm", "act": "normal"}, {"t": "label", "id": "common"}, {"t": "act", "s": "他坐到扶手椅上。你把耳饰放回盘中，坐下与他交谈。", "who": "lu", "e": "calm", "act": "normal"}, {"t": "say", "who": "lin", "s": "先从我为什么害怕说起。", "e": "soft"}, {"t": "end", "clear": true, "chapter": "第一章 · 他的卧室，我的耳饰", "title": "你找回了耳饰，\n也记起了自己曾向他求助。", "record": "你要求他留下，把过去讲清楚。", "next": "下一段：那条叫走他的消息，与你当时害怕的人。", "button": "保存这间房间"}]}};
 
 };
 window.__G=__req("main");window.__G.boot();

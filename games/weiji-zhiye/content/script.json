@@ -14,7 +14,9 @@
     "serious",
     "soft"
    ],
-   "images": {}
+   "images": {
+    "base": "images/lin_calm.png"
+   }
   },
   {
    "id": "lu",
@@ -28,7 +30,12 @@
     "avoid",
     "serious"
    ],
-   "images": {}
+   "images": {
+    "calm": "images/lu_calm.png",
+    "smile": "images/lu_smile.png",
+    "avoid": "images/lu_avoid.png",
+    "serious": "images/lu_serious.png"
+   }
   }
  ],
  "scenes": {

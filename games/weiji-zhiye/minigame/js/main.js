@@ -203,7 +203,19 @@ function boot() {
   require('./room');
   require('./story');
   require('./world');
-  G.scene = G.scenes.title();
+  // 预加载剧本里登记的立绘，等正式美术全部到位（最多 10 秒）再进标题，避免先闪占位图
+  (G.content.characters || []).forEach((c) => {
+    const imgs = c.images || {};
+    Object.keys(imgs).forEach((k) => Art.charImage(imgs[k]));
+  });
+  G.scene = {
+    t: 0,
+    update(dt) { this.t += dt; if ((Art.pending <= 0 || this.t > 10) && !G.fade.next) G.go(() => G.scenes.title()); },
+    draw() {
+      G.R.rect(0, 0, G.view.w, G.view.h, [0.04, 0.045, 0.06, 1]);
+      if (this.t > 0.3) T.draw('加载中…', 375, G.view.h * 0.5, { size: 26, color: '#8d8476', anchor: 'center' });
+    },
+  };
   P.onTouch({ down: onDown, move: onMove, up: onUp, wheel: onWheel });
   P.onHide(() => S.write());
   // 配置工具预览：收到剧本后直接从指定句开始播放，不读写存档

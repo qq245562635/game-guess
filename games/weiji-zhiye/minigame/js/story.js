@@ -79,8 +79,8 @@ class StoryScene {
 
   layoutCam() {
     const v = G.view;
-    const z = Math.max(v.w / 750, v.h * 0.74 / 1000);
-    this.baseCam = { x: 390, y: 520, z, cx: v.w / 2, cy: v.h * 0.4 };
+    const z = Math.max(v.w / D.ROOM_W, v.h * 0.5 / D.ROOM_H);
+    this.baseCam = { x: D.ROOM_W / 2, y: D.ROOM_H / 2 - 10, z, cx: v.w / 2, cy: v.h * 0.4 };
   }
   onResize() { this.layoutCam(); }
   camTarget() {

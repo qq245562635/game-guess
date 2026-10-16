@@ -20,7 +20,8 @@ function drawRoomWorld(cam, placed, o) {
   const xf = camXform(cam);
   R.setTransform(xf[0], xf[1], xf[2]);
   const tint = o.gray ? [0.42, 0.44, 0.5] : [1, 1, 1];
-  R.draw(Art.room, 0, 0, 750, 1000, { color: tint });
+  const RW = D.ROOM_W, RH = D.ROOM_H;
+  R.draw(Art.room, 0, 0, RW, RH, { color: tint });
   const wn = D.SPOTS.window;
   if (!o.gray) {
     const t = o.t || 0;
@@ -47,14 +48,14 @@ function drawRoomWorld(cam, placed, o) {
   }
   if (!o.gray) {
     const light = o.light || 0;
-    R.rect(-200, -200, 1150, 1400, [0.02, 0.04, 0.1, 0.3 * (1 - light)]);
+    R.rect(-200, -200, RW + 400, RH + 400, [0.02, 0.04, 0.1, 0.3 * (1 - light)]);
     R.setBlend('add');
     R.draw(Art.glow, wn.x - 70, wn.y - 50, wn.w + 140, wn.h + 140, { color: [0.45, 0.6, 1], alpha: 0.13 });
     if (placed.has('R12')) {
       const l = D.SPOTS.lamp;
       R.draw(Art.glow, l.x - 180, l.y - 150, 360, 320, { color: [1, 0.72, 0.4], alpha: 0.36 + 0.18 * light });
     }
-    if (light > 0) R.draw(Art.glow, -80, 40, 920, 900, { color: [1, 0.74, 0.46], alpha: 0.16 * light });
+    if (light > 0) R.draw(Art.glow, -80, -40, RW + 160, RH + 80, { color: [1, 0.74, 0.46], alpha: 0.16 * light });
     R.setBlend('alpha');
   }
   R.resetTransform();
@@ -62,8 +63,8 @@ function drawRoomWorld(cam, placed, o) {
 
 // 预览缩略图（世界入口用）
 function drawRoomThumb(x, y, w, h, placed, o) {
-  const z = Math.min(w / 750, h / 1000);
-  drawRoomWorld({ x: 375, y: 500, z, cx: x + w / 2, cy: y + h / 2 }, placed, o);
+  const z = Math.min(w / D.ROOM_W, h / D.ROOM_H);
+  drawRoomWorld({ x: D.ROOM_W / 2, y: D.ROOM_H / 2, z, cx: x + w / 2, cy: y + h / 2 }, placed, o);
 }
 
 class RoomScene {
@@ -83,7 +84,7 @@ class RoomScene {
     this.doneT = mode === 'done' ? 1 : 0;
     this.saveTimer = 0;
     this.layout();
-    this.cam = { x: 375, y: 500, z: this.fitZ, cx: this.cx, cy: this.cy };
+    this.cam = { x: D.ROOM_W / 2, y: D.ROOM_H / 2, z: this.fitZ, cx: this.cx, cy: this.cy };
     this.camT = null;
     if (mode === 'view') { sv.stats.revisits++; G.persist(); }
     this.fixGroup();
@@ -101,7 +102,7 @@ class RoomScene {
     const v = G.view;
     this.top = v.safeTop + 120;
     this.bottom = this.mode === 'play' ? v.h - this.bookH - 6 : v.h - (this.mode === 'done' ? 170 : 40) - v.safeBottom;
-    this.fitZ = Math.min(v.w / 770, (this.bottom - this.top) / 1020);
+    this.fitZ = Math.min(v.w / (D.ROOM_W + 20), (this.bottom - this.top) / (D.ROOM_H + 20));
     this.minZ = this.fitZ; this.maxZ = this.fitZ * 2.8;
     this.cx = v.w / 2; this.cy = (this.top + this.bottom) / 2;
   }
@@ -110,8 +111,9 @@ class RoomScene {
   clamp() {
     const c = this.cam;
     const hw = G.view.w / 2 / c.z, hh = (this.bottom - this.top) / 2 / c.z;
-    c.x = hw * 2 >= 750 ? 375 : Math.max(hw - 30, Math.min(780 - hw, c.x));
-    c.y = hh * 2 >= 1000 ? 500 : Math.max(hh - 30, Math.min(1030 - hh, c.y));
+    const W = D.ROOM_W, H = D.ROOM_H;
+    c.x = hw * 2 >= W ? W / 2 : Math.max(hw - 30, Math.min(W + 30 - hw, c.x));
+    c.y = hh * 2 >= H ? H / 2 : Math.max(hh - 30, Math.min(H + 30 - hh, c.y));
   }
   s2w(x, y) { const c = this.cam; return { x: (x - c.cx) / c.z + c.x, y: (y - c.cy) / c.z + c.y }; }
   w2s(x, y) { const c = this.cam; return { x: (x - c.x) * c.z + c.cx, y: (y - c.y) * c.z + c.cy }; }
@@ -233,7 +235,7 @@ class RoomScene {
     this.drag = null;
     this.pointers.clear();
     this.layout();
-    this.camT = { x: 375, y: 500, z: this.fitZ, cy: this.cy };
+    this.camT = { x: D.ROOM_W / 2, y: D.ROOM_H / 2, z: this.fitZ, cy: this.cy };
     setTimeout(() => A.play('chime'), 260);
   }
 
