@@ -1,0 +1,126 @@
+<title>樱花镇渲染样片</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap">
+<style>
+/* Layout: full-bleed WebGL canvas; frosted-cream game HUD floating at the corners. Single deliberate look (a game screen), no theme switching. */
+:root{
+  --glass: rgba(255,251,244,.82);
+  --glass-strong: rgba(255,252,247,.94);
+  --edge: rgba(255,255,255,.95);
+  --ink: #3d3a34;
+  --muted: #8a857a;
+  --accent: #3c8c78;
+  --accent-soft: #dcefe8;
+  --off: #d9d3c7;
+  --font-ui: "Nunito", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  color-scheme: light;
+}
+html,body{height:100%;margin:0;overflow:hidden;background:#cfe3d4;color:var(--ink);font-family:var(--font-ui)}
+#view{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none;outline:none}
+.glass{background:var(--glass);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border:1.5px solid var(--edge);box-shadow:0 8px 28px rgba(80,60,40,.14)}
+
+#clock{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:calc(14px + env(safe-area-inset-right,0px));display:flex;align-items:center;gap:10px;padding:8px 16px 8px 10px;border-radius:999px;font-weight:800;font-size:17px;font-variant-numeric:tabular-nums;z-index:5}
+#clock .sun{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#ffe58a,#ffbf3c 70%);box-shadow:0 0 12px rgba(255,190,60,.7)}
+#clock .sep{width:1px;height:18px;background:#e2d9cb}
+#clock .season{font-size:14px;color:#d07a96;font-weight:800}
+
+#panel{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:calc(14px + env(safe-area-inset-left,0px));width:262px;max-height:calc(100% - 28px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;border-radius:20px;padding:14px 16px 16px;z-index:6;display:flex;flex-direction:column;gap:14px;font-size:14px}
+#panel header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.brand{font-weight:800;font-size:18px;letter-spacing:.02em;line-height:1.1}
+.brand small{display:block;font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-top:2px}
+.icon-btn{border:0;background:var(--accent-soft);color:var(--accent);font:inherit;font-weight:800;font-size:12.5px;padding:6px 11px;border-radius:999px;cursor:pointer}
+.icon-btn:focus-visible,.seg button:focus-visible,.sw input:focus-visible+span,input[type=range]:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stats div{background:var(--glass-strong);border-radius:12px;padding:7px 8px;text-align:center}
+.stats b{display:block;font-size:17px;font-variant-numeric:tabular-nums;line-height:1.15}
+.stats small{font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+h3{margin:0 0 7px;font-size:11.5px;letter-spacing:.12em;color:var(--muted);font-weight:800;display:flex;justify-content:space-between}
+h3 span{color:var(--ink);letter-spacing:0;font-size:13px;font-variant-numeric:tabular-nums}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:#efe8dc;border-radius:999px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;font:inherit;font-weight:800;color:var(--muted);padding:6px 0;border-radius:999px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff;box-shadow:0 2px 6px rgba(60,140,120,.35)}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;font-weight:700;user-select:none;padding:3px 0}
+.sw input{position:absolute;opacity:0;pointer-events:none}
+.sw span{position:relative;width:34px;height:20px;border-radius:999px;background:var(--off);flex:none;transition:background .2s}
+.sw span::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}
+.sw input:checked+span{background:var(--accent)}
+.sw input:checked+span::after{transform:translateX(14px)}
+input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0 6px}
+.note{margin:0;font-size:12px;line-height:1.55;color:var(--muted)}
+#panel.min > :not(header){display:none}
+#panel.min{width:auto}
+
+#keys{position:fixed;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 14px;max-width:calc(100% - 28px);padding:9px 16px;border-radius:999px;font-weight:700;font-size:13px;z-index:5}
+#keys kbd{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;margin-right:5px;border-radius:7px;background:#fff;border:1.5px solid #e3dbcd;font:inherit;font-size:11.5px;font-weight:800}
+#toast{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-8px);opacity:0;padding:10px 20px;border-radius:999px;font-weight:800;transition:opacity .35s,transform .35s;z-index:7;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast small{color:var(--accent);margin-left:8px;font-weight:700}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:#e9f1e4;font-weight:800;font-size:18px;color:var(--accent);z-index:10;transition:opacity .6s}
+#loading.done{opacity:0;pointer-events:none}
+#err{position:fixed;inset:auto 14px 70px;padding:12px 16px;border-radius:14px;background:#fff1ee;color:#9b3a2a;font-weight:700;z-index:11}
+body.hide-ui #panel,body.hide-ui #keys,body.hide-ui #clock{display:none}
+@media (max-width:640px){
+  #panel{width:220px;padding:12px}
+  #keys{display:none}
+  #clock{font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<canvas id="view" tabindex="0" aria-label="樱花镇 3D 场景"></canvas>
+
+<div id="clock" class="glass" aria-live="off"><div class="sun" id="sunDot"></div><span id="clockText">下午 1:10</span><div class="sep"></div><span class="season">春 · 第 3 天</span></div>
+
+<aside id="panel" class="glass">
+  <header>
+    <div class="brand">樱花镇<small>WEBGL 渲染样片 · THREE.JS</small></div>
+    <button class="icon-btn" id="collapse" type="button">收起</button>
+  </header>
+  <div class="stats" aria-label="性能">
+    <div><b id="fps">--</b><small>FPS</small></div>
+    <div><b id="calls">--</b><small>DRAW CALLS</small></div>
+    <div><b id="tris">--</b><small>三角面</small></div>
+  </div>
+  <section>
+    <h3>画质</h3>
+    <div class="seg" id="quality" role="group" aria-label="画质">
+      <button type="button" data-q="low">低</button>
+      <button type="button" data-q="mid">中</button>
+      <button type="button" data-q="high" class="on">高</button>
+    </div>
+  </section>
+  <section>
+    <h3>效果开关</h3>
+    <div class="toggles">
+      <label class="sw">阴影<input type="checkbox" id="t-shadow" checked><span></span></label>
+      <label class="sw">柔光<input type="checkbox" id="t-bloom" checked><span></span></label>
+      <label class="sw">景深<input type="checkbox" id="t-dof" checked><span></span></label>
+      <label class="sw">调色<input type="checkbox" id="t-grade" checked><span></span></label>
+      <label class="sw">风动<input type="checkbox" id="t-wind" checked><span></span></label>
+      <label class="sw">花瓣<input type="checkbox" id="t-petal" checked><span></span></label>
+    </div>
+  </section>
+  <section>
+    <h3>时间 <span id="hourLabel">13:10</span></h3>
+    <input type="range" id="hour" min="6" max="19.5" step="0.05" value="13.17" aria-label="时间">
+    <label class="sw">时间流动<input type="checkbox" id="t-flow"><span></span></label>
+  </section>
+  <p class="note">所有模型、贴图、着色器都由代码生成，没有用任何美术资源。站到河边按 <b>F</b> 可以钓鱼。</p>
+</aside>
+
+<div id="keys" class="glass">
+  <span><kbd>WASD</kbd>移动</span>
+  <span><kbd>Shift</kbd>奔跑</span>
+  <span><kbd>点击</kbd>前往</span>
+  <span><kbd>Q</kbd><kbd>E</kbd>转视角</span>
+  <span><kbd>滚轮</kbd>缩放</span>
+  <span><kbd>H</kbd>隐藏界面</span>
+</div>
+<div id="toast" class="glass"></div>
+<div id="loading">正在生成小镇…</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+<script>
+/*GAME*/
+</script>
