@@ -70,8 +70,6 @@ function render(){
   for(const d of G.dests)R.line(px(d.door),py(d.door),px(d.inner),py(d.inner),S*.62,road);
   for(const[i,set]of G.adj)for(const j of set)if(j>i)R.line(px(i),py(i),px(j),py(j),S*.62,road);
   for(const[i,n]of G.nodes)if(n.kind!=='house')R.circle(px(i),py(i),S*.31,road);
-  // 车流染色
-  for(const h of G.heat.values()){if(!nb(h.a).has(h.b))continue;R.line(px(h.a),py(h.a),px(h.b),py(h.b),S*.2,CA(PAL[h.c].c,.5*h.v))}
   // 环岛 / 红绿灯
   for(const[i,n]of G.nodes){
     if(n.ra){R.circle(px(i),py(i),S*.5,road);R.circle(px(i),py(i),S*.18,land)}
@@ -168,6 +166,7 @@ function render(){
     q=at(-S*.065,0);R.rectRot(q[0],q[1],ux,uy,S*.29,S*.23,S*.05,C(p.c));
     q=at(S*.16,0);R.rectRot(q[0],q[1],ux,uy,S*.12,S*.2,S*.04,C(p.d));
     q=at(S*.18,0);R.rectRot(q[0],q[1],ux,uy,S*.04,S*.15,0,CA('#ffffff',.75));
+    if(c.halt>0.25){q=at(-S*.22,0);R.circle(q[0],q[1],S*.2,CA('#ff3b30',.28),S*.16);for(const sgn of[-1,1]){q=at(-S*.21,sgn*S*.07);R.circle(q[0],q[1],Math.max(1.6,S*.055),C('#ff3b30'))}}   // 堵住时亮刹车灯 + 红色光晕
     if(c.state==='out'){q=at(-S*.07,S*.01);R.img(SPR.bagFill(tb),q[0],q[1],tb,tb,PAPER,ux,uy);R.img(SPR.bagLine(tb),q[0],q[1],tb,tb,C(p.d),ux,uy)}
     else{q=at(S*.04,0);R.circle(q[0],q[1],S*.04,C(blink?'#ffbf3c':'#d98b0a'))}
   }

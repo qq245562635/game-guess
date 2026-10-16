@@ -4,12 +4,14 @@
    界面回调走全局 UI（toast / week / over / bump / reset）。tools/ 里的模拟脚本只加载这一个文件。 */
 /* ===== tunables ===== */
 /* 节奏 v2（试玩反馈"太难、太快"后放缓）：括号里是 v1 / 彩路小镇的原值 */
-const CFG={weekLen:70/*60*/,timerMax:40/*25*/,timerRecover:1/*0.6*/,pinBase:14/*11*/,pinScale:420/*280*/,
-  houseEvery:13/*8.5*/,destFirst:60/*40*/,destEvery:100/*72*/,firstPin:[15,20]/*[5,9]*/,
-  carSpeed:2.7/*2.4*/,mwBoost:2.3,startRoads:44/*36*/,startBridges:2/*1*/,carsPerHouse:2,dayCycle:140,
+/* v6（试玩：车太少、没堵车）：垃圾袋出得更快、每户 3 辆车、厂能多堆几袋；路口有通行容量，见 jxCap */
+const CFG={weekLen:70,timerMax:40,timerRecover:1,pinBase:5.5/*v5 14*/,pinScale:420,
+  houseEvery:13,destFirst:60,destEvery:100,firstPin:[15,20],
+  carSpeed:2.7,mwBoost:2.3,startRoads:44,startBridges:2,carsPerHouse:3/*v5 2*/,dayCycle:140,
+  capSq:9/*v5 7*/,capCi:13/*v5 10*/,
   /* 督导员突击检查 */
-  inspFirst:[150,200]/*[75,115]*/, inspEvery:[2,3], inspTime:90, inspNeed:5/*6*/, inspNeedStep:1/*2*/, inspNeedMax:10/*14*/,
-  inspPinRate:1.6/*2*/, inspReward:15, inspPenalty:3};
+  inspFirst:[150,200], inspEvery:[2,3], inspTime:90, inspNeed:8, inspNeedStep:2, inspNeedMax:16,
+  inspPinRate:1.6, inspReward:15, inspPenalty:3};
 /* 国标四分类色：0 可回收物 蓝 / 1 有害垃圾 红 / 2 湿垃圾 绿 / 3 干垃圾 灰 */
 const PAL=[
   {c:'#3b78c4',d:'#28568f',name:'可回收物',plant:'可回收分拣中心'},
@@ -87,7 +89,7 @@ function newGame(lvIdx){
   G={t:0,score:0,roads:K.startRoads,items,week:1,nextWeek:K.weekLen,
     water:new Uint8Array(cols*rows),occ:new Int16Array(cols*rows).fill(-1),
     nodes:new Map(),adj:new Map(),mws:[],mwSeq:1,mwDeg:new Map(),dests:[],houses:[],cars:[],
-    colorsActive:lv?lv.colors:2,nextHouse:10,nextDest:K.destFirst,strokes:[],flash:[],served:new Set(),live:new Set(),heat:new Map(),sweeps:[],floats:[],dirty:false,over:false,bridgeSeq:1,dispatchT:0,mwStart:-1,modal:false,fx:[],demo:false,
+    colorsActive:lv?lv.colors:2,nextHouse:10,nextDest:K.destFirst,strokes:[],flash:[],served:new Set(),live:new Set(),jx:new Map(),sweeps:[],floats:[],dirty:false,over:false,bridgeSeq:1,dispatchT:0,mwStart:-1,modal:false,fx:[],demo:false,
     insp:null,nextInsp:lv&&!lv.insp?Infinity:range(K.inspFirst),inspCount:0,inspPassed:0,beepT:0,
     lv,lvIdx:lv?lvIdx:null,land,won:false,everTimer:false,area:{x0:0,y0:0,x1:cols,y1:rows}};
   if(lv&&lv.area){const[w,h]=land?[lv.area.start[1],lv.area.start[0]]:lv.area.start;
@@ -144,7 +146,7 @@ function spawnDest(color,shape){
   if(!cands.length)return null;
   {const{x,y,dd,fp}=cands.sort((a,b)=>b.sc-a.sc)[0];
     const id=G.dests.length;
-    const d={id,x,y,color,shape,cap:shape==='sq'?7:10,door:I(dd[0],dd[1]),inner:I(dd[2],dd[3]),pins:0,assigned:0,timer:0,nextPin:range(K.firstPin),born:G.t};
+    const d={id,x,y,color,shape,cap:shape==='sq'?K.capSq:K.capCi,door:I(dd[0],dd[1]),inner:I(dd[2],dd[3]),pins:0,assigned:0,timer:0,nextPin:range(K.firstPin),born:G.t};
     fp.forEach(i=>G.occ[i]=id);
     G.nodes.set(d.door,{kind:'door',dest:d}); G.adj.set(d.door,new Set());
     G.dests.push(d); return d;
@@ -301,6 +303,7 @@ function sendHome(c,from){
 }
 function arrive(c){
   const at=c.path[c.path.length-1];
+  jxRelease(c);
   if(c.state==='out'){const d=c.dest;d.pins=Math.max(0,d.pins-1);d.assigned--;G.score++;d.timer=Math.max(0,d.timer-3);if(G.lv&&!G.won&&G.score>=G.lv.goal)levelWin();
     G.fx.push({x:X(d.door)+.5,y:Y(d.door)+.5,t:0,c:PAL[d.color].c});
     const now=P.now();d.bump=now;G.floats.push({x:X(d.door)+.5,y:Y(d.door)+.1,text:'+1',color:PAL[d.color].d,t:now,small:true});bumpScore();
@@ -308,9 +311,10 @@ function arrive(c){
     sfx(G.score%10===0?'ding':'clank',0.12);sendHome(c,at)}
   else c.state='idle';
 }
-function teleportHome(c){if(c.state==='out'&&c.dest)c.dest.assigned--;c.dest=null;c.state='idle'}
+function teleportHome(c){jxRelease(c);if(c.state==='out'&&c.dest)c.dest.assigned--;c.dest=null;c.state='idle'}
 function replanAll(){
-  for(const c of G.cars){
+  G.jx=new Map();
+  for(const c of G.cars){c.jx=null;
     if(c.state==='stuck'){if(!G.nodes.has(c.at))teleportHome(c);continue}
     if(c.state!=='out'&&c.state!=='back')continue;
     const a=c.path[c.i],b=c.path[c.i+1];let start,keep;
@@ -340,6 +344,18 @@ function dispatch(){
     }
   }
 }
+/* 路口通行（v6）：三条以上的路交汇的普通路口一次只能过一辆车，其余在路口前排队；
+   红绿灯路口按灯放行、同时最多 2 辆；环岛同时最多 3 辆、几乎不减速。等太久（5 秒）强行通过，防止死锁。 */
+const JX_ZONE=0.5;
+const jxCap=n=>n.ra?3:n.light?2:1;
+function jxRelease(c){if(c.jx!=null){const s=G.jx.get(c.jx);if(s)s.delete(c);c.jx=null}c.wait=0}
+function jxTry(c,node,force){
+  let s=G.jx.get(node);if(!s){s=new Set();G.jx.set(node,s)}
+  if(s.has(c))return true;
+  for(const o of s)if(o.state==='idle'||o.state==='stuck'||o.jx!==node)s.delete(o);   // 清掉失效的占用
+  if(s.size>=jxCap(G.nodes.get(node))&&!force)return false;
+  jxRelease(c);s.add(c);c.jx=node;return true;
+}
 function updateCar(c,dt){
   if(c.state==='idle')return;
   if(c.state==='stuck'){
@@ -351,13 +367,17 @@ function updateCar(c,dt){
   let v=K.carSpeed*(grid?1:K.mwBoost);
   if(grid){
     const na=G.nodes.get(a),nb=G.nodes.get(b);
-    const f=n=>n.ra?0.85:n.light?1:0.42;
+    const f=n=>n.ra?0.85:n.light?1:0.28;
     if(c.p>L-0.45&&deg(b)>=3)v*=f(nb);else if(c.p<0.45&&deg(a)>=3)v*=f(na);
     if(nb.light&&deg(b)>=3){
       const green=(Math.floor(G.t/2.6)%2===0)?'h':'v', axis=Y(a)===Y(b)?'h':'v', stop=L-0.55;
       if(axis!==green&&c.p<=stop+1e-6&&c.p+v*dt>stop){c.p=stop;v=0}
     }
-  }
+    if(c.jx===a&&c.p>=JX_ZONE)jxRelease(c);                         // 已驶出路口
+    if(v>0&&deg(b)>=3&&nb.kind==='road'&&c.jx!==b&&c.p+v*dt>L-JX_ZONE){ // 要进路口
+      if(!jxTry(c,b,(c.wait||0)>5)){c.p=Math.max(c.p,Math.min(c.p+v*dt,L-JX_ZONE));v=0;c.wait=(c.wait||0)+dt}
+    }
+  }else if(c.jx!=null)jxRelease(c);
   if(v>0)for(const o of G.cars){
     if(o===c||o.state==='idle'||o.state==='stuck')continue;
     const dx=o.px-c.px,dy=o.py-c.py,fwd=dx*c.hx+dy*c.hy;
@@ -365,7 +385,7 @@ function updateCar(c,dt){
     if(Math.abs(-dx*c.hy+dy*c.hx)>0.17)continue;
     if(o.hx*c.hx+o.hy*c.hy>0.3){v=0;break}
   }
-  if(grid&&v>0){const k=a<b?a*65536+b:b*65536+a,h=G.heat.get(k);if(h){h.v=1;h.c=c.color}else G.heat.set(k,{a,b,v:1,c:c.color})}
+  c.halt=v===0?(c.halt||0)+dt:0;   // 停了多久，画刹车灯用
   c.p+=v*dt;
   if(c.p>=L){c.p-=L;c.i++;if(c.i>=c.path.length-1){arrive(c);return}}
   computePos(c);
@@ -473,7 +493,6 @@ function update(dt){
   G.dispatchT-=dt;if(G.dispatchT<=0){dispatch();G.dispatchT=0.25}
   for(const c of G.cars)updateCar(c,dt);
   for(const f of G.fx)f.t+=dt;G.fx=G.fx.filter(f=>f.t<(f.big?1.2:0.6));
-  for(const[k,h]of G.heat){h.v-=dt*0.55;if(h.v<=0)G.heat.delete(k)}
   if(G.floats.length>80)G.floats.splice(0,G.floats.length-80);
 }
 
