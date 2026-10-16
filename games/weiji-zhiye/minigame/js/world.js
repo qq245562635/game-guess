@@ -144,7 +144,7 @@ class WorldScene {
       '合计：' + f(s.groupSec[0] + s.groupSec[1] + s.groupSec[2]),
       '放错次数：' + s.misses + '　提示次数：' + s.hints,
       '回访房间：' + s.revisits + '　回顾剧情：' + s.replays,
-      '选择：' + (G.save.choice ? G.save.choice + ' ' + D.CHOICE_TEXT[G.save.choice] : '—'),
+      '选择：' + (G.save.choice ? G.save.choice + ' ' + (G.choiceText(G.save.choice) || '') : '—'),
       '意愿：' + (G.save.feedback || '—'),
     ].join('\n');
     G.openModal('试玩记录', body, [{ label: '关闭' }]);

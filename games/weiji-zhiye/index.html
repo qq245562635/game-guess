@@ -337,7 +337,7 @@ const STICKERS = {
 
 // ---------- 立绘 ----------
 const PW = 520, PH = 880;
-function drawPortraitBase(c) {
+function drawLuBase(c) {
   const skin = '#f1d9c9', hair = '#1c1d24';
   // 后发
   ell(c, 260, 285, 118, 116); fill(c, hair);
@@ -384,7 +384,7 @@ function drawPortraitBase(c) {
   c.beginPath(); c.moveTo(196, 214); c.quadraticCurveTo(250, 196, 300, 210); stroke(c, 'rgba(120,130,160,0.35)', 4);
 }
 // 表情层：覆盖在 (140,260) 处，尺寸 240×170
-function drawFace(c, kind) {
+function drawLuFace(c, kind) {
   const eye = (x, y, open, look) => {
     c.save(); c.translate(x, y);
     c.beginPath(); c.moveTo(-22, 0); c.quadraticCurveTo(0, -open, 22, 0); c.quadraticCurveTo(0, open * 0.7, -22, 0); c.closePath();
@@ -415,6 +415,87 @@ function drawFace(c, kind) {
     eye(78, 78, 8.5, 0); eye(162, 78, 8.5, 0);
     brow(78, 52, -5); brow(162, 52, 5);
     c.beginPath(); c.moveTo(104, 150); c.lineTo(136, 150); stroke(c, '#9a5e52', 3);
+  }
+}
+
+// 林栖：长发、高领衬衫、淡紫披肩
+function drawLinBase(c) {
+  const skin = '#f4dccd', hair = '#3a2722';
+  // 后发（长发垂到胸前）
+  c.beginPath(); c.moveTo(150, 290); c.quadraticCurveTo(110, 520, 128, 720); c.lineTo(392, 720);
+  c.quadraticCurveTo(410, 520, 370, 290); c.quadraticCurveTo(362, 170, 260, 170); c.quadraticCurveTo(158, 170, 150, 290); c.closePath();
+  fill(c, lg(c, 0, 170, 0, 720, ['#40302a', '#2c1f1b']));
+  // 身体
+  c.beginPath(); c.moveTo(56, 880); c.lineTo(78, 690); c.quadraticCurveTo(100, 584, 204, 552); c.lineTo(316, 552);
+  c.quadraticCurveTo(420, 584, 442, 690); c.lineTo(464, 880); c.closePath();
+  fill(c, lg(c, 0, 552, 0, 880, ['#f1e9de', '#cbbfaf']));
+  [[230, 600, 236, 880], [290, 600, 284, 880]].forEach((l) => line(c, l[0], l[1], l[2], l[3], 'rgba(120,100,80,0.18)', 2));
+  // 颈与高领
+  rr(c, 234, 430, 52, 112, 18); fill(c, '#ecccb9');
+  ell(c, 260, 462, 32, 12); fill(c, 'rgba(0,0,0,0.1)');
+  rr(c, 220, 520, 80, 44, 12); fill(c, lg(c, 0, 520, 0, 564, ['#fbf6ef', '#e3d8ca']));
+  c.beginPath(); c.arc(260, 572, 7, 0, PI * 2); fill(c, '#d8c08a');
+  // 披肩
+  const shawl = (flip) => {
+    c.save(); if (flip) { c.translate(520, 0); c.scale(-1, 1); }
+    c.beginPath(); c.moveTo(56, 880); c.lineTo(76, 690); c.quadraticCurveTo(100, 590, 196, 562);
+    c.quadraticCurveTo(232, 600, 226, 650); c.quadraticCurveTo(180, 760, 168, 880); c.closePath();
+    fill(c, lg(c, 0, 560, 0, 880, ['#c8b3d4', '#8f78a2']));
+    for (let x = 172; x < 226; x += 7) line(c, x, 862 - (x - 172) * 2.2, x - 2, 880 - (x - 172) * 2.2, 'rgba(255,255,255,0.18)', 1.5);
+    c.beginPath(); c.moveTo(110, 700); c.quadraticCurveTo(150, 640, 196, 600); stroke(c, 'rgba(60,40,80,0.2)', 3);
+    c.restore();
+  };
+  shawl(false); shawl(true);
+  // 耳与脸
+  ell(c, 176, 350, 9, 17); fill(c, '#ecccb9'); ell(c, 344, 350, 9, 17); fill(c, '#ecccb9');
+  c.beginPath(); c.moveTo(178, 300); c.bezierCurveTo(176, 410, 226, 464, 260, 472);
+  c.bezierCurveTo(294, 464, 344, 410, 342, 300); c.bezierCurveTo(342, 200, 178, 200, 178, 300); c.closePath();
+  fill(c, lg(c, 0, 220, 0, 472, [skin, '#efd1c0']));
+  c.beginPath(); c.moveTo(262, 360); c.quadraticCurveTo(266, 380, 258, 386); stroke(c, 'rgba(170,110,90,0.35)', 2);
+  // 侧发
+  c.beginPath(); c.moveTo(180, 262); c.quadraticCurveTo(150, 380, 168, 486); c.lineTo(186, 472); c.quadraticCurveTo(178, 370, 196, 284); c.closePath(); fill(c, hair);
+  c.beginPath(); c.moveTo(340, 262); c.quadraticCurveTo(370, 380, 352, 486); c.lineTo(334, 472); c.quadraticCurveTo(342, 370, 324, 284); c.closePath(); fill(c, hair);
+  // 斜刘海
+  c.beginPath(); c.moveTo(158, 330); c.quadraticCurveTo(140, 182, 262, 176); c.quadraticCurveTo(384, 182, 364, 330);
+  c.quadraticCurveTo(352, 250, 292, 230); c.quadraticCurveTo(252, 268, 204, 306); c.quadraticCurveTo(190, 266, 180, 254);
+  c.quadraticCurveTo(166, 292, 158, 330); c.closePath(); fill(c, hair);
+  c.beginPath(); c.moveTo(208, 206); c.quadraticCurveTo(262, 190, 318, 208); stroke(c, 'rgba(200,150,120,0.25)', 4);
+}
+function drawLinFace(c, kind) {
+  const eye = (x, y, open, look) => {
+    c.save(); c.translate(x, y);
+    c.beginPath(); c.moveTo(-23, 1); c.quadraticCurveTo(0, -open, 23, 0); c.quadraticCurveTo(0, open * 0.8, -23, 1); c.closePath();
+    fill(c, '#fbf6f3');
+    c.save(); c.clip();
+    c.beginPath(); c.arc(look, 1, 10, 0, PI * 2); fill(c, '#4a3128');
+    c.beginPath(); c.arc(look, 2, 5, 0, PI * 2); fill(c, '#24160f');
+    c.beginPath(); c.arc(look - 3, -3, 2.6, 0, PI * 2); fill(c, '#ffffff');
+    c.beginPath(); c.arc(look + 3.5, 5, 1.3, 0, PI * 2); fill(c, 'rgba(255,255,255,0.8)');
+    c.restore();
+    c.beginPath(); c.moveTo(-25, 2); c.quadraticCurveTo(0, -open - 1.5, 25, 0); c.lineTo(29, -4); stroke(c, '#20140f', 3.6);
+    c.restore();
+  };
+  const brow = (x, y, tilt) => {
+    c.beginPath(); c.moveTo(x - 20, y + tilt); c.quadraticCurveTo(x, y - 5, x + 20, y - tilt); stroke(c, '#3a2722', 3);
+  };
+  const lips = '#c27a74';
+  if (kind === 'doubt') {
+    eye(78, 78, 11, 4); eye(162, 78, 12, 4);
+    brow(78, 46, 1); brow(162, 38, -4);
+    c.beginPath(); c.moveTo(110, 146); c.quadraticCurveTo(122, 144, 132, 148); stroke(c, lips, 2.6);
+  } else if (kind === 'serious') {
+    eye(78, 78, 11, 0); eye(162, 78, 11, 0);
+    brow(78, 48, -4); brow(162, 48, 4);
+    c.beginPath(); c.moveTo(108, 148); c.lineTo(132, 148); stroke(c, lips, 2.8);
+  } else if (kind === 'soft') {
+    eye(78, 80, 10, 0); eye(162, 80, 10, 0);
+    brow(78, 44, 2); brow(162, 44, -2);
+    ell(c, 56, 120, 16, 7); fill(c, 'rgba(240,140,140,0.28)'); ell(c, 184, 120, 16, 7); fill(c, 'rgba(240,140,140,0.28)');
+    c.beginPath(); c.moveTo(108, 144); c.quadraticCurveTo(120, 153, 133, 144); stroke(c, lips, 2.6);
+  } else { // calm
+    eye(78, 78, 13, 0); eye(162, 78, 13, 0);
+    brow(78, 44, 2); brow(162, 44, -2);
+    c.beginPath(); c.moveTo(110, 147); c.quadraticCurveTo(120, 150, 131, 147); stroke(c, lips, 2.6);
   }
 }
 
@@ -521,7 +602,7 @@ function drawMap(c, w, h) {
 const STK_K = 2.4, STK_M = 6;
 
 const Art = {
-  st: {}, room: null, glow: null, faces: {}, portrait: null, earring: null, memory: null, map: null,
+  st: {}, room: null, glow: null, chars: {}, imgs: {}, earring: null, memory: null, map: null,
   PW, PH, MAP_W, MAP_H, MAP_BEDROOM, STK_M,
   panels: new Map(),
 
@@ -541,8 +622,13 @@ const Art = {
       g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,0.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
       c.fillStyle = g; c.fillRect(0, 0, 128, 128);
     });
-    this.portrait = bake(PW, PH, k, drawPortraitBase);
-    ['calm', 'smile', 'avoid', 'serious'].forEach((e) => { this.faces[e] = bake(240, 170, k, (c) => drawFace(c, e)); });
+    const mk = (base, face, exprs) => {
+      const o = { base: bake(PW, PH, k, base), faces: {} };
+      exprs.forEach((e) => { o.faces[e] = bake(240, 170, k, (c) => face(c, e)); });
+      return o;
+    };
+    this.chars.lu = mk(drawLuBase, drawLuFace, ['calm', 'smile', 'avoid', 'serious']);
+    this.chars.lin = mk(drawLinBase, drawLinFace, ['calm', 'doubt', 'serious', 'soft']);
     this.earring = bake(690, 480, k, drawEarring);
     this.memory = bake(690, 480, k, drawMemory);
     this.map = bake(MAP_W, MAP_H, k, drawMap);
@@ -569,6 +655,21 @@ const Art = {
     R.draw(t, x - 2, y - 2, w + 4, h + 4, { alpha: alpha === undefined ? 1 : alpha });
   },
 
+  // 配置工具里给角色登记的立绘图（路径或 data URL）：异步加载，加载完成前返回 null
+  charImage(url) {
+    if (!url) return null;
+    const e = this.imgs[url];
+    if (e) return e.t;
+    this.imgs[url] = { t: null };
+    P.loadImage(url, (img) => {
+      const k = Math.min(2, R.pxPerUnit);
+      const s = Math.min(PW / img.width, PH / img.height);
+      const w = img.width * s, h = img.height * s;
+      this.imgs[url].t = bake(PW, PH, k, (c) => c.drawImage(img, (PW - w) / 2, PH - h, w, h));
+    }, () => { this.imgs[url].failed = true; });
+    return null;
+  },
+
   applyOverrides() {
     const map = D.ART_OVERRIDES || {};
     Object.keys(map).forEach((id) => {
@@ -583,11 +684,6 @@ const Art = {
           const old = this[id];
           this[id] = bake(dims[0], dims[1], 1.5, (c) => c.drawImage(img, 0, 0, dims[0], dims[1]));
           R.deleteTex(old);
-        } else if (id === 'portrait_base') {
-          const old = this.portrait; this.portrait = bake(PW, PH, 1.5, (c) => c.drawImage(img, 0, 0, PW, PH)); R.deleteTex(old);
-        } else if (id.indexOf('face_') === 0) {
-          const e = id.slice(5), old = this.faces[e];
-          this.faces[e] = bake(240, 170, 1.5, (c) => c.drawImage(img, 0, 0, 240, 170)); R.deleteTex(old);
         }
       });
     });
@@ -800,87 +896,20 @@ const SPOTS = {
   vanity: { x: 100, y: 690 },
 };
 
-// 剧情节点
-// t: cap 字幕 | say 对白 | act 动作叙述 | choice 选择 | goal 目标卡 | end 章节卡 | label | goto
-// 附加字段（进入节点时生效）：e 表情 show/hide 立绘 bg 背景 focus 镜头 img 近景 fx near/back sfx 音效 rain 雨声
-const SCRIPTS = {
-  intro: [
-    { t: 'cap', s: '一年前，一名医生死在这间卧室。', bg: 'empty', hide: 1 },
-    { t: 'cap', s: '你失去了那晚的部分记忆。\n陪你回来的人，曾是嫌疑人。' },
-    { t: 'act', s: '卧室门口。窗外下着雨，你手里拿着旧照片与物件记录。' },
-    { t: 'say', w: '林栖', s: '记录说，我那晚也来过这里。', show: 1, e: 'calm' },
-    { t: 'say', w: '陆沉舟', s: '来过。', e: 'calm' },
-    { t: 'say', w: '林栖', s: '这是当时安置我的客房？' },
-    { t: 'act', s: '他看了一眼房门。', e: 'avoid' },
-    { t: 'say', w: '陆沉舟', s: '……先看看你能认出什么。', e: 'avoid' },
-    { t: 'act', s: '你走近衣柜，袖口勾住了把手。他停在你身侧。', fx: 'near', sfx: 'cloth', e: 'calm' },
-    { t: 'say', w: '陆沉舟', s: '别急，线勾住了。我帮你？', e: 'calm' },
-    { t: 'say', w: '林栖', s: '只许碰袖口。' },
-    { t: 'act', s: '他解开勾住的线，随即松手。', fx: 'back', sfx: 'cloth' },
-    { t: 'say', w: '陆沉舟', s: '你以前也这么防着我。', e: 'smile' },
-    { t: 'say', w: '林栖', s: '客房里的东西，你也这么熟？' },
-    { t: 'say', w: '陆沉舟', s: '你想先听解释，还是自己看？', e: 'serious' },
-    { t: 'say', w: '林栖', s: '我先自己看。等房间还原好，你把省略的部分补上。' },
-    { t: 'say', w: '陆沉舟', s: '好。我在这里。', e: 'calm' },
-    { t: 'goal', hide: 1 },
-  ],
-  outro: [
-    { t: 'act', s: '还原好的卧室里，你的目光停在梳妆台上。', bg: 'full', focus: 'vanity', hide: 1 },
-    { t: 'say', w: '林栖', s: '等等。盘里那只耳饰……' },
-    { t: 'act', s: '收纳盘里是一只银色耳饰。你取出自己保存的另一只——两者成对。', img: 'earring' },
-    { t: 'say', w: '林栖', s: '我一直以为，另一只早就丢了。' },
-    { t: 'say', w: '陆沉舟', s: '那晚它勾住了你的披肩。你让我帮你取下来。', img: 0, focus: 'none', show: 1, e: 'calm' },
-    { t: 'say', w: '林栖', s: '我的披肩、你的衬衫，都留在这里。这里到底是谁的房间？' },
-    { t: 'act', s: '他看向床侧，没有再回避。', e: 'serious', sfx: 'sting' },
-    { t: 'say', w: '陆沉舟', s: '我的。这里一直是我的卧室。', e: 'serious' },
-    { t: 'say', w: '林栖', s: '你刚才为什么不纠正我？' },
-    { t: 'say', w: '陆沉舟', s: '我怕你知道以后，就不肯再进来。', e: 'avoid' },
-    { t: 'say', w: '林栖', s: '那晚呢？我为什么会来？' },
-    { t: 'say', w: '陆沉舟', s: '你说有人要杀你。你不肯回自己的房间。', e: 'serious' },
-    { t: 'act', s: '暖色台灯。床沿。你抓住了一截衣袖。', img: 'memory', mem: 1, sfx: 'cloth' },
-    { t: 'say', w: '林栖（记忆）', s: '今晚……你能不能别走？', mem: 1 },
-    { t: 'say', w: '陆沉舟（记忆）', s: '好。我在。', mem: 1 },
-    { t: 'act', s: '回到现在。他向前一步，你抬眼，他停下。', img: 0, fx: 'nearback', e: 'calm' },
-    { t: 'say', w: '林栖', s: '是我让你留下的。' },
-    { t: 'say', w: '陆沉舟', s: '是。', e: 'calm' },
-    { t: 'say', w: '林栖', s: '那医生遇害的时候，你还在这里吗？' },
-    { t: 'act', s: '室内的声音淡下去，只剩雨声。', rain: 0.9, sfx: 'sting', e: 'serious' },
-    { t: 'say', w: '陆沉舟', s: '我答应过不走。但那晚，我确实离开过。', e: 'serious' },
-    {
-      t: 'choice', q: '你要怎么回应？', rain: 0.5,
-      opts: [
-        { k: 'A', s: '坐下，把你离开的原因说清楚。', go: 'A' },
-        { k: 'B', s: '这次，你还会走吗？', go: 'B' },
-      ],
-    },
-    { t: 'label', id: 'A' },
-    { t: 'act', s: '你指向扶手椅，自己坐在床边，保持能看清他的距离。' },
-    { t: 'say', w: '林栖', s: '这次别省略。我自己判断。' },
-    { t: 'say', w: '陆沉舟', s: '好。从叫我出去的那条消息开始。', e: 'serious' },
-    { t: 'goto', id: 'common' },
-    { t: 'label', id: 'B' },
-    { t: 'act', s: '你拉住他的领带，让他停在一步以内。你们对视，他没有再贴近。', fx: 'near', sfx: 'cloth', e: 'calm' },
-    { t: 'say', w: '陆沉舟', s: '你要我留下？', e: 'smile' },
-    { t: 'say', w: '林栖', s: '留下解释。别把这当成我已经信了你。' },
-    { t: 'say', w: '陆沉舟', s: '好。这次听你的。', e: 'calm', fx: 'back' },
-    { t: 'label', id: 'common' },
-    { t: 'act', s: '他坐到扶手椅上。你把耳饰放回盘中，坐下与他交谈。', e: 'calm' },
-    { t: 'say', w: '林栖', s: '先从我为什么害怕说起。' },
-    {
-      t: 'end', hide: 1,
-      title: '你找回了耳饰，\n也记起了自己曾向他求助。',
-      record: '你要求他留下，把过去讲清楚。',
-    },
-  ],
-};
+// 剧情与角色：来自 content/script.json（构建时生成 script_data 模块），可用配置工具编辑
+const CONTENT = require('./script_data');
 
-const CHOICE_TEXT = { A: '「坐下，把你离开的原因说清楚。」', B: '「这次，你还会走吗？」' };
+// 立绘动作（配置工具里的下拉选项与此一致）
+const ACTIONS = {
+  enter: '入场', exit: '离场', near: '靠近', normal: '回到正常距离', far: '后退', nearback: '靠近后停住',
+  nod: '点头', shake: '摇头', jump: '吃惊', tremble: '颤抖', sigh: '低头', turn: '转身',
+};
 
 // 正式美术替换：在此登记 id → 图片路径，加载成功后自动替换程序占位图
 // 例：R01: 'images/R01.png', room: 'images/room.png', portrait_base: 'images/lu_base.png'
 const ART_OVERRIDES = {};
 
-module.exports = { ROOM_W, ROOM_H, GROUPS, ITEMS, BY_ID, SPOTS, SCRIPTS, CHOICE_TEXT, ART_OVERRIDES };
+module.exports = { ROOM_W, ROOM_H, GROUPS, ITEMS, BY_ID, SPOTS, CONTENT, ACTIONS, ART_OVERRIDES };
 
 };
 __defs["main"]=function(module,exports,require){
@@ -1084,12 +1113,21 @@ function boot() {
   A.on = S.d.sound;
   A.setOn(S.d.sound);
 
+  G.content = require('./data').CONTENT;
   require('./room');
   require('./story');
   require('./world');
   G.scene = G.scenes.title();
   P.onTouch({ down: onDown, move: onMove, up: onUp, wheel: onWheel });
   P.onHide(() => S.write());
+  // 配置工具预览：收到剧本后直接从指定句开始播放，不读写存档
+  P.onMessage((m) => {
+    if (!m || m.type !== 'weiji:preview' || !m.data) return;
+    G.content = m.data;
+    G.modal = null; G.fade.next = null; G.fade.a = 0; G.press = {};
+    G.scene = G.scenes.story(m.scene || 'intro', { preview: true, start: m.start || 0 });
+  });
+  P.postParent({ type: 'weiji:ready' });
   lastT = P.now();
   P.raf(frame);
 }
@@ -1195,6 +1233,15 @@ const P = {
     img.onload = () => ok(img);
     img.onerror = () => fail && fail();
     img.src = src;
+  },
+
+  // 配置工具预览：网页版被 iframe 嵌入时与父页面通信（小游戏里无效）
+  onMessage(fn) {
+    if (isWx || typeof window === 'undefined') return;
+    window.addEventListener('message', (e) => fn(e.data));
+  },
+  postParent(msg) {
+    try { if (!isWx && typeof window !== 'undefined' && window.parent && window.parent !== window) window.parent.postMessage(msg, '*'); } catch (e) { /* ignore */ }
   },
 
   onHide(fn) {
@@ -1815,7 +1862,8 @@ module.exports = S;
 
 };
 __defs["story"]=function(module,exports,require){
-// 剧情：线性对白、立绘、近景、记忆、一次选择、目标卡与章节卡（策划案 §4、§8）
+// 剧情：线性对白、谁发言显示谁的立绘、立绘动作、近景、记忆、选择、目标卡与章节卡（策划案 §4、§8）
+// 文案与角色来自 G.content（content/script.json），由配置工具编辑
 const G = require('./main');
 const D = require('./data');
 const Art = require('./art');
@@ -1823,31 +1871,73 @@ const T = require('./text');
 const A = require('./audio');
 const { drawRoomWorld, ALL, NONE } = require('./room');
 
-const NAME_COLOR = { '林栖': '#c9a27a', '陆沉舟': '#8197b4', '林栖（记忆）': '#d9a86a', '陆沉舟（记忆）': '#d9a86a' };
+const POS_X = { left: 240, center: 375, right: 510 };
+const TRANSIENT = { enter: 0.45, exit: 0.45, nod: 0.7, shake: 0.6, jump: 0.38, tremble: 1.0, sigh: 1.2 };
+
+// 立绘动作的瞬时偏移：返回 { dx, dy, al }
+function animOffset(an, side) {
+  if (!an) return { dx: 0, dy: 0, al: 1 };
+  const d = TRANSIENT[an.type] || 0.5, p = Math.min(1, an.t / d), e = 1 - Math.pow(1 - p, 3);
+  switch (an.type) {
+    case 'enter': return { dx: (1 - e) * side * 90, dy: 0, al: e };
+    case 'exit': return { dx: e * side * 90, dy: 0, al: 1 - e };
+    case 'nod': return { dx: 0, dy: 12 * Math.abs(Math.sin(p * Math.PI * 2)), al: 1 };
+    case 'shake': return { dx: 12 * Math.sin(p * Math.PI * 6) * (1 - p), dy: 0, al: 1 };
+    case 'jump': return { dx: 0, dy: -34 * Math.sin(p * Math.PI), al: 1 };
+    case 'tremble': return { dx: 3.5 * Math.sin(an.t * 70) * (1 - p), dy: 0, al: 1 };
+    case 'sigh': return { dx: 0, dy: 18 * Math.sin(p * Math.PI), al: 1 };
+    default: return { dx: 0, dy: 0, al: 1 };
+  }
+}
+
+function findChoiceText(content, k) {
+  if (!k || !content || !content.scenes) return null;
+  for (const key in content.scenes) {
+    for (const n of content.scenes[key]) {
+      if (n.t === 'choice') { const o = (n.opts || []).find((x) => x.k === k); if (o) return '「' + o.s + '」'; }
+    }
+  }
+  return null;
+}
+G.choiceText = (k) => findChoiceText(G.content, k);
 
 class StoryScene {
-  // key: 'intro' | 'outro'；review: 回顾模式，不改存档
-  constructor(key, review) {
+  // key: 'intro' | 'outro'；opt.review 回顾（沿用存档里的选择）；opt.preview 配置工具预览（不写存档）
+  constructor(key, opt) {
+    opt = typeof opt === 'object' && opt ? opt : { review: !!opt };
     this.key = key;
-    this.review = !!review;
-    this.nodes = D.SCRIPTS[key];
+    this.review = !!opt.review;
+    this.preview = !!opt.preview;
+    this.startAt = opt.start || 0;
+    this.data = G.content;
+    this.nodes = (this.data.scenes && this.data.scenes[key]) || [];
+    this.defs = {};
+    (this.data.characters || []).forEach((c) => { this.defs[c.id] = c; });
+    this.stage = this.data.stage === 'both' ? 'both' : 'speaker';
     this.labels = {};
     this.nodes.forEach((n, i) => { if (n.t === 'label') this.labels[n.id] = i; });
-    this.por = { on: false, a: 0, e: 'calm', pe: null, x: 1, s: 1, sT: 1, back: 0 };
+    this.reset();
+    this.layoutCam();
+    if (this.review && !this.preview) { G.save.stats.replays++; G.persist(); }
+    if (this.preview) this.previewTo(this.startAt);
+    else {
+      const start = this.review ? 0 : (G.save[key + 'Idx'] || 0);
+      if (start > 0) this.replayTo(start); else this.run(0);
+    }
+    this.cam = this.camTarget();
+    this.black = this.cur && this.cur.t === 'cap' ? 1 : 0;
+  }
+
+  reset() {
+    this.cs = {};
+    this.focusId = null;
     this.bg = 'empty';
     this.focus = null;
-    this.img = null; this.imgA = 0; this.imgK = 0;
+    this.img = null; this.lastImg = null; this.imgA = 0; this.imgK = 0;
     this.mem = false;
     this.black = 0;
     this.cur = null; this.idx = 0;
     this.reveal = 0; this.nodeT = 0;
-    this.layoutCam();
-    this.cam = Object.assign({}, this.baseCam);
-    if (review) { G.save.stats.replays++; G.persist(); }
-    const start = review ? 0 : (G.save[key + 'Idx'] || 0);
-    if (start > 0) this.replayTo(start); else this.run(0);
-    this.cam = this.camTarget();
-    this.black = this.cur && this.cur.t === 'cap' ? 1 : 0;
   }
 
   layoutCam() {
@@ -1862,47 +1952,81 @@ class StoryScene {
     return Object.assign({}, b);
   }
 
+  // ---------- 角色状态 ----------
+  ch(id) {
+    let c = this.cs[id];
+    if (!c) {
+      const d = this.defs[id] || {};
+      c = this.cs[id] = {
+        id, on: false, a: 0, e: (d.expressions && d.expressions[0]) || 'calm', pe: null, xf: 1,
+        dist: 1, distT: 1, back: 0, an: null, flip: false, pos: d.pos || 'center', cx: null,
+      };
+    }
+    return c;
+  }
+  display(id) { const d = this.defs[id]; return (d && d.display) || 'full'; }
+
+  action(c, act, silent) {
+    switch (act) {
+      case 'near': c.distT = 1.12; break;
+      case 'normal': c.distT = 1; break;
+      case 'far': c.distT = 0.9; break;
+      case 'nearback': c.distT = silent ? 1 : 1.1; c.back = silent ? 0 : 0.7; break;
+      case 'turn': c.flip = !c.flip; break;
+      case 'exit': if (silent) c.on = false; else c.an = { type: 'exit', t: 0 }; break;
+      default: if (TRANSIENT[act] && !silent) c.an = { type: act, t: 0 };
+    }
+  }
+
   // 节点附带效果
   apply(n, silent) {
     if (n.bg) this.bg = n.bg;
     if (n.focus) this.focus = n.focus === 'none' ? null : n.focus;
-    if (n.hide) this.por.on = false;
-    if (n.show) this.por.on = true;
-    if (n.e && n.e !== this.por.e) { this.por.pe = this.por.e; this.por.e = n.e; this.por.x = silent ? 1 : 0; }
+    if (n.clear) { for (const id in this.cs) this.cs[id].on = false; this.focusId = null; }
     if (n.img !== undefined) { if (n.img) { this.img = n.img; this.lastImg = n.img; this.imgK = silent ? 1 : 0; } else this.img = null; }
-    if (n.fx === 'near') this.por.sT = 1.12;
-    if (n.fx === 'back') this.por.sT = 1;
-    if (n.fx === 'nearback') { this.por.sT = 1.1; this.por.back = silent ? 0 : 0.7; if (silent) this.por.sT = 1; }
-    if (n.rain !== undefined) A.setRain(n.rain);
+    if (n.rain !== undefined && n.rain !== '') A.setRain(+n.rain);
     if (!silent && n.sfx) A.play(n.sfx);
-    if (silent) { this.por.a = this.por.on ? 1 : 0; this.por.s = this.por.sT; this.imgA = this.img ? 1 : 0; }
+    if (n.who && this.defs[n.who] && (n.t === 'say' || n.t === 'act')) {
+      const c = this.ch(n.who);
+      if (n.pos) c.pos = n.pos;
+      if (this.display(n.who) === 'full') {
+        if (this.stage === 'speaker') for (const id in this.cs) if (id !== n.who) this.cs[id].on = false;
+        if (!c.on && !silent && !n.act) c.an = { type: 'enter', t: 0 };
+        c.on = true;
+        this.focusId = n.who;
+      }
+      if (n.e && n.e !== c.e) { c.pe = c.e; c.e = n.e; c.xf = silent ? 1 : 0; }
+      if (n.act) this.action(c, n.act, silent);
+    }
+    if (silent) {
+      for (const id in this.cs) { const c = this.cs[id]; c.a = c.on ? 1 : 0; c.dist = c.distT; c.an = null; c.cx = null; }
+      this.imgA = this.img ? 1 : 0;
+    }
   }
-
-  isBlocking(n) { return n.t !== 'label' && n.t !== 'goto'; }
 
   run(i) {
     let guard = 0;
-    while (i < this.nodes.length && guard++ < 200) {
+    while (i < this.nodes.length && guard++ < 300) {
       const n = this.nodes[i];
       this.apply(n, false);
       if (n.t === 'label') { i++; continue; }
-      if (n.t === 'goto') { i = this.labels[n.id]; continue; }
+      if (n.t === 'goto') { i = this.labels[n.id] === undefined ? this.nodes.length : this.labels[n.id]; continue; }
       this.enter(i);
       return;
     }
+    this.cur = null; // 脚本走完
   }
 
   replayTo(target) {
     let i = 0, guard = 0;
-    while (i < this.nodes.length && guard++ < 500) {
+    while (i < this.nodes.length && guard++ < 1000) {
       const n = this.nodes[i];
       this.apply(n, true);
       if (n.t === 'label') { i++; continue; }
       if (n.t === 'goto') { i = this.labels[n.id]; continue; }
       if (i === target) { this.enter(i, true); return; }
       if (n.t === 'choice') {
-        const c = G.save.choice;
-        const opt = n.opts.find((o) => o.k === c);
+        const opt = (n.opts || []).find((o) => o.k === G.save.choice);
         if (!opt) { this.enter(i, true); return; }
         i = this.labels[opt.go];
         continue;
@@ -1912,15 +2036,22 @@ class StoryScene {
     this.run(0);
   }
 
+  // 预览：按顺序套用前面所有节点的状态，再从 start 正常播放
+  previewTo(start) {
+    this.reset();
+    start = Math.max(0, Math.min(start, this.nodes.length - 1));
+    for (let i = 0; i < start; i++) this.apply(this.nodes[i], true);
+    this.run(start);
+  }
+
   enter(i, silent) {
     this.idx = i;
     this.cur = this.nodes[i];
     this.mem = !!this.cur.mem;
-    this.reveal = 0;
+    this.reveal = silent ? 1e9 : 0;
     this.nodeT = 0;
     this.textObj = null;
-    if (!this.review) { G.save[this.key + 'Idx'] = i; G.persist(); }
-    if (silent) this.reveal = 1e9;
+    if (!this.review && !this.preview) { G.save[this.key + 'Idx'] = i; G.persist(); }
   }
 
   advance() {
@@ -1933,13 +2064,14 @@ class StoryScene {
   }
 
   choose(opt) {
-    if (!this.review) { G.save.choice = opt.k; G.persist(); }
+    if (!this.review && !this.preview) { G.save.choice = opt.k; G.persist(); }
     A.play('tap');
     this.run(this.labels[opt.go]);
   }
 
   finish() {
     const sv = G.save;
+    if (this.preview) { this.previewTo(this.startAt); return; }
     if (this.review) { G.go(() => G.scenes.world()); return; }
     if (this.key === 'intro') {
       sv.phase = 'room'; sv.read.intro = true; G.persist();
@@ -1951,29 +2083,38 @@ class StoryScene {
     }
   }
 
-  onDown(p) { this.downP = p; }
   onUp(p) { if (p.tap) this.advance(); }
 
   update(dt) {
     this.nodeT += dt;
     const n = this.cur;
     if (n && (n.t === 'say' || n.t === 'act' || n.t === 'cap')) this.reveal += dt * (n.t === 'cap' ? 22 : 34);
-    const por = this.por;
-    por.a += ((por.on && !this.img ? 1 : 0) - por.a) * Math.min(1, dt * 7);
-    por.x = Math.min(1, por.x + dt * 5);
-    if (por.back > 0) { por.back -= dt; if (por.back <= 0) por.sT = 1; }
-    por.s += (por.sT - por.s) * Math.min(1, dt * 6);
+    const hide = !!this.img;
+    for (const id in this.cs) {
+      const c = this.cs[id];
+      c.a += ((c.on && !hide ? 1 : 0) - c.a) * Math.min(1, dt * 7);
+      c.xf = Math.min(1, c.xf + dt * 5);
+      if (c.back > 0) { c.back -= dt; if (c.back <= 0) c.distT = 1; }
+      c.dist += (c.distT - c.dist) * Math.min(1, dt * 6);
+      if (c.an) {
+        c.an.t += dt;
+        if (c.an.t >= (TRANSIENT[c.an.type] || 0.5)) { if (c.an.type === 'exit') { c.on = false; c.a = 0; } c.an = null; }
+      }
+      const tx = this.stage === 'both' ? (POS_X[c.pos] || 375) : 375;
+      c.cx = c.cx === null ? tx : c.cx + (tx - c.cx) * Math.min(1, dt * 6);
+    }
     this.imgA += ((this.img ? 1 : 0) - this.imgA) * Math.min(1, dt * 6);
     this.imgK = Math.min(1, this.imgK + dt * 2.5);
     this.black += ((n && n.t === 'cap' ? 1 : 0) - this.black) * Math.min(1, dt * 4);
     const ct = this.camTarget(), c = this.cam, k = Math.min(1, dt * 2.2);
     c.x += (ct.x - c.x) * k; c.y += (ct.y - c.y) * k; c.z += (ct.z - c.z) * k; c.cx = ct.cx; c.cy = ct.cy;
-    if (this.review && n && n.t === 'choice' && this.nodeT > 1.6) {
-      const opt = n.opts.find((o) => o.k === G.save.choice) || n.opts[0];
+    if (this.review && !this.preview && n && n.t === 'choice' && this.nodeT > 1.6) {
+      const opt = (n.opts || []).find((o) => o.k === G.save.choice) || n.opts[0];
       this.run(this.labels[opt.go]);
     }
   }
 
+  // ---------- 绘制 ----------
   draw() {
     const R = G.R, v = G.view;
     const n = this.cur;
@@ -1982,34 +2123,82 @@ class StoryScene {
     if (this.mem) R.rect(0, 0, v.w, v.h, [0.35, 0.18, 0.05, 0.35]);
 
     const boxY = v.h - v.safeBottom - 330;
-    this.drawPortrait(boxY);
+    const order = Object.keys(this.cs).map((id) => this.cs[id]).filter((c) => c.a > 0.01)
+      .sort((a, b) => (a.id === this.focusId) - (b.id === this.focusId));
+    order.forEach((c) => this.drawChar(c, boxY));
     this.drawImage(boxY);
 
     if (this.black > 0.01) R.rect(0, 0, v.w, v.h, [0, 0, 0, this.black]);
 
-    if (!n) return;
-    if (n.t === 'cap') this.drawCaption(n);
-    else if (n.t === 'say' || n.t === 'act') this.drawBox(n, boxY);
-    else if (n.t === 'choice') this.drawChoice(n);
-    else if (n.t === 'goal') this.drawGoal();
-    else if (n.t === 'end') this.drawEnd(n);
+    if (n) {
+      if (n.t === 'cap') this.drawCaption(n);
+      else if (n.t === 'say' || n.t === 'act') this.drawBox(n, boxY);
+      else if (n.t === 'choice') this.drawChoice(n);
+      else if (n.t === 'goal') this.drawGoal(n);
+      else if (n.t === 'end') this.drawEnd(n);
+    } else if (this.preview) {
+      T.draw('脚本已播放到结尾', 375, v.h * 0.45, { size: 30, color: '#e9dcc6', anchor: 'center' });
+    }
 
-    if (this.review) {
+    if (this.preview) {
+      T.draw('预览 · ' + this.key + ' #' + (this.idx + 1), 40, v.safeTop + 40, { size: 24, color: '#e6c48e' });
+      G.button('replay', 560, v.safeTop + 24, 170, 60, '重播', { size: 26, onClick: () => this.previewTo(this.startAt) });
+    } else if (this.review) {
       T.draw('回顾中', 40, v.safeTop + 40, { size: 24, color: '#9a8f80' });
       G.button('skip', 580, v.safeTop + 24, 150, 60, '返回 ›', { size: 26, onClick: () => G.go(() => G.scenes.world()) });
     }
   }
 
-  drawPortrait(boxY) {
-    const p = this.por; if (p.a < 0.01) return;
-    const R = G.R, s = p.s;
-    const w = Art.PW * s * 1.06, h = Art.PH * s * 1.06;
-    const x = 375 - w / 2, y = boxY + 70 - h;
-    const k = s * 1.06;
-    R.draw(Art.portrait, x, y, w, h, { alpha: p.a });
-    const fx = x + 140 * k, fy = y + 260 * k, fw = 240 * k, fh = 170 * k;
-    if (p.pe && p.x < 1) R.draw(Art.faces[p.pe], fx, fy, fw, fh, { alpha: p.a * (1 - p.x) });
-    R.draw(Art.faces[p.e], fx, fy, fw, fh, { alpha: p.a * (p.pe ? p.x : 1) });
+  // 取角色当前表情的纹理：表情整图 > 底图 > 程序占位（底图 + 表情层）
+  charTex(c, e) {
+    const d = this.defs[c.id] || {}, imgs = d.images || {};
+    const full = Art.charImage(imgs[e]);
+    if (full) return { base: full, face: null };
+    const base = Art.charImage(imgs.base);
+    if (base) return { base, face: null };
+    const ph = Art.chars[d.placeholder || c.id] || Art.chars.lu;
+    return { base: ph.base, face: ph.faces[e] || ph.faces[Object.keys(ph.faces)[0]] };
+  }
+
+  drawLayer(tx, x, y, w, h, flip, alpha, color) {
+    const R = G.R, o = { alpha, color };
+    if (flip) R.draw(tx.base, x + w, y, -w, h, o); else R.draw(tx.base, x, y, w, h, o);
+    if (tx.face) {
+      const k = w / Art.PW;
+      const fx = flip ? x + w - (140 + 240) * k : x + 140 * k;
+      if (flip) R.draw(tx.face, fx + 240 * k, y + 260 * k, -240 * k, 170 * k, o);
+      else R.draw(tx.face, fx, y + 260 * k, 240 * k, 170 * k, o);
+    }
+  }
+
+  drawChar(c, boxY) {
+    const both = this.stage === 'both';
+    const side = c.cx < 375 ? -1 : 1;
+    const off = animOffset(c.an, both ? side : (c.an && c.an.type === 'exit' ? 1 : -1));
+    const breath = 1 + 0.004 * Math.sin(G.t * 2 + c.cx);
+    const dim = both && this.focusId && c.id !== this.focusId;
+    const s = c.dist * 1.06 * (both ? 0.9 : 1) * (dim ? 0.97 : 1) * breath;
+    const w = Art.PW * s, h = Art.PH * s;
+    const x = c.cx - w / 2 + off.dx, y = boxY + 70 - h + off.dy + (dim ? 10 : 0);
+    const color = dim ? [0.55, 0.56, 0.62] : [1, 1, 1];
+    const a = c.a * off.al;
+    if (c.pe && c.xf < 1) {
+      this.drawLayer(this.charTex(c, c.pe), x, y, w, h, c.flip, a * (1 - c.xf), color);
+      this.drawLayer(this.charTex(c, c.e), x, y, w, h, c.flip, a * c.xf, color);
+    } else {
+      this.drawLayer(this.charTex(c, c.e), x, y, w, h, c.flip, a, color);
+    }
+  }
+
+  // 对话框左侧的小头像（display = avatar 的角色）
+  drawAvatar(id, e, x, y) {
+    const R = G.R, c = this.ch(id);
+    const tx = this.charTex(c, e || c.e);
+    Art.drawPanel(x, y, 112, 136, 14, 'rgba(255,255,255,0.06)', 'rgba(214,190,156,0.4)', 2);
+    const cx0 = 130, cy0 = 150, cw = 260, chh = 330; // 立绘上的头部裁切区
+    const sc = 104 / cw, ox = x + 4, oy = y + 4;
+    R.draw(tx.base, ox, oy, 104, chh * sc, { uv: [cx0 / Art.PW, cy0 / Art.PH, (cx0 + cw) / Art.PW, (cy0 + chh) / Art.PH] });
+    if (tx.face) R.draw(tx.face, ox + (140 - cx0) * sc, oy + (260 - cy0) * sc, 240 * sc, 170 * sc);
   }
 
   drawImage(boxY) {
@@ -2028,7 +2217,7 @@ class StoryScene {
 
   drawCaption(n) {
     const a = Math.min(1, this.nodeT * 2);
-    const t = T.make(n.s, { size: 36, color: '#ece3d4', maxW: 600, lineH: 1.7, align: 'center' });
+    const t = T.make(n.s || '', { size: 36, color: '#ece3d4', maxW: 600, lineH: 1.7, align: 'center' });
     this.textObj = t;
     const x = 375 - t.w / 2 + t.pad, y = G.view.h * 0.42 - t.h / 2 + t.pad;
     T.drawReveal(t, x, y, Math.floor(this.reveal), a);
@@ -2039,16 +2228,22 @@ class StoryScene {
     const R = G.R;
     const mem = this.mem;
     Art.drawPanel(20, y, 710, 290, 22, mem ? 'rgba(62,38,20,0.93)' : 'rgba(16,18,26,0.92)', mem ? 'rgba(240,190,120,0.5)' : 'rgba(201,162,122,0.4)', 2);
+    let tx = 56;
     if (n.t === 'say') {
-      const nt = T.make(n.w, { size: 28, color: '#17120e', weight: 'bold' });
-      const nw = nt.w + 36;
-      Art.drawPanel(44, y - 28, nw, 58, 16, NAME_COLOR[n.w] || '#c9a27a', null);
-      R.draw(nt.t, 44 + 18 - nt.pad, y - 28 + 29 - nt.h / 2, nt.w, nt.h);
+      const d = this.defs[n.who] || {};
+      const name = n.name || d.name || n.who || '';
+      if (name) {
+        const nt = T.make(name, { size: 28, color: '#17120e', weight: 'bold' });
+        const nw = nt.w + 36;
+        Art.drawPanel(44, y - 28, nw, 58, 16, mem ? '#d9a86a' : (d.color || '#c9a27a'), null);
+        R.draw(nt.t, 44 + 18 - nt.pad, y - 28 + 29 - nt.h / 2, nt.w, nt.h);
+      }
+      if (this.defs[n.who] && this.display(n.who) === 'avatar') { this.drawAvatar(n.who, n.e, 44, y + 50); tx = 176; }
     }
     const color = n.t === 'act' ? (mem ? '#e9c897' : '#aeb9ca') : (mem ? '#f8e1b8' : '#f2ebdf');
-    const t = T.make(n.s, { size: n.t === 'act' ? 31 : 34, color, maxW: 640, lineH: 1.6, italic: n.t === 'act' });
+    const t = T.make(n.s || '', { size: n.t === 'act' ? 31 : 34, color, maxW: 694 - tx, lineH: 1.6, italic: n.t === 'act' });
     this.textObj = t;
-    T.drawReveal(t, 56, y + 50, Math.floor(this.reveal), 1);
+    T.drawReveal(t, tx, y + 50, Math.floor(this.reveal), 1);
     if (this.reveal >= t.count) {
       const a = 0.5 + 0.5 * Math.sin(G.t * 4);
       T.draw('▼', 690, y + 248, { size: 22, color: '#c9a27a', anchor: 'center', alpha: a });
@@ -2059,27 +2254,29 @@ class StoryScene {
     const R = G.R, v = G.view;
     R.rect(0, 0, v.w, v.h, [0, 0, 0, 0.45]);
     const mid = v.h * 0.48;
-    T.draw(n.q, 375, mid - 200, { size: 32, color: '#e9dcc6', anchor: 'center' });
-    n.opts.forEach((o, i) => {
+    const opts = n.opts || [];
+    T.draw(n.q || '', 375, mid - 200, { size: 32, color: '#e9dcc6', anchor: 'center' });
+    opts.forEach((o, i) => {
+      const reviewOnly = this.review && !this.preview;
       const chosen = G.save.choice === o.k;
-      const style = this.review ? (chosen ? 'selected' : 'ghost') : 'ghost';
-      G.button('ch_' + o.k, 55, mid - 120 + i * 150, 640, 120, o.s, {
-        style, size: 32, disabled: this.review && !chosen,
-        onClick: () => (this.review ? this.run(this.labels[o.go]) : this.choose(o)),
+      G.button('ch_' + i, 55, mid - 120 + i * 150, 640, 120, o.s, {
+        style: reviewOnly && chosen ? 'selected' : 'ghost', size: 32, disabled: reviewOnly && !chosen,
+        onClick: () => (reviewOnly ? this.run(this.labels[o.go]) : this.choose(o)),
       });
     });
   }
 
-  drawGoal() {
+  drawGoal(n) {
     const R = G.R, v = G.view;
     R.rect(0, 0, v.w, v.h, [0, 0, 0, 0.5]);
     const a = Math.min(1, this.nodeT * 2.5);
     const y = v.h * 0.5 - 220;
     Art.drawPanel(75, y, 600, 420, 28, 'rgba(26,24,30,0.97)', 'rgba(214,190,156,0.6)', 2, a);
     T.draw('关卡目标', 375, y + 58, { size: 24, color: '#9e9080', anchor: 'center', alpha: a });
-    T.draw('还原卧室 · 0/24', 375, y + 118, { size: 46, color: '#f4e4c8', weight: 'bold', anchor: 'center', alpha: a });
-    T.draw('依据旧照片、家具清单与保存物件，\n复原你曾停留的那一晚。', 375, y + 210, { size: 26, color: '#c4b8a6', maxW: 520, lineH: 1.6, align: 'center', anchor: 'center', alpha: a });
-    G.button('goal', 175, y + 296, 400, 90, this.review ? '返回宅邸' : '开始还原', { style: 'primary', size: 34, alpha: a, onClick: () => this.finish() });
+    T.draw(n.title || '', 375, y + 118, { size: 46, color: '#f4e4c8', weight: 'bold', anchor: 'center', alpha: a });
+    T.draw(n.sub || '', 375, y + 210, { size: 26, color: '#c4b8a6', maxW: 520, lineH: 1.6, align: 'center', anchor: 'center', alpha: a });
+    const label = this.preview ? '重播' : (this.review ? '返回宅邸' : (n.button || '开始'));
+    G.button('goal', 175, y + 296, 400, 90, label, { style: 'primary', size: 34, alpha: a, onClick: () => this.finish() });
   }
 
   drawEnd(n) {
@@ -2088,19 +2285,22 @@ class StoryScene {
     const a = Math.min(1, this.nodeT * 2);
     const y = v.h * 0.5 - 330;
     Art.drawPanel(45, y, 660, 640, 28, 'rgba(26,24,30,0.97)', 'rgba(214,190,156,0.6)', 2, a);
-    T.draw('第一章 · 他的卧室，我的耳饰', 375, y + 56, { size: 24, color: '#9e9080', anchor: 'center', alpha: a });
-    T.draw(n.title, 375, y + 160, { size: 36, color: '#f4e4c8', weight: 'bold', maxW: 580, lineH: 1.6, align: 'center', anchor: 'center', alpha: a });
+    T.draw(n.chapter || '', 375, y + 56, { size: 24, color: '#9e9080', anchor: 'center', alpha: a });
+    T.draw(n.title || '', 375, y + 160, { size: 36, color: '#f4e4c8', weight: 'bold', maxW: 580, lineH: 1.6, align: 'center', anchor: 'center', alpha: a });
     R.rect(125, y + 248, 500, 1.5, [0.8, 0.7, 0.55, 0.4 * a]);
-    T.draw('关系记录', 375, y + 290, { size: 24, color: '#9e9080', anchor: 'center', alpha: a });
-    T.draw('「' + n.record + '」', 375, y + 338, { size: 30, color: '#e6d3b3', maxW: 580, align: 'center', anchor: 'center', alpha: a });
-    const ch = D.CHOICE_TEXT[G.save.choice];
-    if (ch) T.draw('你的回应：' + ch, 375, y + 400, { size: 24, color: '#a9a090', maxW: 580, align: 'center', anchor: 'center', alpha: a });
-    T.draw('下一段：那条叫走他的消息，与你当时害怕的人。', 375, y + 450, { size: 22, color: '#8a8174', maxW: 580, align: 'center', anchor: 'center', alpha: a });
-    G.button('end', 155, y + 512, 440, 92, this.review ? '返回宅邸' : '保存这间房间', { style: 'primary', size: 34, alpha: a, onClick: () => this.finish() });
+    if (n.record) {
+      T.draw('关系记录', 375, y + 290, { size: 24, color: '#9e9080', anchor: 'center', alpha: a });
+      T.draw('「' + n.record + '」', 375, y + 338, { size: 30, color: '#e6d3b3', maxW: 580, align: 'center', anchor: 'center', alpha: a });
+    }
+    const ch = findChoiceText(this.data, G.save.choice);
+    if (ch && !this.preview) T.draw('你的回应：' + ch, 375, y + 400, { size: 24, color: '#a9a090', maxW: 580, align: 'center', anchor: 'center', alpha: a });
+    if (n.next) T.draw(n.next, 375, y + 450, { size: 22, color: '#8a8174', maxW: 580, align: 'center', anchor: 'center', alpha: a });
+    const label = this.preview ? '重播' : (this.review ? '返回宅邸' : (n.button || '继续'));
+    G.button('end', 155, y + 512, 440, 92, label, { style: 'primary', size: 34, alpha: a, onClick: () => this.finish() });
   }
 }
 
-G.scenes.story = (key, review) => new StoryScene(key, review);
+G.scenes.story = (key, opt) => new StoryScene(key, opt);
 module.exports = StoryScene;
 
 };
@@ -2370,7 +2570,7 @@ class WorldScene {
       '合计：' + f(s.groupSec[0] + s.groupSec[1] + s.groupSec[2]),
       '放错次数：' + s.misses + '　提示次数：' + s.hints,
       '回访房间：' + s.revisits + '　回顾剧情：' + s.replays,
-      '选择：' + (G.save.choice ? G.save.choice + ' ' + D.CHOICE_TEXT[G.save.choice] : '—'),
+      '选择：' + (G.save.choice ? G.save.choice + ' ' + (G.choiceText(G.save.choice) || '') : '—'),
       '意愿：' + (G.save.feedback || '—'),
     ].join('\n');
     G.openModal('试玩记录', body, [{ label: '关闭' }]);
@@ -2387,6 +2587,11 @@ class WorldScene {
 G.scenes.title = () => new TitleScene();
 G.scenes.world = (opt) => new WorldScene(opt);
 module.exports = { TitleScene, WorldScene };
+
+};
+__defs["script_data"]=function(module,exports,require){
+/* 由 tools/build.py 从 content/script.json 生成，请用配置工具或直接改 JSON */
+module.exports = {"version": 1, "stage": "speaker", "characters": [{"id": "lin", "name": "林栖", "color": "#c9a27a", "display": "full", "pos": "left", "expressions": ["calm", "doubt", "serious", "soft"], "images": {}}, {"id": "lu", "name": "陆沉舟", "color": "#8197b4", "display": "full", "pos": "right", "expressions": ["calm", "smile", "avoid", "serious"], "images": {}}], "scenes": {"intro": [{"t": "cap", "s": "一年前，一名医生死在这间卧室。", "bg": "empty", "clear": true}, {"t": "cap", "s": "你失去了那晚的部分记忆。\n陪你回来的人，曾是嫌疑人。"}, {"t": "act", "s": "卧室门口。窗外下着雨，你手里拿着旧照片与物件记录。"}, {"t": "say", "who": "lin", "s": "记录说，我那晚也来过这里。", "e": "calm", "act": "enter"}, {"t": "say", "who": "lu", "s": "来过。", "e": "calm", "act": "enter"}, {"t": "say", "who": "lin", "s": "这是当时安置我的客房？", "e": "doubt"}, {"t": "act", "s": "他看了一眼房门。", "who": "lu", "e": "avoid", "act": "sigh"}, {"t": "say", "who": "lu", "s": "……先看看你能认出什么。", "e": "avoid"}, {"t": "act", "s": "你走近衣柜，袖口勾住了把手。他停在你身侧。", "who": "lu", "e": "calm", "act": "near", "sfx": "cloth"}, {"t": "say", "who": "lu", "s": "别急，线勾住了。我帮你？", "e": "calm"}, {"t": "say", "who": "lin", "s": "只许碰袖口。", "e": "serious"}, {"t": "act", "s": "他解开勾住的线，随即松手。", "who": "lu", "act": "normal", "sfx": "cloth"}, {"t": "say", "who": "lu", "s": "你以前也这么防着我。", "e": "smile"}, {"t": "say", "who": "lin", "s": "客房里的东西，你也这么熟？", "e": "doubt"}, {"t": "say", "who": "lu", "s": "你想先听解释，还是自己看？", "e": "serious"}, {"t": "say", "who": "lin", "s": "我先自己看。等房间还原好，你把省略的部分补上。", "e": "serious", "act": "nod"}, {"t": "say", "who": "lu", "s": "好。我在这里。", "e": "calm", "act": "nod"}, {"t": "goal", "clear": true, "title": "还原卧室 · 0/24", "sub": "依据旧照片、家具清单与保存物件，\n复原你曾停留的那一晚。", "button": "开始还原"}], "outro": [{"t": "act", "s": "还原好的卧室里，你的目光停在梳妆台上。", "bg": "full", "focus": "vanity", "clear": true}, {"t": "say", "who": "lin", "s": "等等。盘里那只耳饰……", "e": "doubt"}, {"t": "act", "s": "收纳盘里是一只银色耳饰。你取出自己保存的另一只——两者成对。", "img": "earring"}, {"t": "say", "who": "lin", "s": "我一直以为，另一只早就丢了。", "e": "soft"}, {"t": "say", "who": "lu", "s": "那晚它勾住了你的披肩。你让我帮你取下来。", "e": "calm", "img": "", "focus": "none"}, {"t": "say", "who": "lin", "s": "我的披肩、你的衬衫，都留在这里。这里到底是谁的房间？", "e": "serious"}, {"t": "act", "s": "他看向床侧，没有再回避。", "who": "lu", "e": "serious", "sfx": "sting"}, {"t": "say", "who": "lu", "s": "我的。这里一直是我的卧室。", "e": "serious"}, {"t": "say", "who": "lin", "s": "你刚才为什么不纠正我？", "e": "doubt"}, {"t": "say", "who": "lu", "s": "我怕你知道以后，就不肯再进来。", "e": "avoid", "act": "sigh"}, {"t": "say", "who": "lin", "s": "那晚呢？我为什么会来？", "e": "serious"}, {"t": "say", "who": "lu", "s": "你说有人要杀你。你不肯回自己的房间。", "e": "serious"}, {"t": "act", "s": "暖色台灯。床沿。你抓住了一截衣袖。", "img": "memory", "mem": true, "sfx": "cloth"}, {"t": "say", "who": "lin", "s": "今晚……你能不能别走？", "name": "林栖（记忆）", "mem": true}, {"t": "say", "who": "lu", "s": "好。我在。", "name": "陆沉舟（记忆）", "mem": true}, {"t": "act", "s": "回到现在。他向前一步，你抬眼，他停下。", "who": "lu", "img": "", "e": "calm", "act": "nearback"}, {"t": "say", "who": "lin", "s": "是我让你留下的。", "e": "soft"}, {"t": "say", "who": "lu", "s": "是。", "e": "calm"}, {"t": "say", "who": "lin", "s": "那医生遇害的时候，你还在这里吗？", "e": "serious"}, {"t": "act", "s": "室内的声音淡下去，只剩雨声。", "who": "lu", "e": "serious", "rain": 0.9, "sfx": "sting"}, {"t": "say", "who": "lu", "s": "我答应过不走。但那晚，我确实离开过。", "e": "serious"}, {"t": "choice", "q": "你要怎么回应？", "rain": 0.5, "opts": [{"k": "A", "s": "坐下，把你离开的原因说清楚。", "go": "A"}, {"k": "B", "s": "这次，你还会走吗？", "go": "B"}]}, {"t": "label", "id": "A"}, {"t": "act", "s": "你指向扶手椅，自己坐在床边，保持能看清他的距离。", "who": "lin", "e": "serious"}, {"t": "say", "who": "lin", "s": "这次别省略。我自己判断。", "e": "serious"}, {"t": "say", "who": "lu", "s": "好。从叫我出去的那条消息开始。", "e": "serious", "act": "nod"}, {"t": "goto", "id": "common"}, {"t": "label", "id": "B"}, {"t": "act", "s": "你拉住他的领带，让他停在一步以内。你们对视，他没有再贴近。", "who": "lu", "e": "calm", "act": "near", "sfx": "cloth"}, {"t": "say", "who": "lu", "s": "你要我留下？", "e": "smile"}, {"t": "say", "who": "lin", "s": "留下解释。别把这当成我已经信了你。", "e": "serious"}, {"t": "say", "who": "lu", "s": "好。这次听你的。", "e": "calm", "act": "normal"}, {"t": "label", "id": "common"}, {"t": "act", "s": "他坐到扶手椅上。你把耳饰放回盘中，坐下与他交谈。", "who": "lu", "e": "calm", "act": "normal"}, {"t": "say", "who": "lin", "s": "先从我为什么害怕说起。", "e": "soft"}, {"t": "end", "clear": true, "chapter": "第一章 · 他的卧室，我的耳饰", "title": "你找回了耳饰，\n也记起了自己曾向他求助。", "record": "你要求他留下，把过去讲清楚。", "next": "下一段：那条叫走他的消息，与你当时害怕的人。", "button": "保存这间房间"}]}};
 
 };
 window.__G=__req("main");window.__G.boot();

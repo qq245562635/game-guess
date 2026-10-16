@@ -319,7 +319,7 @@ const STICKERS = {
 
 // ---------- 立绘 ----------
 const PW = 520, PH = 880;
-function drawPortraitBase(c) {
+function drawLuBase(c) {
   const skin = '#f1d9c9', hair = '#1c1d24';
   // 后发
   ell(c, 260, 285, 118, 116); fill(c, hair);
@@ -366,7 +366,7 @@ function drawPortraitBase(c) {
   c.beginPath(); c.moveTo(196, 214); c.quadraticCurveTo(250, 196, 300, 210); stroke(c, 'rgba(120,130,160,0.35)', 4);
 }
 // 表情层：覆盖在 (140,260) 处，尺寸 240×170
-function drawFace(c, kind) {
+function drawLuFace(c, kind) {
   const eye = (x, y, open, look) => {
     c.save(); c.translate(x, y);
     c.beginPath(); c.moveTo(-22, 0); c.quadraticCurveTo(0, -open, 22, 0); c.quadraticCurveTo(0, open * 0.7, -22, 0); c.closePath();
@@ -397,6 +397,87 @@ function drawFace(c, kind) {
     eye(78, 78, 8.5, 0); eye(162, 78, 8.5, 0);
     brow(78, 52, -5); brow(162, 52, 5);
     c.beginPath(); c.moveTo(104, 150); c.lineTo(136, 150); stroke(c, '#9a5e52', 3);
+  }
+}
+
+// 林栖：长发、高领衬衫、淡紫披肩
+function drawLinBase(c) {
+  const skin = '#f4dccd', hair = '#3a2722';
+  // 后发（长发垂到胸前）
+  c.beginPath(); c.moveTo(150, 290); c.quadraticCurveTo(110, 520, 128, 720); c.lineTo(392, 720);
+  c.quadraticCurveTo(410, 520, 370, 290); c.quadraticCurveTo(362, 170, 260, 170); c.quadraticCurveTo(158, 170, 150, 290); c.closePath();
+  fill(c, lg(c, 0, 170, 0, 720, ['#40302a', '#2c1f1b']));
+  // 身体
+  c.beginPath(); c.moveTo(56, 880); c.lineTo(78, 690); c.quadraticCurveTo(100, 584, 204, 552); c.lineTo(316, 552);
+  c.quadraticCurveTo(420, 584, 442, 690); c.lineTo(464, 880); c.closePath();
+  fill(c, lg(c, 0, 552, 0, 880, ['#f1e9de', '#cbbfaf']));
+  [[230, 600, 236, 880], [290, 600, 284, 880]].forEach((l) => line(c, l[0], l[1], l[2], l[3], 'rgba(120,100,80,0.18)', 2));
+  // 颈与高领
+  rr(c, 234, 430, 52, 112, 18); fill(c, '#ecccb9');
+  ell(c, 260, 462, 32, 12); fill(c, 'rgba(0,0,0,0.1)');
+  rr(c, 220, 520, 80, 44, 12); fill(c, lg(c, 0, 520, 0, 564, ['#fbf6ef', '#e3d8ca']));
+  c.beginPath(); c.arc(260, 572, 7, 0, PI * 2); fill(c, '#d8c08a');
+  // 披肩
+  const shawl = (flip) => {
+    c.save(); if (flip) { c.translate(520, 0); c.scale(-1, 1); }
+    c.beginPath(); c.moveTo(56, 880); c.lineTo(76, 690); c.quadraticCurveTo(100, 590, 196, 562);
+    c.quadraticCurveTo(232, 600, 226, 650); c.quadraticCurveTo(180, 760, 168, 880); c.closePath();
+    fill(c, lg(c, 0, 560, 0, 880, ['#c8b3d4', '#8f78a2']));
+    for (let x = 172; x < 226; x += 7) line(c, x, 862 - (x - 172) * 2.2, x - 2, 880 - (x - 172) * 2.2, 'rgba(255,255,255,0.18)', 1.5);
+    c.beginPath(); c.moveTo(110, 700); c.quadraticCurveTo(150, 640, 196, 600); stroke(c, 'rgba(60,40,80,0.2)', 3);
+    c.restore();
+  };
+  shawl(false); shawl(true);
+  // 耳与脸
+  ell(c, 176, 350, 9, 17); fill(c, '#ecccb9'); ell(c, 344, 350, 9, 17); fill(c, '#ecccb9');
+  c.beginPath(); c.moveTo(178, 300); c.bezierCurveTo(176, 410, 226, 464, 260, 472);
+  c.bezierCurveTo(294, 464, 344, 410, 342, 300); c.bezierCurveTo(342, 200, 178, 200, 178, 300); c.closePath();
+  fill(c, lg(c, 0, 220, 0, 472, [skin, '#efd1c0']));
+  c.beginPath(); c.moveTo(262, 360); c.quadraticCurveTo(266, 380, 258, 386); stroke(c, 'rgba(170,110,90,0.35)', 2);
+  // 侧发
+  c.beginPath(); c.moveTo(180, 262); c.quadraticCurveTo(150, 380, 168, 486); c.lineTo(186, 472); c.quadraticCurveTo(178, 370, 196, 284); c.closePath(); fill(c, hair);
+  c.beginPath(); c.moveTo(340, 262); c.quadraticCurveTo(370, 380, 352, 486); c.lineTo(334, 472); c.quadraticCurveTo(342, 370, 324, 284); c.closePath(); fill(c, hair);
+  // 斜刘海
+  c.beginPath(); c.moveTo(158, 330); c.quadraticCurveTo(140, 182, 262, 176); c.quadraticCurveTo(384, 182, 364, 330);
+  c.quadraticCurveTo(352, 250, 292, 230); c.quadraticCurveTo(252, 268, 204, 306); c.quadraticCurveTo(190, 266, 180, 254);
+  c.quadraticCurveTo(166, 292, 158, 330); c.closePath(); fill(c, hair);
+  c.beginPath(); c.moveTo(208, 206); c.quadraticCurveTo(262, 190, 318, 208); stroke(c, 'rgba(200,150,120,0.25)', 4);
+}
+function drawLinFace(c, kind) {
+  const eye = (x, y, open, look) => {
+    c.save(); c.translate(x, y);
+    c.beginPath(); c.moveTo(-23, 1); c.quadraticCurveTo(0, -open, 23, 0); c.quadraticCurveTo(0, open * 0.8, -23, 1); c.closePath();
+    fill(c, '#fbf6f3');
+    c.save(); c.clip();
+    c.beginPath(); c.arc(look, 1, 10, 0, PI * 2); fill(c, '#4a3128');
+    c.beginPath(); c.arc(look, 2, 5, 0, PI * 2); fill(c, '#24160f');
+    c.beginPath(); c.arc(look - 3, -3, 2.6, 0, PI * 2); fill(c, '#ffffff');
+    c.beginPath(); c.arc(look + 3.5, 5, 1.3, 0, PI * 2); fill(c, 'rgba(255,255,255,0.8)');
+    c.restore();
+    c.beginPath(); c.moveTo(-25, 2); c.quadraticCurveTo(0, -open - 1.5, 25, 0); c.lineTo(29, -4); stroke(c, '#20140f', 3.6);
+    c.restore();
+  };
+  const brow = (x, y, tilt) => {
+    c.beginPath(); c.moveTo(x - 20, y + tilt); c.quadraticCurveTo(x, y - 5, x + 20, y - tilt); stroke(c, '#3a2722', 3);
+  };
+  const lips = '#c27a74';
+  if (kind === 'doubt') {
+    eye(78, 78, 11, 4); eye(162, 78, 12, 4);
+    brow(78, 46, 1); brow(162, 38, -4);
+    c.beginPath(); c.moveTo(110, 146); c.quadraticCurveTo(122, 144, 132, 148); stroke(c, lips, 2.6);
+  } else if (kind === 'serious') {
+    eye(78, 78, 11, 0); eye(162, 78, 11, 0);
+    brow(78, 48, -4); brow(162, 48, 4);
+    c.beginPath(); c.moveTo(108, 148); c.lineTo(132, 148); stroke(c, lips, 2.8);
+  } else if (kind === 'soft') {
+    eye(78, 80, 10, 0); eye(162, 80, 10, 0);
+    brow(78, 44, 2); brow(162, 44, -2);
+    ell(c, 56, 120, 16, 7); fill(c, 'rgba(240,140,140,0.28)'); ell(c, 184, 120, 16, 7); fill(c, 'rgba(240,140,140,0.28)');
+    c.beginPath(); c.moveTo(108, 144); c.quadraticCurveTo(120, 153, 133, 144); stroke(c, lips, 2.6);
+  } else { // calm
+    eye(78, 78, 13, 0); eye(162, 78, 13, 0);
+    brow(78, 44, 2); brow(162, 44, -2);
+    c.beginPath(); c.moveTo(110, 147); c.quadraticCurveTo(120, 150, 131, 147); stroke(c, lips, 2.6);
   }
 }
 
@@ -503,7 +584,7 @@ function drawMap(c, w, h) {
 const STK_K = 2.4, STK_M = 6;
 
 const Art = {
-  st: {}, room: null, glow: null, faces: {}, portrait: null, earring: null, memory: null, map: null,
+  st: {}, room: null, glow: null, chars: {}, imgs: {}, earring: null, memory: null, map: null,
   PW, PH, MAP_W, MAP_H, MAP_BEDROOM, STK_M,
   panels: new Map(),
 
@@ -523,8 +604,13 @@ const Art = {
       g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,0.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
       c.fillStyle = g; c.fillRect(0, 0, 128, 128);
     });
-    this.portrait = bake(PW, PH, k, drawPortraitBase);
-    ['calm', 'smile', 'avoid', 'serious'].forEach((e) => { this.faces[e] = bake(240, 170, k, (c) => drawFace(c, e)); });
+    const mk = (base, face, exprs) => {
+      const o = { base: bake(PW, PH, k, base), faces: {} };
+      exprs.forEach((e) => { o.faces[e] = bake(240, 170, k, (c) => face(c, e)); });
+      return o;
+    };
+    this.chars.lu = mk(drawLuBase, drawLuFace, ['calm', 'smile', 'avoid', 'serious']);
+    this.chars.lin = mk(drawLinBase, drawLinFace, ['calm', 'doubt', 'serious', 'soft']);
     this.earring = bake(690, 480, k, drawEarring);
     this.memory = bake(690, 480, k, drawMemory);
     this.map = bake(MAP_W, MAP_H, k, drawMap);
@@ -551,6 +637,21 @@ const Art = {
     R.draw(t, x - 2, y - 2, w + 4, h + 4, { alpha: alpha === undefined ? 1 : alpha });
   },
 
+  // 配置工具里给角色登记的立绘图（路径或 data URL）：异步加载，加载完成前返回 null
+  charImage(url) {
+    if (!url) return null;
+    const e = this.imgs[url];
+    if (e) return e.t;
+    this.imgs[url] = { t: null };
+    P.loadImage(url, (img) => {
+      const k = Math.min(2, R.pxPerUnit);
+      const s = Math.min(PW / img.width, PH / img.height);
+      const w = img.width * s, h = img.height * s;
+      this.imgs[url].t = bake(PW, PH, k, (c) => c.drawImage(img, (PW - w) / 2, PH - h, w, h));
+    }, () => { this.imgs[url].failed = true; });
+    return null;
+  },
+
   applyOverrides() {
     const map = D.ART_OVERRIDES || {};
     Object.keys(map).forEach((id) => {
@@ -565,11 +666,6 @@ const Art = {
           const old = this[id];
           this[id] = bake(dims[0], dims[1], 1.5, (c) => c.drawImage(img, 0, 0, dims[0], dims[1]));
           R.deleteTex(old);
-        } else if (id === 'portrait_base') {
-          const old = this.portrait; this.portrait = bake(PW, PH, 1.5, (c) => c.drawImage(img, 0, 0, PW, PH)); R.deleteTex(old);
-        } else if (id.indexOf('face_') === 0) {
-          const e = id.slice(5), old = this.faces[e];
-          this.faces[e] = bake(240, 170, 1.5, (c) => c.drawImage(img, 0, 0, 240, 170)); R.deleteTex(old);
         }
       });
     });

@@ -199,12 +199,21 @@ function boot() {
   A.on = S.d.sound;
   A.setOn(S.d.sound);
 
+  G.content = require('./data').CONTENT;
   require('./room');
   require('./story');
   require('./world');
   G.scene = G.scenes.title();
   P.onTouch({ down: onDown, move: onMove, up: onUp, wheel: onWheel });
   P.onHide(() => S.write());
+  // 配置工具预览：收到剧本后直接从指定句开始播放，不读写存档
+  P.onMessage((m) => {
+    if (!m || m.type !== 'weiji:preview' || !m.data) return;
+    G.content = m.data;
+    G.modal = null; G.fade.next = null; G.fade.a = 0; G.press = {};
+    G.scene = G.scenes.story(m.scene || 'intro', { preview: true, start: m.start || 0 });
+  });
+  P.postParent({ type: 'weiji:ready' });
   lastT = P.now();
   P.raf(frame);
 }

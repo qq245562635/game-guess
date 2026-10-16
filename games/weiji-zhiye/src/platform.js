@@ -96,6 +96,15 @@ const P = {
     img.src = src;
   },
 
+  // 配置工具预览：网页版被 iframe 嵌入时与父页面通信（小游戏里无效）
+  onMessage(fn) {
+    if (isWx || typeof window === 'undefined') return;
+    window.addEventListener('message', (e) => fn(e.data));
+  },
+  postParent(msg) {
+    try { if (!isWx && typeof window !== 'undefined' && window.parent && window.parent !== window) window.parent.postMessage(msg, '*'); } catch (e) { /* ignore */ }
+  },
+
   onHide(fn) {
     if (isWx && wx.onHide) wx.onHide(fn);
     else if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.hidden) fn(); });

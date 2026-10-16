@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>未寄之夜 · 剧本配置</title>
+<style>
+:root{
+  --bg:#101219; --panel:#171a24; --panel2:#1d2130; --line:#2a2f40; --line2:#363c52;
+  --text:#ebe3d4; --mute:#8e8a80; --gold:#c9a27a; --gold2:#e6c9a2; --red:#d9776b; --amber:#d8b05c; --blue:#8197b4;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.5 "PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+#app{display:grid;grid-template-columns:minmax(0,1fr) 420px;grid-template-rows:auto minmax(0,1fr);height:100vh}
+header{grid-column:1/3;display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);background:#0c0e14;flex-wrap:wrap}
+header h1{font-size:16px;margin:0 12px 0 0;font-weight:600;letter-spacing:.02em}
+header h1 small{color:var(--mute);font-weight:400;margin-left:8px}
+.btn{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:6px 12px;line-height:1.3}
+.btn:hover{border-color:var(--gold)}
+.btn.primary{background:var(--gold);color:#1b140e;border-color:var(--gold);font-weight:600}
+.btn.sm{padding:3px 8px;font-size:12px;border-radius:6px}
+.btn.icon{padding:3px 7px;min-width:28px}
+.btn.danger:hover{border-color:var(--red);color:var(--red)}
+.spacer{flex:1}
+.status{color:var(--mute);font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;border:1px solid var(--line2);background:var(--panel)}
+.badge.ok{color:#9cc49a}.badge.err{color:var(--red);border-color:#5a2e2a}.badge.warn{color:var(--amber);border-color:#5a4a2a}
+main{overflow:auto;padding:0 16px 80px}
+.tabs{position:sticky;top:0;z-index:5;display:flex;gap:4px;padding:12px 0 10px;background:var(--bg);border-bottom:1px solid var(--line);margin-bottom:12px;align-items:center}
+.tab{padding:7px 14px;border-radius:8px;border:1px solid transparent;background:none;color:var(--mute)}
+.tab.on{background:var(--panel2);border-color:var(--line2);color:var(--text)}
+.tab .n{font-size:11px;color:var(--mute);margin-left:4px}
+.row{display:grid;grid-template-columns:34px 1fr;gap:8px;padding:10px 10px 10px 6px;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:8px;position:relative}
+.row.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.row.err{border-color:#6a3530}
+.idx{color:var(--mute);font:12px var(--mono);text-align:right;padding-top:6px}
+.line1{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+select,input[type=text],input[type=number],textarea{background:var(--panel2);border:1px solid var(--line2);border-radius:7px;padding:5px 8px;outline:none}
+select:focus,input:focus,textarea:focus{border-color:var(--gold)}
+select.type{font-weight:600}
+textarea{width:100%;resize:vertical;min-height:38px;margin-top:6px;line-height:1.55;font-size:15px}
+.t-say textarea{color:#f3ece0}.t-act textarea{color:#aeb9ca;font-style:italic}.t-cap textarea{color:#e9e1d0;text-align:center}
+.chip{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:2px;vertical-align:middle}
+.tools{display:flex;gap:4px;margin-left:auto}
+[hidden]{display:none !important}
+.more{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line2)}
+.more label,.field{display:flex;align-items:center;gap:6px;color:var(--mute);font-size:12px}
+.more input[type=text]{width:120px}
+.opts{margin-top:6px;display:grid;gap:6px}
+.opt{display:grid;grid-template-columns:40px 1fr 140px 28px;gap:6px}
+.lbl{font:600 13px var(--mono);color:var(--gold2)}
+.row.t-label{background:transparent;border-style:dashed}
+.row.t-goto{background:transparent;border-style:dashed}
+.insert{display:flex;justify-content:center;margin:-4px 0 4px}
+.insert button{opacity:.0;transition:opacity .15s}
+.insert:hover button,.insert button:focus{opacity:1}
+aside{border-left:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:12px;gap:10px;background:#0c0e14;overflow:auto}
+.phone{width:390px;height:844px;transform-origin:top center;border-radius:22px;overflow:hidden;border:1px solid var(--line2);background:#000;flex:none}
+.phone iframe{width:390px;height:844px;border:0;display:block}
+.pv-bar{display:flex;gap:8px;align-items:center;width:100%;flex-wrap:wrap}
+.hint{color:var(--mute);font-size:12px;line-height:1.6}
+.card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px;margin-bottom:12px}
+.card h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:8px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.exprs{display:grid;gap:6px;margin-top:10px}
+.expr{display:grid;grid-template-columns:110px 40px 1fr auto auto;gap:6px;align-items:center}
+.thumb{width:34px;height:46px;object-fit:cover;border-radius:4px;border:1px solid var(--line2);background:#000}
+.issues{margin:0;padding:0;list-style:none;max-height:180px;overflow:auto;width:100%}
+.issues li{font-size:12px;padding:4px 8px;border-radius:6px;cursor:pointer}
+.issues li:hover{background:var(--panel2)}
+.issues li.e{color:var(--red)}.issues li.w{color:var(--amber)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#22273a;border:1px solid var(--line2);padding:8px 16px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+@media (max-width:1000px){#app{grid-template-columns:1fr;grid-template-rows:auto auto auto}aside{border-left:0;border-top:1px solid var(--line)}main{overflow:visible}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>未寄之夜 · 剧本配置<small>改完导出 script.json 替换 content/ 下的同名文件</small></h1>
+    <button class="btn" id="bImport">导入 JSON</button>
+    <button class="btn primary" id="bExport">导出 script.json</button>
+    <button class="btn" id="bCsvOut">导出表格</button>
+    <button class="btn" id="bCsvIn">导入表格</button>
+    <button class="btn danger" id="bReset">恢复为仓库版本</button>
+    <span class="spacer"></span>
+    <span id="badge" class="badge ok">校验通过</span>
+    <span class="status" id="saved"></span>
+    <input type="file" id="fJson" accept=".json,application/json" hidden>
+    <input type="file" id="fCsv" accept=".csv,text/csv" hidden>
+  </header>
+  <main id="main"></main>
+  <aside>
+    <div class="pv-bar">
+      <button class="btn primary" id="bPlay">▶ 从选中行预览</button>
+      <label class="field"><input type="checkbox" id="auto" checked> 选中即预览</label>
+    </div>
+    <div class="phone" id="phone"><iframe id="pv" title="游戏预览"></iframe></div>
+    <ul class="issues" id="issues"></ul>
+    <div class="hint">
+      预览运行的是真实游戏代码，不会写入游戏存档。<br>
+      草稿自动保存在本浏览器。要让游戏正式使用，导出 <b>script.json</b> 放到 <code>games/weiji-zhiye/content/</code>，再运行 <code>python3 tools/build.py</code>。
+    </div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const DEFAULT = {"version": 1, "stage": "speaker", "characters": [{"id": "lin", "name": "林栖", "color": "#c9a27a", "display": "full", "pos": "left", "expressions": ["calm", "doubt", "serious", "soft"], "images": {}}, {"id": "lu", "name": "陆沉舟", "color": "#8197b4", "display": "full", "pos": "right", "expressions": ["calm", "smile", "avoid", "serious"], "images": {}}], "scenes": {"intro": [{"t": "cap", "s": "一年前，一名医生死在这间卧室。", "bg": "empty", "clear": true}, {"t": "cap", "s": "你失去了那晚的部分记忆。\n陪你回来的人，曾是嫌疑人。"}, {"t": "act", "s": "卧室门口。窗外下着雨，你手里拿着旧照片与物件记录。"}, {"t": "say", "who": "lin", "s": "记录说，我那晚也来过这里。", "e": "calm", "act": "enter"}, {"t": "say", "who": "lu", "s": "来过。", "e": "calm", "act": "enter"}, {"t": "say", "who": "lin", "s": "这是当时安置我的客房？", "e": "doubt"}, {"t": "act", "s": "他看了一眼房门。", "who": "lu", "e": "avoid", "act": "sigh"}, {"t": "say", "who": "lu", "s": "……先看看你能认出什么。", "e": "avoid"}, {"t": "act", "s": "你走近衣柜，袖口勾住了把手。他停在你身侧。", "who": "lu", "e": "calm", "act": "near", "sfx": "cloth"}, {"t": "say", "who": "lu", "s": "别急，线勾住了。我帮你？", "e": "calm"}, {"t": "say", "who": "lin", "s": "只许碰袖口。", "e": "serious"}, {"t": "act", "s": "他解开勾住的线，随即松手。", "who": "lu", "act": "normal", "sfx": "cloth"}, {"t": "say", "who": "lu", "s": "你以前也这么防着我。", "e": "smile"}, {"t": "say", "who": "lin", "s": "客房里的东西，你也这么熟？", "e": "doubt"}, {"t": "say", "who": "lu", "s": "你想先听解释，还是自己看？", "e": "serious"}, {"t": "say", "who": "lin", "s": "我先自己看。等房间还原好，你把省略的部分补上。", "e": "serious", "act": "nod"}, {"t": "say", "who": "lu", "s": "好。我在这里。", "e": "calm", "act": "nod"}, {"t": "goal", "clear": true, "title": "还原卧室 · 0/24", "sub": "依据旧照片、家具清单与保存物件，\n复原你曾停留的那一晚。", "button": "开始还原"}], "outro": [{"t": "act", "s": "还原好的卧室里，你的目光停在梳妆台上。", "bg": "full", "focus": "vanity", "clear": true}, {"t": "say", "who": "lin", "s": "等等。盘里那只耳饰……", "e": "doubt"}, {"t": "act", "s": "收纳盘里是一只银色耳饰。你取出自己保存的另一只——两者成对。", "img": "earring"}, {"t": "say", "who": "lin", "s": "我一直以为，另一只早就丢了。", "e": "soft"}, {"t": "say", "who": "lu", "s": "那晚它勾住了你的披肩。你让我帮你取下来。", "e": "calm", "img": "", "focus": "none"}, {"t": "say", "who": "lin", "s": "我的披肩、你的衬衫，都留在这里。这里到底是谁的房间？", "e": "serious"}, {"t": "act", "s": "他看向床侧，没有再回避。", "who": "lu", "e": "serious", "sfx": "sting"}, {"t": "say", "who": "lu", "s": "我的。这里一直是我的卧室。", "e": "serious"}, {"t": "say", "who": "lin", "s": "你刚才为什么不纠正我？", "e": "doubt"}, {"t": "say", "who": "lu", "s": "我怕你知道以后，就不肯再进来。", "e": "avoid", "act": "sigh"}, {"t": "say", "who": "lin", "s": "那晚呢？我为什么会来？", "e": "serious"}, {"t": "say", "who": "lu", "s": "你说有人要杀你。你不肯回自己的房间。", "e": "serious"}, {"t": "act", "s": "暖色台灯。床沿。你抓住了一截衣袖。", "img": "memory", "mem": true, "sfx": "cloth"}, {"t": "say", "who": "lin", "s": "今晚……你能不能别走？", "name": "林栖（记忆）", "mem": true}, {"t": "say", "who": "lu", "s": "好。我在。", "name": "陆沉舟（记忆）", "mem": true}, {"t": "act", "s": "回到现在。他向前一步，你抬眼，他停下。", "who": "lu", "img": "", "e": "calm", "act": "nearback"}, {"t": "say", "who": "lin", "s": "是我让你留下的。", "e": "soft"}, {"t": "say", "who": "lu", "s": "是。", "e": "calm"}, {"t": "say", "who": "lin", "s": "那医生遇害的时候，你还在这里吗？", "e": "serious"}, {"t": "act", "s": "室内的声音淡下去，只剩雨声。", "who": "lu", "e": "serious", "rain": 0.9, "sfx": "sting"}, {"t": "say", "who": "lu", "s": "我答应过不走。但那晚，我确实离开过。", "e": "serious"}, {"t": "choice", "q": "你要怎么回应？", "rain": 0.5, "opts": [{"k": "A", "s": "坐下，把你离开的原因说清楚。", "go": "A"}, {"k": "B", "s": "这次，你还会走吗？", "go": "B"}]}, {"t": "label", "id": "A"}, {"t": "act", "s": "你指向扶手椅，自己坐在床边，保持能看清他的距离。", "who": "lin", "e": "serious"}, {"t": "say", "who": "lin", "s": "这次别省略。我自己判断。", "e": "serious"}, {"t": "say", "who": "lu", "s": "好。从叫我出去的那条消息开始。", "e": "serious", "act": "nod"}, {"t": "goto", "id": "common"}, {"t": "label", "id": "B"}, {"t": "act", "s": "你拉住他的领带，让他停在一步以内。你们对视，他没有再贴近。", "who": "lu", "e": "calm", "act": "near", "sfx": "cloth"}, {"t": "say", "who": "lu", "s": "你要我留下？", "e": "smile"}, {"t": "say", "who": "lin", "s": "留下解释。别把这当成我已经信了你。", "e": "serious"}, {"t": "say", "who": "lu", "s": "好。这次听你的。", "e": "calm", "act": "normal"}, {"t": "label", "id": "common"}, {"t": "act", "s": "他坐到扶手椅上。你把耳饰放回盘中，坐下与他交谈。", "who": "lu", "e": "calm", "act": "normal"}, {"t": "say", "who": "lin", "s": "先从我为什么害怕说起。", "e": "soft"}, {"t": "end", "clear": true, "chapter": "第一章 · 他的卧室，我的耳饰", "title": "你找回了耳饰，\n也记起了自己曾向他求助。", "record": "你要求他留下，把过去讲清楚。", "next": "下一段：那条叫走他的消息，与你当时害怕的人。", "button": "保存这间房间"}]}};
+const DRAFT_KEY = 'weiji_editor_draft_v1';
+const TYPES = { say: '对白', act: '叙述 / 动作', cap: '黑屏字幕', choice: '选择', goal: '目标卡', end: '章节卡', label: '标签', goto: '跳转' };
+const ACTIONS = { '': '无动作', enter: '入场', exit: '离场', near: '靠近', normal: '回到正常距离', far: '后退', nearback: '靠近后停住', nod: '点头', shake: '摇头', jump: '吃惊', tremble: '颤抖', sigh: '低头', turn: '转身' };
+const EXPR_CN = { calm: '平静', smile: '轻笑', avoid: '回避', serious: '认真', doubt: '怀疑', soft: '柔和' };
+const SFX = { '': '无', cloth: '衣料', sting: '转折', chime: '完成', snap: '吸附', flip: '翻页', peel: '揭纸', tap: '点击', miss: '弹回' };
+const BG = { '': '不变', empty: '空房间', full: '还原后的卧室' };
+const FOCUS = { '': '不变', vanity: '梳妆台特写', none: '取消特写' };
+const IMG = { keep: '不变', off: '关闭近景', earring: '耳饰近景', memory: '记忆画面' };
+const POS = { '': '默认', left: '左', center: '中', right: '右' };
+const SCENES = { intro: '开场', outro: '后续' };
+
+const $ = (s, r) => (r || document).querySelector(s);
+const h = (tag, attrs, ...kids) => {
+  const e = document.createElement(tag);
+  for (const k in attrs || {}) {
+    const v = attrs[k];
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (k === 'value') e.value = v;
+    else if (k === 'checked') e.checked = v;
+    else if (v !== undefined && v !== null && v !== false) e.setAttribute(k, v);
+  }
+  kids.flat().forEach((c) => { if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); });
+  return e;
+};
+const sel = (map, val, onchange, cls) => h('select', { class: cls, onchange: (e) => onchange(e.target.value) },
+  Object.keys(map).map((k) => h('option', { value: k, selected: k === val ? 'selected' : null }, map[k])));
+const clone = (o) => JSON.parse(JSON.stringify(o));
+
+let data = null, tab = 'intro', selIdx = 0, saveTimer = 0, pvTimer = 0, pvReady = false, pvQueue = null;
+try { const d = localStorage.getItem(DRAFT_KEY); if (d) data = JSON.parse(d); } catch (e) {}
+if (!data) data = clone(DEFAULT);
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), 1800); }
+function chars() { return data.characters || []; }
+function charById(id) { return chars().find((c) => c.id === id); }
+function nodes() { return data.scenes[tab] || []; }
+function setF(n, k, v) { if (v === '' || v === null || v === undefined || v === false) delete n[k]; else n[k] = v; }
+function labelsOf(list) { return list.filter((n) => n.t === 'label').map((n) => n.id); }
+
+// ---------- 保存、校验、预览 ----------
+function changed(opts) {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(data)); $('#saved').textContent = '草稿已保存 ' + new Date().toLocaleTimeString(); }
+    catch (e) { $('#saved').textContent = '草稿过大，未能保存（图片请用路径）'; }
+  }, 300);
+  validate();
+  if (!(opts && opts.noPreview) && $('#auto').checked && (tab === 'intro' || tab === 'outro')) schedulePreview();
+}
+function validate() {
+  const errs = [], warns = [], cmap = {};
+  chars().forEach((c) => { cmap[c.id] = c; });
+  for (const key in SCENES) {
+    const list = data.scenes[key] || [], labels = labelsOf(list);
+    labels.forEach((l, i) => { if (labels.indexOf(l) !== i) errs.push([key, -1, '标签 ' + l + ' 重复']); });
+    list.forEach((n, i) => {
+      if (n.t === 'say' && !cmap[n.who]) errs.push([key, i, '没有选发言人']);
+      if (n.t === 'act' && n.who && !cmap[n.who]) errs.push([key, i, '角色 ' + n.who + ' 不存在']);
+      if (n.e && cmap[n.who] && (cmap[n.who].expressions || []).indexOf(n.e) < 0) warns.push([key, i, cmap[n.who].name + ' 没有表情 ' + n.e]);
+      if ((n.t === 'say' || n.t === 'act' || n.t === 'cap') && !(n.s || '').trim()) warns.push([key, i, '文案为空']);
+      if (n.t === 'goto' && labels.indexOf(n.id) < 0) errs.push([key, i, '跳转目标不存在']);
+      if (n.t === 'label' && !n.id) errs.push([key, i, '标签没有名字']);
+      if (n.t === 'choice') (n.opts || []).forEach((o) => { if (labels.indexOf(o.go) < 0) errs.push([key, i, '选项「' + (o.s || '') + '」没有有效的跳转标签']); });
+    });
+  }
+  const b = $('#badge');
+  b.className = 'badge ' + (errs.length ? 'err' : warns.length ? 'warn' : 'ok');
+  b.textContent = errs.length ? errs.length + ' 个错误' : warns.length ? warns.length + ' 个提示' : '校验通过';
+  const ul = $('#issues'); ul.innerHTML = '';
+  errs.map((x) => [x, 'e']).concat(warns.map((x) => [x, 'w'])).forEach(([x, k]) => {
+    ul.append(h('li', { class: k, onclick: () => { tab = x[0]; if (x[1] >= 0) selIdx = x[1]; render(); scrollToSel(); } },
+      SCENES[x[0]] + (x[1] >= 0 ? ' #' + (x[1] + 1) : '') + '：' + x[2]));
+  });
+  document.querySelectorAll('.row').forEach((r) => r.classList.remove('err'));
+  errs.forEach((x) => { if (x[0] === tab && x[1] >= 0) { const r = document.querySelector('.row[data-i="' + x[1] + '"]'); r && r.classList.add('err'); } });
+  return errs;
+}
+function schedulePreview() { clearTimeout(pvTimer); pvTimer = setTimeout(() => preview(tab, selIdx), 350); }
+function preview(scene, start) {
+  const msg = { type: 'weiji:preview', data: clone(data), scene, start };
+  const f = $('#pv');
+  if (!pvReady) { pvQueue = msg; return; }
+  f.contentWindow.postMessage(msg, '*');
+}
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'weiji:ready') { pvReady = true; if (pvQueue) { $('#pv').contentWindow.postMessage(pvQueue, '*'); pvQueue = null; } else preview(tab === 'intro' || tab === 'outro' ? tab : 'intro', selIdx); }
+});
+
+// ---------- 剧情行 ----------
+function newNode(t) {
+  if (t === 'say') return { t, who: (chars()[0] || {}).id, s: '' };
+  if (t === 'choice') return { t, q: '你要怎么回应？', opts: [{ k: 'A', s: '', go: '' }, { k: 'B', s: '', go: '' }] };
+  if (t === 'goal') return { t, title: '', sub: '', button: '开始' };
+  if (t === 'end') return { t, chapter: '', title: '', record: '', next: '', button: '继续' };
+  if (t === 'label') return { t, id: 'L' + Math.floor(Math.random() * 900 + 100) };
+  if (t === 'goto') return { t, id: '' };
+  return { t, s: '' };
+}
+function changeType(n, t) {
+  const keep = { s: n.s, who: n.who, e: n.e };
+  Object.keys(n).forEach((k) => delete n[k]);
+  Object.assign(n, newNode(t));
+  if (keep.s && 's' in n) n.s = keep.s;
+  if ((t === 'say' || t === 'act') && keep.who) { n.who = keep.who; if (keep.e) n.e = keep.e; }
+}
+function whoSelect(n, allowNone) {
+  const map = {}; if (allowNone) map[''] = '（不指定角色）';
+  chars().forEach((c) => { map[c.id] = c.name; });
+  const s = sel(map, n.who || '', (v) => { setF(n, 'who', v); const c = charById(v); if (n.e && c && (c.expressions || []).indexOf(n.e) < 0) delete n.e; render(); changed(); });
+  const c = charById(n.who);
+  return h('span', null, h('span', { class: 'chip', style: 'background:' + (c ? c.color : 'transparent') }), s);
+}
+function exprSelect(n) {
+  const c = charById(n.who); if (!c) return null;
+  const map = { '': '表情不变' };
+  (c.expressions || []).forEach((e) => { map[e] = (EXPR_CN[e] ? EXPR_CN[e] + ' ' : '') + e; });
+  if (n.e && !(n.e in map)) map[n.e] = n.e + '（不存在）';
+  return sel(map, n.e || '', (v) => { setF(n, 'e', v); changed(); });
+}
+function textArea(n, key, ph) {
+  const ta = h('textarea', { rows: 1, placeholder: ph || '', oninput: (e) => { n[key] = e.target.value; auto(e.target); changed(); } });
+  ta.value = n[key] || '';
+  requestAnimationFrame(() => auto(ta));
+  return ta;
+}
+function auto(ta) { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+function input(n, key, ph, w) {
+  return h('input', { type: 'text', value: n[key] || '', placeholder: ph || '', style: w ? 'width:' + w + 'px' : null, oninput: (e) => { setF(n, key, e.target.value); changed(); } });
+}
+function labelSelect(cur, onchange) {
+  const map = { '': '选择标签' }; labelsOf(nodes()).forEach((l) => { map[l] = '→ ' + l; });
+  if (cur && !(cur in map)) map[cur] = cur + '（不存在）';
+  return sel(map, cur || '', onchange);
+}
+
+function moreFields(n) {
+  const m = h('div', { class: 'more' });
+  const imgVal = n.img === undefined ? 'keep' : (n.img ? n.img : 'off');
+  if (n.t === 'say') m.append(h('label', null, '显示名', input(n, 'name', '如 林栖（记忆）')));
+  if (n.t === 'say' || n.t === 'act') m.append(h('label', null, '站位', sel(POS, n.pos || '', (v) => { setF(n, 'pos', v); changed(); })));
+  m.append(
+    h('label', null, '背景', sel(BG, n.bg || '', (v) => { setF(n, 'bg', v); changed(); })),
+    h('label', null, '镜头', sel(FOCUS, n.focus || '', (v) => { setF(n, 'focus', v); changed(); })),
+    h('label', null, '近景', sel(IMG, imgVal, (v) => { if (v === 'keep') delete n.img; else n.img = v === 'off' ? '' : v; changed(); })),
+    h('label', null, '音效', sel(SFX, n.sfx || '', (v) => { setF(n, 'sfx', v); changed(); })),
+    h('label', null, '雨声', h('input', { type: 'number', min: 0, max: 1, step: 0.1, style: 'width:64px', value: n.rain === undefined ? '' : n.rain, placeholder: '不变', oninput: (e) => { setF(n, 'rain', e.target.value === '' ? '' : +e.target.value); changed(); } })),
+    h('label', null, h('input', { type: 'checkbox', checked: !!n.mem, onchange: (e) => { setF(n, 'mem', e.target.checked); changed(); } }), '记忆色调'),
+    h('label', null, h('input', { type: 'checkbox', checked: !!n.clear, onchange: (e) => { setF(n, 'clear', e.target.checked); changed(); } }), '先清空立绘'),
+  );
+  return m;
+}
+function hasMore(n) { return ['name', 'pos', 'bg', 'focus', 'img', 'sfx', 'rain', 'mem', 'clear'].some((k) => n[k] !== undefined); }
+
+function rowTools(i) {
+  const list = nodes();
+  const move = (d) => { const j = i + d; if (j < 0 || j >= list.length) return; [list[i], list[j]] = [list[j], list[i]]; selIdx = j; render(); changed(); };
+  return h('span', { class: 'tools' },
+    h('button', { class: 'btn sm', title: '从这一行预览', onclick: (e) => { e.stopPropagation(); selIdx = i; markSel(); preview(tab, i); } }, '▶'),
+    h('button', { class: 'btn sm icon', title: '上移', onclick: (e) => { e.stopPropagation(); move(-1); } }, '↑'),
+    h('button', { class: 'btn sm icon', title: '下移', onclick: (e) => { e.stopPropagation(); move(1); } }, '↓'),
+    h('button', { class: 'btn sm', title: '复制一行', onclick: (e) => { e.stopPropagation(); list.splice(i + 1, 0, clone(list[i])); selIdx = i + 1; render(); changed(); } }, '复制'),
+    h('button', { class: 'btn sm danger', title: '删除', onclick: (e) => { e.stopPropagation(); if (confirm('删除第 ' + (i + 1) + ' 行？')) { list.splice(i, 1); selIdx = Math.max(0, Math.min(selIdx, list.length - 1)); render(); changed(); } } }, '删除'),
+  );
+}
+
+function renderRow(n, i) {
+  const body = h('div');
+  const typeSel = sel(TYPES, n.t, (v) => { changeType(n, v); render(); changed(); }, 'type');
+  const line = h('div', { class: 'line1' }, typeSel);
+  if (n.t === 'say') line.append(whoSelect(n, false), exprSelect(n), sel(ACTIONS, n.act || '', (v) => { setF(n, 'act', v); changed(); }));
+  if (n.t === 'act') { line.append(whoSelect(n, true)); if (n.who) line.append(exprSelect(n), sel(ACTIONS, n.act || '', (v) => { setF(n, 'act', v); changed(); })); }
+  if (n.t === 'label') line.append(h('span', { class: 'lbl' }, '◆'), input(n, 'id', '标签名', 140), h('span', { class: 'hint' }, '选择和跳转会跳到这里'));
+  if (n.t === 'goto') line.append(labelSelect(n.id, (v) => { setF(n, 'id', v); changed(); }));
+  const showMore = h('button', { class: 'btn sm', onclick: (e) => { e.stopPropagation(); more.hidden = !more.hidden; } }, '更多' + (hasMore(n) ? ' •' : ''));
+  if (n.t !== 'label' && n.t !== 'goto') line.append(showMore);
+  line.append(rowTools(i));
+  body.append(line);
+  if (n.t === 'say') body.append(textArea(n, 's', '台词'));
+  if (n.t === 'act') body.append(textArea(n, 's', '叙述 / 动作描写（不显示名字）'));
+  if (n.t === 'cap') body.append(textArea(n, 's', '黑屏字幕，回车换行'));
+  if (n.t === 'choice') {
+    body.append(h('div', { class: 'field', style: 'margin-top:6px' }, '提问', input(n, 'q', '提问文字', 300)));
+    const opts = h('div', { class: 'opts' });
+    (n.opts || []).forEach((o, k) => {
+      opts.append(h('div', { class: 'opt' },
+        h('input', { type: 'text', value: o.k || '', title: '选项编号（存档用）', oninput: (e) => { o.k = e.target.value; changed(); } }),
+        h('input', { type: 'text', value: o.s || '', placeholder: '选项文字', oninput: (e) => { o.s = e.target.value; changed(); } }),
+        labelSelect(o.go, (v) => { o.go = v; changed(); }),
+        h('button', { class: 'btn sm icon danger', onclick: () => { n.opts.splice(k, 1); render(); changed(); } }, '×')));
+    });
+    opts.append(h('div', null, h('button', { class: 'btn sm', onclick: () => { n.opts = n.opts || []; n.opts.push({ k: String.fromCharCode(65 + n.opts.length), s: '', go: '' }); render(); changed(); } }, '+ 选项')));
+    body.append(opts);
+  }
+  if (n.t === 'goal') body.append(h('div', { class: 'grid2', style: 'margin-top:6px' },
+    h('label', { class: 'field' }, '标题', input(n, 'title', '还原卧室 · 0/24')), h('label', { class: 'field' }, '按钮', input(n, 'button', '开始还原')),
+  ), textArea(n, 'sub', '说明文字'));
+  if (n.t === 'end') body.append(h('div', { class: 'grid2', style: 'margin-top:6px' },
+    h('label', { class: 'field' }, '章节', input(n, 'chapter', '第一章 · …')), h('label', { class: 'field' }, '按钮', input(n, 'button', '保存这间房间')),
+  ), textArea(n, 'title', '章节标题'), textArea(n, 'record', '关系记录'), textArea(n, 'next', '下一段预告'));
+  const more = moreFields(n); more.hidden = !hasMore(n) || n.t === 'label' || n.t === 'goto';
+  if (n.t !== 'label' && n.t !== 'goto') body.append(more);
+  const row = h('div', { class: 'row t-' + n.t + (i === selIdx ? ' sel' : ''), 'data-i': i, onclick: () => { if (selIdx !== i) { selIdx = i; markSel(); if ($('#auto').checked) schedulePreview(); } } },
+    h('div', { class: 'idx' }, String(i + 1)), body);
+  return row;
+}
+function insertBar(i) {
+  const add = (t) => { nodes().splice(i, 0, newNode(t)); selIdx = i; render(); changed(); };
+  return h('div', { class: 'insert' }, h('span', null,
+    h('button', { class: 'btn sm', onclick: () => add('say') }, '+ 对白'), ' ',
+    h('button', { class: 'btn sm', onclick: () => add('act') }, '+ 叙述'), ' ',
+    h('button', { class: 'btn sm', onclick: () => add('cap') }, '+ 字幕')));
+}
+function markSel() { document.querySelectorAll('.row').forEach((r) => r.classList.toggle('sel', +r.dataset.i === selIdx)); }
+function scrollToSel() { const r = document.querySelector('.row[data-i="' + selIdx + '"]'); r && r.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+
+// ---------- 角色 ----------
+function fileToData(cb) {
+  const f = h('input', { type: 'file', accept: 'image/*' });
+  f.onchange = () => { const file = f.files[0]; if (!file) return; const r = new FileReader(); r.onload = () => cb(r.result, file); r.readAsDataURL(file); };
+  f.click();
+}
+function imageField(c, key) {
+  c.images = c.images || {};
+  const v = c.images[key] || '';
+  const isData = v.startsWith('data:');
+  const inp = h('input', { type: 'text', value: isData ? '（已上传，仅预览用）' : v, placeholder: 'images/xxx.png', oninput: (e) => { setF(c.images, key, e.target.value); changed(); } });
+  return [
+    v ? h('img', { class: 'thumb', src: isData || /^https?:/.test(v) ? v : '../' + v }) : h('span', { class: 'thumb', style: 'display:inline-block' }),
+    inp,
+    h('button', { class: 'btn sm', title: '上传图片，仅用于本浏览器预览；正式版请把图片放进仓库并填路径', onclick: () => fileToData((d, file) => { if (file.size > 400000) toast('图片较大，草稿可能存不下，建议压缩'); c.images[key] = d; render(); changed(); }) }, '上传'),
+  ];
+}
+function renderChars(main) {
+  main.append(h('p', { class: 'hint' }, '谁发言就显示谁的立绘。表情可以配整张立绘图（推荐，按 520×880 比例出图，透明底）；不配图时用程序占位图。图片路径相对游戏目录，例如 images/lin_calm.png。'));
+  chars().forEach((c, ci) => {
+    const exprs = h('div', { class: 'exprs' },
+      h('div', { class: 'expr' }, h('b', { title: '没有对应表情图时用这张' }, '底图'), ...imageField(c, 'base'), h('span')));
+    (c.expressions || []).forEach((e, k) => {
+      exprs.append(h('div', { class: 'expr' },
+        h('input', { type: 'text', value: e, title: '表情 key（剧情里引用的名字）', onchange: (ev) => {
+          const nv = ev.target.value.trim(); if (!nv) return;
+          for (const key in data.scenes) data.scenes[key].forEach((n) => { if (n.who === c.id && n.e === e) n.e = nv; });
+          if (c.images && c.images[e]) { c.images[nv] = c.images[e]; delete c.images[e]; }
+          c.expressions[k] = nv; render(); changed();
+        } }),
+        ...imageField(c, e),
+        h('button', { class: 'btn sm icon danger', onclick: () => { c.expressions.splice(k, 1); render(); changed(); } }, '×')));
+    });
+    exprs.append(h('div', null, h('button', { class: 'btn sm', onclick: () => { c.expressions = c.expressions || []; c.expressions.push('expr' + (c.expressions.length + 1)); render(); changed(); } }, '+ 表情')));
+    const used = Object.values(data.scenes).flat().filter((n) => n.who === c.id).length;
+    main.append(h('div', { class: 'card' },
+      h('h3', null, h('span', { class: 'chip', style: 'background:' + c.color }), c.name || c.id, h('span', { class: 'hint' }, 'id: ' + c.id + ' · ' + used + ' 行'),
+        h('span', { class: 'tools' }, h('button', { class: 'btn sm danger', onclick: () => { if (used) { toast('还有 ' + used + ' 行在用这个角色'); return; } data.characters.splice(ci, 1); render(); changed(); } }, '删除角色'))),
+      h('div', { class: 'grid2' },
+        h('label', { class: 'field' }, '名字', input(c, 'name', '', 120)),
+        h('label', { class: 'field' }, '名牌颜色', h('input', { type: 'color', value: c.color || '#c9a27a', oninput: (e) => { c.color = e.target.value; changed(); } })),
+        h('label', { class: 'field' }, '显示方式', sel({ full: '立绘', avatar: '对话框小头像', none: '不显示' }, c.display || 'full', (v) => { c.display = v; changed(); })),
+        h('label', { class: 'field' }, '同台站位', sel({ left: '左', center: '中', right: '右' }, c.pos || 'center', (v) => { c.pos = v; changed(); })),
+        h('label', { class: 'field' }, '占位图', sel({ lu: '男（陆沉舟）', lin: '女（林栖）' }, c.placeholder || (c.id === 'lin' ? 'lin' : 'lu'), (v) => { c.placeholder = v; changed(); })),
+      ),
+      exprs));
+  });
+  main.append(h('button', { class: 'btn', onclick: () => {
+    const id = prompt('新角色 id（英文字母，剧本里引用用）'); if (!id || charById(id)) return;
+    data.characters.push({ id, name: id, color: '#9aa7b8', display: 'full', pos: 'center', placeholder: 'lu', expressions: ['calm'], images: {} });
+    render(); changed();
+  } }, '+ 新角色'));
+}
+
+function renderSettings(main) {
+  main.append(h('div', { class: 'card' }, h('h3', null, '立绘显示规则'),
+    sel({ speaker: '只显示正在发言的人（单人）', both: '双人同台，发言人高亮、其他人变暗' }, data.stage || 'speaker', (v) => { data.stage = v; changed(); }),
+    h('p', { class: 'hint' }, '叙述行如果指定了角色，也会把那个角色切到台前，用来给动作描写配表情和动作。勾选“先清空立绘”的行会让所有人离场。')));
+  main.append(h('div', { class: 'card' }, h('h3', null, '动作说明'),
+    h('p', { class: 'hint' }, '靠近 / 后退 / 回到正常距离：持续改变立绘大小；靠近后停住：靠近一下再退回；转身：左右翻转，再转一次复原；入场 / 离场：淡入淡出并带一点位移；点头、摇头、吃惊、颤抖、低头：一次性小动作。')));
+}
+
+function render() {
+  const main = $('#main');
+  const scroll = main.scrollTop;
+  main.innerHTML = '';
+  const tabs = h('div', { class: 'tabs' });
+  for (const k in SCENES) tabs.append(h('button', { class: 'tab' + (tab === k ? ' on' : ''), onclick: () => { tab = k; selIdx = 0; render(); main.scrollTop = 0; if ($('#auto').checked) schedulePreview(); } }, SCENES[k], h('span', { class: 'n' }, (data.scenes[k] || []).length)));
+  tabs.append(h('button', { class: 'tab' + (tab === 'chars' ? ' on' : ''), onclick: () => { tab = 'chars'; render(); } }, '角色与立绘'));
+  tabs.append(h('button', { class: 'tab' + (tab === 'settings' ? ' on' : ''), onclick: () => { tab = 'settings'; render(); } }, '显示设置'));
+  main.append(tabs);
+  if (tab === 'chars') renderChars(main);
+  else if (tab === 'settings') renderSettings(main);
+  else {
+    const list = nodes();
+    list.forEach((n, i) => { main.append(insertBar(i), renderRow(n, i)); });
+    main.append(h('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin-top:8px' },
+      Object.keys(TYPES).map((t) => h('button', { class: 'btn sm', onclick: () => { list.push(newNode(t)); selIdx = list.length - 1; render(); changed(); scrollToSel(); } }, '+ ' + TYPES[t]))));
+  }
+  main.scrollTop = scroll;
+  validate();
+}
+
+// ---------- 导入导出 ----------
+function download(name, text, type) {
+  const a = h('a', { href: URL.createObjectURL(new Blob([text], { type })), download: name });
+  document.body.append(a); a.click(); a.remove();
+}
+$('#bExport').onclick = () => {
+  if (validate().length && !confirm('剧本还有错误，构建会失败。仍然导出？')) return;
+  const hasData = JSON.stringify(data.characters).indexOf('data:image') >= 0;
+  if (hasData && !confirm('有角色图片是“上传”的（只适合预览，体积很大）。仍然导出？')) return;
+  download('script.json', JSON.stringify(data, null, 1), 'application/json');
+};
+$('#bImport').onclick = () => $('#fJson').click();
+$('#fJson').onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then((t) => { try { const d = JSON.parse(t); if (!d.scenes || !d.characters) throw 0; data = d; selIdx = 0; render(); changed(); toast('已导入'); } catch (err) { alert('不是有效的 script.json'); } });
+  e.target.value = '';
+};
+$('#bReset').onclick = () => { if (confirm('丢弃本浏览器里的草稿，恢复为仓库里的版本？')) { data = clone(DEFAULT); selIdx = 0; render(); changed(); } };
+
+const CSV_COLS = ['场景', '类型', '角色', '显示名', '表情', '动作', '文案', '站位', '背景', '镜头', '近景', '音效', '雨声', '记忆', '清空立绘', '其他'];
+const BASE_KEYS = ['t', 'who', 'name', 'e', 'act', 's', 'pos', 'bg', 'focus', 'img', 'sfx', 'rain', 'mem', 'clear'];
+const csvCell = (v) => { v = v === undefined || v === null ? '' : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+$('#bCsvOut').onclick = () => {
+  const rows = [CSV_COLS];
+  for (const key in SCENES) (data.scenes[key] || []).forEach((n) => {
+    const extra = {}; Object.keys(n).forEach((k) => { if (BASE_KEYS.indexOf(k) < 0) extra[k] = n[k]; });
+    rows.push([key, n.t, n.who, n.name, n.e, n.act, n.s, n.pos, n.bg, n.focus, n.img === undefined ? '' : (n.img || 'off'), n.sfx, n.rain, n.mem ? 1 : '', n.clear ? 1 : '', Object.keys(extra).length ? JSON.stringify(extra) : '']);
+  });
+  download('script.csv', '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n'), 'text/csv');
+};
+function parseCsv(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ',') { row.push(cell); cell = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += ch;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter((r) => r.some((c) => c !== ''));
+}
+$('#bCsvIn').onclick = () => $('#fCsv').click();
+$('#fCsv').onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then((t) => {
+    try {
+      const rows = parseCsv(t.replace(/^﻿/, '')); rows.shift();
+      const scenes = { intro: [], outro: [] };
+      rows.forEach((r) => {
+        const key = r[0]; if (!scenes[key]) throw new Error('未知场景 ' + key);
+        const n = {};
+        BASE_KEYS.forEach((k, j) => { const v = r[j + 1]; if (v !== undefined && v !== '') n[k] = v; });
+        if (n.img !== undefined) n.img = n.img === 'off' ? '' : n.img;
+        if (n.rain !== undefined) n.rain = +n.rain;
+        if (n.mem) n.mem = true; if (n.clear) n.clear = true;
+        if (r[15]) Object.assign(n, JSON.parse(r[15]));
+        scenes[key].push(n);
+      });
+      data.scenes = scenes; selIdx = 0; render(); changed(); toast('已从表格导入 ' + rows.length + ' 行');
+    } catch (err) { alert('表格导入失败：' + err.message); }
+  });
+  e.target.value = '';
+};
+
+$('#bPlay').onclick = () => preview(tab === 'intro' || tab === 'outro' ? tab : 'intro', tab === 'intro' || tab === 'outro' ? selIdx : 0);
+
+// 预览手机按窗口高度缩放
+function fitPhone() {
+  const p = $('#phone'), avail = window.innerHeight - 260;
+  const s = Math.max(0.5, Math.min(1, avail / 844));
+  p.style.transform = 'scale(' + s + ')';
+  p.style.marginBottom = (844 * (s - 1)) + 'px';
+}
+window.addEventListener('resize', fitPhone); fitPhone();
+$('#pv').src = '../index.html?preview=1';
+render();
+changed({ noPreview: true });
+window.__editor = { get data() { return data; }, render, preview, setSel: (i) => { selIdx = i; } };
+</script>
+</body>
+</html>

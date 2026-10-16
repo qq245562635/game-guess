@@ -7,7 +7,24 @@
 - **网页**：浏览器直接打开 `index.html`（GitHub Pages 上就是这个文件）。桌面端可用滚轮缩放。
 - **微信小游戏**：微信开发者工具 → 导入项目 → 选 `minigame/`，AppID 选测试号。详见 [minigame/README.md](minigame/README.md)。
 
-改了 `src/` 后执行 `python3 tools/build.py`，同时更新 `index.html` 和 `minigame/`。
+- **剧本配置工具**：打开 `editor/index.html`（Pages 上是 `games/weiji-zhiye/editor/`）。
+
+改了 `src/` 或 `content/script.json` 后执行 `python3 tools/build.py`，同时更新 `index.html`、`minigame/` 和 `editor/`。
+
+## 剧本配置工具
+
+所有文案、角色、立绘表情和动作都在 `content/script.json` 里，不写在代码里。配置工具是一个网页，策划直接改，不需要 AI 或程序参与：
+
+- 按行编辑开场和后续：对白、叙述、黑屏字幕、选择（选项跳到标签）、目标卡、章节卡、标签、跳转。可以插入、复制、上下移动、删除。
+- 每行可以设置发言人、表情、立绘动作，以及站位、背景、特写镜头、近景图、音效、雨声、记忆色调、清空立绘。
+- **谁发言显示谁的立绘**。显示设置里可以选「只显示发言人」或「双人同台，发言人高亮、其他人变暗」。叙述行指定了角色时，那个角色会上台做表情和动作。
+- 立绘动作：入场、离场、靠近、后退、回到正常距离、靠近后停住、点头、摇头、吃惊、颤抖、低头、转身。
+- 角色页：名字、名牌颜色、显示方式（立绘 / 对话框小头像 / 不显示）、同台站位、表情列表。每个表情可以配一张整身立绘（按 520×880 比例，透明底），没配图时用程序占位图。
+- 右侧是真实游戏的预览，选中哪一行就从哪一行播放，改字立刻看到效果。预览不写游戏存档。
+- 自动校验：发言人不存在、表情不存在、跳转标签缺失、文案为空。
+- 草稿自动存在浏览器里。可以导出 / 导入 `script.json`，也可以导出成表格（CSV，Excel 能打开）批量改字后再导入。
+
+**让改动正式生效**：导出 `script.json` 覆盖 `content/script.json`，运行 `python3 tools/build.py`，提交。立绘图片放进 `images/`，在角色页填路径（如 `images/lin_calm.png`），构建时会一起复制进小游戏工程。配置工具里的「上传」只用于本机预览，图片体积大，不建议导出提交。
 
 ## 目录
 
@@ -18,22 +35,22 @@
 | `src/text.js` | 文字排版成纹理、LRU 缓存、打字机逐字显示（不重复上传纹理） |
 | `src/art.js` | 程序绘制的占位美术：卧室底图、24 贴纸、立绘 + 4 表情、耳饰近景、记忆画面、宅邸图 |
 | `src/audio.js` | 运行时合成的雨声、揭纸、吸附、翻页、完成、衣料、转折音 |
-| `src/data.js` | 24 张贴纸坐标与分组、全部对白脚本、美术替换表 |
+| `src/data.js` | 24 张贴纸坐标与分组、立绘动作表、美术替换表 |
 | `src/room.js` | 卧室绘制与贴纸关卡（拖放、吸附、弹回、提示、缩放平移、分组翻页、全景） |
-| `src/story.js` | 剧情播放（字幕、对白、动作、立绘靠近、近景、记忆、选择、目标卡、章节卡、回顾） |
+| `src/story.js` | 剧情播放（多角色立绘、立绘动作、字幕、近景、记忆、选择、目标卡、章节卡、回顾、配置工具预览） |
+| `src/editor.src.html` | 剧本配置工具源码，构建成 `editor/index.html` |
+| `content/script.json` | 全部文案与角色配置 |
 | `src/world.js` | 标题、宅邸入口、房间四种状态、回访菜单、意愿反馈、试玩记录、重开 |
 | `src/save.js` | 存档（放置、剧情推进、选择后立即写入） |
 
 ## 替换正式美术
 
-图片放进 `minigame/images/`（网页版放在 `index.html` 同级的 `images/`），在 `src/data.js` 的 `ART_OVERRIDES` 里登记，加载成功后自动替换占位图，坐标和吸附不用改：
+图片放进本目录的 `images/`（构建时自动复制进 `minigame/images/`），在 `src/data.js` 的 `ART_OVERRIDES` 里登记，加载成功后自动替换占位图，坐标和吸附不用改：
 
 ```js
 const ART_OVERRIDES = {
   R19: 'images/R19.png',          // 贴纸：按 data.ITEMS 里的 w×h 比例出图，透明底
   room: 'images/room.png',        // 卧室底图 750×1000 比例
-  portrait_base: 'images/lu.png', // 立绘 520×880 比例
-  face_calm: 'images/lu_calm.png',// 表情层 240×170，贴在立绘 (140,260)
   earring: 'images/earring.png',  // 近景 690×480
   memory: 'images/memory.png',
 };
@@ -50,5 +67,5 @@ const ART_OVERRIDES = {
 
 ## 已知情况
 
-- 美术均为程序占位图，用于验证操作与节奏，不代表最终画面。
+- 美术均为程序占位图（角色立绘可在配置工具里换成正式图），用于验证操作与节奏，不代表最终画面。
 - 已在桌面 Chromium（模拟 390×844 手机屏）跑通完整流程；尚未在微信真机上运行，真机首次测试建议重点看：音频（依赖 `wx.createWebAudioContext`，基础库 2.19+）、低端机帧率、刘海屏安全区。
