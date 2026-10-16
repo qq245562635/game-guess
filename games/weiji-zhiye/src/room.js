@@ -304,10 +304,11 @@ class RoomScene {
       if (dragIt) { const wp = this.dragWorld(); near = Math.hypot(wp.x - dragIt.x, wp.y - dragIt.y) <= this.snapR(dragIt) * 1.7; }
       for (const it of this.groupItems(this.group)) {
         if (this.placed.has(it.id)) continue;
-        let a = 0.2, color = [0.86, 0.9, 1];
-        if (dragIt && dragIt.id === it.id) { a = near ? 0.5 + 0.15 * Math.sin(t * 10) : 0.32; color = near ? [1, 0.88, 0.62] : color; }
-        if (this.hint && this.hint.id === it.id) { a = 0.35 + 0.3 * Math.abs(Math.sin(t * 6)); color = [1, 0.88, 0.62]; }
-        ghosts.push({ id: it.id, a, color });
+        // 不再常驻显示所有目标的虚影；只在拖到目标附近、或点了「提示」时显示暖色轮廓
+        let a = 0, color = [1, 0.88, 0.62];
+        if (dragIt && dragIt.id === it.id && near) a = 0.5 + 0.15 * Math.sin(t * 10);
+        if (this.hint && this.hint.id === it.id) a = 0.35 + 0.3 * Math.abs(Math.sin(t * 6));
+        if (a > 0) ghosts.push({ id: it.id, a, color });
       }
     }
     drawRoomWorld(this.cam, this.placed, { t, light: this.light, ghosts, pose });
@@ -383,6 +384,12 @@ class RoomScene {
     }
     const w = s.w * k, h = s.h * k;
     R.draw(s.t, x - w / 2 + 8, y - h / 2 + 12, w, h, { color: [0, 0, 0], mix: 1, alpha: 0.32 * alpha });
+    // 白色描边：把贴纸剪影涂白，向四周错位叠画一圈，像刚从贴纸册上揭下来的贴纸
+    const ow = 5;
+    for (let i = 0; i < 16; i++) {
+      const ang = i * Math.PI / 8;
+      R.draw(s.t, x - w / 2 + Math.cos(ang) * ow, y - h / 2 + Math.sin(ang) * ow, w, h, { color: [1, 1, 1], mix: 1, alpha });
+    }
     R.draw(s.t, x - w / 2, y - h / 2, w, h, { alpha });
   }
 }
