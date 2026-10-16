@@ -1778,20 +1778,8 @@ class RoomScene {
       if (a.t > 0.12) { const q = (a.t - 0.12) / 0.33; sc = 1 + 0.07 * Math.sin(Math.PI * q) * (1 - q); }
       pose[id] = { x, y, sc };
     }
+    // 不显示任何目标轮廓（含拖近目标、提示）：位置完全靠玩家自己判断
     const ghosts = [];
-    if (this.mode === 'play' && !this.bookAnim) {
-      const dragIt = this.drag && this.drag.state === 'drag' ? D.BY_ID[this.drag.id] : null;
-      let near = false;
-      if (dragIt) { const wp = this.dragWorld(); near = Math.hypot(wp.x - dragIt.x, wp.y - dragIt.y) <= this.snapR(dragIt) * 1.7; }
-      for (const it of this.groupItems(this.group)) {
-        if (this.placed.has(it.id)) continue;
-        // 不再常驻显示所有目标的虚影；只在拖到目标附近、或点了「提示」时显示暖色轮廓
-        let a = 0, color = [1, 0.88, 0.62];
-        if (dragIt && dragIt.id === it.id && near) a = 0.5 + 0.15 * Math.sin(t * 10);
-        if (this.hint && this.hint.id === it.id) a = 0.35 + 0.3 * Math.abs(Math.sin(t * 6));
-        if (a > 0) ghosts.push({ id: it.id, a, color });
-      }
-    }
     drawRoomWorld(this.cam, this.placed, { t, light: this.light, ghosts, pose });
 
     // 顶部
@@ -1830,9 +1818,8 @@ class RoomScene {
     const done = items.filter((it) => this.placed.has(it.id)).length;
     T.draw(D.GROUPS[this.group], 38, y + 26, { size: 28, color: '#ead8ba', weight: 'bold' });
     T.draw(done + '/8', 470, y + 26, { size: 26, color: '#a8998a' });
-    if (this.mode === 'play' && !this.bookAnim) {
-      G.button('hint', 586, y + 14, 132, 54, '提示', { size: 26, r: 27, onClick: () => this.useHint() });
-    }
+    // 提示按钮已关闭：不再给目标位置提示（useHint 保留，需要时恢复这个按钮即可）
+
     items.forEach((it, i) => {
       const c = this.cellRect(i);
       const placed = this.placed.has(it.id);
