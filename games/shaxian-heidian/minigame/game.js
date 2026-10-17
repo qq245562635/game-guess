@@ -88,21 +88,31 @@ G.CFG = {
     hero: '李知白'
   },
 
+  // 剧情立绘：说话人 → art/portraits 里的图名。带表情的写前缀（p_hero → p_hero_normal/_shock/_smug），
+  // 台词第三项写表情（如 ['李知白', '……', 'shock']），不写就是 normal。没有立绘的说话人（旁白）不显示。
+  PORTRAIT: {
+    '李知白': 'p_hero',
+    '系统': 'p_system',
+    '房东': 'p_landlord',
+    '富豪': 'p_rich',
+    '检查员': 'p_inspector'
+  },
+
   STORY: {
     intro: [
       ['旁白', '金融街，寸土寸金。刚毕业的李知白被室友算计，接下了这间破败的沙县小吃。'],
       ['房东', '房租一年六十万，按月交。第一个月给你优惠，两万，月底见。'],
-      ['李知白', '六十万……我兜里只有五千块。'],
+      ['李知白', '六十万……我兜里只有五千块。', 'shock'],
       ['系统', '【叮！厨神系统已绑定。】'],
       ['系统', '【本系统菜品标准价：拌面，一百八十八元一碗。】'],
-      ['李知白', '一碗拌面一百八十八？这不就是黑店吗！'],
+      ['李知白', '一碗拌面一百八十八？这不就是黑店吗！', 'shock'],
       ['系统', '【宿主可以降价，但系统好感会下降。好感越高，奖励越多。】'],
       ['旁白', '在下方「定价」调价格，「建造」摆设施，准备好就点「开店营业」。']
     ],
     firstReport: [
       ['旁白', '有人把小店举报了：“金融街沙县，一碗拌面一百八十八，纯纯黑店！”'],
       ['系统', '【黑店值上升。黑店值超过 80 会招来检查。】'],
-      ['李知白', '骂吧。等他们吃过，就知道值不值。']
+      ['李知白', '骂吧。等他们吃过，就知道值不值。', 'smug']
     ],
     firstRich: [
       ['旁白', '一辆黑色豪车停在了门口。'],
@@ -127,7 +137,7 @@ G.CFG = {
 };
 
 // ---- art (generated) ----
-G.ART_FILES = {"door":"art/tiles/door.png","floor_hall":"art/tiles/floor_hall.png","floor_kitchen":"art/tiles/floor_kitchen.png","street":"art/tiles/street.png","btn_ad":"art/ui/btn_ad.png","btn_speed":"art/ui/btn_speed.png","icon_black":"art/ui/icon_black.png","icon_cash":"art/ui/icon_cash.png","icon_clock":"art/ui/icon_clock.png","icon_favor":"art/ui/icon_favor.png","icon_inspect":"art/ui/icon_inspect.png","icon_rent":"art/ui/icon_rent.png","icon_rep":"art/ui/icon_rep.png","icon_report":"art/ui/icon_report.png","icon_task":"art/ui/icon_task.png","tab_build":"art/ui/tab_build.png","tab_price":"art/ui/tab_price.png","tab_staff":"art/ui/tab_staff.png"};
+G.ART_FILES = {"hero_0":"art/characters/hero_0.png","hero_1":"art/characters/hero_1.png","inspector_0":"art/characters/inspector_0.png","inspector_1":"art/characters/inspector_1.png","booth":"art/facilities/booth.png","counter":"art/facilities/counter.png","dish_banmian":"art/items/dish_banmian.png","dish_dunguan":"art/items/dish_dunguan.png","dish_zhengjiao":"art/items/dish_zhengjiao.png","emote_angry":"art/items/emote_angry.png","emote_happy":"art/items/emote_happy.png","emote_money":"art/items/emote_money.png","emote_shock":"art/items/emote_shock.png","p_hero_normal":"art/portraits/p_hero_normal.png","p_hero_shock":"art/portraits/p_hero_shock.png","p_hero_smug":"art/portraits/p_hero_smug.png","p_inspector":"art/portraits/p_inspector.png","p_landlord":"art/portraits/p_landlord.png","p_rich":"art/portraits/p_rich.png","p_system":"art/portraits/p_system.png","door":"art/tiles/door.png","floor_hall":"art/tiles/floor_hall.png","floor_kitchen":"art/tiles/floor_kitchen.png","shop_sign":"art/tiles/shop_sign.png","street":"art/tiles/street.png","btn_ad":"art/ui/btn_ad.png","btn_speed":"art/ui/btn_speed.png","icon_black":"art/ui/icon_black.png","icon_cash":"art/ui/icon_cash.png","icon_clock":"art/ui/icon_clock.png","icon_favor":"art/ui/icon_favor.png","icon_inspect":"art/ui/icon_inspect.png","icon_rent":"art/ui/icon_rent.png","icon_rep":"art/ui/icon_rep.png","icon_report":"art/ui/icon_report.png","icon_task":"art/ui/icon_task.png","tab_build":"art/ui/tab_build.png","tab_price":"art/ui/tab_price.png","tab_staff":"art/ui/tab_staff.png"};
 // ---- rng.js ----
 // 可复现随机数（mulberry32），模拟脚本与游戏共用
 G.RNG = function (seed) { this.s = (seed >>> 0) || 1; };
@@ -390,13 +400,14 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     return false;
   }
 
-  Sim.prototype.say = function (c, text) { c.bubble = text; c.bubbleT = 2.2; };
+  // emote：angry / happy / money / shock，对应 art/items/emote_*.png，可不传
+  Sim.prototype.say = function (c, text, emote) { c.bubble = text; c.emote = emote || null; c.bubbleT = 2.2; };
 
   Sim.prototype.spawn = function (type) {
     var c = {
       id: this.nextId++, type: type, x: ENTRY.x + this.rng.range(-0.3, 0.3), y: ENTRY.y,
       tx: DOORWAY.x, ty: DOORWAY.y, state: 'enter', seat: null, orders: [], wait: 0,
-      eatT: 0, bubble: null, bubbleT: 0, moving: true
+      eatT: 0, bubble: null, emote: null, bubbleT: 0, moving: true
     };
     this.customers.push(c);
   };
@@ -415,7 +426,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
   Sim.prototype.decide = function (c) {
     var ct = C.CUST[c.type], r = this.rng, self = this;
     var avail = C.DISH_ORDER.filter(function (d) { return self.dishAvailable(d); });
-    if (!avail.length) { this.say(c, '没东西吃？'); this.leave(c); return; }
+    if (!avail.length) { this.say(c, '没东西吃？', 'shock'); this.leave(c); return; }
     var n = r.int(ct.orders[0], ct.orders[1]);
     var dishes = [];
     for (var i = 0; i < n; i++) dishes.push(r.pick(avail));
@@ -432,16 +443,16 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
       if (ratio > 3 && r.next() < ct.complain) {
         this.stats.complaints++;
         this.black = clamp(this.black + 2 * (1 - this.antiReport()), 0, 100);
-        this.say(c, '黑店！举报！');
+        this.say(c, '黑店！举报！', 'angry');
       } else {
-        this.say(c, ratio > 3 ? '太贵了吧！' : '下次再来');
+        this.say(c, ratio > 3 ? '太贵了吧！' : '下次再来', ratio > 3 ? 'angry' : null);
       }
       this.leave(c);
       return;
     }
     var free = this.seats.filter(function (s) { return !s.occ; });
     if (!free.length) {
-      this.say(c, '没位子……');
+      this.say(c, '没位子……', 'shock');
       this.rep = clamp(this.rep - 0.2, 0, 100);
       this.leave(c);
       return;
@@ -455,7 +466,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
   };
 
   Sim.prototype.updateCustomer = function (c, dt) {
-    if (c.bubbleT > 0) { c.bubbleT -= dt; if (c.bubbleT <= 0) c.bubble = null; }
+    if (c.bubbleT > 0) { c.bubbleT -= dt; if (c.bubbleT <= 0) { c.bubble = null; c.emote = null; } }
     var arrived = moveEnt(c, dt, C.WALK_SPEED);
     var self = this;
     switch (c.state) {
@@ -481,7 +492,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
           this.rep = clamp(this.rep - 1.5 * C.CUST[c.type].amp, 0, 100);
           c.orders.forEach(function (o) { if (o.state === 'queued') o.state = 'cancelled'; });
           this.orders = this.orders.filter(function (o) { return o.state !== 'cancelled'; });
-          this.say(c, '等太久了！');
+          this.say(c, '等太久了！', 'angry');
           this.leave(c);
         }
         break;
@@ -558,7 +569,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     var sat = q * 1.3 / Math.pow(ratio, ct.sens * 0.25);
     if (sat >= 0.8) {
       this.rep = clamp(this.rep + 1.0 * ct.amp, 0, 100);
-      this.say(c, c.type === 'rich' ? '值！' : '好吃！');
+      this.say(c, c.type === 'rich' ? '值！' : '好吃！', c.type === 'rich' ? 'money' : 'happy');
     } else if (sat < 0.4) {
       this.rep = clamp(this.rep - 1 * ct.amp, 0, 100);
       this.say(c, '又贵又一般');
@@ -1070,12 +1081,14 @@ G.Platform = {
     c.fillText(s, x, y);
   };
 
-  // 像素图标；img 为空时什么也不画，布局不变
-  UI.prototype.icon = function (img, x, y, size) {
+  // 像素图标；img 为空时什么也不画，布局不变。alpha 可选（变灰用）
+  UI.prototype.icon = function (img, x, y, size, alpha) {
     if (!img) return;
     var c = this.ctx;
     c.imageSmoothingEnabled = false;
+    if (alpha != null) c.globalAlpha = alpha;
     c.drawImage(img, x, y, size, size);
+    c.globalAlpha = 1;
   };
 
   UI.prototype.measure = function (s, size, bold) { this.font(size, bold); return this.ctx.measureText(s).width; };
@@ -1195,13 +1208,13 @@ G.Platform = {
   }
   G.Game = Game;
 
-  // 加载 art/ 下的美术：场景和角色进图集，UI 图标给 2D 层用。加载失败的继续用占位图。
+  // 加载 art/ 下的美术：场景和角色进图集；UI 图标、立绘、菜品、表情给 2D 层用。加载失败的继续用占位图。
   Game.prototype.loadArt = function () {
     var files = G.ART_FILES || {}, self = this, world = {}, pending = 0;
     Object.keys(files).forEach(function (name) {
       pending++;
       self.p.loadImage(files[name]).then(function (img) {
-        if (/^(icon|tab|btn)_/.test(name)) self.icons[name] = img; else world[name] = img;
+        if (/^(icon|tab|btn|p|dish|emote)_/.test(name)) self.icons[name] = img; else world[name] = img;
       }, function (e) { console.warn(e.message, name); }).then(function () {
         if (--pending === 0) G.Atlas.applyArt(self.r, world);
       });
@@ -1394,15 +1407,17 @@ G.Platform = {
   };
 
   Game.prototype.renderWorldLabels = function () {
-    var ui = this.ui, sim = this.sim;
+    var ui = this.ui, sim = this.sim, I = this.icons;
     // 对话气泡
     sim.customers.forEach(function (c) {
       if (!c.bubble) return;
       var px = GX + c.x * TILE, py = GY + c.y * TILE - 44;
-      var w = ui.measure(c.bubble, 11) + 12;
+      var emo = c.emote ? I['emote_' + c.emote] : null, ew = emo ? 18 : 0;
+      var tw = ui.measure(c.bubble, 11), w = tw + 12 + ew;
       ui.round(px - w / 2, py - 10, w, 18, 6, 'rgba(255,255,255,0.95)');
+      ui.icon(emo, px - w / 2 + 4, py - 8, 16);
       var bad = /黑店|贵|久|一般|没/.test(c.bubble);
-      ui.text(c.bubble, px, py, { size: 11, color: bad ? '#b02a2a' : INK, align: 'center' });
+      ui.text(c.bubble, px - w / 2 + 6 + ew + tw / 2, py, { size: 11, color: bad ? '#b02a2a' : INK, align: 'center' });
     });
     // 收款飘字
     this.floats.forEach(function (f) {
@@ -1482,14 +1497,16 @@ G.Platform = {
   };
 
   Game.prototype.renderPricing = function (y0) {
-    var ui = this.ui, sim = this.sim;
+    var ui = this.ui, sim = this.sim, I = this.icons;
     C.DISH_ORDER.forEach(function (d, i) {
       var dish = C.DISH[d], y = y0 + i * 25;
       var avail = sim.dishAvailable(d);
-      ui.text(dish.name, 14, y + 11, { size: 13, bold: true, color: avail ? '#fff' : '#7a7280' });
+      var ic = I['dish_' + d], nx = 36;   // 没图的菜也留出图标位，四行对齐
+      ui.icon(ic, 12, y - 1, 22, avail ? 1 : 0.35);
+      ui.text(dish.name, nx, y + 11, { size: 13, bold: true, color: avail ? '#fff' : '#7a7280' });
       if (!avail) {
         var need = { stove: '灶台', pot: '汤锅', steamer: '蒸笼' }[dish.station];
-        ui.text('需要' + need, 60, y + 11, { size: 11, color: '#7a7280' });
+        ui.text('需要' + need, nx + ui.measure(dish.name, 13, true) + 4, y + 11, { size: 10, color: '#7a7280' });
       }
       for (var t = 0; t < 3; t++) {
         (function (tier) {
@@ -1653,6 +1670,9 @@ G.Platform = {
     ui.rect(0, 0, W, H, 'rgba(10,6,14,0.45)');
     var x = 12, y = 470, w = W - 24, h = 150;
     var isSys = who === '系统';
+    // 立绘：主角在左，其他人在右，站在对话框上沿，下半身被框挡住
+    var pb = C.PORTRAIT[who], pimg = pb ? (this.icons[pb + '_' + (line[2] || 'normal')] || this.icons[pb]) : null;
+    if (pimg) ui.icon(pimg, who === C.TEXT.hero ? x + 4 : x + w - 132, y - 112, 128);
     ui.round(x, y, w, h, 12, isSys ? '#1d2a3a' : '#2b2233', isSys ? '#5aa9e6' : GOLD, 2);
     if (who !== '旁白') {
       var nw = ui.measure(who, 14, true) + 24;

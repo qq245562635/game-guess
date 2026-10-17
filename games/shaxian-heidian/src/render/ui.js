@@ -66,12 +66,14 @@
     c.fillText(s, x, y);
   };
 
-  // 像素图标；img 为空时什么也不画，布局不变
-  UI.prototype.icon = function (img, x, y, size) {
+  // 像素图标；img 为空时什么也不画，布局不变。alpha 可选（变灰用）
+  UI.prototype.icon = function (img, x, y, size, alpha) {
     if (!img) return;
     var c = this.ctx;
     c.imageSmoothingEnabled = false;
+    if (alpha != null) c.globalAlpha = alpha;
     c.drawImage(img, x, y, size, size);
+    c.globalAlpha = 1;
   };
 
   UI.prototype.measure = function (s, size, bold) { this.font(size, bold); return this.ctx.measureText(s).width; };

@@ -48,13 +48,13 @@
   }
   G.Game = Game;
 
-  // 加载 art/ 下的美术：场景和角色进图集，UI 图标给 2D 层用。加载失败的继续用占位图。
+  // 加载 art/ 下的美术：场景和角色进图集；UI 图标、立绘、菜品、表情给 2D 层用。加载失败的继续用占位图。
   Game.prototype.loadArt = function () {
     var files = G.ART_FILES || {}, self = this, world = {}, pending = 0;
     Object.keys(files).forEach(function (name) {
       pending++;
       self.p.loadImage(files[name]).then(function (img) {
-        if (/^(icon|tab|btn)_/.test(name)) self.icons[name] = img; else world[name] = img;
+        if (/^(icon|tab|btn|p|dish|emote)_/.test(name)) self.icons[name] = img; else world[name] = img;
       }, function (e) { console.warn(e.message, name); }).then(function () {
         if (--pending === 0) G.Atlas.applyArt(self.r, world);
       });
@@ -247,15 +247,17 @@
   };
 
   Game.prototype.renderWorldLabels = function () {
-    var ui = this.ui, sim = this.sim;
+    var ui = this.ui, sim = this.sim, I = this.icons;
     // 对话气泡
     sim.customers.forEach(function (c) {
       if (!c.bubble) return;
       var px = GX + c.x * TILE, py = GY + c.y * TILE - 44;
-      var w = ui.measure(c.bubble, 11) + 12;
+      var emo = c.emote ? I['emote_' + c.emote] : null, ew = emo ? 18 : 0;
+      var tw = ui.measure(c.bubble, 11), w = tw + 12 + ew;
       ui.round(px - w / 2, py - 10, w, 18, 6, 'rgba(255,255,255,0.95)');
+      ui.icon(emo, px - w / 2 + 4, py - 8, 16);
       var bad = /黑店|贵|久|一般|没/.test(c.bubble);
-      ui.text(c.bubble, px, py, { size: 11, color: bad ? '#b02a2a' : INK, align: 'center' });
+      ui.text(c.bubble, px - w / 2 + 6 + ew + tw / 2, py, { size: 11, color: bad ? '#b02a2a' : INK, align: 'center' });
     });
     // 收款飘字
     this.floats.forEach(function (f) {
@@ -335,14 +337,16 @@
   };
 
   Game.prototype.renderPricing = function (y0) {
-    var ui = this.ui, sim = this.sim;
+    var ui = this.ui, sim = this.sim, I = this.icons;
     C.DISH_ORDER.forEach(function (d, i) {
       var dish = C.DISH[d], y = y0 + i * 25;
       var avail = sim.dishAvailable(d);
-      ui.text(dish.name, 14, y + 11, { size: 13, bold: true, color: avail ? '#fff' : '#7a7280' });
+      var ic = I['dish_' + d], nx = 36;   // 没图的菜也留出图标位，四行对齐
+      ui.icon(ic, 12, y - 1, 22, avail ? 1 : 0.35);
+      ui.text(dish.name, nx, y + 11, { size: 13, bold: true, color: avail ? '#fff' : '#7a7280' });
       if (!avail) {
         var need = { stove: '灶台', pot: '汤锅', steamer: '蒸笼' }[dish.station];
-        ui.text('需要' + need, 60, y + 11, { size: 11, color: '#7a7280' });
+        ui.text('需要' + need, nx + ui.measure(dish.name, 13, true) + 4, y + 11, { size: 10, color: '#7a7280' });
       }
       for (var t = 0; t < 3; t++) {
         (function (tier) {
@@ -506,6 +510,9 @@
     ui.rect(0, 0, W, H, 'rgba(10,6,14,0.45)');
     var x = 12, y = 470, w = W - 24, h = 150;
     var isSys = who === '系统';
+    // 立绘：主角在左，其他人在右，站在对话框上沿，下半身被框挡住
+    var pb = C.PORTRAIT[who], pimg = pb ? (this.icons[pb + '_' + (line[2] || 'normal')] || this.icons[pb]) : null;
+    if (pimg) ui.icon(pimg, who === C.TEXT.hero ? x + 4 : x + w - 132, y - 112, 128);
     ui.round(x, y, w, h, 12, isSys ? '#1d2a3a' : '#2b2233', isSys ? '#5aa9e6' : GOLD, 2);
     if (who !== '旁白') {
       var nw = ui.measure(who, 14, true) + 24;

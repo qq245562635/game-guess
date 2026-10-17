@@ -237,13 +237,14 @@
     return false;
   }
 
-  Sim.prototype.say = function (c, text) { c.bubble = text; c.bubbleT = 2.2; };
+  // emote：angry / happy / money / shock，对应 art/items/emote_*.png，可不传
+  Sim.prototype.say = function (c, text, emote) { c.bubble = text; c.emote = emote || null; c.bubbleT = 2.2; };
 
   Sim.prototype.spawn = function (type) {
     var c = {
       id: this.nextId++, type: type, x: ENTRY.x + this.rng.range(-0.3, 0.3), y: ENTRY.y,
       tx: DOORWAY.x, ty: DOORWAY.y, state: 'enter', seat: null, orders: [], wait: 0,
-      eatT: 0, bubble: null, bubbleT: 0, moving: true
+      eatT: 0, bubble: null, emote: null, bubbleT: 0, moving: true
     };
     this.customers.push(c);
   };
@@ -262,7 +263,7 @@
   Sim.prototype.decide = function (c) {
     var ct = C.CUST[c.type], r = this.rng, self = this;
     var avail = C.DISH_ORDER.filter(function (d) { return self.dishAvailable(d); });
-    if (!avail.length) { this.say(c, '没东西吃？'); this.leave(c); return; }
+    if (!avail.length) { this.say(c, '没东西吃？', 'shock'); this.leave(c); return; }
     var n = r.int(ct.orders[0], ct.orders[1]);
     var dishes = [];
     for (var i = 0; i < n; i++) dishes.push(r.pick(avail));
@@ -279,16 +280,16 @@
       if (ratio > 3 && r.next() < ct.complain) {
         this.stats.complaints++;
         this.black = clamp(this.black + 2 * (1 - this.antiReport()), 0, 100);
-        this.say(c, '黑店！举报！');
+        this.say(c, '黑店！举报！', 'angry');
       } else {
-        this.say(c, ratio > 3 ? '太贵了吧！' : '下次再来');
+        this.say(c, ratio > 3 ? '太贵了吧！' : '下次再来', ratio > 3 ? 'angry' : null);
       }
       this.leave(c);
       return;
     }
     var free = this.seats.filter(function (s) { return !s.occ; });
     if (!free.length) {
-      this.say(c, '没位子……');
+      this.say(c, '没位子……', 'shock');
       this.rep = clamp(this.rep - 0.2, 0, 100);
       this.leave(c);
       return;
@@ -302,7 +303,7 @@
   };
 
   Sim.prototype.updateCustomer = function (c, dt) {
-    if (c.bubbleT > 0) { c.bubbleT -= dt; if (c.bubbleT <= 0) c.bubble = null; }
+    if (c.bubbleT > 0) { c.bubbleT -= dt; if (c.bubbleT <= 0) { c.bubble = null; c.emote = null; } }
     var arrived = moveEnt(c, dt, C.WALK_SPEED);
     var self = this;
     switch (c.state) {
@@ -328,7 +329,7 @@
           this.rep = clamp(this.rep - 1.5 * C.CUST[c.type].amp, 0, 100);
           c.orders.forEach(function (o) { if (o.state === 'queued') o.state = 'cancelled'; });
           this.orders = this.orders.filter(function (o) { return o.state !== 'cancelled'; });
-          this.say(c, '等太久了！');
+          this.say(c, '等太久了！', 'angry');
           this.leave(c);
         }
         break;
@@ -405,7 +406,7 @@
     var sat = q * 1.3 / Math.pow(ratio, ct.sens * 0.25);
     if (sat >= 0.8) {
       this.rep = clamp(this.rep + 1.0 * ct.amp, 0, 100);
-      this.say(c, c.type === 'rich' ? '值！' : '好吃！');
+      this.say(c, c.type === 'rich' ? '值！' : '好吃！', c.type === 'rich' ? 'money' : 'happy');
     } else if (sat < 0.4) {
       this.rep = clamp(this.rep - 1 * ct.amp, 0, 100);
       this.say(c, '又贵又一般');
