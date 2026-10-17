@@ -1,0 +1,156 @@
+{
+  "tool": "built-in image_gen",
+  "date": "2026-10-17",
+  "images": [
+    {
+      "path": "characters/hero_0.png",
+      "width": 64,
+      "height": 64,
+      "prompt": "Use case: illustration-story. Create a SINGLE finished transparent PNG game sprite, hero_0.png, target delivery 64x64. Pixel art game sprite in the style of Kairosoft simulation games. STRICT 16x16 logical pixel grid, upscaled 4x with hard square pixel blocks, no anti-aliasing, no blur, no gradients. 3/4 top-down view. One logical-pixel dark brown outline (#2a1d16), light from the top-left, limited palette of about 32 colors. A single character centered on a fully transparent background, bottom near the bottom edge with one logical-pixel margin, nothing else in the image. No text, no letters, no watermark. Subject: ORIGINAL young Chinese male noodle-shop proprietor, short dark-brown hair, white T-shirt, warm red (#c0392b) apron, dark trousers and brown shoes; two-head-tall chibi proportions, head and torso broad enough that body width is at least HALF of the canvas, friendly slightly tired face, facing mostly forward with a little view of the top of the head. Standing frame with both feet together. Entire character including hair and shoes fully visible, transparent margin on all sides. Very simple large colored blocks, readable at 16 pixels. Only ONE character, no floor, no props, no cast shadow, no frame, no sheet. Real alpha transparency."
+    },
+    {
+      "path": "characters/inspector_0.png",
+      "width": 64,
+      "height": 64,
+      "prompt": "Use case: illustration-story. Asset: a SINGLE transparent PNG sprite for a Chinese noodle shop management game. Pixel art game sprite in the style of Kairosoft simulation games. Strict 16x16 pixel grid, enlarged with hard square edges, no anti-aliasing, no blur, no gradients or texture noise. 3/4 top-down view. 1 logical-pixel dark brown outline (#2a1d16), light from top-left, limited palette about 32 colors. A single subject centered on real alpha transparency, entire silhouette inside the canvas with 1 pixel margin. No text, letters, numbers, watermark, floor or cast shadow. Very chunky, simple colored blocks readable at 16 pixels. Subject: One ORIGINAL chibi Chinese health inspector, dark navy blue uniform, matching peaked cap, serious face, holding a simple brown clipboard without writing. Two heads tall, broad head and torso occupying at least half the canvas width. Standing still, feet together, facing viewer. The only prop is the clipboard held in one hand. Target 64x64 PNG."
+    },
+    {
+      "path": "characters/landlord_0.png",
+      "width": 64,
+      "height": 64,
+      "prompt": "Use case: illustration-story. Asset: a SINGLE transparent PNG sprite for a Chinese noodle shop management game. Pixel art game sprite in the style of Kairosoft simulation games. Strict 16x16 pixel grid, enlarged with hard square edges, no anti-aliasing, no blur, no gradients or texture noise. 3/4 top-down view. 1 logical-pixel dark brown outline (#2a1d16), light from top-left, limited palette about 32 colors. A single subject centered on real alpha transparency, entire silhouette inside the canvas with 1 pixel margin. No text, letters, numbers, watermark, floor or cast shadow. Very chunky, simple colored blocks readable at 16 pixels. Subject: One ORIGINAL middle-aged Chinese male landlord, broad face, short dark hair with receding temples, warm red Hawaiian floral shirt with large yellow flower blocks, dark trousers and brown shoes, holding a large ring of gold keys. Two heads tall chibi, broad head and torso occupying at least half the canvas width. Standing still feet together facing viewer, slightly smug expression. Not based on an actor. Target 64x64 PNG."
+    },
+    {
+      "path": "facilities/counter.png",
+      "width": 64,
+      "height": 64,
+      "prompt": "Use case: illustration-story. Asset: a SINGLE transparent PNG sprite for a Chinese noodle shop management game. Pixel art game sprite in the style of Kairosoft simulation games. Strict 16x16 pixel grid, enlarged with hard square edges, no anti-aliasing, no blur, no gradients or texture noise. 3/4 top-down view. 1 logical-pixel dark brown outline (#2a1d16), light from top-left, limited palette about 32 colors. A single subject centered on real alpha transparency, entire silhouette inside the canvas with 1 pixel margin. No text, letters, numbers, watermark, floor or cast shadow. Very chunky, simple colored blocks readable at 16 pixels. Subject: A small Chinese noodle shop cashier counter made of warm wood #9c6a3a, red front panel #c0392b, a dark cash register and small upright green-and-white payment placard with a few generic dark square blocks suggesting a scan code, no letters or numbers. Single compact furnishing, three-quarter top-down view, complete silhouette. Target 64x64 PNG."
+    },
+    {
+      "path": "characters/hero_1.png",
+      "width": 64,
+      "height": 64,
+      "prompt": "Edit this reference character into its single walking animation frame. CRITICAL: preserve EXACTLY the same face, head, hair or hat, shoulders, torso, clothing, colors, accessories, pose of arms and held items. Keep the same canvas, scale, position, transparent background and pixel style. Change ONLY the legs and shoes below the clothing hem: left foot takes a small step forward, right foot back. No changes above the legs. One isolated full body sprite, fully transparent background, no labels, no extra objects. Target export 64x64 pixels on a 16x16 logical grid."
+    },
+    {
+      "path": "characters/inspector_1.png",
+      "width": 64,
+      "height": 64,
+      "prompt": "Edit this reference character into its single walking animation frame. CRITICAL: preserve EXACTLY the same face, head, hair or hat, shoulders, torso, clothing, colors, accessories, pose of arms and held items. Keep the same canvas, scale, position, transparent background and pixel style. Change ONLY the legs and shoes below the clothing hem: left foot takes a small step forward, right foot back. No changes above the legs. One isolated full body sprite, fully transparent background, no labels, no extra objects. Target export 64x64 pixels on a 16x16 logical grid."
+    },
+    {
+      "path": "characters/landlord_1.png",
+      "width": 64,
+      "height": 64,
+      "prompt": "Edit this reference character into its single walking animation frame. CRITICAL: preserve EXACTLY the same face, head, hair or hat, shoulders, torso, clothing, colors, accessories, pose of arms and held items. Keep the same canvas, scale, position, transparent background and pixel style. Change ONLY the legs and shoes below the clothing hem: left foot takes a small step forward, right foot back. No changes above the legs. One isolated full body sprite, fully transparent background, no labels, no extra objects. Target export 64x64 pixels on a 16x16 logical grid."
+    },
+    {
+      "path": "tiles/shop_sign.png",
+      "width": 256,
+      "height": 64,
+      "prompt": "Use case: illustration-story. Asset: a SINGLE transparent PNG sprite for a Chinese noodle shop management game. Pixel art game sprite in the style of Kairosoft simulation games. Strict 16x16 pixel grid, enlarged with hard square edges, no anti-aliasing, no blur, no gradients or texture noise. 3/4 top-down view. 1 logical-pixel dark brown outline (#2a1d16), light from top-left, limited palette about 32 colors. A single subject centered on real alpha transparency, entire silhouette inside the canvas with 1 pixel margin. No text, letters, numbers, watermark, floor or cast shadow. Very chunky, simple colored blocks readable at 16 pixels. Subject: A single very wide horizontal signboard for a Chinese noodle shop. Red #c0392b rectangular face, yellow #e8c35a border with very simple squared corner details. Central red area COMPLETELY BLANK for the game to draw its own text. Front view, width four times height, no surrounding building, real transparent background outside the sign. Final target 256x64 PNG; logical pixel grid 64x16, each pixel a solid square. Absolutely no text, symbols, noodles or decorations in the empty center."
+    },
+    {
+      "path": "facilities/booth.png",
+      "width": 128,
+      "height": 64,
+      "prompt": "Use case: illustration-story. Asset: a SINGLE transparent PNG sprite for a Chinese noodle shop management game. Pixel art game sprite in the style of Kairosoft simulation games. Strict 16x16 pixel grid, enlarged with hard square edges, no anti-aliasing, no blur, no gradients or texture noise. 3/4 top-down view. 1 logical-pixel dark brown outline (#2a1d16), light from top-left, limited palette about 32 colors. A single subject centered on real alpha transparency, entire silhouette inside the canvas with 1 pixel margin. No text, letters, numbers, watermark, floor or cast shadow. Very chunky, simple colored blocks readable at 16 pixels. Subject: A single TWO TILE WIDE restaurant booth unit, 2:1 width-to-height. Red #c0392b padded bench seats facing one another across a small warm wood rectangular table, complete compact assembly from 3/4 top down. No dishes, people, floor, surrounding wall or extra furniture. Clean broad colored pixel blocks. Final 128x64 PNG, 32x16 logical grid."
+    },
+    {
+      "path": "facilities/takeout.png",
+      "width": 64,
+      "height": 64,
+      "prompt": "Use case: illustration-story. Asset: a SINGLE transparent PNG sprite for a Chinese noodle shop management game. Pixel art game sprite in the style of Kairosoft simulation games. Strict 16x16 pixel grid, enlarged with hard square edges, no anti-aliasing, no blur, no gradients or texture noise. 3/4 top-down view. 1 logical-pixel dark brown outline (#2a1d16), light from top-left, limited palette about 32 colors. A single subject centered on real alpha transparency, entire silhouette inside the canvas with 1 pixel margin. No text, letters, numbers, watermark, floor or cast shadow. Very chunky, simple colored blocks readable at 16 pixels. Subject: A single compact Chinese noodle shop takeout service window unit, red and yellow frame, warm wooden sill, dark open window, ONE small kraft-paper takeout bag with folded handles sitting on the sill. The window frame and bag form one compact furniture sprite. No wall or building outside the unit, no text, no letters, no logos. Final 64x64 PNG."
+    },
+    {
+      "path": "items/dish_banmian.png",
+      "width": 64,
+      "height": 64,
+      "prompt": "Use case: illustration-story. Asset: a SINGLE transparent PNG sprite for a Chinese noodle shop management game. Pixel art game sprite in the style of Kairosoft simulation games. Strict 16x16 pixel grid, enlarged with hard square edges, no anti-aliasing, no blur, no gradients or texture noise. 3/4 top-down view. 1 logical-pixel dark brown outline (#2a1d16), light from top-left, limited palette about 32 colors. A single subject centered on real alpha transparency, entire silhouette inside the canvas with 1 pixel margin. No text, letters, numbers, watermark, floor or cast shadow. Very chunky, simple colored blocks readable at 16 pixels. Subject: A single white ceramic bowl with blue rim containing Sha County BANMIAN: clearly visible yellow thin noodles with warm tan peanut sauce and a few bright green scallion blocks on top. Three-quarter overhead view showing bowl contents. No chopsticks or other objects. Simple large colored regions. Final 64x64 transparent PNG."
+    },
+    {
+      "path": "items/dish_bianrou.png",
+      "width": 64,
+      "height": 64,
+      "prompt": "Use case: illustration-story. Asset: a SINGLE transparent PNG sprite for a Chinese noodle shop management game. Pixel art game sprite in the style of Kairosoft simulation games. Strict 16x16 pixel grid, enlarged with hard square edges, no anti-aliasing, no blur, no gradients or texture noise. 3/4 top-down view. 1 logical-pixel dark brown outline (#2a1d16), light from top-left, limited palette about 32 colors. A single subject centered on real alpha transparency, entire silhouette inside the canvas with 1 pixel margin. No text, letters, numbers, watermark, floor or cast shadow. Very chunky, simple colored blocks readable at 16 pixels. Subject: A single white ceramic bowl with blue rim containing BIANROU: clear pale broth with FOUR distinct small cream-colored thin-skinned wontons and a few green scallion blocks. Three-quarter overhead view, the wonton silhouettes must read distinctly from yellow noodles. No utensils or extra objects. Final 64x64 transparent PNG."
+    },
+    {
+      "path": "items/dish_zhengjiao.png",
+      "width": 64,
+      "height": 64,
+      "prompt": "Use case: illustration-story. Asset: a SINGLE transparent PNG sprite for a Chinese noodle shop management game. Pixel art game sprite in the style of Kairosoft simulation games. Strict 16x16 pixel grid, enlarged with hard square edges, no anti-aliasing, no blur, no gradients or texture noise. 3/4 top-down view. 1 logical-pixel dark brown outline (#2a1d16), light from top-left, limited palette about 32 colors. A single subject centered on real alpha transparency, entire silhouette inside the canvas with 1 pixel margin. No text, letters, numbers, watermark, floor or cast shadow. Very chunky, simple colored blocks readable at 16 pixels. Subject: A single small round honey-brown bamboo steamer with THREE large cream steamed crescent dumplings inside, big clear pleated silhouettes and tiny wisps of steam. Three-quarter overhead view. No lid, bowl, chopsticks or extra objects. Final 64x64 transparent PNG."
+    },
+    {
+      "path": "items/dish_dunguan.png",
+      "width": 64,
+      "height": 64,
+      "prompt": "Use case: illustration-story. Asset: a SINGLE transparent PNG sprite for a Chinese noodle shop management game. Pixel art game sprite in the style of Kairosoft simulation games. Strict 16x16 pixel grid, enlarged with hard square edges, no anti-aliasing, no blur, no gradients or texture noise. 3/4 top-down view. 1 logical-pixel dark brown outline (#2a1d16), light from top-left, limited palette about 32 colors. A single subject centered on real alpha transparency, entire silhouette inside the canvas with 1 pixel margin. No text, letters, numbers, watermark, floor or cast shadow. Very chunky, simple colored blocks readable at 16 pixels. Subject: A single small round reddish-brown lidded ceramic soup crock, short rounded side handles, a dark small lid knob, two chunky white steam wisps. Three-quarter overhead view. Strong simple pot silhouette, no bowl or extra objects. Final 64x64 transparent PNG."
+    },
+    {
+      "path": "items/emote_angry.png",
+      "width": 32,
+      "height": 32,
+      "prompt": "Use case: illustration-story. ONE isolated pixel-art emotion icon for a Chinese restaurant management game. Final PNG 32x32, designed on an 8x8 logical grid upscaled 4x with hard solid pixel blocks. Extremely simple, thick dark brown #2a1d16 outline, one main color and highlight plus shadow, light from top-left. Entire symbol centered, fills canvas leaving one logical pixel clear margin all around. Readable at 16 pixels on dark purple #211a28. Fully transparent real alpha background. No badge, speech balloon, extra objects, cast shadow, letters or watermark. A single RED four-pronged comic anger vein symbol, strong thick red bent strokes in the familiar cross-shaped anger mark. NO face."
+    },
+    {
+      "path": "items/emote_happy.png",
+      "width": 32,
+      "height": 32,
+      "prompt": "Use case: illustration-story. Create ONE very simple GOLDEN YELLOW HEART pixel art emotion icon for a mobile Chinese restaurant management game. This will be exported at 32x32 and MUST remain readable on an 8x8 logical pixel grid: two broad square lobes at top, sharp stepped V bottom, strong heart silhouette, NOT a circle or smiley face. Warm yellow #e8c35a fill, one pale yellow highlight block, dark ochre/brown edge shadow. Strict solid square pixels, no gradients, no blur, no texture, no glow, no realistic rendering. Entire heart centered with transparent margin. Real fully transparent alpha background. No text, no letters, no numbers, no other objects or symbols."
+    },
+    {
+      "path": "items/emote_money.png",
+      "width": 32,
+      "height": 32,
+      "prompt": "Use case: illustration-story. ONE isolated pixel-art emotion icon for a Chinese restaurant management game. Final PNG 32x32, designed on an 8x8 logical grid upscaled 4x with hard solid pixel blocks. Extremely simple, thick dark brown #2a1d16 outline, one main color and highlight plus shadow, light from top-left. Entire symbol centered, fills canvas leaving one logical pixel clear margin all around. Readable at 16 pixels on dark purple #211a28. Fully transparent real alpha background. No badge, speech balloon, extra objects, cast shadow, letters or watermark. A single shiny GOLD COIN, round stepped pixel silhouette, small simple inset center, bright yellow top-left highlight, dark ochre lower-right edge. Absolutely no letters, currency symbols or numbers."
+    },
+    {
+      "path": "items/emote_shock.png",
+      "width": 32,
+      "height": 32,
+      "prompt": "Use case: illustration-story. ONE isolated pixel-art emotion icon for a Chinese restaurant management game. Final PNG 32x32, designed on an 8x8 logical grid upscaled 4x with hard solid pixel blocks. Extremely simple, thick dark brown #2a1d16 outline, one main color and highlight plus shadow, light from top-left. Entire symbol centered, fills canvas leaving one logical pixel clear margin all around. Readable at 16 pixels on dark purple #211a28. Fully transparent real alpha background. No badge, speech balloon, extra objects, cast shadow, letters or watermark. A single bold WHITE exclamation mark (!) with a separate square dot beneath it and thick dark brown outline. The exclamation symbol IS the requested object; no other punctuation or writing."
+    },
+    {
+      "path": "portraits/p_hero_normal.png",
+      "width": 256,
+      "height": 256,
+      "prompt": "Use case: illustration-story. Create ONE square dialogue PORTRAIT asset for a pixel-art Chinese noodle shop management game. Final export 256x256 PNG with real transparent background. Detailed yet clean Kairosoft-like chibi pixel art, logical 64x64 grid enlarged 4x, hard-edged square pixels, no antialiasing, no blur. Dark brown #2a1d16 outlines, light from upper left, restrained warm palette about 32 colors. CHEST-UP / WAIST-UP BUST, NOT full body: fill most of the square, entire hair/hat and shoulders inside canvas with clear transparent margin. No frame, no caption, no text, no watermark, no floor. Transform the reference game character into a chest-up dialogue portrait. Preserve his identity, short dark brown hair, white T-shirt and red apron. Original young Chinese male proprietor, calm slightly tired face, relaxed eyes and small neutral mouth. Show face prominently, do not add props."
+    },
+    {
+      "path": "portraits/p_landlord.png",
+      "width": 256,
+      "height": 256,
+      "prompt": "Use case: illustration-story. Create ONE square dialogue PORTRAIT asset for a pixel-art Chinese noodle shop management game. Final export 256x256 PNG with real transparent background. Detailed yet clean Kairosoft-like chibi pixel art, logical 64x64 grid enlarged 4x, hard-edged square pixels, no antialiasing, no blur. Dark brown #2a1d16 outlines, light from upper left, restrained warm palette about 32 colors. CHEST-UP / WAIST-UP BUST, NOT full body: fill most of the square, entire hair/hat and shoulders inside canvas with clear transparent margin. No frame, no caption, no text, no watermark, no floor. Transform reference landlord into a waist-up dialogue portrait. Keep exactly his original middle-aged face, receding short dark hair, red shirt with yellow flowers. Pose with one hand on hip and the other holding his gold keyring, half-smiling with a knowing slightly smug expression. Wide sturdy silhouette."
+    },
+    {
+      "path": "portraits/p_inspector.png",
+      "width": 256,
+      "height": 256,
+      "prompt": "Use case: illustration-story. Create ONE square dialogue PORTRAIT asset for a pixel-art Chinese noodle shop management game. Final export 256x256 PNG with real transparent background. Detailed yet clean Kairosoft-like chibi pixel art, logical 64x64 grid enlarged 4x, hard-edged square pixels, no antialiasing, no blur. Dark brown #2a1d16 outlines, light from upper left, restrained warm palette about 32 colors. CHEST-UP / WAIST-UP BUST, NOT full body: fill most of the square, entire hair/hat and shoulders inside canvas with clear transparent margin. No frame, no caption, no text, no watermark, no floor. Transform reference inspector into a chest-up dialogue portrait. Preserve the same face, navy blue peaked cap and navy uniform, gold small accents. Stern serious expression, a brown clipboard held clearly at chest. No text or insignia writing."
+    },
+    {
+      "path": "portraits/p_hero_shock.png",
+      "width": 256,
+      "height": 256,
+      "prompt": "Edit ONLY the expression in this pixel-art character portrait to SHOCK: eyes opened wide, eyebrows raised, mouth a small open O. Preserve exactly the same original young man, hair, head outline, skin palette, shirt, red apron, shoulders, pose, scale and framing. Everything except facial expression unchanged. No extra symbols. Same transparent alpha background. Final square chest-up portrait 256x256, hard pixel art, no blur or text."
+    },
+    {
+      "path": "portraits/p_hero_smug.png",
+      "width": 256,
+      "height": 256,
+      "prompt": "Edit ONLY the expression in this pixel-art character portrait to a CONFIDENT SMIRK: one eyebrow slightly lifted, self-assured relaxed eyes, asymmetric little smile. Preserve exactly the same original young man, hair, head outline, skin palette, shirt, red apron, shoulders, pose, scale and framing. Everything except facial expression unchanged. No extra symbols. Same transparent alpha background. Final square chest-up portrait 256x256, hard pixel art, no blur or text."
+    },
+    {
+      "path": "portraits/p_rich.png",
+      "width": 256,
+      "height": 256,
+      "prompt": "Use case: illustration-story. Create ONE square dialogue PORTRAIT asset for a pixel-art Chinese noodle shop management game. Final export 256x256 PNG with real transparent background. Detailed yet clean Kairosoft-like chibi pixel art, logical 64x64 grid enlarged 4x, hard-edged square pixels, no antialiasing, no blur. Dark brown #2a1d16 outlines, light from upper left, restrained warm palette about 32 colors. CHEST-UP / WAIST-UP BUST, NOT full body: fill most of the square, entire hair/hat and shoulders inside canvas with clear transparent margin. No frame, no caption, no text, no watermark, no floor. Subject: an original wealthy Chinese male restaurant customer, slicked-back short black hair, black sunglasses, charcoal black suit that stays brighter than dark purple background, white open-collar shirt, a single thick gold necklace. Smug confident expression with chin raised. Broad shoulders, chest-up portrait. All clothing and hands inside silhouette, no extra objects. No actor likeness."
+    },
+    {
+      "path": "portraits/p_system.png",
+      "width": 256,
+      "height": 256,
+      "prompt": "Use case: illustration-story. ONE transparent PNG portrait asset for a pixel-art Chinese noodle shop game, 256x256. Subject: a floating BLUE translucent rectangular holographic system panel with a single glowing stylized COOKING SPATULA emblem in its center. NOT a person, no head, no face. Thick stepped pixel edges, logical 64x64 pixel grid enlarged 4x, no antialiasing, no blur. Cyan bright border, dark blue semi-transparent central glass, simple pale blue spatula shape with clear broad head and short handle, restrained pixel sparkle accents attached close to panel. Large centered panel taking most of square with clear transparent margin on all sides. Real alpha transparency outside AND partial transparency through the panel. No text, writing, letters, numbers, buttons, readable code, watermark or surrounding objects."
+    }
+  ]
+}
