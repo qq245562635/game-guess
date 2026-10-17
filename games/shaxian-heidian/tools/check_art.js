@@ -70,7 +70,8 @@ function check(dir) {
     if (!fs.existsSync(d)) return;
     for (const e of fs.readdirSync(d, { withFileTypes: true })) {
       const p = path.join(d, e.name);
-      if (e.isDirectory()) walk(p); else if (/\.png$/i.test(e.name)) files.push(p);
+      if (e.isDirectory()) { if (!e.name.startsWith('_')) walk(p); }  // 跳过 _rejected 等
+      else if (/\.png$/i.test(e.name)) files.push(p);
     }
   })(dir);
   const seen = new Set(), rows = [];

@@ -17,7 +17,7 @@ function listArt() {
   (function walk(d) {
     for (const e of fs.readdirSync(d, { withFileTypes: true })) {
       const p = path.join(d, e.name);
-      if (e.isDirectory()) walk(p);
+      if (e.isDirectory()) { if (!e.name.startsWith('_')) walk(p); }  // _rejected 等以下划线开头的目录不进游戏
       else if (e.name.endsWith('.png')) out.push({ name: e.name.slice(0, -4), file: p, rel: path.relative(dir, p).split(path.sep).join('/') });
     }
   })(dir);
