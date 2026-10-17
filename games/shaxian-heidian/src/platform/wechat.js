@@ -28,6 +28,15 @@ G.Platform = {
   load: function (key) { try { var s = wx.getStorageSync(key); return s ? JSON.parse(s) : null; } catch (e) { return null; } },
   clearSave: function (key) { try { wx.removeStorageSync(key); } catch (e) {} },
 
+  loadImage: function (src) {
+    return new Promise(function (resolve, reject) {
+      var img = wx.createImage();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error('图片加载失败 ' + src)); };
+      img.src = src;
+    });
+  },
+
   // 激励视频广告：看完返回 true，中途关闭或失败返回 false
   showRewardedAd: function (placement) {
     var self = this;

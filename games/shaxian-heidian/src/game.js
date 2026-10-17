@@ -36,6 +36,9 @@
     var saved = platform.load(C.SAVE_KEY);
     if (!(saved && this.sim.load(saved))) this.startStory('intro');
 
+    this.icons = {};
+    this.loadArt();
+
     this.layout();
     var self = this;
     platform.onResize(function () { self.layout(); });
@@ -44,6 +47,19 @@
     platform.raf(function loop() { self.frame(); platform.raf(loop); });
   }
   G.Game = Game;
+
+  // 加载 art/ 下的美术：场景和角色进图集，UI 图标给 2D 层用。加载失败的继续用占位图。
+  Game.prototype.loadArt = function () {
+    var files = G.ART_FILES || {}, self = this, world = {}, pending = 0;
+    Object.keys(files).forEach(function (name) {
+      pending++;
+      self.p.loadImage(files[name]).then(function (img) {
+        if (/^(icon|tab|btn)_/.test(name)) self.icons[name] = img; else world[name] = img;
+      }, function (e) { console.warn(e.message, name); }).then(function () {
+        if (--pending === 0) G.Atlas.applyArt(self.r, world);
+      });
+    });
+  };
 
   Game.prototype.layout = function () {
     var sc = this.p.screen();
@@ -256,28 +272,37 @@
   };
 
   Game.prototype.renderHud = function () {
-    var ui = this.ui, sim = this.sim, ck = sim.clock();
+    var ui = this.ui, sim = this.sim, ck = sim.clock(), I = this.icons;
     ui.rect(0, 0, W, 92, '#211a28');
-    // 第一行：店名、日期、现金
+    // 第一行：店名、营业时间、现金
     ui.text(C.TEXT.shopName, 14, 18, { size: 15, bold: true, color: GOLD });
-    ui.text('第' + sim.month + '月 第' + sim.dayInMonth() + '天', 14, 38, { size: 12, color: '#cfc6d6' });
+    ui.icon(I.icon_clock, 150, 9, 18);
     ui.text(sim.phase === 'open' ? pad2(ck.h) + ':' + pad2(ck.m) : (sim.phase === 'prep' ? '未营业' : '已打烊'),
-      W / 2 + 6, 18, { size: 15, bold: true, align: 'center' });
-    ui.text('¥' + fmt(sim.cash), W - 14, 18, { size: 17, bold: true, color: sim.cash < 0 ? RED : '#fff', align: 'right' });
-    // 房租
+      172, 18, { size: 15, bold: true });
+    var cashTxt = '¥' + fmt(sim.cash);
+    ui.text(cashTxt, W - 14, 18, { size: 17, bold: true, color: sim.cash < 0 ? RED : '#fff', align: 'right' });
+    ui.icon(I.icon_cash, W - 14 - ui.measure(cashTxt, 17, true) - 24, 8, 20);
+    // 第二行：日期、房租
+    ui.text('第' + sim.month + '月 第' + sim.dayInMonth() + '天', 14, 38, { size: 12, color: '#cfc6d6' });
     var d = sim.daysToRent();
     var rentTxt = d <= 0 ? '今天交房租 ¥' + fmt(sim.rentAmount()) : '距交租 ' + d + ' 天 · ¥' + fmt(sim.rentAmount());
     ui.text(rentTxt, W - 14, 38, { size: 12, color: d <= 2 ? RED : '#cfc6d6', align: 'right' });
+    ui.icon(I.icon_rent, W - 14 - ui.measure(rentTxt, 12) - 20, 30, 16);
+    // 第三行：黑店值、口碑
+    ui.icon(I.icon_black, 12, 53, 18);
+    ui.text('黑店值', 34, 62, { size: 12, color: '#d9b8f0' });
+    ui.bar(76, 56, 80, 12, sim.black / 100, sim.black >= C.INSPECT_THRESHOLD ? RED : PURPLE);
+    ui.text(Math.round(sim.black) + '', 162, 62, { size: 12, color: '#d9b8f0' });
+    ui.icon(I.icon_rep, 186, 53, 18);
+    ui.text('口碑', 208, 62, { size: 12, color: '#f2dc9a' });
+    ui.bar(236, 56, 90, 12, sim.rep / 100, GOLD);
+    ui.text(Math.round(sim.rep) + '', 332, 62, { size: 12, color: '#f2dc9a' });
+    // 第四行：好感、任务、店况
     var tn = sim.taskNeed();
-    // 双轴
-    ui.text('黑店值', 14, 62, { size: 12, color: '#d9b8f0' });
-    ui.bar(58, 56, 100, 12, sim.black / 100, sim.black >= C.INSPECT_THRESHOLD ? RED : PURPLE);
-    ui.text(Math.round(sim.black) + '', 164, 62, { size: 12, color: '#d9b8f0' });
-    ui.text('口碑', 196, 62, { size: 12, color: '#f2dc9a' });
-    ui.bar(228, 56, 100, 12, sim.rep / 100, GOLD);
-    ui.text(Math.round(sim.rep) + '', 334, 62, { size: 12, color: '#f2dc9a' });
-    ui.text('系统好感 ' + Math.round(sim.favor), 14, 82, { size: 11, color: '#a99fb2' });
-    ui.text('今日任务：系统价卖出 ' + Math.min(sim.stats.sysSold, tn) + '/' + tn, 98, 82,
+    ui.icon(I.icon_favor, 12, 75, 14);
+    ui.text('好感 ' + Math.round(sim.favor), 30, 82, { size: 11, color: '#a99fb2' });
+    ui.icon(I.icon_task, 92, 75, 14);
+    ui.text('任务：系统价卖出 ' + Math.min(sim.stats.sysSold, tn) + '/' + tn, 110, 82,
       { size: 11, color: sim.stats.sysSold >= tn ? GREEN : '#c9a8e0' });
     ui.text(this.quadrantLabel(), W - 14, 82, { size: 11, color: '#a99fb2', align: 'right' });
   };
@@ -296,7 +321,8 @@
     ui.rect(0, PANEL_Y, W, 1, '#3b3145');
     var tabs = [['price', '定价'], ['build', '建造'], ['staff', '员工']];
     tabs.forEach(function (t, i) {
-      ui.button(10 + i * 116, PANEL_Y + 6, 108, 28, t[1], { active: self.tab === t[0], size: 13, bold: true }, function () {
+      ui.button(10 + i * 116, PANEL_Y + 6, 108, 28, t[1], { active: self.tab === t[0], size: 13, bold: true,
+        icon: self.icons['tab_' + t[0]], iconSize: 18 }, function () {
         self.tab = t[0];
         if (t[0] !== 'build') self.buildSel = null;
       });
@@ -374,7 +400,8 @@
       ui.bar(24, y + 26, 160, 5, ck.f, '#c0392b');
       ui.text('营业中 · 客人 ' + sim.customers.length, 24, y + 13, { size: 12, color: '#cfc6d6' });
       [1, 2, 3].forEach(function (sp, i) {
-        ui.button(204 + i * 48, y, 42, 38, sp + '×', { active: self.speed === sp, bold: true }, function () { self.speed = sp; });
+        ui.button(204 + i * 48, y, 42, 38, sp + '×', { active: self.speed === sp, bold: true,
+          icon: sp > 1 ? self.icons.btn_speed : null, iconSize: 14 }, function () { self.speed = sp; });
       });
     }
   };
@@ -426,8 +453,10 @@
     ui.text('黑店值 ' + Math.round(sim.black) + '（' + (db >= 0 ? '+' : '') + db.toFixed(1) + '）', x + w - 18, ry, { size: 13, color: '#d9b8f0', align: 'right' });
     ry += 26;
     s.events.slice(0, 3).forEach(function (e) {
-      ui.wrap('· ' + e, w - 36, 12).forEach(function (line) {
-        ui.text(line, x + 18, ry, { size: 12, color: '#e8d9a0' });
+      var ic = /举报/.test(e) ? self.icons.icon_report : /检查/.test(e) ? self.icons.icon_inspect : /任务/.test(e) ? self.icons.icon_task : null;
+      ui.icon(ic, x + 16, ry - 8, 16);
+      ui.wrap(e, w - 58, 12).forEach(function (line) {
+        ui.text(line, x + 38, ry, { size: 12, color: '#e8d9a0' });
         ry += 18;
       });
     });
@@ -441,7 +470,7 @@
     }
     if (!s.adBonus && s.revenue > 0) {
       ui.button(x + 14, by, w - 28, 40, '看广告 · 营收再 +' + Math.round(C.AD_BONUS_RATE * 100) + '%',
-        { fill: '#4a2d5c', bold: true, sub: '+¥' + fmt(Math.round(s.revenue * C.AD_BONUS_RATE)) }, function () {
+        { fill: '#4a2d5c', bold: true, sub: '+¥' + fmt(Math.round(s.revenue * C.AD_BONUS_RATE)), icon: self.icons.btn_ad }, function () {
           self.playAd('dayBonus', function () { var b = sim.adBonus(); self.toast('营收加成 +¥' + fmt(b)); });
         });
     }
@@ -460,7 +489,7 @@
     ui.text('房租危机', W / 2, y + 30, { size: 18, bold: true, color: RED, align: 'center' });
     ui.text('房租 ¥' + fmt(sim.rentAmount()) + '，现金只有 ¥' + fmt(sim.cash), W / 2, y + 64, { size: 13, align: 'center' });
     ui.text('房东：“最多再宽限你 ' + C.RENT_DELAY_DAYS + ' 天。”', W / 2, y + 88, { size: 13, color: '#cfc6d6', align: 'center' });
-    ui.button(x + 16, y + 112, w - 32, 44, '看广告 · 延期 ' + C.RENT_DELAY_DAYS + ' 天', { fill: '#4a2d5c', bold: true, size: 15 }, function () {
+    ui.button(x + 16, y + 112, w - 32, 44, '看广告 · 延期 ' + C.RENT_DELAY_DAYS + ' 天', { fill: '#4a2d5c', bold: true, size: 15, icon: self.icons.btn_ad, iconSize: 20 }, function () {
       self.playAd('rentDelay', function () { sim.delayRent(); self.modal = null; self.save(); self.toast('房租延期 ' + C.RENT_DELAY_DAYS + ' 天'); });
     });
     ui.button(x + 16, y + 168, w - 32, 40, '认输，重新开始', { fill: '#3b3145' }, function () {

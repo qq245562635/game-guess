@@ -32,6 +32,14 @@ G.Platform = {
   save: function (key, obj) { try { localStorage.setItem(key, JSON.stringify(obj)); } catch (e) {} },
   load: function (key) { try { var s = localStorage.getItem(key); return s ? JSON.parse(s) : null; } catch (e) { return null; } },
   clearSave: function (key) { try { localStorage.removeItem(key); } catch (e) {} },
+  loadImage: function (src) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error('图片加载失败')); };
+      img.src = src;
+    });
+  },
   // 激励视频：Web 试玩版模拟 1.2 秒“广告”后发放奖励
   showRewardedAd: function (placement) {
     return new Promise(function (resolve) { setTimeout(function () { resolve(true); }, 1200); });

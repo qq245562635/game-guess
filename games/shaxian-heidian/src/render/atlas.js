@@ -1,10 +1,10 @@
 // ============================================================
-// 占位像素图集：程序绘制 16×16 精灵。
-// 换成 GPT 生成的正式美术时：做一张同布局的 PNG 图集，
-// 在 G.Atlas.build 里改为加载图片即可，名字表 SPR 不变。
+// 图集：每个精灵一个 64×64 格（16×16 像素格放大 4 倍）。
+// 先用程序画占位图；art/ 下有同名 PNG 时，加载后覆盖对应格子（applyArt）。
+// 美术只需按名字交图，不用改代码。
 // ============================================================
 (function () {
-  var S = 16, COLS = 16;
+  var S = 64, PX = 4, COLS = 16;
   var names = [];
   var SPR = {};
 
@@ -16,7 +16,7 @@
   }
 
   function painter(ctx, s) {
-    return function (x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(s.x + x, s.y + y, w, h); };
+    return function (x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(s.x + x * PX, s.y + y * PX, w * PX, h * PX); };
   }
 
   function person(ctx, name, o) {
@@ -48,9 +48,10 @@
     SPR: SPR,
     tex: null,
     build: function (platform, renderer) {
-      var c = platform.createCanvas(256, 64);
+      var c = platform.createCanvas(COLS * S, 2 * S);
       var ctx = c.getContext('2d');
-      ctx.clearRect(0, 0, 256, 64);
+      ctx.clearRect(0, 0, c.width, c.height);
+      this.ctx = ctx;
       var p;
 
       p = painter(ctx, slot('white')); p(0, 0, 16, 16, '#ffffff');
@@ -128,12 +129,28 @@
       this.canvas = c;
       this.tex = renderer.createTexture(c, true);
     },
+    // 用美术图覆盖占位图：images = { 名字: Image }，只处理图集里有的名字
+    applyArt: function (renderer, images) {
+      var ctx = this.ctx, n = 0;
+      ctx.imageSmoothingEnabled = false;
+      for (var name in images) {
+        var s = SPR[name];
+        if (!s) continue;
+        var img = images[name];
+        ctx.clearRect(s.x, s.y, S, S);
+        ctx.drawImage(img, s.x, s.y, Math.min(img.width, S), Math.min(img.height, S));
+        s.w = Math.min(img.width, S); s.h = Math.min(img.height, S);
+        n++;
+      }
+      if (n) renderer.updateTexture(this.tex, this.canvas);
+      return n;
+    },
     draw: function (r, name, x, y, w, h, cr, cg, cb, ca) {
       var s = SPR[name];
       r.quad(this.tex, x, y, w, h, s.x, s.y, s.w, s.h, cr, cg, cb, ca);
     },
     rect: function (r, x, y, w, h, cr, cg, cb, ca) {
-      r.quad(this.tex, x, y, w, h, SPR.white.x + 4, SPR.white.y + 4, 8, 8, cr, cg, cb, ca);
+      r.quad(this.tex, x, y, w, h, SPR.white.x + 16, SPR.white.y + 16, 32, 32, cr, cg, cb, ca);
     }
   };
 })();

@@ -66,6 +66,14 @@
     c.fillText(s, x, y);
   };
 
+  // 像素图标；img 为空时什么也不画，布局不变
+  UI.prototype.icon = function (img, x, y, size) {
+    if (!img) return;
+    var c = this.ctx;
+    c.imageSmoothingEnabled = false;
+    c.drawImage(img, x, y, size, size);
+  };
+
   UI.prototype.measure = function (s, size, bold) { this.font(size, bold); return this.ctx.measureText(s).width; };
 
   // 按字切行（中文没有空格）
@@ -94,8 +102,18 @@
     var color = o.disabled ? '#9a92a0' : (o.active ? '#2a1d16' : (o.color || '#fff'));
     this.round(x, y, w, h, o.radius || 8, fill, o.stroke, o.lw);
     if (o.sub) {
+      if (o.icon) {
+        var is2 = o.iconSize || 18, lw2 = this.measure(label, o.size || 13, o.bold), sx2 = x + (w - is2 - 5 - lw2) / 2;
+        this.icon(o.icon, sx2, y + h / 2 - 7 - is2 / 2, is2);
+        this.text(label, sx2 + is2 + 5, y + h / 2 - 7, { size: o.size || 13, bold: o.bold, color: color });
+      } else
       this.text(label, x + w / 2, y + h / 2 - 7, { size: o.size || 13, bold: o.bold, color: color, align: 'center' });
       this.text(o.sub, x + w / 2, y + h / 2 + 9, { size: 10.5, color: color, align: 'center' });
+    } else if (o.icon) {
+      var is = o.iconSize || 18, lw = this.measure(label, o.size || 13, o.bold), tw = is + 5 + lw;
+      var sx = x + (w - tw) / 2;
+      this.icon(o.icon, sx, y + (h - is) / 2, is);
+      this.text(label, sx + is + 5, y + h / 2 + 1, { size: o.size || 13, bold: o.bold, color: color });
     } else {
       this.text(label, x + w / 2, y + h / 2 + 1, { size: o.size || 13, bold: o.bold, color: color, align: 'center' });
     }

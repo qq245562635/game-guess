@@ -12,7 +12,8 @@ src/
   platform/web.js    浏览器实现：存档、广告（模拟）、输入
   platform/wechat.js 微信实现：wx 存档、激励视频广告、触摸
   render/gl.js       WebGL 精灵批处理
-  render/atlas.js    占位像素图集（程序绘制）
+  render/atlas.js    图集：程序画占位图，有美术图时覆盖
+art/                 美术资源（PNG），见 art/README.md
   render/ui.js       UI 层：离屏 2D 画布 → 纹理
   game.js            主循环、布局、输入、弹窗、剧情
   main.js            启动
@@ -61,9 +62,9 @@ node tools/simulate.js 40 20   # 跑 40 天 × 20 局，看各策略的现金/�
 
 ## 换美术
 
-`render/atlas.js` 里的 `SPR` 名字表就是图集规格：每个精灵 16×16，按顺序排在 256×64 的图里。
-让 GPT 按这个名字表和尺寸出一张 PNG 图集，把 `build()` 改成加载图片即可，其他代码不动。
-人物每种 2 帧（`_0` `_1`），用于走路动画。
+美术图放在 `art/<分类>/<名字>.png`，规格和名单见 `art/README.md`。构建时自动收进游戏：
+网页版内嵌进 `index.html`，微信版拷贝到 `minigame/art/` 按路径加载。
+没交图的名字继续用 `render/atlas.js` 里程序画的占位图，所以可以分批替换，不用改代码。
 
 ## 换皮
 
