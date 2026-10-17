@@ -7,13 +7,14 @@ const fs = require('fs'), path = require('path'), zlib = require('zlib');
 // 需求清单：名字 → [目录, 宽, 高, 是否透明, 优先级]
 const SPEC = {};
 function add(dir, names, w, h, alpha, pri) { for (const n of names) SPEC[n] = { dir, w, h, alpha, pri }; }
-add('tiles', ['floor_hall', 'floor_kitchen', 'door', 'street'], 64, 64, false, 'P0');
-add('tiles', ['wall'], 64, 16, false, 'P0');
+// 2026-10-17 起场景改为斜 45° 等距视角：地块是 2:1 菱形（四角透明），设施底部 16 格是占地菱形
+add('tiles', ['floor_hall', 'floor_kitchen', 'door', 'sidewalk', 'street'], 128, 64, true, 'P0');
+add('tiles', ['wall_l', 'wall_r'], 64, 128, true, 'P0');
 add('tiles', ['shop_sign'], 256, 64, true, 'P1');
-add('facilities', ['stove', 'steamer', 'pot', 'table', 'plant', 'banner', 'camera'], 64, 64, true, 'P0');
-add('facilities', ['counter', 'takeout'], 64, 64, true, 'P1');
-add('facilities', ['booth'], 128, 64, true, 'P1');
-add('facilities', ['neon_sign', 'lucky_cat', 'altar'], 64, 64, true, 'P2');
+add('facilities', ['stove', 'steamer', 'pot', 'table', 'plant', 'banner', 'camera'], 128, 128, true, 'P0');
+add('facilities', ['counter', 'takeout'], 128, 128, true, 'P1');
+add('facilities', ['booth'], 192, 160, true, 'P1');
+add('facilities', ['neon_sign', 'lucky_cat', 'altar'], 128, 128, true, 'P2');
 for (const c of ['chef', 'worker', 'neighbor', 'influencer', 'foodie', 'rich']) add('characters', [c + '_0', c + '_1'], 64, 64, true, 'P0');
 for (const c of ['hero', 'inspector', 'landlord']) add('characters', [c + '_0', c + '_1'], 64, 64, true, 'P1');
 add('items', ['bowl'], 64, 64, true, 'P0');
@@ -98,7 +99,16 @@ function check(dir) {
           if (n === 0) problems.push('图是空的（全透明）');
           else if (cover < 0.08) problems.push(`主体太小或几乎是空的（只占 ${Math.round(cover * 100)}%）`);
           else if (sub === 'characters' && (x1 - x0 + 1) < im.w * 0.45) problems.push(`人物太窄（${x1 - x0 + 1} 像素宽），和其他角色比例不一致`);
-          if (n && sub !== 'ui' && (x0 === 0 || x1 === im.w - 1)) problems.push('主体贴到左右边缘，可能是切图切歪了或带了别的图的碎片');
+          // 地块菱形和墙面本来就顶到左右边，不查贴边
+          if (n && sub !== 'ui' && sub !== 'tiles' && (x0 === 0 || x1 === im.w - 1)) problems.push('主体贴到左右边缘，可能是切图切歪了或带了别的图的碎片');
+          // 地板菱形：四角透明、中间铺满
+          if (sub === 'tiles' && im.w === 128 && im.h === 64) {
+            const corners = [[4, 4], [123, 4], [4, 59], [123, 59]].some(([x, y]) => im.alphaAt(x, y) > 128);
+            const holes = [[64, 32], [20, 32], [107, 32], [64, 6], [64, 57]].some(([x, y]) => im.alphaAt(x, y) <= 128);
+            if (corners || holes) problems.push('地块应是铺满的 2:1 菱形（四角透明），对照 art/_templates/guide_tile.png');
+          }
+          // 设施：底部要落在占地菱形里（最下面的实心像素在下 1/4）
+          if (sub === 'facilities' && y1 < im.h * 0.75) problems.push('设施底部没有落到占地菱形上，像是悬空；对照 art/_templates/guide_facility.png');
         }
       } catch (e) { problems.push('读取失败：' + e.message); }
     }
