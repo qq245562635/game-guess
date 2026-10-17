@@ -273,7 +273,7 @@
         if (Math.abs(sdy) > 0.01) c.back = sdy < 0;
       } else if (d.k === 'chef') c.back = !!c.task;
       else if (c.state === 'waiting' || c.state === 'eating') c.back = false;
-      var f = iso(c.x, c.y), spr = name + (c.back ? '_b' : '_') + frame;
+      var f = iso(c.x, c.y), spr = A.charFrame(name, !!c.back, frame);
       A.drawN(r, spr, f.x - 12 * K, f.y - 31 * K, K, !!c.flip);
       if (d.k === 'cust' && c.state === 'eating') A.drawN(r, 'bowl', f.x - 12 * K, f.y - 52 * K, K);
     });

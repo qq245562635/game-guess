@@ -302,6 +302,7 @@
         }
         ctx.clearRect(s.x, s.y, s.w, s.h);
         ctx.drawImage(img, s.x, s.y, s.w, s.h);
+        s.art = true;
         n++;
       }
       if (n) renderer.updateTexture(this.tex, this.canvas);
@@ -312,6 +313,13 @@
       var s = SPR[name], w = s.nw * k, h = s.nh * k;
       if (flip) r.quad(this.tex, x + w, y, -w, h, s.x, s.y, s.w, s.h, cr, cg, cb, ca);
       else r.quad(this.tex, x, y, w, h, s.x, s.y, s.w, s.h, cr, cg, cb, ca);
+    },
+    // 角色帧：美术只交了部分帧时，缺的帧用同一角色已交的帧顶上，免得新图和占位图来回闪。
+    // 顺序：要的那帧 → 同朝向站立帧 → 斜前同帧 → 斜前站立帧；这个角色一帧都没交就用占位图。
+    charFrame: function (name, back, frame) {
+      var tries = [name + (back ? '_b' : '_') + frame, name + (back ? '_b0' : '_0'), name + '_' + frame, name + '_0'];
+      for (var i = 0; i < tries.length; i++) if (SPR[tries[i]] && SPR[tries[i]].art) return tries[i];
+      return tries[0];
     },
     draw: function (r, name, x, y, w, h, cr, cg, cb, ca) {
       var s = SPR[name];
