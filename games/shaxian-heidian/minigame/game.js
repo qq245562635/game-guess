@@ -137,7 +137,7 @@ G.CFG = {
 };
 
 // ---- art (generated) ----
-G.ART_FILES = {"hero_0":"art/characters/hero_0.png","hero_1":"art/characters/hero_1.png","inspector_0":"art/characters/inspector_0.png","inspector_1":"art/characters/inspector_1.png","booth":"art/facilities/booth.png","counter":"art/facilities/counter.png","dish_banmian":"art/items/dish_banmian.png","dish_dunguan":"art/items/dish_dunguan.png","dish_zhengjiao":"art/items/dish_zhengjiao.png","emote_angry":"art/items/emote_angry.png","emote_happy":"art/items/emote_happy.png","emote_money":"art/items/emote_money.png","emote_shock":"art/items/emote_shock.png","p_hero_normal":"art/portraits/p_hero_normal.png","p_hero_shock":"art/portraits/p_hero_shock.png","p_hero_smug":"art/portraits/p_hero_smug.png","p_inspector":"art/portraits/p_inspector.png","p_landlord":"art/portraits/p_landlord.png","p_rich":"art/portraits/p_rich.png","p_system":"art/portraits/p_system.png","door":"art/tiles/door.png","floor_hall":"art/tiles/floor_hall.png","floor_kitchen":"art/tiles/floor_kitchen.png","shop_sign":"art/tiles/shop_sign.png","street":"art/tiles/street.png","btn_ad":"art/ui/btn_ad.png","btn_speed":"art/ui/btn_speed.png","icon_black":"art/ui/icon_black.png","icon_cash":"art/ui/icon_cash.png","icon_clock":"art/ui/icon_clock.png","icon_favor":"art/ui/icon_favor.png","icon_inspect":"art/ui/icon_inspect.png","icon_rent":"art/ui/icon_rent.png","icon_rep":"art/ui/icon_rep.png","icon_report":"art/ui/icon_report.png","icon_task":"art/ui/icon_task.png","tab_build":"art/ui/tab_build.png","tab_price":"art/ui/tab_price.png","tab_staff":"art/ui/tab_staff.png"};
+G.ART_FILES = {"hero_0":"art/characters/hero_0.png","hero_1":"art/characters/hero_1.png","inspector_0":"art/characters/inspector_0.png","inspector_1":"art/characters/inspector_1.png","dish_banmian":"art/items/dish_banmian.png","dish_dunguan":"art/items/dish_dunguan.png","dish_zhengjiao":"art/items/dish_zhengjiao.png","emote_angry":"art/items/emote_angry.png","emote_happy":"art/items/emote_happy.png","emote_money":"art/items/emote_money.png","emote_shock":"art/items/emote_shock.png","p_hero_normal":"art/portraits/p_hero_normal.png","p_hero_shock":"art/portraits/p_hero_shock.png","p_hero_smug":"art/portraits/p_hero_smug.png","p_inspector":"art/portraits/p_inspector.png","p_landlord":"art/portraits/p_landlord.png","p_rich":"art/portraits/p_rich.png","p_system":"art/portraits/p_system.png","shop_sign":"art/tiles/shop_sign.png","btn_ad":"art/ui/btn_ad.png","btn_speed":"art/ui/btn_speed.png","icon_black":"art/ui/icon_black.png","icon_cash":"art/ui/icon_cash.png","icon_clock":"art/ui/icon_clock.png","icon_favor":"art/ui/icon_favor.png","icon_inspect":"art/ui/icon_inspect.png","icon_rent":"art/ui/icon_rent.png","icon_rep":"art/ui/icon_rep.png","icon_report":"art/ui/icon_report.png","icon_task":"art/ui/icon_task.png","tab_build":"art/ui/tab_build.png","tab_price":"art/ui/tab_price.png","tab_staff":"art/ui/tab_staff.png"};
 // ---- rng.js ----
 // 可复现随机数（mulberry32），模拟脚本与游戏共用
 G.RNG = function (seed) { this.s = (seed >>> 0) || 1; };
@@ -163,7 +163,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
 // ---- sim.js ----
 // ============================================================
 // 经营模拟层：纯逻辑，不碰渲染。Node 里也能跑（tools/simulate.js）。
-// 坐标单位为“格”，(0,0) 在左上；店门在最下一行，街道在 y=8 之外。
+// 坐标单位为“格”，(0,0) 是店内最里面的角；店门在 y=7 这一行，y=8 之外是人行道和马路。
 // ============================================================
 (function () {
   var C = G.CFG, clamp = G.clamp;
@@ -173,8 +173,9 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     return tier === 2 ? d.sys : tier === 1 ? Math.round(d.sys / 2) : d.base;
   };
 
-  var ENTRY = { x: 4, y: 8.3 };   // 街上入口
+  var ENTRY = { x: 4, y: 8.4 };   // 门口人行道
   var DOORWAY = { x: 4, y: 7.3 }; // 门内一步
+  var STREET_Y = 8.6, STREET_ENDS = [-4, 12];   // 客人沿人行道从两头走来、走掉
 
   function Sim(seed) {
     this.rng = new G.RNG(seed || 12345);
@@ -405,8 +406,8 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
 
   Sim.prototype.spawn = function (type) {
     var c = {
-      id: this.nextId++, type: type, x: ENTRY.x + this.rng.range(-0.3, 0.3), y: ENTRY.y,
-      tx: DOORWAY.x, ty: DOORWAY.y, state: 'enter', seat: null, orders: [], wait: 0,
+      id: this.nextId++, type: type, x: this.rng.pick(STREET_ENDS), y: STREET_Y + this.rng.range(-0.15, 0.15),
+      tx: ENTRY.x + this.rng.range(-0.3, 0.3), ty: ENTRY.y, state: 'approach', seat: null, orders: [], wait: 0,
       eatT: 0, bubble: null, emote: null, bubbleT: 0, moving: true
     };
     this.customers.push(c);
@@ -415,8 +416,8 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
   Sim.prototype.leave = function (c) {
     if (c.seat) { c.seat.occ = null; c.seat = null; }
     c.state = 'leave';
-    c.tx = ENTRY.x + this.rng.range(-0.6, 0.6);
-    c.ty = ENTRY.y + 0.4;
+    c.tx = ENTRY.x + this.rng.range(-0.4, 0.4);
+    c.ty = ENTRY.y;
   };
 
   Sim.prototype.quality = function (dishId) {
@@ -470,6 +471,9 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     var arrived = moveEnt(c, dt, C.WALK_SPEED);
     var self = this;
     switch (c.state) {
+      case 'approach':
+        if (arrived) { c.state = 'enter'; c.tx = DOORWAY.x; c.ty = DOORWAY.y; }
+        break;
       case 'enter':
         if (arrived) this.decide(c);
         break;
@@ -501,6 +505,9 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
         if (c.eatT <= 0) { this.pay(c); this.leave(c); }
         break;
       case 'leave':
+        if (arrived) { c.state = 'exit'; c.tx = this.rng.pick(STREET_ENDS); c.ty = STREET_Y + this.rng.range(-0.15, 0.15); }
+        break;
+      case 'exit':
         if (arrived) this.customers.splice(this.customers.indexOf(c), 1);
         break;
     }
@@ -856,137 +863,273 @@ G.Platform = {
 
 // ---- render/atlas.js ----
 // ============================================================
-// 图集：每个精灵一个 64×64 格（16×16 像素格放大 4 倍）。
-// 先用程序画占位图；art/ 下有同名 PNG 时，加载后覆盖对应格子（applyArt）。
-// 美术只需按名字交图，不用改代码。
+// 图集：开罗式斜 45° 等距视角。
+// 每个精灵按「原生像素格」画，放大 4 倍存进图集（和美术交图的尺寸一致）。
+//   地块：菱形 32×16 格（交图 128×64，四角透明）
+//   设施：32×32 格（交图 128×128），底部 16 行是占地菱形，物体往上长
+//   墙：16×32 格（交图 64×128），一格墙面
+//   角色、碗：16×16 格（交图 64×64），正面朝前，脚踩底边
+// 先用程序画占位图；art/ 下有同名且尺寸正确的 PNG 时，加载后覆盖（applyArt）。
 // ============================================================
 (function () {
-  var S = 64, PX = 4, COLS = 16;
-  var names = [];
+  var PX = 4, ATLAS_W = 1024, ATLAS_H = 1024, PAD = 2;
+  var OUTLINE = '#2a1d16';
   var SPR = {};
+  var cur = { x: 0, y: 0, rowH: 0 };
 
-  function slot(name) {
-    var i = names.length;
-    names.push(name);
-    SPR[name] = { x: (i % COLS) * S, y: Math.floor(i / COLS) * S, w: S, h: S };
-    return SPR[name];
+  // 货架式排布：从左往右放，放不下换行
+  function slot(name, nw, nh) {
+    var w = nw * PX, h = nh * PX;
+    if (cur.x + w > ATLAS_W) { cur.x = 0; cur.y += cur.rowH + PAD; cur.rowH = 0; }
+    var s = { x: cur.x, y: cur.y, w: w, h: h, nw: nw, nh: nh };
+    cur.x += w + PAD; cur.rowH = Math.max(cur.rowH, h);
+    if (cur.y + h > ATLAS_H) throw new Error('图集放不下：' + name);
+    SPR[name] = s;
+    return s;
   }
 
-  function painter(ctx, s) {
-    return function (x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(s.x + x * PX, s.y + y * PX, w * PX, h * PX); };
+  // ---------- 原生像素画笔 ----------
+  function Pen(platform, w, h) {
+    this.c = platform.createCanvas(w, h);
+    this.x = this.c.getContext('2d');
+    this.w = w; this.h = h;
   }
-
-  function person(ctx, name, o) {
-    for (var f = 0; f < 2; f++) {
-      var p = painter(ctx, slot(name + '_' + f));
-      var skin = o.skin || '#f1c9a0';
-      p(4, 15, 8, 1, 'rgba(0,0,0,0.25)');
-      // 腿
-      if (f === 0) { p(5, 12, 2, 3, '#2c2c34'); p(9, 12, 2, 3, '#2c2c34'); }
-      else { p(5, 12, 2, 2, '#2c2c34'); p(4, 14, 2, 1, '#2c2c34'); p(9, 12, 2, 3, '#2c2c34'); }
-      // 身体与手臂
-      p(4, 7, 8, 5, o.shirt);
-      p(3, 8, 1, 3, o.shirt); p(12, 8, 1, 3, o.shirt);
-      p(3, 11, 1, 1, skin); p(12, 11, 1, 1, skin);
-      if (o.apron) { p(5, 8, 6, 4, '#e9e9e9'); p(5, 8, 6, 1, '#cfcfcf'); }
-      // 头
-      p(5, 2, 6, 5, skin);
-      p(6, 4, 1, 1, '#222'); p(9, 4, 1, 1, '#222');
-      if (o.hat) { p(5, 0, 6, 2, '#ffffff'); p(4, 1, 8, 1, '#ffffff'); p(5, 2, 6, 1, '#dcdcdc'); }
-      else { p(5, 1, 6, 2, o.hair); p(4, 2, 1, 3, o.hair); p(11, 2, 1, 2, o.hair); }
-      if (o.shades) p(5, 4, 6, 1, '#111');
-      if (o.glasses) { p(6, 4, 1, 1, '#fff'); p(9, 4, 1, 1, '#fff'); p(7, 4, 2, 1, '#888'); }
-      if (o.chain) p(7, 7, 2, 1, '#e8c35a');
-      if (o.phone) p(12, 8, 2, 3, '#222');
+  Pen.prototype.px = function (x, y, w, h, c) { this.x.fillStyle = c; this.x.fillRect(x, y, w, h); };
+  // 扫描线填充多边形：整像素、无抗锯齿
+  Pen.prototype.poly = function (pts, c) {
+    var ctx = this.x, n = pts.length, y0 = Infinity, y1 = -Infinity, i;
+    for (i = 0; i < n; i++) { y0 = Math.min(y0, pts[i][1]); y1 = Math.max(y1, pts[i][1]); }
+    ctx.fillStyle = c;
+    for (var y = Math.floor(y0); y < Math.ceil(y1); y++) {
+      var sy = y + 0.5, xs = [];
+      for (i = 0; i < n; i++) {
+        var a = pts[i], b = pts[(i + 1) % n];
+        if ((a[1] <= sy && b[1] > sy) || (b[1] <= sy && a[1] > sy)) xs.push(a[0] + (sy - a[1]) / (b[1] - a[1]) * (b[0] - a[0]));
+      }
+      xs.sort(function (p, q) { return p - q; });
+      for (i = 0; i + 1 < xs.length; i += 2) {
+        var l = Math.round(xs[i]), r = Math.round(xs[i + 1]);
+        if (r > l) ctx.fillRect(l, y, r - l, 1);
+      }
     }
+  };
+  Pen.prototype.ellipse = function (cx, cy, a, b, c) {
+    this.x.fillStyle = c;
+    for (var y = Math.floor(cy - b); y < Math.ceil(cy + b); y++) {
+      var dy = (y + 0.5 - cy) / b;
+      if (Math.abs(dy) > 1) continue;
+      var hw = a * Math.sqrt(1 - dy * dy), l = Math.round(cx - hw), r = Math.round(cx + hw);
+      if (r > l) this.x.fillRect(l, y, r - l, 1);
+    }
+  };
+  // 等距坐标：(u,v) 是占地格内的位置（0–1），z 是离地高度（像素格）
+  Pen.prototype.P = function (u, v, z) { return [this.w / 2 + (u - v) * 16, this.h - 16 + (u + v) * 8 - (z || 0)]; };
+  Pen.prototype.box = function (u0, v0, u1, v1, z0, z1, top, left, right) {
+    var P = this.P.bind(this);
+    this.poly([P(u0, v1, z0), P(u1, v1, z0), P(u1, v1, z1), P(u0, v1, z1)], left);
+    this.poly([P(u1, v0, z0), P(u1, v1, z0), P(u1, v1, z1), P(u1, v0, z1)], right);
+    this.poly([P(u0, v0, z1), P(u1, v0, z1), P(u1, v1, z1), P(u0, v1, z1)], top);
+  };
+  // 竖直圆柱：底面中心 (u,v,z0)，半径 a 像素
+  Pen.prototype.cyl = function (u, v, z0, z1, a, body, top, band) {
+    var p0 = this.P(u, v, z0), p1 = this.P(u, v, z1), b = a / 2;
+    this.ellipse(p0[0], p0[1], a, b, body);
+    this.px(Math.round(p0[0] - a), Math.round(p1[1]), Math.round(2 * a), Math.round(p0[1] - p1[1]), body);
+    if (band) this.px(Math.round(p0[0] - a), Math.round(p0[1] - 2), Math.round(2 * a), 1, band);
+    this.ellipse(p1[0], p1[1], a, b, top);
+  };
+  // 透明像素挨着实心像素的，描一圈深棕边
+  Pen.prototype.outline = function () {
+    var d = this.x.getImageData(0, 0, this.w, this.h), a = d.data, w = this.w, h = this.h, i, x, y;
+    var solid = new Uint8Array(w * h);
+    for (i = 0; i < w * h; i++) { solid[i] = a[i * 4 + 3] > 0 ? 1 : 0; if (solid[i]) a[i * 4 + 3] = 255; }
+    var oc = [0x2a, 0x1d, 0x16];
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = y * w + x;
+      if (solid[i]) continue;
+      if ((x > 0 && solid[i - 1]) || (x < w - 1 && solid[i + 1]) || (y > 0 && solid[i - w]) || (y < h - 1 && solid[i + w])) {
+        a[i * 4] = oc[0]; a[i * 4 + 1] = oc[1]; a[i * 4 + 2] = oc[2]; a[i * 4 + 3] = 255;
+      }
+    }
+    this.x.putImageData(d, 0, 0);
+  };
+
+  // ---------- 占位图 ----------
+  // 地块菱形：把一格分成 n×n 小菱形，按 color(i,j) 上色
+  function tile(pen, n, color) {
+    for (var i = 0; i < n; i++) for (var j = 0; j < n; j++) {
+      var u0 = i / n, u1 = (i + 1) / n, v0 = j / n, v1 = (j + 1) / n;
+      pen.poly([pen.P(u0, v0), pen.P(u1, v0), pen.P(u1, v1), pen.P(u0, v1)], color(i, j));
+    }
+  }
+
+  var DRAW = {
+    floor_hall: function (p) { tile(p, 2, function (i, j) { return (i + j) % 2 ? '#d9a35b' : '#e6b56c'; }); },
+    floor_kitchen: function (p) {
+      tile(p, 2, function () { return '#c9cfd3'; });
+      p.poly([p.P(0.5, 0), p.P(0.53, 0), p.P(0.53, 1), p.P(0.5, 1)], '#a9b0b5');
+      p.poly([p.P(0, 0.5), p.P(1, 0.5), p.P(1, 0.53), p.P(0, 0.53)], '#a9b0b5');
+    },
+    door: function (p) {
+      tile(p, 2, function (i, j) { return (i + j) % 2 ? '#d9a35b' : '#e6b56c'; });
+      p.poly([p.P(0.12, 0.2), p.P(0.88, 0.2), p.P(0.88, 0.8), p.P(0.12, 0.8)], '#7a4a26');
+      p.poly([p.P(0.2, 0.28), p.P(0.8, 0.28), p.P(0.8, 0.72), p.P(0.2, 0.72)], '#a8703f');
+    },
+    sidewalk: function (p) { tile(p, 2, function (i, j) { return (i + j) % 2 ? '#b9b2a8' : '#c6bfb5'; }); },
+    street: function (p) {
+      tile(p, 1, function () { return '#4a4550'; });
+      p.px(10, 6, 1, 1, '#5a5560'); p.px(20, 9, 1, 1, '#5a5560'); p.px(15, 4, 1, 1, '#3d3843');
+    },
+    tile_mask: function (p) { tile(p, 1, function () { return '#ffffff'; }); },
+    // 后墙：沿 y=0（右上边）和 x=0（左上边），墙裙红砖、上半米白
+    wall_r: function (p) {
+      p.poly([[0, 0], [16, 8], [16, 32], [0, 24]], '#efe2c4');
+      p.poly([[0, 14], [16, 22], [16, 32], [0, 24]], '#b5473a');
+      p.poly([[0, 14], [16, 22], [16, 23], [0, 15]], '#8a3328');
+      p.poly([[0, 0], [16, 8], [16, 10], [0, 2]], '#9c6a3a');
+    },
+    wall_l: function (p) {
+      p.poly([[16, 0], [0, 8], [0, 32], [16, 24]], '#d9ccad');
+      p.poly([[16, 14], [0, 22], [0, 32], [16, 24]], '#9c3b30');
+      p.poly([[16, 14], [0, 22], [0, 23], [16, 15]], '#7a2b22');
+      p.poly([[16, 0], [0, 8], [0, 10], [16, 2]], '#835a30');
+    },
+    // 店面地台的前侧面（左前、右前），营造一点厚度
+    edge_l: function (p) { p.poly([[0, 0], [16, 8], [16, 12], [0, 4]], '#9c6a3a'); },
+    edge_r: function (p) { p.poly([[16, 0], [0, 8], [0, 12], [16, 4]], '#6e4520'); },
+
+    stove: function (p) {
+      p.box(0.1, 0.15, 0.9, 0.85, 0, 12, '#a3aab1', '#7d848c', '#5b5f66');
+      p.box(0.1, 0.15, 0.9, 0.25, 12, 14, '#5b5f66', '#44474d', '#3a3d42');
+      var a = p.P(0.33, 0.5, 12), b = p.P(0.67, 0.5, 12);
+      p.ellipse(a[0], a[1], 5, 2.5, '#1c1c1f'); p.ellipse(b[0], b[1], 4, 2, '#2e3035');
+      p.px(b[0] - 2, b[1] - 2, 1, 2, '#ff8a2a'); p.px(b[0] + 1, b[1] - 2, 1, 2, '#ff8a2a'); p.px(b[0] - 1, b[1] - 1, 2, 1, '#ffd23f');
+      p.ellipse(a[0], a[1] - 1, 4, 2, '#2e3035');
+      p.px(a[0] - 4, a[1] - 3, 1, 1, '#ff8a2a'); p.px(a[0] + 3, a[1] - 3, 1, 1, '#ff8a2a');
+      var k = p.P(0.9, 0.55, 6); p.px(k[0] - 1, k[1], 2, 2, '#c0392b');
+    },
+    steamer: function (p) {
+      p.box(0.15, 0.15, 0.85, 0.85, 0, 7, '#8a9097', '#6b7178', '#4f545a');
+      p.cyl(0.5, 0.5, 7, 12, 9, '#c8a060', '#dcbc80', '#a07c40');
+      p.cyl(0.5, 0.5, 12, 17, 9, '#c8a060', '#dcbc80', '#a07c40');
+      p.cyl(0.5, 0.5, 17, 21, 9, '#d0a868', '#e2c690', '#a07c40');
+      var t = p.P(0.5, 0.5, 21);
+      p.px(t[0] - 1, t[1] - 1, 2, 1, '#a07c40');
+      p.px(t[0] - 4, t[1] - 6, 1, 3, '#f4f4f4'); p.px(t[0] + 3, t[1] - 8, 1, 3, '#f4f4f4'); p.px(t[0], t[1] - 5, 1, 2, '#f4f4f4');
+    },
+    pot: function (p) {
+      p.box(0.15, 0.15, 0.85, 0.85, 0, 5, '#5b5f66', '#44474d', '#3a3d42');
+      var f = p.P(0.85, 0.85, 3); p.px(f[0] - 6, f[1] - 4, 2, 2, '#ff8a2a'); p.px(f[0] + 3, f[1] - 4, 2, 2, '#ff8a2a');
+      p.cyl(0.5, 0.5, 5, 20, 9, '#b0b6bd', '#e0a050', '#8a9097');
+      var t = p.P(0.5, 0.5, 20);
+      p.ellipse(t[0], t[1], 6, 3, '#c98a3a');
+      p.px(t[0] - 11, t[1] + 2, 2, 2, '#8a9097'); p.px(t[0] + 9, t[1] + 2, 2, 2, '#8a9097');
+      p.px(t[0] - 3, t[1] - 7, 1, 3, '#f4f4f4'); p.px(t[0] + 2, t[1] - 9, 1, 4, '#f4f4f4');
+    },
+    table: function (p) {
+      p.box(0.4, 0.82, 0.6, 1.0, 0, 5, '#e05a3a', '#c0392b', '#9a2a1a');        // 前面的红塑料凳
+      var l0 = p.P(0.25, 0.75, 0), l1 = p.P(0.75, 0.75, 0), l2 = p.P(0.25, 0.25, 0), l3 = p.P(0.75, 0.25, 0);
+      [l0, l1, l2, l3].forEach(function (l) { p.px(l[0], l[1] - 8, 1, 8, '#4a3015'); });
+      p.box(0.15, 0.15, 0.85, 0.85, 8, 10, '#b8854f', '#9c6a3a', '#6e4520');
+      var c = p.P(0.5, 0.5, 10);
+      p.ellipse(c[0], c[1], 4, 2, '#3a6fb0'); p.ellipse(c[0], c[1], 3, 1.5, '#f4f4f4'); p.px(c[0] - 1, c[1] - 1, 2, 1, '#e8c35a');
+    },
+    plant: function (p) {
+      p.box(0.3, 0.3, 0.7, 0.7, 0, 8, '#d27a52', '#b85c38', '#8f4428');
+      var c = p.P(0.5, 0.5, 8);
+      p.ellipse(c[0], c[1] - 5, 8, 5, '#2e8b57');
+      p.ellipse(c[0] - 1, c[1] - 10, 7, 4, '#2e8b57');
+      p.ellipse(c[0] + 1, c[1] - 14, 5, 3, '#2e8b57');
+      p.ellipse(c[0] - 4, c[1] - 7, 3, 2, '#3cb371'); p.ellipse(c[0] - 2, c[1] - 11, 3, 2, '#3cb371'); p.ellipse(c[0], c[1] - 15, 2, 1.5, '#3cb371');
+    },
+    banner: function (p) {
+      var a = p.P(0.15, 0.5, 0), b = p.P(0.85, 0.5, 0);
+      p.px(a[0], a[1] - 26, 1, 26, '#6e4520'); p.px(b[0] - 1, b[1] - 26, 1, 26, '#6e4520');
+      var P = p.P.bind(p);
+      p.poly([P(0.18, 0.5, 8), P(0.82, 0.5, 8), P(0.82, 0.5, 26), P(0.18, 0.5, 26)], '#e8c35a');
+      p.poly([P(0.22, 0.5, 10), P(0.78, 0.5, 10), P(0.78, 0.5, 24), P(0.22, 0.5, 24)], '#c0392b');
+      [13, 17, 21].forEach(function (z) { p.poly([P(0.3, 0.5, z), P(0.7, 0.5, z), P(0.7, 0.5, z + 1), P(0.3, 0.5, z + 1)], '#e8c35a'); });
+    },
+    camera: function (p) {
+      p.box(0.35, 0.35, 0.65, 0.65, 0, 2, '#6a6a6a', '#4a4a4a', '#3a3a3a');
+      var c = p.P(0.5, 0.5, 2); p.px(c[0], c[1] - 20, 2, 20, '#6a6a6a');
+      p.box(0.3, 0.25, 0.75, 0.55, 22, 27, '#eeeeee', '#cfcfcf', '#a8a8a8');
+      var l = p.P(0.75, 0.4, 25); p.px(l[0], l[1] - 1, 2, 2, '#222'); var r = p.P(0.4, 0.55, 25); p.px(r[0], r[1], 1, 1, '#ff3333');
+    },
+    bowl: function (p) {
+      p.px(4, 6, 8, 3, '#e8c35a'); p.px(5, 5, 6, 1, '#f0d27a');
+      p.px(3, 8, 10, 3, '#ffffff'); p.px(4, 11, 8, 1, '#e6e6e6'); p.px(3, 8, 10, 1, '#3a6fb0');
+      p.px(6, 2, 1, 2, '#f4f4f4'); p.px(9, 1, 1, 2, '#f4f4f4');
+    }
+  };
+  // 名字 → [原生宽, 原生高, 是否描边]
+  var SIZE = {
+    floor_hall: [32, 16], floor_kitchen: [32, 16], door: [32, 16], sidewalk: [32, 16], street: [32, 16], tile_mask: [32, 16],
+    wall_r: [16, 32], wall_l: [16, 32], edge_l: [16, 12], edge_r: [16, 12],
+    stove: [32, 32, 1], steamer: [32, 32, 1], pot: [32, 32, 1], table: [32, 32, 1], plant: [32, 32, 1], banner: [32, 32, 1], camera: [32, 32, 1],
+    bowl: [16, 16]
+  };
+
+  function person(p, f, o) {
+    var skin = o.skin || '#f1c9a0';
+    p.px(4, 15, 8, 1, 'rgba(0,0,0,0.25)');
+    if (f === 0) { p.px(5, 12, 2, 3, '#2c2c34'); p.px(9, 12, 2, 3, '#2c2c34'); }
+    else { p.px(5, 12, 2, 2, '#2c2c34'); p.px(4, 14, 2, 1, '#2c2c34'); p.px(9, 12, 2, 3, '#2c2c34'); }
+    p.px(4, 7, 8, 5, o.shirt);
+    p.px(3, 8, 1, 3, o.shirt); p.px(12, 8, 1, 3, o.shirt);
+    p.px(3, 11, 1, 1, skin); p.px(12, 11, 1, 1, skin);
+    if (o.apron) { p.px(5, 8, 6, 4, '#e9e9e9'); p.px(5, 8, 6, 1, '#cfcfcf'); }
+    p.px(5, 2, 6, 5, skin);
+    p.px(6, 4, 1, 1, '#222'); p.px(9, 4, 1, 1, '#222');
+    if (o.hat) { p.px(5, 0, 6, 2, '#ffffff'); p.px(4, 1, 8, 1, '#ffffff'); p.px(5, 2, 6, 1, '#dcdcdc'); }
+    else { p.px(5, 1, 6, 2, o.hair); p.px(4, 2, 1, 3, o.hair); p.px(11, 2, 1, 2, o.hair); }
+    if (o.shades) p.px(5, 4, 6, 1, '#111');
+    if (o.glasses) { p.px(6, 4, 1, 1, '#fff'); p.px(9, 4, 1, 1, '#fff'); p.px(7, 4, 2, 1, '#888'); }
+    if (o.chain) p.px(7, 7, 2, 1, '#e8c35a');
+    if (o.phone) p.px(12, 8, 2, 3, '#222');
   }
 
   G.Atlas = {
     SPR: SPR,
     tex: null,
+    PX: PX,
     build: function (platform, renderer) {
-      var c = platform.createCanvas(COLS * S, 2 * S);
+      var c = platform.createCanvas(ATLAS_W, ATLAS_H);
       var ctx = c.getContext('2d');
       ctx.clearRect(0, 0, c.width, c.height);
+      ctx.imageSmoothingEnabled = false;
       this.ctx = ctx;
-      var p;
-
-      p = painter(ctx, slot('white')); p(0, 0, 16, 16, '#ffffff');
-
-      p = painter(ctx, slot('floor_hall'));
-      p(0, 0, 16, 16, '#dcbf93'); p(0, 0, 8, 8, '#d3b386'); p(8, 8, 8, 8, '#d3b386');
-      p(0, 15, 16, 1, '#bf9d70'); p(15, 0, 1, 16, '#bf9d70');
-
-      p = painter(ctx, slot('floor_kitchen'));
-      p(0, 0, 16, 16, '#cdd3d7'); p(0, 7, 16, 1, '#aeb5ba'); p(0, 15, 16, 1, '#aeb5ba');
-      p(7, 0, 1, 8, '#aeb5ba'); p(15, 8, 1, 8, '#aeb5ba');
-
-      p = painter(ctx, slot('door'));
-      p(0, 0, 16, 16, '#dcbf93'); p(1, 2, 14, 12, '#8a5a32'); p(2, 3, 12, 10, '#a8703f');
-      for (var i = 0; i < 4; i++) p(3, 4 + i * 2, 10, 1, '#8a5a32');
-
-      p = painter(ctx, slot('street'));
-      p(0, 0, 16, 16, '#4a4550'); p(3, 5, 1, 1, '#5a5560'); p(11, 2, 1, 1, '#5a5560'); p(8, 12, 1, 1, '#3d3843');
-
-      p = painter(ctx, slot('wall'));
-      p(0, 0, 16, 16, '#7a3b2e'); p(0, 13, 16, 3, '#5c2a20'); p(0, 4, 16, 1, '#8d4a3b');
-
-      p = painter(ctx, slot('stove'));
-      p(1, 5, 14, 11, '#5b5f66'); p(1, 3, 14, 3, '#2e3035'); p(1, 15, 14, 1, '#44474d');
-      p(3, 3, 4, 2, '#1c1c1f'); p(9, 3, 4, 2, '#1c1c1f');
-      p(4, 1, 2, 2, '#ff8a2a'); p(10, 1, 2, 2, '#ff8a2a'); p(4, 2, 1, 1, '#ffd23f'); p(11, 2, 1, 1, '#ffd23f');
-      p(3, 8, 10, 1, '#777b82'); p(6, 11, 4, 2, '#3a3d42');
-
-      p = painter(ctx, slot('steamer'));
-      p(2, 13, 12, 3, '#5b5f66');
-      p(3, 9, 10, 4, '#c8a060'); p(3, 10, 10, 1, '#a07c40');
-      p(3, 5, 10, 4, '#d0a868'); p(3, 6, 10, 1, '#a07c40');
-      p(4, 3, 8, 2, '#dcbc80'); p(7, 2, 2, 1, '#a07c40');
-      p(5, 0, 1, 2, '#f4f4f4'); p(10, 0, 1, 1, '#f4f4f4');
-
-      p = painter(ctx, slot('pot'));
-      p(2, 11, 12, 5, '#5b5f66'); p(4, 12, 8, 2, '#ff8a2a');
-      p(2, 4, 12, 1, '#8a9097'); p(3, 5, 10, 6, '#b0b6bd'); p(3, 5, 10, 1, '#e0a050');
-      p(1, 6, 1, 2, '#8a9097'); p(14, 6, 1, 2, '#8a9097');
-      p(6, 1, 1, 2, '#f4f4f4'); p(9, 0, 1, 2, '#f4f4f4');
-
-      p = painter(ctx, slot('table'));
-      p(1, 6, 14, 5, '#9c6a3a'); p(1, 6, 14, 1, '#b8854f'); p(1, 11, 14, 1, '#6e4520');
-      p(2, 12, 1, 3, '#4a3015'); p(13, 12, 1, 3, '#4a3015');
-      p(5, 13, 6, 2, '#d0402a'); p(5, 15, 1, 1, '#9a2a1a'); p(10, 15, 1, 1, '#9a2a1a');
-      p(6, 7, 4, 2, '#f4f4f4'); p(6, 7, 4, 1, '#3a6fb0');
-
-      p = painter(ctx, slot('plant'));
-      p(5, 11, 6, 5, '#b85c38'); p(5, 11, 6, 1, '#d27a52');
-      p(3, 3, 10, 8, '#2e8b57'); p(5, 1, 6, 3, '#2e8b57'); p(4, 4, 3, 2, '#3cb371'); p(9, 2, 2, 3, '#3cb371'); p(8, 7, 3, 2, '#3cb371');
-
-      p = painter(ctx, slot('banner'));
-      p(7, 0, 2, 1, '#e8c35a');
-      p(3, 1, 10, 13, '#e8c35a'); p(4, 2, 8, 11, '#c0392b');
-      p(5, 4, 6, 1, '#e8c35a'); p(5, 7, 6, 1, '#e8c35a'); p(5, 10, 6, 1, '#e8c35a');
-      p(5, 14, 1, 2, '#e8c35a'); p(10, 14, 1, 2, '#e8c35a');
-
-      p = painter(ctx, slot('camera'));
-      p(7, 6, 2, 10, '#6a6a6a'); p(5, 14, 6, 2, '#4a4a4a');
-      p(3, 2, 9, 4, '#dddddd'); p(3, 5, 9, 1, '#b0b0b0'); p(11, 3, 2, 2, '#222'); p(4, 3, 1, 1, '#ff3333');
-
-      p = painter(ctx, slot('bowl'));
-      p(4, 6, 8, 3, '#e8c35a'); p(5, 5, 6, 1, '#f0d27a');
-      p(3, 8, 10, 3, '#ffffff'); p(4, 11, 8, 1, '#e6e6e6'); p(3, 8, 10, 1, '#3a6fb0');
-      p(6, 2, 1, 2, '#f4f4f4'); p(9, 1, 1, 2, '#f4f4f4');
-
-      person(ctx, 'chef', { shirt: '#f4f4f4', hat: true, apron: true });
-      var C = G.CFG.CUST;
-      person(ctx, 'worker', { shirt: C.worker.shirt, hair: C.worker.hair });
-      person(ctx, 'neighbor', { shirt: C.neighbor.shirt, hair: C.neighbor.hair, skin: '#e8bf95' });
-      person(ctx, 'influencer', { shirt: C.influencer.shirt, hair: C.influencer.hair, phone: true });
-      person(ctx, 'foodie', { shirt: C.foodie.shirt, hair: C.foodie.hair, glasses: true });
-      person(ctx, 'rich', { shirt: C.rich.shirt, hair: C.rich.hair, shades: true, chain: true });
-
+      function put(name, pen) {
+        var s = slot(name, pen.w, pen.h);
+        ctx.drawImage(pen.c, 0, 0, pen.w, pen.h, s.x, s.y, s.w, s.h);
+      }
+      var white = slot('white', 16, 16);
+      ctx.fillStyle = '#fff'; ctx.fillRect(white.x, white.y, white.w, white.h);
+      Object.keys(SIZE).forEach(function (name) {
+        var sz = SIZE[name], pen = new Pen(platform, sz[0], sz[1]);
+        DRAW[name](pen);
+        if (sz[2]) pen.outline();
+        put(name, pen);
+      });
+      var C = G.CFG.CUST, people = {
+        chef: { shirt: '#f4f4f4', hat: true, apron: true },
+        worker: { shirt: C.worker.shirt, hair: C.worker.hair },
+        neighbor: { shirt: C.neighbor.shirt, hair: C.neighbor.hair, skin: '#e8bf95' },
+        influencer: { shirt: C.influencer.shirt, hair: C.influencer.hair, phone: true },
+        foodie: { shirt: C.foodie.shirt, hair: C.foodie.hair, glasses: true },
+        rich: { shirt: C.rich.shirt, hair: C.rich.hair, shades: true, chain: true }
+      };
+      Object.keys(people).forEach(function (k) {
+        for (var f = 0; f < 2; f++) {
+          var pen = new Pen(platform, 16, 16);
+          person(pen, f, people[k]);
+          put(k + '_' + f, pen);
+        }
+      });
       this.canvas = c;
       this.tex = renderer.createTexture(c, true);
     },
-    // 用美术图覆盖占位图：images = { 名字: Image }，只处理图集里有的名字
+    // 用美术图覆盖占位图：images = { 名字: Image }。只认图集里有的名字，尺寸不对的跳过（继续用占位图）
     applyArt: function (renderer, images) {
       var ctx = this.ctx, n = 0;
       ctx.imageSmoothingEnabled = false;
@@ -994,13 +1137,22 @@ G.Platform = {
         var s = SPR[name];
         if (!s) continue;
         var img = images[name];
-        ctx.clearRect(s.x, s.y, S, S);
-        ctx.drawImage(img, s.x, s.y, Math.min(img.width, S), Math.min(img.height, S));
-        s.w = Math.min(img.width, S); s.h = Math.min(img.height, S);
+        if (img.width !== s.w || img.height !== s.h) {
+          console.warn('美术尺寸不对，继续用占位图：' + name + ' 应为 ' + s.w + '×' + s.h + '，实际 ' + img.width + '×' + img.height);
+          continue;
+        }
+        ctx.clearRect(s.x, s.y, s.w, s.h);
+        ctx.drawImage(img, s.x, s.y);
         n++;
       }
       if (n) renderer.updateTexture(this.tex, this.canvas);
       return n;
+    },
+    // 按原生像素格画：k = 每个原生像素对应的逻辑像素数；flip 为水平翻转
+    drawN: function (r, name, x, y, k, flip, cr, cg, cb, ca) {
+      var s = SPR[name], w = s.nw * k, h = s.nh * k;
+      if (flip) r.quad(this.tex, x + w, y, -w, h, s.x, s.y, s.w, s.h, cr, cg, cb, ca);
+      else r.quad(this.tex, x, y, w, h, s.x, s.y, s.w, s.h, cr, cg, cb, ca);
     },
     draw: function (r, name, x, y, w, h, cr, cg, cb, ca) {
       var s = SPR[name];
@@ -1160,14 +1312,21 @@ G.Platform = {
 // ---- game.js ----
 // ============================================================
 // 游戏主控：主循环、布局、输入、场景渲染、弹窗与剧情。
-// 设计分辨率 360×640（竖屏），等比缩放居中。
+// 设计分辨率 360×640（竖屏），等比缩放居中。场景是开罗式斜 45° 等距视角。
 // ============================================================
 (function () {
   var C = G.CFG;
   var W = 360, H = 640;
-  var TILE = 40, GX = 20, GY = 100;            // 店面网格
-  var STREET_Y = GY + C.GRID_H * TILE;          // 420
-  var PANEL_Y = 452;
+  var PANEL_Y = 452, WORLD_TOP = 92;
+  // 斜 45° 等距视角（开罗式）：格子 (x,y) → 屏幕。一格是 TW×TH 的菱形，(0,0) 是最里面的角。
+  // 原生像素格 → 逻辑像素的倍数 K：地块菱形 32 格宽 = TW。
+  var TW = 44, TH = 22, K = TW / 32;
+  var OX = W / 2, OY = 160;
+  function iso(x, y) { return { x: OX + (x - y) * TW / 2, y: OY + (x + y) * TH / 2 }; }
+  function unIso(px, py) {
+    var u = (px - OX) / (TW / 2), v = (py - OY) / (TH / 2);
+    return { x: (u + v) / 2, y: (v - u) / 2 };
+  }
   var GOLD = '#e8c35a', PURPLE = '#a35ad6', RED = '#e05a5a', GREEN = '#6fd18a', INK = '#2a1d16';
 
   function fmt(n) {
@@ -1238,9 +1397,10 @@ G.Platform = {
   Game.prototype.onTap = function (sx, sy) {
     var pt = this.toLogical(sx, sy);
     if (this.ui.tap(pt.x, pt.y)) return;
-    // 网格点击：建造
-    var gx = Math.floor((pt.x - GX) / TILE), gy = Math.floor((pt.y - GY) / TILE);
-    if (gx < 0 || gy < 0 || gx >= C.GRID_W || gy >= C.GRID_H) return;
+    if (pt.y < WORLD_TOP || pt.y > PANEL_Y) return;
+    var cell = this.pickCell(pt.x, pt.y);
+    if (!cell) return;
+    var gx = cell.x, gy = cell.y;
     if (this.tab !== 'build' || !this.buildSel) {
       var id = this.sim.grid[gy][gx];
       if (id) this.toast(C.FAC[id].name);
@@ -1249,6 +1409,22 @@ G.Platform = {
     var err = this.buildSel === 'remove' ? this.sim.remove(gx, gy) : this.sim.place(this.buildSel, gx, gy);
     if (err) this.toast(err);
     else this.save();
+  };
+
+  // 点到哪一格：先看是不是点在某个设施的图上（从前往后找），再按地面菱形算
+  Game.prototype.pickCell = function (px, py) {
+    var sim = this.sim, best = null;
+    for (var y = 0; y < C.GRID_H; y++) for (var x = 0; x < C.GRID_W; x++) {
+      if (!sim.grid[y][x]) continue;
+      var b = iso(x + 1, y + 1), s = G.Atlas.SPR[sim.grid[y][x]];
+      var w = s.nw * K * 0.7, h = s.nh * K;
+      if (px >= b.x - w / 2 && px <= b.x + w / 2 && py >= b.y - h && py <= b.y && (!best || x + y > best.x + best.y)) best = { x: x, y: y };
+    }
+    var g = unIso(px, py), gx = Math.floor(g.x), gy = Math.floor(g.y);
+    var onGrid = gx >= 0 && gy >= 0 && gx < C.GRID_W && gy < C.GRID_H;
+    // 建造时点空地优先，免得点不到设施后面的格子
+    if (onGrid && (!best || (this.buildSel && this.buildSel !== 'remove' && !sim.grid[gy][gx]))) return { x: gx, y: gy };
+    return best;
   };
 
   Game.prototype.toast = function (text) {
@@ -1350,60 +1526,75 @@ G.Platform = {
     r.flush();
   };
 
+  // 地块菱形：每边多画半个像素盖住缝（非整数缩放时相邻菱形之间会漏出细线）
+  function tileAt(r, name, p) { G.Atlas.draw(r, name, p.x - TW / 2 - 0.5, p.y - 0.5, TW + 1, TH + 1); }
+
   Game.prototype.renderWorld = function () {
-    var r = this.r, A = G.Atlas, sim = this.sim, x, y;
-    A.rect(r, 0, 0, W, H, 0.16, 0.12, 0.19, 1);
-    // 墙
-    for (x = 0; x < C.GRID_W; x++) A.draw(r, 'wall', GX + x * TILE, GY - 8, TILE, 8);
-    // 地板
-    for (y = 0; y < C.GRID_H; y++) for (x = 0; x < C.GRID_W; x++) {
-      var z = sim.zoneOf(x, y);
-      A.draw(r, z === 'kitchen' ? 'floor_kitchen' : z === 'door' ? 'door' : 'floor_hall', GX + x * TILE, GY + y * TILE, TILE, TILE);
+    var r = this.r, A = G.Atlas, sim = this.sim, x, y, p, self = this;
+    var GW = C.GRID_W, GH = C.GRID_H;
+    A.rect(r, 0, WORLD_TOP, W, PANEL_Y - WORLD_TOP, 0.75, 0.72, 0.68, 1);
+    // 店外地面：人行道 + 门前马路（y=9、10 两行是马路）
+    for (y = -10; y < 22; y++) for (x = -10; x < 22; x++) {
+      if (x >= 0 && y >= 0 && x < GW && y < GH) continue;
+      p = iso(x, y);
+      if (p.x < -TW || p.x > W + TW || p.y < WORLD_TOP - TH || p.y > PANEL_Y) continue;
+      tileAt(r, (y === GH + 1 || y === GH + 2) ? 'street' : 'sidewalk', p);
     }
-    // 后厨与前厅分隔线
-    A.rect(r, GX, GY + C.KITCHEN_ROWS * TILE - 1, C.GRID_W * TILE, 2, 0.45, 0.4, 0.38, 1);
-    // 街道
-    for (x = -1; x < C.GRID_W + 1; x++) A.draw(r, 'street', GX + x * TILE, STREET_Y, TILE, 32);
+    // 后墙（右上边 y=0，左上边 x=0）
+    for (x = 0; x < GW; x++) { p = iso(x, 0); A.drawN(r, 'wall_r', p.x, p.y - 24 * K, K); }
+    for (y = 0; y < GH; y++) { p = iso(0, y); A.drawN(r, 'wall_l', p.x - 16 * K, p.y - 24 * K, K); }
+    // 地板
+    for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
+      var z = sim.zoneOf(x, y);
+      p = iso(x, y);
+      tileAt(r, z === 'kitchen' ? 'floor_kitchen' : z === 'door' ? 'door' : 'floor_hall', p);
+    }
+    // 地台前侧面
+    for (x = 0; x < GW; x++) { p = iso(x, GH); A.drawN(r, 'edge_l', p.x, p.y, K); }
+    for (y = 0; y < GH; y++) { p = iso(GW, y); A.drawN(r, 'edge_r', p.x - 16 * K, p.y, K); }
     // 建造提示
     if (this.tab === 'build' && this.buildSel && sim.phase === 'prep') {
-      var pulse = 0.18 + 0.08 * Math.sin(this.time * 5);
-      for (y = 0; y < C.GRID_H; y++) for (x = 0; x < C.GRID_W; x++) {
-        var ok;
-        if (this.buildSel === 'remove') ok = !!sim.grid[y][x];
-        else ok = !sim.grid[y][x] && sim.zoneOf(x, y) === C.FAC[this.buildSel].zone;
-        if (ok) A.rect(r, GX + x * TILE + 2, GY + y * TILE + 2, TILE - 4, TILE - 4,
-          this.buildSel === 'remove' ? 1 : 0.3, this.buildSel === 'remove' ? 0.3 : 1, 0.3, pulse);
+      var pulse = 0.25 + 0.1 * Math.sin(this.time * 5), rm = this.buildSel === 'remove';
+      for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
+        var ok = rm ? !!sim.grid[y][x] : !sim.grid[y][x] && sim.zoneOf(x, y) === C.FAC[this.buildSel].zone;
+        if (!ok) continue;
+        p = iso(x, y);
+        A.drawN(r, 'tile_mask', p.x - TW / 2, p.y, K, false, rm ? 1 : 0.3, rm ? 0.3 : 1, 0.3, pulse);
       }
     }
-    // 设施与人物按 y 排序绘制
+    // 设施与人物按纵深（x+y）排序：越靠前（屏幕越下）越后画
     var draws = [];
-    for (y = 0; y < C.GRID_H; y++) for (x = 0; x < C.GRID_W; x++) {
-      if (sim.grid[y][x]) draws.push({ y: y + 0.9, k: 'fac', id: sim.grid[y][x], x: x, ty: y });
+    for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
+      if (sim.grid[y][x]) draws.push({ d: x + y + 1, k: 'fac', id: sim.grid[y][x], x: x, y: y });
     }
-    var self = this;
-    sim.customers.forEach(function (c) { draws.push({ y: c.y, k: 'cust', c: c }); });
-    sim.chefList.forEach(function (c, i) { draws.push({ y: c.y, k: 'chef', c: c, i: i }); });
-    draws.sort(function (a, b) { return a.y - b.y; });
+    sim.customers.forEach(function (c) { draws.push({ d: c.x + c.y, k: 'cust', c: c }); });
+    sim.chefList.forEach(function (c, i) { draws.push({ d: c.x + c.y, k: 'chef', c: c, i: i }); });
+    draws.sort(function (a, b) { return a.d - b.d; });
     draws.forEach(function (d) {
-      if (d.k === 'fac') A.draw(r, d.id, GX + d.x * TILE, GY + d.ty * TILE, TILE, TILE);
-      else {
-        var c = d.c, name = d.k === 'chef' ? 'chef' : c.type;
-        var frame = c.moving ? (Math.floor(self.time * 6 + (c.id || d.i || 0)) % 2) : 0;
-        var px = GX + c.x * TILE - 18, py = GY + c.y * TILE - 34;
-        A.draw(r, name + '_' + frame, px, py, 36, 36);
-        if (d.k === 'cust' && c.state === 'eating') A.draw(r, 'bowl', px + 8, py - 14, 20, 20);
+      if (d.k === 'fac') {
+        var s = A.SPR[d.id], b = iso(d.x + 1, d.y + 1);
+        A.drawN(r, d.id, b.x - s.nw * K / 2, b.y - s.nh * K, K);
+        return;
       }
+      var c = d.c, name = d.k === 'chef' ? 'chef' : c.type;
+      var frame = c.moving ? (Math.floor(self.time * 6 + (c.id || d.i || 0)) % 2) : 0;
+      // 往屏幕左边走时水平翻转
+      var sdx = (c.tx - c.x) - (c.ty - c.y);
+      if (c.moving && Math.abs(sdx) > 0.01) c.flip = sdx < 0;
+      var f = iso(c.x, c.y);
+      A.drawN(r, name + '_' + frame, f.x - 8 * K, f.y - 15 * K, K, !!c.flip);
+      if (d.k === 'cust' && c.state === 'eating') A.drawN(r, 'bowl', f.x - 6 * K, f.y - 26 * K, K * 0.75);
     });
-    // 做菜进度条
+    // 做菜进度条：设施头顶
     sim.orders.forEach(function (o) {
       if (o.state !== 'cooking') return;
-      var bx = GX + o.station.x * TILE + 4, by = GY + o.station.y * TILE - 2;
-      A.rect(r, bx, by, TILE - 8, 5, 0, 0, 0, 0.6);
-      A.rect(r, bx + 1, by + 1, (TILE - 10) * Math.min(1, o.t / o.total), 3, 1, 0.82, 0.25, 1);
+      var b = iso(o.station.x + 1, o.station.y + 1), bw = 30, bx = b.x - bw / 2, by = b.y - 32 * K - 6;
+      A.rect(r, bx, by, bw, 5, 0, 0, 0, 0.6);
+      A.rect(r, bx + 1, by + 1, (bw - 2) * Math.min(1, o.t / o.total), 3, 1, 0.82, 0.25, 1);
     });
     // 黑店值氛围：越高越暗越紫
-    var b = sim.black / 100;
-    if (b > 0.05) A.rect(r, GX, GY - 8, C.GRID_W * TILE, C.GRID_H * TILE + 8, 0.25, 0.05, 0.35, b * 0.32);
+    var bl = sim.black / 100;
+    if (bl > 0.05) A.rect(r, 0, WORLD_TOP, W, PANEL_Y - WORLD_TOP, 0.25, 0.05, 0.35, bl * 0.32);
   };
 
   Game.prototype.renderWorldLabels = function () {
@@ -1411,25 +1602,26 @@ G.Platform = {
     // 对话气泡
     sim.customers.forEach(function (c) {
       if (!c.bubble) return;
-      var px = GX + c.x * TILE, py = GY + c.y * TILE - 44;
+      var f = iso(c.x, c.y), px = f.x, py = f.y - 32;
       var emo = c.emote ? I['emote_' + c.emote] : null, ew = emo ? 18 : 0;
       var tw = ui.measure(c.bubble, 11), w = tw + 12 + ew;
+      px = Math.max(w / 2 + 2, Math.min(W - w / 2 - 2, px));
       ui.round(px - w / 2, py - 10, w, 18, 6, 'rgba(255,255,255,0.95)');
       ui.icon(emo, px - w / 2 + 4, py - 8, 16);
       var bad = /黑店|贵|久|一般|没/.test(c.bubble);
       ui.text(c.bubble, px - w / 2 + 6 + ew + tw / 2, py, { size: 11, color: bad ? '#b02a2a' : INK, align: 'center' });
     });
     // 收款飘字
-    this.floats.forEach(function (f) {
-      var px = GX + f.x * TILE, py = GY + f.y * TILE - 50 - f.t * 26;
-      ui.text(f.text, px, py, { size: f.big ? 15 : 12, bold: true, color: f.big ? GOLD : GREEN, align: 'center', shadow: 'rgba(0,0,0,0.6)' });
+    this.floats.forEach(function (fl) {
+      var f = iso(fl.x, fl.y), py = f.y - 40 - fl.t * 26;
+      ui.text(fl.text, f.x, py, { size: fl.big ? 15 : 12, bold: true, color: fl.big ? GOLD : GREEN, align: 'center', shadow: 'rgba(0,0,0,0.6)' });
     });
     // 提示
     for (var i = 0; i < this.toasts.length; i++) {
       var t = this.toasts[i];
       var w = ui.measure(t.text, 13) + 24;
-      ui.round(W / 2 - w / 2, 230 + i * 30, w, 26, 13, 'rgba(20,14,26,0.88)');
-      ui.text(t.text, W / 2, 243 + i * 30, { size: 13, align: 'center' });
+      ui.round(W / 2 - w / 2, 380 + i * 30, w, 26, 13, 'rgba(20,14,26,0.88)');
+      ui.text(t.text, W / 2, 393 + i * 30, { size: 13, align: 'center' });
     }
   };
 
