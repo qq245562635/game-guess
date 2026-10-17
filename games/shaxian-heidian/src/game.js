@@ -7,8 +7,8 @@
   var W = 360, H = 640;
   var PANEL_Y = 452, WORLD_TOP = 92;
   // 斜 45° 等距视角（开罗式）：格子 (x,y) → 屏幕。一格是 TW×TH 的菱形，(0,0) 是最里面的角。
-  // 原生像素格 → 逻辑像素的倍数 K：地块菱形 32 格宽 = TW。
-  var TW = 44, TH = 22, K = TW / 32;
+  // 原生像素 → 逻辑像素的倍数 K：地块菱形原生 48 宽 = TW。
+  var TW = 44, TH = 22, K = TW / 48;
   var OX = W / 2, OY = 160;
   function iso(x, y) { return { x: OX + (x - y) * TW / 2, y: OY + (x + y) * TH / 2 }; }
   function unIso(px, py) {
@@ -229,8 +229,8 @@
       tileAt(r, (y === GH + 1 || y === GH + 2) ? 'street' : 'sidewalk', p);
     }
     // 后墙（右上边 y=0，左上边 x=0）
-    for (x = 0; x < GW; x++) { p = iso(x, 0); A.drawN(r, 'wall_r', p.x, p.y - 24 * K, K); }
-    for (y = 0; y < GH; y++) { p = iso(0, y); A.drawN(r, 'wall_l', p.x - 16 * K, p.y - 24 * K, K); }
+    for (x = 0; x < GW; x++) { p = iso(x, 0); A.drawN(r, 'wall_r', p.x, p.y - 36 * K, K); }
+    for (y = 0; y < GH; y++) { p = iso(0, y); A.drawN(r, 'wall_l', p.x - 24 * K, p.y - 36 * K, K); }
     // 地板
     for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
       var z = sim.zoneOf(x, y);
@@ -239,7 +239,7 @@
     }
     // 地台前侧面
     for (x = 0; x < GW; x++) { p = iso(x, GH); A.drawN(r, 'edge_l', p.x, p.y, K); }
-    for (y = 0; y < GH; y++) { p = iso(GW, y); A.drawN(r, 'edge_r', p.x - 16 * K, p.y, K); }
+    for (y = 0; y < GH; y++) { p = iso(GW, y); A.drawN(r, 'edge_r', p.x - 24 * K, p.y, K); }
     // 建造提示
     if (this.tab === 'build' && this.buildSel && sim.phase === 'prep') {
       var pulse = 0.25 + 0.1 * Math.sin(this.time * 5), rm = this.buildSel === 'remove';
@@ -266,17 +266,21 @@
       }
       var c = d.c, name = d.k === 'chef' ? 'chef' : c.type;
       var frame = c.moving ? (Math.floor(self.time * 6 + (c.id || d.i || 0)) % 2) : 0;
-      // 往屏幕左边走时水平翻转
-      var sdx = (c.tx - c.x) - (c.ty - c.y);
-      if (c.moving && Math.abs(sdx) > 0.01) c.flip = sdx < 0;
-      var f = iso(c.x, c.y);
-      A.drawN(r, name + '_' + frame, f.x - 8 * K, f.y - 15 * K, K, !!c.flip);
-      if (d.k === 'cust' && c.state === 'eating') A.drawN(r, 'bowl', f.x - 6 * K, f.y - 26 * K, K * 0.75);
+      // 朝向：屏幕上往上走用斜后、往下走用斜前；往左走水平镜像。厨师在灶台前做菜时背对镜头。
+      var mx = c.tx - c.x, my = c.ty - c.y, sdx = mx - my, sdy = mx + my;
+      if (c.moving) {
+        if (Math.abs(sdx) > 0.01) c.flip = sdx < 0;
+        if (Math.abs(sdy) > 0.01) c.back = sdy < 0;
+      } else if (d.k === 'chef') c.back = !!c.task;
+      else if (c.state === 'waiting' || c.state === 'eating') c.back = false;
+      var f = iso(c.x, c.y), spr = name + (c.back ? '_b' : '_') + frame;
+      A.drawN(r, spr, f.x - 12 * K, f.y - 31 * K, K, !!c.flip);
+      if (d.k === 'cust' && c.state === 'eating') A.drawN(r, 'bowl', f.x - 12 * K, f.y - 52 * K, K);
     });
     // 做菜进度条：设施头顶
     sim.orders.forEach(function (o) {
       if (o.state !== 'cooking') return;
-      var b = iso(o.station.x + 1, o.station.y + 1), bw = 30, bx = b.x - bw / 2, by = b.y - 32 * K - 6;
+      var b = iso(o.station.x + 1, o.station.y + 1), bw = 30, bx = b.x - bw / 2, by = b.y - 48 * K - 6;
       A.rect(r, bx, by, bw, 5, 0, 0, 0, 0.6);
       A.rect(r, bx + 1, by + 1, (bw - 2) * Math.min(1, o.t / o.total), 3, 1, 0.82, 0.25, 1);
     });
