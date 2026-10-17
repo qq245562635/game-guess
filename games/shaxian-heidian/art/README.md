@@ -3,6 +3,23 @@
 规格、完整清单和上传方法见 [美术需求与上传规范](../美术需求与上传规范.md)。这里只记验收结果。把 PNG 按文件名放进对应子目录，运行 `node tools/build.js` 就会进游戏；
 没有交图的名字继续用程序画的占位图，所以可以分批交。
 
+## 原始 P0 包导入（2026-10-17）
+
+已将 `shaxian_heidian_art_P0_complete_v1.zip` 中的 39 张 PNG 按原名放入
+`tiles/`、`facilities/`、`characters/`、`items/`、`ui/`，并删除仓库里的 ZIP。
+其中 18 张与已有文件完全相同，新增 21 张；所有图片均与包内原件逐字节一致。
+
+运行 `node tools/check_art.js`：33 张通过自动检查，6 张有问题：
+
+- `characters/chef_0.png`：主体仅占 2%。
+- `characters/chef_1.png`：全透明。
+- `characters/foodie_1.png`：主体仅占 3%。
+- `characters/rich_1.png`：人物仅 24 像素宽。
+- `characters/worker_0.png`：人物仅 16 像素宽。
+- `characters/worker_1.png`：人物仅 20 像素宽。
+
+这次只整理原始交付文件，没有重绘。自动检查通过也不代表内容正确；下方第 1 批的人工退回意见仍然有效，新增文件尚未通过美术验收。
+
 ## P0 验收（2026-10-17，第 1 批）
 
 ### 已入库（18 张）
