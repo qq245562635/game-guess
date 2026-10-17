@@ -70,7 +70,9 @@ function check(dir) {
     if (!fs.existsSync(d)) return;
     for (const e of fs.readdirSync(d, { withFileTypes: true })) {
       const p = path.join(d, e.name);
-      if (e.isDirectory()) walk(p); else if (/\.png$/i.test(e.name)) files.push(p);
+      // 日常验收跳过退回归档；仍可显式传入 art/_rejected/ 单独检查。
+      if (e.isDirectory()) { if (e.name !== '_rejected') walk(p); }
+      else if (/\.png$/i.test(e.name)) files.push(p);
     }
   })(dir);
   const seen = new Set(), rows = [];

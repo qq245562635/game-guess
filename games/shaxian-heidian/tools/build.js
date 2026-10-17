@@ -9,7 +9,7 @@ const src = (f) => fs.readFileSync(path.join(root, 'src', f), 'utf8');
 
 const CORE = ['config.js', 'rng.js', 'sim.js', 'render/gl.js', 'render/atlas.js', 'render/ui.js', 'game.js'];
 
-// 美术：art/ 下所有 PNG，按文件名（不含扩展名）登记。
+// 美术：art/ 下的 PNG（跳过 _rejected/ 退回归档），按文件名登记。
 // Web 版内嵌为 data URI（单文件可直接打开）；微信版拷贝文件、按路径加载。
 function listArt() {
   const dir = path.join(root, 'art'), out = [];
@@ -17,7 +17,7 @@ function listArt() {
   (function walk(d) {
     for (const e of fs.readdirSync(d, { withFileTypes: true })) {
       const p = path.join(d, e.name);
-      if (e.isDirectory()) walk(p);
+      if (e.isDirectory()) { if (e.name !== '_rejected') walk(p); }
       else if (e.name.endsWith('.png')) out.push({ name: e.name.slice(0, -4), file: p, rel: path.relative(dir, p).split(path.sep).join('/') });
     }
   })(dir);

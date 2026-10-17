@@ -68,6 +68,7 @@ node tools/check_art.js         # 验收 art/ 下的美术图
 美术图放在 `art/<分类>/<名字>.png`，规格和名单见 `美术需求与上传规范.md`，验收记录见 `art/README.md`。构建时自动收进游戏：
 网页版内嵌进 `index.html`，微信版拷贝到 `minigame/art/` 按路径加载。
 没交图的名字继续用 `render/atlas.js` 里程序画的占位图，所以可以分批替换，不用改代码。
+`art/_rejected/` 保存未通过验收的原件，构建和默认美术检查会跳过此目录，不会进入游戏。
 
 ## 换皮
 
