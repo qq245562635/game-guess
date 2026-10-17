@@ -1,6 +1,8 @@
 # 厨神附体：沙县黑店（原型 v0.1）
 
-开罗式像素经营小游戏，纯 WebGL 2D，首发微信小游戏。当前是里程碑 1「原型」：验证系统定价博弈好不好玩。
+开罗式像素经营小游戏，纯 WebGL 2D，首发微信小游戏。
+
+美术同学请看 **[美术需求与上传规范](美术需求与上传规范.md)**。当前是里程碑 1「原型」：验证系统定价博弈好不好玩。
 
 ## 目录
 
@@ -29,6 +31,7 @@ minigame/            微信小游戏工程，开发者工具直接导入（构�
 ```
 node tools/build.js            # 生成 index.html 和 minigame/
 node tools/simulate.js 40 20   # 跑 40 天 × 20 局，看各策略的现金/口碑/黑店值曲线
+node tools/check_art.js         # 验收 art/ 下的美术图
 ```
 
 浏览器控制台里 `__shaxian.game.sim` 可以直接改状态调试（如 `__shaxian.game.sim.cash = 99999`）。
@@ -62,7 +65,7 @@ node tools/simulate.js 40 20   # 跑 40 天 × 20 局，看各策略的现金/�
 
 ## 换美术
 
-美术图放在 `art/<分类>/<名字>.png`，规格和名单见 `art/README.md`。构建时自动收进游戏：
+美术图放在 `art/<分类>/<名字>.png`，规格和名单见 `美术需求与上传规范.md`，验收记录见 `art/README.md`。构建时自动收进游戏：
 网页版内嵌进 `index.html`，微信版拷贝到 `minigame/art/` 按路径加载。
 没交图的名字继续用 `render/atlas.js` 里程序画的占位图，所以可以分批替换，不用改代码。
 
