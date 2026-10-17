@@ -1,14 +1,15 @@
 // ============================================================
-// 图集：开罗式斜 45° 等距视角。
-// 每个精灵按「原生像素格」画，放大 4 倍存进图集（和美术交图的尺寸一致）。
-//   地块：菱形 32×16 格（交图 128×64，四角透明）
-//   设施：32×32 格（交图 128×128），底部 16 行是占地菱形，物体往上长
-//   墙：16×32 格（交图 64×128），一格墙面
-//   角色、碗：16×16 格（交图 64×64），正面朝前，脚踩底边
+// 图集：开罗式斜 45° 等距视角（美术设定《烟火像素 V2》）。
+// 美术按原生像素交图，图集里也存原生像素，显示时由程序放大：
+//   地块：2:1 菱形 48×24（四角透明）
+//   墙：一格墙面 24×48
+//   设施：一格 48×48，底部 24 行是占地菱形，物体往上长；高的（冰箱）48×64
+//   角色：24×32，斜前（_0 _1）和斜后（_b0 _b1）两个朝向，另外两向由程序水平镜像
+//   碗：16×16
 // 先用程序画占位图；art/ 下有同名且尺寸正确的 PNG 时，加载后覆盖（applyArt）。
 // ============================================================
 (function () {
-  var PX = 4, ATLAS_W = 1024, ATLAS_H = 1024, PAD = 2;
+  var PX = 1, ATLAS_W = 512, ATLAS_H = 512, PAD = 2;
   var OUTLINE = '#2a1d16';
   var SPR = {};
   var cur = { x: 0, y: 0, rowH: 0 };
@@ -25,14 +26,23 @@
   }
 
   // ---------- 原生像素画笔 ----------
-  function Pen(platform, w, h) {
+  // 占位图用「设计坐标」画（以 32 宽地块为基准），S 是设计坐标 → 原生像素的倍数（48/32 = 1.5），
+  // 每次填充都换算到原生像素，所以放大后仍是整像素、没有糊边。
+  function Pen(platform, w, h, S) {
     this.c = platform.createCanvas(w, h);
     this.x = this.c.getContext('2d');
-    this.w = w; this.h = h;
+    this.w = w; this.h = h; this.S = S || 1;
+    this.dw = w / this.S; this.dh = h / this.S;
   }
-  Pen.prototype.px = function (x, y, w, h, c) { this.x.fillStyle = c; this.x.fillRect(x, y, w, h); };
+  Pen.prototype.px = function (x, y, w, h, c) {
+    var S = this.S, l = Math.round(x * S), t = Math.round(y * S);
+    this.x.fillStyle = c;
+    this.x.fillRect(l, t, Math.max(1, Math.round((x + w) * S) - l), Math.max(1, Math.round((y + h) * S) - t));
+  };
   // 扫描线填充多边形：整像素、无抗锯齿
   Pen.prototype.poly = function (pts, c) {
+    var S = this.S;
+    pts = pts.map(function (q) { return [q[0] * S, q[1] * S]; });
     var ctx = this.x, n = pts.length, y0 = Infinity, y1 = -Infinity, i;
     for (i = 0; i < n; i++) { y0 = Math.min(y0, pts[i][1]); y1 = Math.max(y1, pts[i][1]); }
     ctx.fillStyle = c;
@@ -50,6 +60,7 @@
     }
   };
   Pen.prototype.ellipse = function (cx, cy, a, b, c) {
+    var S = this.S; cx *= S; cy *= S; a *= S; b *= S;
     this.x.fillStyle = c;
     for (var y = Math.floor(cy - b); y < Math.ceil(cy + b); y++) {
       var dy = (y + 0.5 - cy) / b;
@@ -59,7 +70,7 @@
     }
   };
   // 等距坐标：(u,v) 是占地格内的位置（0–1），z 是离地高度（像素格）
-  Pen.prototype.P = function (u, v, z) { return [this.w / 2 + (u - v) * 16, this.h - 16 + (u + v) * 8 - (z || 0)]; };
+  Pen.prototype.P = function (u, v, z) { return [this.dw / 2 + (u - v) * 16, this.dh - 16 + (u + v) * 8 - (z || 0)]; };
   Pen.prototype.box = function (u0, v0, u1, v1, z0, z1, top, left, right) {
     var P = this.P.bind(this);
     this.poly([P(u0, v1, z0), P(u1, v1, z0), P(u1, v1, z1), P(u0, v1, z1)], left);
@@ -198,31 +209,41 @@
       p.px(6, 2, 1, 2, '#f4f4f4'); p.px(9, 1, 1, 2, '#f4f4f4');
     }
   };
-  // 名字 → [原生宽, 原生高, 是否描边]
+  // 名字 → [原生宽, 原生高, 是否描边]；占位图按设计坐标画，统一放大 1.5 倍到原生尺寸
   var SIZE = {
-    floor_hall: [32, 16], floor_kitchen: [32, 16], door: [32, 16], sidewalk: [32, 16], street: [32, 16], tile_mask: [32, 16],
-    wall_r: [16, 32], wall_l: [16, 32], edge_l: [16, 12], edge_r: [16, 12],
-    stove: [32, 32, 1], steamer: [32, 32, 1], pot: [32, 32, 1], table: [32, 32, 1], plant: [32, 32, 1], banner: [32, 32, 1], camera: [32, 32, 1],
-    bowl: [16, 16]
+    floor_hall: [48, 24], floor_kitchen: [48, 24], door: [48, 24], sidewalk: [48, 24], street: [48, 24], tile_mask: [48, 24],
+    wall_r: [24, 48], wall_l: [24, 48], edge_l: [24, 18], edge_r: [24, 18],
+    stove: [48, 48, 1], steamer: [48, 48, 1], pot: [48, 48, 1], table: [48, 48, 1], plant: [48, 48, 1], banner: [48, 48, 1], camera: [48, 48, 1],
+    bowl: [24, 24]
   };
+  var DESIGN_S = 1.5;
 
-  function person(p, f, o) {
-    var skin = o.skin || '#f1c9a0';
-    p.px(4, 15, 8, 1, 'rgba(0,0,0,0.25)');
-    if (f === 0) { p.px(5, 12, 2, 3, '#2c2c34'); p.px(9, 12, 2, 3, '#2c2c34'); }
-    else { p.px(5, 12, 2, 2, '#2c2c34'); p.px(4, 14, 2, 1, '#2c2c34'); p.px(9, 12, 2, 3, '#2c2c34'); }
-    p.px(4, 7, 8, 5, o.shirt);
-    p.px(3, 8, 1, 3, o.shirt); p.px(12, 8, 1, 3, o.shirt);
-    p.px(3, 11, 1, 1, skin); p.px(12, 11, 1, 1, skin);
-    if (o.apron) { p.px(5, 8, 6, 4, '#e9e9e9'); p.px(5, 8, 6, 1, '#cfcfcf'); }
-    p.px(5, 2, 6, 5, skin);
-    p.px(6, 4, 1, 1, '#222'); p.px(9, 4, 1, 1, '#222');
-    if (o.hat) { p.px(5, 0, 6, 2, '#ffffff'); p.px(4, 1, 8, 1, '#ffffff'); p.px(5, 2, 6, 1, '#dcdcdc'); }
-    else { p.px(5, 1, 6, 2, o.hair); p.px(4, 2, 1, 3, o.hair); p.px(11, 2, 1, 2, o.hair); }
-    if (o.shades) p.px(5, 4, 6, 1, '#111');
-    if (o.glasses) { p.px(6, 4, 1, 1, '#fff'); p.px(9, 4, 1, 1, '#fff'); p.px(7, 4, 2, 1, '#888'); }
-    if (o.chain) p.px(7, 7, 2, 1, '#e8c35a');
-    if (o.phone) p.px(12, 8, 2, 3, '#222');
+  // 占位角色 24×32：2 头身。back = 斜后（看到后脑勺）；f = 0 站立 / 1 迈步
+  function person(p, f, back, o) {
+    var skin = o.skin || '#f1c9a0', pants = o.pants || '#2c2c34', dark = '#2a1d16';
+    // 腿
+    if (f === 0) { p.px(8, 24, 3, 6, pants); p.px(13, 24, 3, 6, pants); p.px(8, 29, 3, 1, dark); p.px(13, 29, 3, 1, dark); }
+    else { p.px(8, 24, 3, 4, pants); p.px(6, 27, 3, 3, pants); p.px(6, 29, 3, 1, dark); p.px(13, 24, 3, 6, pants); p.px(13, 29, 3, 1, dark); }
+    // 身体、手臂
+    p.px(6, 14, 12, 10, o.shirt); 
+    p.px(4, 15, 2, 7, o.shirt); p.px(18, 15, 2, 7, o.shirt);
+    p.px(4, 22, 2, 2, skin); p.px(18, 22, 2, 2, skin);
+    if (o.apron && !back) { p.px(8, 16, 8, 8, o.apron); p.px(8, 16, 8, 1, '#8a2a20'); }
+    if (o.apron && back) { p.px(11, 14, 2, 8, o.apron); p.px(9, 20, 6, 1, o.apron); }
+    // 头
+    p.px(6, 3, 12, 11, skin);
+    if (back) p.px(6, 2, 12, 11, o.hair);
+    else {
+      p.px(8, 8, 2, 2, dark); p.px(14, 8, 2, 2, dark);
+      p.px(11, 11, 2, 1, '#c4806a');
+      p.px(6, 2, 12, 4, o.hair); p.px(5, 3, 1, 6, o.hair); p.px(18, 3, 1, 5, o.hair);
+      if (o.shades) p.px(7, 8, 10, 2, '#111');
+      if (o.glasses) { p.px(7, 7, 4, 3, '#fff'); p.px(13, 7, 4, 3, '#fff'); p.px(8, 8, 2, 2, dark); p.px(14, 8, 2, 2, dark); }
+    }
+    if (o.hat) { p.px(6, 0, 12, 4, o.hat); p.px(5, 3, 14, 1, o.hat); }
+    if (o.chain && !back) p.px(10, 14, 4, 1, '#e8c35a');
+    if (o.phone) p.px(19, 15, 2, 4, '#222');
+    if (o.bag) p.px(back ? 3 : 19, 19, 3, 4, o.bag);
   }
 
   G.Atlas = {
@@ -242,25 +263,27 @@
       var white = slot('white', 16, 16);
       ctx.fillStyle = '#fff'; ctx.fillRect(white.x, white.y, white.w, white.h);
       Object.keys(SIZE).forEach(function (name) {
-        var sz = SIZE[name], pen = new Pen(platform, sz[0], sz[1]);
+        var sz = SIZE[name], pen = new Pen(platform, sz[0], sz[1], name === 'bowl' ? 1.5 : DESIGN_S);
         DRAW[name](pen);
         if (sz[2]) pen.outline();
         put(name, pen);
       });
       var C = G.CFG.CUST, people = {
-        chef: { shirt: '#f4f4f4', hat: true, apron: true },
-        worker: { shirt: C.worker.shirt, hair: C.worker.hair },
-        neighbor: { shirt: C.neighbor.shirt, hair: C.neighbor.hair, skin: '#e8bf95' },
+        chef: { shirt: '#f4f4f4', hat: '#ffffff', apron: '#c0392b', hair: '#2a1d16' },
+        worker: { shirt: C.worker.shirt, hair: C.worker.hair, bag: '#6e4520' },
+        neighbor: { shirt: C.neighbor.shirt, hair: C.neighbor.hair, skin: '#e8bf95', bag: '#3a9a6a' },
         influencer: { shirt: C.influencer.shirt, hair: C.influencer.hair, phone: true },
         foodie: { shirt: C.foodie.shirt, hair: C.foodie.hair, glasses: true },
         rich: { shirt: C.rich.shirt, hair: C.rich.hair, shades: true, chain: true }
       };
       Object.keys(people).forEach(function (k) {
-        for (var f = 0; f < 2; f++) {
-          var pen = new Pen(platform, 16, 16);
-          person(pen, f, people[k]);
-          put(k + '_' + f, pen);
-        }
+        [false, true].forEach(function (back) {
+          for (var f = 0; f < 2; f++) {
+            var pen = new Pen(platform, 24, 32, 1);
+            person(pen, f, back, people[k]);
+            put(k + (back ? '_b' : '_') + f, pen);
+          }
+        });
       });
       this.canvas = c;
       this.tex = renderer.createTexture(c, true);
@@ -273,12 +296,12 @@
         var s = SPR[name];
         if (!s) continue;
         var img = images[name];
-        if (img.width !== s.w || img.height !== s.h) {
-          console.warn('美术尺寸不对，继续用占位图：' + name + ' 应为 ' + s.w + '×' + s.h + '，实际 ' + img.width + '×' + img.height);
+        if (img.width !== s.nw || img.height !== s.nh) {
+          console.warn('美术尺寸不对，继续用占位图：' + name + ' 应为 ' + s.nw + '×' + s.nh + '，实际 ' + img.width + '×' + img.height);
           continue;
         }
         ctx.clearRect(s.x, s.y, s.w, s.h);
-        ctx.drawImage(img, s.x, s.y);
+        ctx.drawImage(img, s.x, s.y, s.w, s.h);
         n++;
       }
       if (n) renderer.updateTexture(this.tex, this.canvas);
