@@ -1,6 +1,6 @@
 // ============================================================
 // 经营模拟层：纯逻辑，不碰渲染。Node 里也能跑（tools/simulate.js）。
-// 坐标单位为“格”，(0,0) 在左上；店门在最下一行，街道在 y=8 之外。
+// 坐标单位为“格”，(0,0) 是店内最里面的角；店门在 y=7 这一行，y=8 之外是人行道和马路。
 // ============================================================
 (function () {
   var C = G.CFG, clamp = G.clamp;
@@ -10,8 +10,9 @@
     return tier === 2 ? d.sys : tier === 1 ? Math.round(d.sys / 2) : d.base;
   };
 
-  var ENTRY = { x: 4, y: 8.3 };   // 街上入口
+  var ENTRY = { x: 4, y: 8.4 };   // 门口人行道
   var DOORWAY = { x: 4, y: 7.3 }; // 门内一步
+  var STREET_Y = 8.6, STREET_ENDS = [-4, 12];   // 客人沿人行道从两头走来、走掉
 
   function Sim(seed) {
     this.rng = new G.RNG(seed || 12345);
@@ -242,8 +243,8 @@
 
   Sim.prototype.spawn = function (type) {
     var c = {
-      id: this.nextId++, type: type, x: ENTRY.x + this.rng.range(-0.3, 0.3), y: ENTRY.y,
-      tx: DOORWAY.x, ty: DOORWAY.y, state: 'enter', seat: null, orders: [], wait: 0,
+      id: this.nextId++, type: type, x: this.rng.pick(STREET_ENDS), y: STREET_Y + this.rng.range(-0.15, 0.15),
+      tx: ENTRY.x + this.rng.range(-0.3, 0.3), ty: ENTRY.y, state: 'approach', seat: null, orders: [], wait: 0,
       eatT: 0, bubble: null, emote: null, bubbleT: 0, moving: true
     };
     this.customers.push(c);
@@ -252,8 +253,8 @@
   Sim.prototype.leave = function (c) {
     if (c.seat) { c.seat.occ = null; c.seat = null; }
     c.state = 'leave';
-    c.tx = ENTRY.x + this.rng.range(-0.6, 0.6);
-    c.ty = ENTRY.y + 0.4;
+    c.tx = ENTRY.x + this.rng.range(-0.4, 0.4);
+    c.ty = ENTRY.y;
   };
 
   Sim.prototype.quality = function (dishId) {
@@ -307,6 +308,9 @@
     var arrived = moveEnt(c, dt, C.WALK_SPEED);
     var self = this;
     switch (c.state) {
+      case 'approach':
+        if (arrived) { c.state = 'enter'; c.tx = DOORWAY.x; c.ty = DOORWAY.y; }
+        break;
       case 'enter':
         if (arrived) this.decide(c);
         break;
@@ -338,6 +342,9 @@
         if (c.eatT <= 0) { this.pay(c); this.leave(c); }
         break;
       case 'leave':
+        if (arrived) { c.state = 'exit'; c.tx = this.rng.pick(STREET_ENDS); c.ty = STREET_Y + this.rng.range(-0.15, 0.15); }
+        break;
+      case 'exit':
         if (arrived) this.customers.splice(this.customers.indexOf(c), 1);
         break;
     }

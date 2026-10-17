@@ -1,13 +1,20 @@
 // ============================================================
 // 游戏主控：主循环、布局、输入、场景渲染、弹窗与剧情。
-// 设计分辨率 360×640（竖屏），等比缩放居中。
+// 设计分辨率 360×640（竖屏），等比缩放居中。场景是开罗式斜 45° 等距视角。
 // ============================================================
 (function () {
   var C = G.CFG;
   var W = 360, H = 640;
-  var TILE = 40, GX = 20, GY = 100;            // 店面网格
-  var STREET_Y = GY + C.GRID_H * TILE;          // 420
-  var PANEL_Y = 452;
+  var PANEL_Y = 452, WORLD_TOP = 92;
+  // 斜 45° 等距视角（开罗式）：格子 (x,y) → 屏幕。一格是 TW×TH 的菱形，(0,0) 是最里面的角。
+  // 原生像素格 → 逻辑像素的倍数 K：地块菱形 32 格宽 = TW。
+  var TW = 44, TH = 22, K = TW / 32;
+  var OX = W / 2, OY = 160;
+  function iso(x, y) { return { x: OX + (x - y) * TW / 2, y: OY + (x + y) * TH / 2 }; }
+  function unIso(px, py) {
+    var u = (px - OX) / (TW / 2), v = (py - OY) / (TH / 2);
+    return { x: (u + v) / 2, y: (v - u) / 2 };
+  }
   var GOLD = '#e8c35a', PURPLE = '#a35ad6', RED = '#e05a5a', GREEN = '#6fd18a', INK = '#2a1d16';
 
   function fmt(n) {
@@ -78,9 +85,10 @@
   Game.prototype.onTap = function (sx, sy) {
     var pt = this.toLogical(sx, sy);
     if (this.ui.tap(pt.x, pt.y)) return;
-    // 网格点击：建造
-    var gx = Math.floor((pt.x - GX) / TILE), gy = Math.floor((pt.y - GY) / TILE);
-    if (gx < 0 || gy < 0 || gx >= C.GRID_W || gy >= C.GRID_H) return;
+    if (pt.y < WORLD_TOP || pt.y > PANEL_Y) return;
+    var cell = this.pickCell(pt.x, pt.y);
+    if (!cell) return;
+    var gx = cell.x, gy = cell.y;
     if (this.tab !== 'build' || !this.buildSel) {
       var id = this.sim.grid[gy][gx];
       if (id) this.toast(C.FAC[id].name);
@@ -89,6 +97,22 @@
     var err = this.buildSel === 'remove' ? this.sim.remove(gx, gy) : this.sim.place(this.buildSel, gx, gy);
     if (err) this.toast(err);
     else this.save();
+  };
+
+  // 点到哪一格：先看是不是点在某个设施的图上（从前往后找），再按地面菱形算
+  Game.prototype.pickCell = function (px, py) {
+    var sim = this.sim, best = null;
+    for (var y = 0; y < C.GRID_H; y++) for (var x = 0; x < C.GRID_W; x++) {
+      if (!sim.grid[y][x]) continue;
+      var b = iso(x + 1, y + 1), s = G.Atlas.SPR[sim.grid[y][x]];
+      var w = s.nw * K * 0.7, h = s.nh * K;
+      if (px >= b.x - w / 2 && px <= b.x + w / 2 && py >= b.y - h && py <= b.y && (!best || x + y > best.x + best.y)) best = { x: x, y: y };
+    }
+    var g = unIso(px, py), gx = Math.floor(g.x), gy = Math.floor(g.y);
+    var onGrid = gx >= 0 && gy >= 0 && gx < C.GRID_W && gy < C.GRID_H;
+    // 建造时点空地优先，免得点不到设施后面的格子
+    if (onGrid && (!best || (this.buildSel && this.buildSel !== 'remove' && !sim.grid[gy][gx]))) return { x: gx, y: gy };
+    return best;
   };
 
   Game.prototype.toast = function (text) {
@@ -190,60 +214,75 @@
     r.flush();
   };
 
+  // 地块菱形：每边多画半个像素盖住缝（非整数缩放时相邻菱形之间会漏出细线）
+  function tileAt(r, name, p) { G.Atlas.draw(r, name, p.x - TW / 2 - 0.5, p.y - 0.5, TW + 1, TH + 1); }
+
   Game.prototype.renderWorld = function () {
-    var r = this.r, A = G.Atlas, sim = this.sim, x, y;
-    A.rect(r, 0, 0, W, H, 0.16, 0.12, 0.19, 1);
-    // 墙
-    for (x = 0; x < C.GRID_W; x++) A.draw(r, 'wall', GX + x * TILE, GY - 8, TILE, 8);
-    // 地板
-    for (y = 0; y < C.GRID_H; y++) for (x = 0; x < C.GRID_W; x++) {
-      var z = sim.zoneOf(x, y);
-      A.draw(r, z === 'kitchen' ? 'floor_kitchen' : z === 'door' ? 'door' : 'floor_hall', GX + x * TILE, GY + y * TILE, TILE, TILE);
+    var r = this.r, A = G.Atlas, sim = this.sim, x, y, p, self = this;
+    var GW = C.GRID_W, GH = C.GRID_H;
+    A.rect(r, 0, WORLD_TOP, W, PANEL_Y - WORLD_TOP, 0.75, 0.72, 0.68, 1);
+    // 店外地面：人行道 + 门前马路（y=9、10 两行是马路）
+    for (y = -10; y < 22; y++) for (x = -10; x < 22; x++) {
+      if (x >= 0 && y >= 0 && x < GW && y < GH) continue;
+      p = iso(x, y);
+      if (p.x < -TW || p.x > W + TW || p.y < WORLD_TOP - TH || p.y > PANEL_Y) continue;
+      tileAt(r, (y === GH + 1 || y === GH + 2) ? 'street' : 'sidewalk', p);
     }
-    // 后厨与前厅分隔线
-    A.rect(r, GX, GY + C.KITCHEN_ROWS * TILE - 1, C.GRID_W * TILE, 2, 0.45, 0.4, 0.38, 1);
-    // 街道
-    for (x = -1; x < C.GRID_W + 1; x++) A.draw(r, 'street', GX + x * TILE, STREET_Y, TILE, 32);
+    // 后墙（右上边 y=0，左上边 x=0）
+    for (x = 0; x < GW; x++) { p = iso(x, 0); A.drawN(r, 'wall_r', p.x, p.y - 24 * K, K); }
+    for (y = 0; y < GH; y++) { p = iso(0, y); A.drawN(r, 'wall_l', p.x - 16 * K, p.y - 24 * K, K); }
+    // 地板
+    for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
+      var z = sim.zoneOf(x, y);
+      p = iso(x, y);
+      tileAt(r, z === 'kitchen' ? 'floor_kitchen' : z === 'door' ? 'door' : 'floor_hall', p);
+    }
+    // 地台前侧面
+    for (x = 0; x < GW; x++) { p = iso(x, GH); A.drawN(r, 'edge_l', p.x, p.y, K); }
+    for (y = 0; y < GH; y++) { p = iso(GW, y); A.drawN(r, 'edge_r', p.x - 16 * K, p.y, K); }
     // 建造提示
     if (this.tab === 'build' && this.buildSel && sim.phase === 'prep') {
-      var pulse = 0.18 + 0.08 * Math.sin(this.time * 5);
-      for (y = 0; y < C.GRID_H; y++) for (x = 0; x < C.GRID_W; x++) {
-        var ok;
-        if (this.buildSel === 'remove') ok = !!sim.grid[y][x];
-        else ok = !sim.grid[y][x] && sim.zoneOf(x, y) === C.FAC[this.buildSel].zone;
-        if (ok) A.rect(r, GX + x * TILE + 2, GY + y * TILE + 2, TILE - 4, TILE - 4,
-          this.buildSel === 'remove' ? 1 : 0.3, this.buildSel === 'remove' ? 0.3 : 1, 0.3, pulse);
+      var pulse = 0.25 + 0.1 * Math.sin(this.time * 5), rm = this.buildSel === 'remove';
+      for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
+        var ok = rm ? !!sim.grid[y][x] : !sim.grid[y][x] && sim.zoneOf(x, y) === C.FAC[this.buildSel].zone;
+        if (!ok) continue;
+        p = iso(x, y);
+        A.drawN(r, 'tile_mask', p.x - TW / 2, p.y, K, false, rm ? 1 : 0.3, rm ? 0.3 : 1, 0.3, pulse);
       }
     }
-    // 设施与人物按 y 排序绘制
+    // 设施与人物按纵深（x+y）排序：越靠前（屏幕越下）越后画
     var draws = [];
-    for (y = 0; y < C.GRID_H; y++) for (x = 0; x < C.GRID_W; x++) {
-      if (sim.grid[y][x]) draws.push({ y: y + 0.9, k: 'fac', id: sim.grid[y][x], x: x, ty: y });
+    for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
+      if (sim.grid[y][x]) draws.push({ d: x + y + 1, k: 'fac', id: sim.grid[y][x], x: x, y: y });
     }
-    var self = this;
-    sim.customers.forEach(function (c) { draws.push({ y: c.y, k: 'cust', c: c }); });
-    sim.chefList.forEach(function (c, i) { draws.push({ y: c.y, k: 'chef', c: c, i: i }); });
-    draws.sort(function (a, b) { return a.y - b.y; });
+    sim.customers.forEach(function (c) { draws.push({ d: c.x + c.y, k: 'cust', c: c }); });
+    sim.chefList.forEach(function (c, i) { draws.push({ d: c.x + c.y, k: 'chef', c: c, i: i }); });
+    draws.sort(function (a, b) { return a.d - b.d; });
     draws.forEach(function (d) {
-      if (d.k === 'fac') A.draw(r, d.id, GX + d.x * TILE, GY + d.ty * TILE, TILE, TILE);
-      else {
-        var c = d.c, name = d.k === 'chef' ? 'chef' : c.type;
-        var frame = c.moving ? (Math.floor(self.time * 6 + (c.id || d.i || 0)) % 2) : 0;
-        var px = GX + c.x * TILE - 18, py = GY + c.y * TILE - 34;
-        A.draw(r, name + '_' + frame, px, py, 36, 36);
-        if (d.k === 'cust' && c.state === 'eating') A.draw(r, 'bowl', px + 8, py - 14, 20, 20);
+      if (d.k === 'fac') {
+        var s = A.SPR[d.id], b = iso(d.x + 1, d.y + 1);
+        A.drawN(r, d.id, b.x - s.nw * K / 2, b.y - s.nh * K, K);
+        return;
       }
+      var c = d.c, name = d.k === 'chef' ? 'chef' : c.type;
+      var frame = c.moving ? (Math.floor(self.time * 6 + (c.id || d.i || 0)) % 2) : 0;
+      // 往屏幕左边走时水平翻转
+      var sdx = (c.tx - c.x) - (c.ty - c.y);
+      if (c.moving && Math.abs(sdx) > 0.01) c.flip = sdx < 0;
+      var f = iso(c.x, c.y);
+      A.drawN(r, name + '_' + frame, f.x - 8 * K, f.y - 15 * K, K, !!c.flip);
+      if (d.k === 'cust' && c.state === 'eating') A.drawN(r, 'bowl', f.x - 6 * K, f.y - 26 * K, K * 0.75);
     });
-    // 做菜进度条
+    // 做菜进度条：设施头顶
     sim.orders.forEach(function (o) {
       if (o.state !== 'cooking') return;
-      var bx = GX + o.station.x * TILE + 4, by = GY + o.station.y * TILE - 2;
-      A.rect(r, bx, by, TILE - 8, 5, 0, 0, 0, 0.6);
-      A.rect(r, bx + 1, by + 1, (TILE - 10) * Math.min(1, o.t / o.total), 3, 1, 0.82, 0.25, 1);
+      var b = iso(o.station.x + 1, o.station.y + 1), bw = 30, bx = b.x - bw / 2, by = b.y - 32 * K - 6;
+      A.rect(r, bx, by, bw, 5, 0, 0, 0, 0.6);
+      A.rect(r, bx + 1, by + 1, (bw - 2) * Math.min(1, o.t / o.total), 3, 1, 0.82, 0.25, 1);
     });
     // 黑店值氛围：越高越暗越紫
-    var b = sim.black / 100;
-    if (b > 0.05) A.rect(r, GX, GY - 8, C.GRID_W * TILE, C.GRID_H * TILE + 8, 0.25, 0.05, 0.35, b * 0.32);
+    var bl = sim.black / 100;
+    if (bl > 0.05) A.rect(r, 0, WORLD_TOP, W, PANEL_Y - WORLD_TOP, 0.25, 0.05, 0.35, bl * 0.32);
   };
 
   Game.prototype.renderWorldLabels = function () {
@@ -251,25 +290,26 @@
     // 对话气泡
     sim.customers.forEach(function (c) {
       if (!c.bubble) return;
-      var px = GX + c.x * TILE, py = GY + c.y * TILE - 44;
+      var f = iso(c.x, c.y), px = f.x, py = f.y - 32;
       var emo = c.emote ? I['emote_' + c.emote] : null, ew = emo ? 18 : 0;
       var tw = ui.measure(c.bubble, 11), w = tw + 12 + ew;
+      px = Math.max(w / 2 + 2, Math.min(W - w / 2 - 2, px));
       ui.round(px - w / 2, py - 10, w, 18, 6, 'rgba(255,255,255,0.95)');
       ui.icon(emo, px - w / 2 + 4, py - 8, 16);
       var bad = /黑店|贵|久|一般|没/.test(c.bubble);
       ui.text(c.bubble, px - w / 2 + 6 + ew + tw / 2, py, { size: 11, color: bad ? '#b02a2a' : INK, align: 'center' });
     });
     // 收款飘字
-    this.floats.forEach(function (f) {
-      var px = GX + f.x * TILE, py = GY + f.y * TILE - 50 - f.t * 26;
-      ui.text(f.text, px, py, { size: f.big ? 15 : 12, bold: true, color: f.big ? GOLD : GREEN, align: 'center', shadow: 'rgba(0,0,0,0.6)' });
+    this.floats.forEach(function (fl) {
+      var f = iso(fl.x, fl.y), py = f.y - 40 - fl.t * 26;
+      ui.text(fl.text, f.x, py, { size: fl.big ? 15 : 12, bold: true, color: fl.big ? GOLD : GREEN, align: 'center', shadow: 'rgba(0,0,0,0.6)' });
     });
     // 提示
     for (var i = 0; i < this.toasts.length; i++) {
       var t = this.toasts[i];
       var w = ui.measure(t.text, 13) + 24;
-      ui.round(W / 2 - w / 2, 230 + i * 30, w, 26, 13, 'rgba(20,14,26,0.88)');
-      ui.text(t.text, W / 2, 243 + i * 30, { size: 13, align: 'center' });
+      ui.round(W / 2 - w / 2, 380 + i * 30, w, 26, 13, 'rgba(20,14,26,0.88)');
+      ui.text(t.text, W / 2, 393 + i * 30, { size: 13, align: 'center' });
     }
   };
 
