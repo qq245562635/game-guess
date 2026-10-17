@@ -1,0 +1,14 @@
+{
+  "description": "厨神附体：沙县黑店",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "minified": true
+  },
+  "compileType": "game",
+  "libVersion": "3.0.0",
+  "appid": "touristappid",
+  "projectname": "shaxian-heidian",
+  "condition": {}
+}
