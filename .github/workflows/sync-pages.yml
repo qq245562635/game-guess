@@ -1,0 +1,15 @@
+# 试玩页从 gh-pages 分支发布。main 每次有新提交（包括合并 PR），自动把 gh-pages 快进到 main。
+name: 同步试玩页
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: gh-pages 快进到 main
+        run: git push origin HEAD:refs/heads/gh-pages
