@@ -1,0 +1,17 @@
+# 沙县黑店：美术 PR 自动检查。改到 art/ 的 PR 会自动跑 check_art.js，不通过显示红叉。
+name: 沙县黑店 美术检查
+on:
+  pull_request:
+    paths: ['games/shaxian-heidian/art/**']
+  push:
+    branches: [main]
+    paths: ['games/shaxian-heidian/art/**']
+jobs:
+  check-art:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: 检查文件名、目录、尺寸、透明背景、空图、主体大小
+        run: node games/shaxian-heidian/tools/check_art.js
