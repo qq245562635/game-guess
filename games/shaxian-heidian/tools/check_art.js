@@ -6,18 +6,24 @@ const fs = require('fs'), path = require('path'), zlib = require('zlib');
 
 // 需求清单：名字 → [目录, 宽, 高, 是否透明, 优先级]
 const SPEC = {};
-function add(dir, names, w, h, alpha, pri) { for (const n of names) SPEC[n] = { dir, w, h, alpha, pri }; }
-// 2026-10-17 起场景改为斜 45° 等距视角：地块是 2:1 菱形（四角透明），设施底部 16 格是占地菱形
-add('tiles', ['floor_hall', 'floor_kitchen', 'door', 'sidewalk', 'street'], 128, 64, true, 'P0');
-add('tiles', ['wall_l', 'wall_r'], 64, 128, true, 'P0');
+// native = 原生像素交图：要查是不是真像素（没有半透明）和颜色数
+function add(dir, names, w, h, alpha, pri, native) { for (const n of names) SPEC[n] = { dir, w, h, alpha, pri, native: !!native }; }
+const MAX_COLORS = 32;
+// 场景精灵（地块、墙、设施、角色、碗）按《烟火像素 V2》：原生像素交图，不放大。
+// 地块是 2:1 菱形（四角透明），设施底部 24 行是占地菱形；角色斜前 _0 _1、斜后 _b0 _b1。
+add('tiles', ['floor_hall', 'floor_kitchen', 'door', 'sidewalk', 'street'], 48, 24, true, 'P0', true);
+add('tiles', ['wall_l', 'wall_r'], 24, 48, true, 'P0', true);
 add('tiles', ['shop_sign'], 256, 64, true, 'P1');
-add('facilities', ['stove', 'steamer', 'pot', 'table', 'plant', 'banner', 'camera'], 128, 128, true, 'P0');
-add('facilities', ['counter', 'takeout'], 128, 128, true, 'P1');
-add('facilities', ['booth'], 192, 160, true, 'P1');
-add('facilities', ['neon_sign', 'lucky_cat', 'altar'], 128, 128, true, 'P2');
-for (const c of ['chef', 'worker', 'neighbor', 'influencer', 'foodie', 'rich']) add('characters', [c + '_0', c + '_1'], 64, 64, true, 'P0');
-for (const c of ['hero', 'inspector', 'landlord']) add('characters', [c + '_0', c + '_1'], 64, 64, true, 'P1');
-add('items', ['bowl'], 64, 64, true, 'P0');
+add('facilities', ['stove', 'steamer', 'pot', 'table', 'plant', 'banner', 'camera'], 48, 48, true, 'P0', true);
+add('facilities', ['counter', 'takeout', 'sign_stand'], 48, 48, true, 'P1', true);
+add('facilities', ['fridge'], 48, 64, true, 'P1', true);
+add('facilities', ['wall_fan', 'poster'], 24, 48, true, 'P1', true);
+add('facilities', ['booth'], 72, 60, true, 'P1', true);
+add('facilities', ['neon_sign', 'lucky_cat', 'altar'], 48, 48, true, 'P2', true);
+const FRAMES = ['_0', '_1', '_b0', '_b1'];
+for (const c of ['chef', 'worker', 'neighbor', 'influencer', 'foodie', 'rich']) add('characters', FRAMES.map(f => c + f), 24, 32, true, 'P0', true);
+for (const c of ['hero', 'inspector', 'landlord']) add('characters', FRAMES.map(f => c + f), 24, 32, true, 'P1', true);
+add('items', ['bowl'], 24, 24, true, 'P0', true);
 add('items', ['dish_banmian', 'dish_bianrou', 'dish_zhengjiao', 'dish_dunguan'], 64, 64, true, 'P1');
 add('items', ['emote_angry', 'emote_happy', 'emote_money', 'emote_shock'], 32, 32, true, 'P1');
 add('ui', ['icon_cash', 'icon_clock', 'icon_rent', 'icon_black', 'icon_rep', 'icon_favor', 'icon_task',
@@ -26,7 +32,6 @@ add('portraits', ['p_hero_normal', 'p_hero_shock', 'p_hero_smug', 'p_system', 'p
 add('brand', ['app_icon'], 512, 512, false, 'P2');
 add('brand', ['share'], 500, 400, false, 'P2');
 add('brand', ['loading_bg'], 750, 1334, false, 'P2');
-module.exports = SPEC;
 
 // ---- 最小 PNG 解码（8 位，非隔行），只用于统计像素 ----
 function decodePng(buf) {
@@ -55,7 +60,15 @@ function decodePng(buf) {
       out[dst + x] = v & 255;
     }
   }
-  info.alphaAt = (x, y) => {
+  info.rgbaAt = (x, y) => {
+    const i = y * stride + x * ch;
+    if (ctype === 6) return [out[i], out[i + 1], out[i + 2], out[i + 3]];
+    if (ctype === 2) return [out[i], out[i + 1], out[i + 2], 255];
+    if (ctype === 3) { const k = out[i]; return [plte[k * 3], plte[k * 3 + 1], plte[k * 3 + 2], trns && k < trns.length ? trns[k] : 255]; }
+    if (ctype === 4) return [out[i], out[i], out[i], out[i + 1]];
+    return [out[i], out[i], out[i], 255];
+  };
+    info.alphaAt = (x, y) => {
     const i = y * stride + x * ch;
     if (ctype === 6) return out[i + 3];
     if (ctype === 4) return out[i + 1];
@@ -102,13 +115,24 @@ function check(dir) {
           // 地块菱形和墙面本来就顶到左右边，不查贴边
           if (n && sub !== 'ui' && sub !== 'tiles' && (x0 === 0 || x1 === im.w - 1)) problems.push('主体贴到左右边缘，可能是切图切歪了或带了别的图的碎片');
           // 地板菱形：四角透明、中间铺满
-          if (sub === 'tiles' && im.w === 128 && im.h === 64) {
-            const corners = [[4, 4], [123, 4], [4, 59], [123, 59]].some(([x, y]) => im.alphaAt(x, y) > 128);
-            const holes = [[64, 32], [20, 32], [107, 32], [64, 6], [64, 57]].some(([x, y]) => im.alphaAt(x, y) <= 128);
+          if (sub === 'tiles' && im.w === 48 && im.h === 24) {
+            const corners = [[1, 1], [46, 1], [1, 22], [46, 22]].some(([x, y]) => im.alphaAt(x, y) > 128);
+            const holes = [[24, 12], [6, 12], [41, 12], [24, 2], [24, 21]].some(([x, y]) => im.alphaAt(x, y) <= 128);
             if (corners || holes) problems.push('地块应是铺满的 2:1 菱形（四角透明），对照 art/_templates/guide_tile.png');
           }
           // 设施：底部要落在占地菱形里（最下面的实心像素在下 1/4）
           if (sub === 'facilities' && y1 < im.h * 0.75) problems.push('设施底部没有落到占地菱形上，像是悬空；对照 art/_templates/guide_facility.png');
+        }
+        // 原生像素图：不能有半透明像素（AI 放大或缩小留下的糊边），颜色不能太多（噪点）
+        if (spec.native && im.rgbaAt) {
+          let semi = 0; const colors = new Set();
+          for (let y = 0; y < im.h; y++) for (let x = 0; x < im.w; x++) {
+            const [r, g, b, a] = im.rgbaAt(x, y);
+            if (a > 0 && a < 255) semi++;
+            if (a > 0) colors.add((r << 16) | (g << 8) | b);
+          }
+          if (semi) problems.push(`有 ${semi} 个半透明像素：原生像素图只能全透明或全不透明（像是放大/缩小时糊了边）`);
+          if (colors.size > MAX_COLORS) problems.push(`用了 ${colors.size} 种颜色，超过 ${MAX_COLORS} 种：通常是噪点或渐变，按色板减色`);
         }
       } catch (e) { problems.push('读取失败：' + e.message); }
     }
@@ -121,6 +145,8 @@ function check(dir) {
   if (missingP0.length) console.log('还缺的 P0：' + missingP0.join(' '));
   return bad;
 }
+
+module.exports = { SPEC, decodePng, MAX_COLORS };
 
 if (require.main === module) {
   const dir = path.resolve(process.argv[2] || path.join(__dirname, '../art'));
