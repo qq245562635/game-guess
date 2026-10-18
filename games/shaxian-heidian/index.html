@@ -14,7 +14,7 @@ var G = {};
 // 换皮（剧名/角色名/剧情）只改 TEXT 与 STORY。
 // ============================================================
 G.CFG = {
-  VERSION: 1,
+  VERSION: 2,              // 2：员工四维属性；v1 存档在 sim.load 里换算
   SAVE_KEY: 'shaxian_save_v1',
 
   // 广告：微信激励视频广告位 ID，上线前替换
@@ -33,7 +33,31 @@ G.CFG = {
   RENT: [20000, 25000, 40000, 50000],   // 第 1–3 月及之后每月的房租
   RENT_DELAY_DAYS: 3,
   AD_BONUS_RATE: 0.5,            // 看广告：当日营收额外 +50%
-  CHEF_COST: 2000, CHEF_SALARY: 150, MAX_CHEFS: 4,
+  MAX_CHEFS: 4,                  // 员工的签约费、日薪看下面 STAFF
+
+  // 员工四维属性（参照开罗《游戏发展国》）。30 为“普通”，各项效果以 30 为基准上下浮动。
+  STAFF: {
+    ATTRS: ['cook', 'serve', 'charm', 'heart'],
+    ATTR_NAMES: { cook: '厨艺', serve: '服务', charm: '魅力', heart: '心眼' },
+    ROLL: [10, 50],          // 应聘者每项属性随机范围
+    CAP: 99,                 // 培训上限
+    MID: 30,                 // 基准值
+    CANDIDATES: 3,           // 每天开店前的应聘人数
+    SALARY_PER_PT: 1.25,     // 日薪 = 四项总和 × 此值
+    HIRE_PER_PT: 16,         // 签约费 = 四项总和 × 此值
+    TRAIN_BASE: 400, TRAIN_PER_PT: 15, TRAIN_GAIN: [3, 8],   // 培训费 = BASE + 当前值 × PER_PT
+    // 每偏离基准 1 点的效果
+    COOK_SPEED: 0.005,       // 厨艺：做菜时间 -0.5%/点（自己做的菜）
+    COOK_TASTE: 0.15,        // 厨艺：全店平均厨艺每点 +0.15 味道
+    SERVE_PATIENCE: 0.006,   // 服务：客人耐心 +0.6%/点
+    SERVE_REP: 0.01,         // 服务：好评加口碑 +1%/点
+    CHARM_FLOW: 0.025,       // 魅力：网红、富豪来店权重 +2.5%/点
+    HEART_COMPLAIN: 0.02,    // 心眼：嫌贵投诉概率 -2%/点
+    HEART_BLACK: 0.015,      // 心眼：卖系统价/半价涨的黑店值 -1.5%/点
+    HEART_FINE: 0.015,       // 心眼：检查罚款 -1.5%/点
+    FIRST: { name: '李知白', cook: 30, serve: 30, charm: 30, heart: 30 },   // 开局自带的厨师（主角）
+    NAMES: ['阿强', '小美', '老王', '春花', '大刘', '阿芳', '小陈', '胖哥', '秀英', '阿杰', '小雨', '老林', '阿娟', '铁柱', '小周', '翠兰']
+  },
 
   // 客流
   BASE_FLOW: 24,
@@ -173,7 +197,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
 // 坐标单位为“格”，(0,0) 是店内最里面的角；店门在 y=7 这一行，y=8 之外是人行道和马路。
 // ============================================================
 (function () {
-  var C = G.CFG, clamp = G.clamp;
+  var C = G.CFG, clamp = G.clamp, SF = C.STAFF;
 
   G.priceOf = function (dishId, tier) {
     var d = C.DISH[dishId];
@@ -186,6 +210,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
 
   function Sim(seed) {
     this.rng = new G.RNG(seed || 12345);
+    this.hrng = new G.RNG(((seed || 12345) ^ 0x5bd1e995) >>> 0);   // 应聘者单独一条随机流，不打乱客流
     this.events = [];
     this.newGame();
   }
@@ -200,6 +225,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     this.rep = 10;
     this.black = 0;
     this.favor = 0;
+    this.staff = [makeStaff(SF.FIRST)];
     this.chefs = 1;
     this.flags = {};
     this.grid = [];
@@ -213,7 +239,72 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     this.prices = {};
     C.DISH_ORDER.forEach(function (d) { self.prices[d] = 2; });
     this.gameOver = false;
+    this.rollCandidates();
     this.resetDay();
+  };
+
+  // ---------- 员工 ----------
+  function attrSum(p) { var n = 0; SF.ATTRS.forEach(function (a) { n += p[a]; }); return n; }
+  function makeStaff(src) {
+    var p = { name: src.name };
+    SF.ATTRS.forEach(function (a) { p[a] = src[a]; });
+    p.salary = Math.round(attrSum(p) * SF.SALARY_PER_PT);
+    p.fee = Math.round(attrSum(p) * SF.HIRE_PER_PT);
+    return p;
+  }
+  G.staffSum = attrSum;
+
+  Sim.prototype.rollCandidates = function () {
+    var r = this.hrng, used = {}, list = [];
+    this.staff.forEach(function (p) { used[p.name] = true; });
+    for (var i = 0; i < SF.CANDIDATES; i++) {
+      var name, tries = 0;
+      do { name = r.pick(SF.NAMES); } while (used[name] && tries++ < 20);
+      used[name] = true;
+      var src = { name: name };
+      SF.ATTRS.forEach(function (a) { src[a] = r.int(SF.ROLL[0], SF.ROLL[1]); });
+      list.push(makeStaff(src));
+    }
+    this.candidates = list;
+  };
+  // 全店某项属性的平均值偏离基准多少（正数 = 比普通强）
+  Sim.prototype.staffDev = function (attr) {
+    var n = 0;
+    this.staff.forEach(function (p) { n += p[attr]; });
+    return n / this.staff.length - SF.MID;
+  };
+  Sim.prototype.salaryTotal = function () {
+    var n = 0;
+    this.staff.forEach(function (p) { n += p.salary; });
+    return n;
+  };
+  Sim.prototype.hire = function (i) {
+    if (this.phase !== 'prep') return '营业中不能招人';
+    if (this.staff.length >= C.MAX_CHEFS) return '厨房站不下了';
+    var p = this.candidates[i];
+    if (!p) return '没有这个应聘者';
+    if (this.cash < p.fee) return '钱不够';
+    this.cash -= p.fee;
+    this.staff.push(p);
+    this.candidates.splice(i, 1);
+    this.chefs = this.staff.length;
+    this.resetDay();
+    return null;
+  };
+  // 旧接口：招第一个应聘者
+  Sim.prototype.hireChef = function () { return this.hire(0); };
+  Sim.prototype.trainCost = function (i, attr) { return SF.TRAIN_BASE + this.staff[i][attr] * SF.TRAIN_PER_PT; };
+  Sim.prototype.train = function (i, attr) {
+    if (this.phase !== 'prep') return '营业中不能培训';
+    var p = this.staff[i];
+    if (!p || SF.ATTRS.indexOf(attr) < 0) return '没有这个人';
+    if (p[attr] >= SF.CAP) return '已经练到顶了';
+    var cost = this.trainCost(i, attr);
+    if (this.cash < cost) return '钱不够';
+    this.cash -= cost;
+    p[attr] = Math.min(SF.CAP, p[attr] + this.hrng.int(SF.TRAIN_GAIN[0], SF.TRAIN_GAIN[1]));
+    p.salary = Math.round(attrSum(p) * SF.SALARY_PER_PT);
+    return null;
   };
 
   // ---------- 存档 ----------
@@ -221,14 +312,25 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     return {
       v: C.VERSION, cash: this.cash, day: this.day, month: this.month,
       rentDue: this.rentDue, rentDelayUsed: this.rentDelayUsed,
-      rep: this.rep, black: this.black, favor: this.favor, chefs: this.chefs,
+      rep: this.rep, black: this.black, favor: this.favor, staff: this.staff,
       flags: this.flags, grid: this.grid, prices: this.prices
     };
   };
   Sim.prototype.load = function (s) {
-    if (!s || s.v !== C.VERSION) return false;
-    var keys = ['cash', 'day', 'month', 'rentDue', 'rentDelayUsed', 'rep', 'black', 'favor', 'chefs', 'flags', 'grid', 'prices'];
+    if (!s || (s.v !== C.VERSION && s.v !== 1)) return false;
+    var keys = ['cash', 'day', 'month', 'rentDue', 'rentDelayUsed', 'rep', 'black', 'favor', 'flags', 'grid', 'prices'];
     for (var i = 0; i < keys.length; i++) this[keys[i]] = s[keys[i]];
+    if (s.v === 1) {
+      // v1 只有厨师人数：主角 + 若干个各项都是基准值的厨师
+      this.staff = [makeStaff(SF.FIRST)];
+      for (var k = 1; k < (s.chefs || 1); k++) {
+        this.staff.push(makeStaff({ name: SF.NAMES[k], cook: SF.MID, serve: SF.MID, charm: SF.MID, heart: SF.MID }));
+      }
+    } else {
+      this.staff = s.staff;
+    }
+    this.chefs = this.staff.length;
+    this.rollCandidates();
     this.gameOver = false;
     this.resetDay();
     return true;
@@ -302,14 +404,6 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     this.resetDay();
     return null;
   };
-  Sim.prototype.hireChef = function () {
-    if (this.chefs >= C.MAX_CHEFS) return '厨房站不下了';
-    if (this.cash < C.CHEF_COST) return '钱不够';
-    this.cash -= C.CHEF_COST;
-    this.chefs++;
-    this.resetDay();
-    return null;
-  };
   Sim.prototype.setPrice = function (d, tier) { this.prices[d] = tier; };
 
   // ---------- 营业日 ----------
@@ -331,7 +425,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     this.chefList = [];
     for (var i = 0; i < this.chefs; i++) {
       var hx = 1 + i * 1.5, hy = 1.6;
-      this.chefList.push({ x: hx, y: hy, hx: hx, hy: hy, tx: hx, ty: hy, task: null, moving: false });
+      this.chefList.push({ x: hx, y: hy, hx: hx, hy: hy, tx: hx, ty: hy, task: null, moving: false, staff: this.staff[i] });
     }
     this.stats = {
       revenue: 0, cost: 0, salary: 0, served: 0, rejected: 0, complaints: 0, angry: 0,
@@ -349,12 +443,13 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
   };
 
   Sim.prototype.custWeights = function () {
+    var charm = Math.max(0.2, 1 + SF.CHARM_FLOW * this.staffDev('charm'));
     return {
       worker: 0.55,
       neighbor: 0.25,
-      influencer: 0.06,
+      influencer: 0.06 * charm,
       foodie: 0.04 + this.rep / 500,
-      rich: 0.02 + (this.rep / 100) * 0.15 + (this.black / 100) * 0.12
+      rich: (0.02 + (this.rep / 100) * 0.15 + (this.black / 100) * 0.12) * charm
     };
   };
 
@@ -428,7 +523,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
   };
 
   Sim.prototype.quality = function (dishId) {
-    return (C.DISH[dishId].taste + this.rep * 0.3) / 40;
+    return (C.DISH[dishId].taste + this.rep * 0.3 + SF.COOK_TASTE * this.staffDev('cook')) / 40;
   };
 
   Sim.prototype.decide = function (c) {
@@ -448,7 +543,8 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     var accept = clamp(q / Math.pow(ratio, ct.sens * 0.6), 0.02, 1);
     if (r.next() > accept) {
       this.stats.rejected++;
-      if (ratio > 3 && r.next() < ct.complain) {
+      var heart = Math.max(0.1, 1 - SF.HEART_COMPLAIN * this.staffDev('heart'));
+      if (ratio > 3 && r.next() < ct.complain * heart) {
         this.stats.complaints++;
         this.black = clamp(this.black + 2 * (1 - this.antiReport()), 0, 100);
         this.say(c, '黑店！举报！', 'angry');
@@ -487,6 +583,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
       case 'toSeat':
         if (arrived) {
           c.state = 'waiting'; c.wait = 0;
+          c.patience = C.PATIENCE * Math.max(0.5, 1 + SF.SERVE_PATIENCE * self.staffDev('serve'));
           c.dishes.forEach(function (d) {
             var tier = self.prices[d];
             var o = { cust: c, dish: d, tier: tier, price: G.priceOf(d, tier), state: 'queued', t: 0, total: 0, station: null, chef: null };
@@ -498,7 +595,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
         c.wait += dt;
         if (c.orders.every(function (o) { return o.state === 'done'; })) {
           c.state = 'eating'; c.eatT = C.EAT_TIME;
-        } else if (c.wait > C.PATIENCE) {
+        } else if (c.wait > c.patience) {
           this.stats.angry++;
           this.rep = clamp(this.rep - 1.5 * C.CUST[c.type].amp, 0, 100);
           c.orders.forEach(function (o) { if (o.state === 'queued') o.state = 'cancelled'; });
@@ -534,7 +631,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
         }
         if (!st) continue;
         o.state = 'cooking'; o.station = st; o.chef = chef;
-        o.total = C.DISH[o.dish].cook; o.t = 0;
+        o.total = C.DISH[o.dish].cook * Math.max(0.4, 1 - SF.COOK_SPEED * (chef.staff.cook - SF.MID)); o.t = 0;
         st.busy = o; chef.task = o;
         chef.tx = st.x + 0.5; chef.ty = Math.min(st.y + 1.15, C.KITCHEN_ROWS - 0.1) ;
         var cost = C.DISH[o.dish].cost;
@@ -562,12 +659,13 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
   Sim.prototype.pay = function (c) {
     var ct = C.CUST[c.type], self = this;
     var sum = 0, ratio = 0, q = 0;
+    var heart = Math.max(0.2, 1 - SF.HEART_BLACK * this.staffDev('heart'));
     c.orders.forEach(function (o) {
       sum += o.price;
       ratio += o.price / C.DISH[o.dish].base;
       q += self.quality(o.dish);
-      if (o.tier === 2) { self.stats.sysSold++; self.black += 0.5; self.favor += 1; }
-      else if (o.tier === 1) { self.black += 0.2; }
+      if (o.tier === 2) { self.stats.sysSold++; self.black += 0.5 * heart; self.favor += 1; }
+      else if (o.tier === 1) { self.black += 0.2 * heart; }
       else { self.black -= 0.25; self.favor -= 0.5; }
     });
     var n = c.orders.length;
@@ -582,7 +680,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     // 已经接受价格进店的客人，评价更看味道：价格权重比进店判断低
     var sat = q * 1.3 / Math.pow(ratio, ct.sens * 0.25);
     if (sat >= 0.8) {
-      this.rep = clamp(this.rep + 1.0 * ct.amp, 0, 100);
+      this.rep = clamp(this.rep + ct.amp * Math.max(0.3, 1 + SF.SERVE_REP * this.staffDev('serve')), 0, 100);
       this.say(c, c.type === 'rich' ? '值！' : '好吃！', c.type === 'rich' ? 'money' : 'happy');
     } else if (sat < 0.4) {
       this.rep = clamp(this.rep - 1 * ct.amp, 0, 100);
@@ -596,7 +694,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
 
   Sim.prototype.endDay = function () {
     var s = this.stats;
-    s.salary = this.chefs * C.CHEF_SALARY;
+    s.salary = this.salaryTotal();
     this.cash -= s.salary;
     // 事件
     if (s.complaints >= C.REPORT_COMPLAINTS) {
@@ -607,10 +705,11 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
       this.story('firstReport');
     }
     if (this.black >= C.INSPECT_THRESHOLD) {
-      this.cash -= C.INSPECT_FINE;
-      s.fine = C.INSPECT_FINE;
+      var fine = Math.round(C.INSPECT_FINE * Math.max(0.2, 1 - SF.HEART_FINE * this.staffDev('heart')));
+      this.cash -= fine;
+      s.fine = fine;
       this.black = clamp(this.black - C.INSPECT_BLACK_DROP, 0, 100);
-      s.events.push('市场监管检查：罚款 ¥' + C.INSPECT_FINE);
+      s.events.push('市场监管检查：罚款 ¥' + fine);
       this.story('firstInspect');
     }
     if (s.sysSold >= this.taskNeed()) {
@@ -656,6 +755,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     }
     this.day++;
     this.phase = 'prep';
+    this.rollCandidates();
     this.resetDay();
     return 'ok';
   };
@@ -665,6 +765,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     this.rentDue = this.day + C.RENT_DELAY_DAYS;
     this.day++;
     this.phase = 'prep';
+    this.rollCandidates();
     this.resetDay();
   };
 })();
@@ -1772,10 +1873,13 @@ if (typeof window !== 'undefined') window.__shaxian = G;
   Game.prototype.renderStaff = function (y0) {
     var ui = this.ui, sim = this.sim, self = this;
     ui.text('厨师 ×' + sim.chefs + '（上限 ' + C.MAX_CHEFS + '）', 14, y0 + 12, { size: 14, bold: true });
-    ui.text('日薪 ¥' + C.CHEF_SALARY + '/人，打烊结算。一个厨师同时做一份菜。', 14, y0 + 34, { size: 11, color: '#a99fb2' });
+    ui.text('日薪合计 ¥' + sim.salaryTotal() + '，打烊结算。一个厨师同时做一份菜。', 14, y0 + 34, { size: 11, color: '#a99fb2' });
     ui.text('座位 ' + sim.seats.length + ' 个 · 灶位 ' + sim.stations.length + ' 个', 14, y0 + 52, { size: 11, color: '#a99fb2' });
-    var can = sim.phase === 'prep' && sim.chefs < C.MAX_CHEFS;
-    ui.button(14, y0 + 66, 160, 34, '招聘厨师', { sub: '¥' + fmt(C.CHEF_COST), disabled: !can, bold: true }, function () {
+    // 临时：只显示第一个应聘者。正式的员工面板（四维属性、挑人、培训）另做
+    var cand = sim.candidates[0];
+    var can = sim.phase === 'prep' && sim.chefs < C.MAX_CHEFS && !!cand;
+    var sub = cand ? cand.name + ' 厨' + cand.cook + ' 服' + cand.serve + ' 魅' + cand.charm + ' 心' + cand.heart + ' ¥' + fmt(cand.fee) : '今天没人应聘';
+    ui.button(14, y0 + 66, 220, 34, '招聘厨师', { sub: sub, disabled: !can, bold: true }, function () {
       var err = sim.hireChef();
       if (err) self.toast(err); else { self.toast('新厨师到岗'); self.save(); }
     });
