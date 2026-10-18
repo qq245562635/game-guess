@@ -121,7 +121,8 @@ function check(dir) {
             if (corners || holes) problems.push('地块应是铺满的 2:1 菱形（四角透明），对照 art/_templates/guide_tile.png');
           }
           // 设施：底部要落在占地菱形里（最下面的实心像素在下 1/4）
-          if (sub === 'facilities' && y1 < im.h * 0.75) problems.push('设施底部没有落到占地菱形上，像是悬空；对照 art/_templates/guide_facility.png');
+          // 挂墙的（24×48）不落地，不查
+          if (sub === 'facilities' && !(im.w === 24 && im.h === 48) && y1 < im.h * 0.75) problems.push('设施底部没有落到占地菱形上，像是悬空；对照 art/_templates/guide_facility.png');
         }
         // 原生像素图：不能有半透明像素（AI 放大或缩小留下的糊边），颜色不能太多（噪点）
         if (spec.native && im.rgbaAt) {
