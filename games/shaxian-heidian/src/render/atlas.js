@@ -221,6 +221,7 @@
       p.box(0.3, 0.25, 0.75, 0.55, 22, 27, '#eeeeee', '#cfcfcf', '#a8a8a8');
       var l = p.P(0.75, 0.4, 25); p.px(l[0], l[1] - 1, 2, 2, '#222'); var r = p.P(0.4, 0.55, 25); p.px(r[0], r[1], 1, 1, '#ff3333');
     },
+    shadow: function (p) { p.ellipse(16 / 1.5 * 0.999, 6 / 1.5, 15 / 1.5, 5.5 / 1.5, '#000000'); },
     fridge: function (p) {
       p.box(0.12, 0.2, 0.88, 0.8, 0, 38, '#c9cfd4', '#a3aab1', '#7d848c');
       var P = p.P.bind(p);
@@ -284,7 +285,7 @@
     floor_hall: [48, 24], floor_kitchen: [48, 24], door: [48, 24], sidewalk: [48, 24], street: [48, 24], tile_mask: [48, 24],
     wall_r: [24, 48], wall_l: [24, 48], edge_l: [24, 18], edge_r: [24, 18],
     stove: [48, 48, 1], steamer: [48, 48, 1], pot: [48, 48, 1], table: [48, 48, 1], plant: [48, 48, 1], banner: [48, 48, 1], camera: [48, 48, 1],
-    bowl: [24, 24],
+    bowl: [24, 24], shadow: [32, 12],
     fridge: [48, 64, 1], counter: [48, 48, 1], takeout: [48, 48, 1], sign_stand: [48, 48, 1],
     booth: [72, 60, 1], wall_fan: [24, 48], poster: [24, 48]
   };
@@ -402,7 +403,7 @@
       r.quad(this.tex, x, y, w, h, s.x, s.y, s.w, s.h, cr, cg, cb, ca);
     },
     rect: function (r, x, y, w, h, cr, cg, cb, ca) {
-      r.quad(this.tex, x, y, w, h, SPR.white.x + 16, SPR.white.y + 16, 32, 32, cr, cg, cb, ca);
+      r.quad(this.tex, x, y, w, h, SPR.white.x + 4, SPR.white.y + 4, 8, 8, cr, cg, cb, ca);   // 取白块中间，避开边缘采样到相邻精灵
     }
   };
 })();

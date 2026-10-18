@@ -16,13 +16,16 @@
   }
   G.UI = UI;
 
-  UI.prototype.setScale = function (s) {
+  // h：逻辑高度（跟着屏幕长宽比变，宽固定 360）
+  UI.prototype.setScale = function (s, h) {
     s = Math.max(1, Math.min(s, 2.5));
+    if (h && h !== this.H) { this.H = h; this.scale = 0; }
     if (Math.abs(s - this.scale) < 0.01) return;
     this.scale = s;
     this.canvas.width = Math.round(this.W * s);
     this.canvas.height = Math.round(this.H * s);
   };
+
 
   UI.prototype.begin = function () {
     var c = this.ctx;
