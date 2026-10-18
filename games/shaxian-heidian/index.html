@@ -81,17 +81,36 @@ G.CFG = {
     { id: 'table', x: 5, y: 3 }, { id: 'table', x: 6, y: 3 }
   ],
 
-  // 设施：zone = kitchen（后厨两行）| hall（前厅）
+  // 设施：zone = kitchen（后厨两行）| hall（前厅）| wall（挂在后墙上）| outside（店门口人行道，固定位置）
+  //   w: 占几格（沿 x 方向），默认 1；seats: 提供几个座位（seat: true 等于 1 个）
+  //   env: 环境加成（菜品口味系数，所有设施合计最多 +30%）
+  // P1 装饰（fridge 起）的数值是占位，只给小额环境加成，玩法效果等制作人定。
   FAC: {
-    stove:   { name: '灶台',   cost: 800,  zone: 'kitchen', station: 'stove' },
-    steamer: { name: '蒸笼',   cost: 1000, zone: 'kitchen', station: 'steamer' },
-    pot:     { name: '汤锅',   cost: 1200, zone: 'kitchen', station: 'pot' },
-    table:   { name: '桌椅',   cost: 300,  zone: 'hall', seat: true },
-    plant:   { name: '发财树', cost: 600,  zone: 'hall', env: 0.04 },
-    banner:  { name: '锦旗墙', cost: 1500, zone: 'hall', env: 0.08 },
-    camera:  { name: '监控',   cost: 2000, zone: 'hall', antiReport: 0.5 }
+    stove:      { name: '灶台',   cost: 800,  zone: 'kitchen', station: 'stove' },
+    steamer:    { name: '蒸笼',   cost: 1000, zone: 'kitchen', station: 'steamer' },
+    pot:        { name: '汤锅',   cost: 1200, zone: 'kitchen', station: 'pot' },
+    fridge:     { name: '冰箱',   cost: 1500, zone: 'kitchen', env: 0.02 },
+    table:      { name: '桌椅',   cost: 300,  zone: 'hall', seat: true },
+    booth:      { name: '卡座',   cost: 900,  zone: 'hall', w: 2, seats: 2, env: 0.02 },
+    counter:    { name: '收银台', cost: 1200, zone: 'hall', env: 0.03 },
+    takeout:    { name: '外卖台', cost: 1000, zone: 'hall', env: 0.03 },
+    plant:      { name: '发财树', cost: 600,  zone: 'hall', env: 0.04 },
+    banner:     { name: '锦旗墙', cost: 1500, zone: 'hall', env: 0.08 },
+    camera:     { name: '监控',   cost: 2000, zone: 'hall', antiReport: 0.5 },
+    wall_fan:   { name: '壁扇',   cost: 400,  zone: 'wall', env: 0.02 },
+    poster:     { name: '海报',   cost: 300,  zone: 'wall', env: 0.03 },
+    sign_stand: { name: '立牌',   cost: 500,  zone: 'outside', env: 0.03 },
+    // 多格设施的延伸格：grid 里占位用，不能单独建造
+    _ext:       { name: '', cost: 0, zone: 'none', ext: true }
   },
   FAC_ORDER: ['stove', 'steamer', 'pot', 'table', 'plant', 'banner', 'camera'],
+  // 建造面板分三页
+  BUILD_TABS: [
+    ['厨房', ['stove', 'steamer', 'pot', 'fridge']],
+    ['前厅', ['table', 'booth', 'counter', 'takeout']],
+    ['装饰', ['plant', 'banner', 'camera', 'wall_fan', 'poster', 'sign_stand']]
+  ],
+  SIGN_SPOT: { x: 5.9, y: 8.8 },   // 立牌在门口人行道上的位置（格坐标）
 
   // 菜谱：base 沙县原价，sys 系统价
   DISH: {
@@ -236,6 +255,8 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     }
     var self = this;
     C.START_LAYOUT.forEach(function (f) { self.grid[f.y][f.x] = f.id; });
+    this.walls = emptyWalls();
+    this.outside = {};
     this.prices = {};
     C.DISH_ORDER.forEach(function (d) { self.prices[d] = 2; });
     this.gameOver = false;
@@ -307,13 +328,19 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
     return null;
   };
 
+  function emptyWalls() {
+    var w = { l: [], r: [] };
+    for (var i = 0; i < 8; i++) { w.l.push(null); w.r.push(null); }
+    return w;
+  }
+
   // ---------- 存档 ----------
   Sim.prototype.serialize = function () {
     return {
       v: C.VERSION, cash: this.cash, day: this.day, month: this.month,
       rentDue: this.rentDue, rentDelayUsed: this.rentDelayUsed,
       rep: this.rep, black: this.black, favor: this.favor, staff: this.staff,
-      flags: this.flags, grid: this.grid, prices: this.prices
+      flags: this.flags, grid: this.grid, prices: this.prices, walls: this.walls, outside: this.outside
     };
   };
   Sim.prototype.load = function (s) {
@@ -330,6 +357,8 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
       this.staff = s.staff;
     }
     this.chefs = this.staff.length;
+    this.walls = s.walls || emptyWalls();
+    this.outside = s.outside || {};
     this.rollCandidates();
     this.gameOver = false;
     this.resetDay();
@@ -360,7 +389,20 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
   Sim.prototype.count = function (id) {
     var n = 0;
     for (var y = 0; y < C.GRID_H; y++) for (var x = 0; x < C.GRID_W; x++) if (this.grid[y][x] === id) n++;
+    this.walls.l.concat(this.walls.r).forEach(function (w) { if (w === id) n++; });
+    if (this.outside[id]) n++;
     return n;
+  };
+  // 所有已建设施（含墙上、门口），按 id 列出
+  Sim.prototype.allFac = function () {
+    var out = [];
+    for (var y = 0; y < C.GRID_H; y++) for (var x = 0; x < C.GRID_W; x++) {
+      var id = this.grid[y][x];
+      if (id && !C.FAC[id].ext) out.push(id);
+    }
+    this.walls.l.concat(this.walls.r).forEach(function (w) { if (w) out.push(w); });
+    for (var k in this.outside) if (this.outside[k]) out.push(k);
+    return out;
   };
   Sim.prototype.hasStation = function (station) {
     for (var y = 0; y < C.GRID_H; y++) for (var x = 0; x < C.GRID_W; x++) {
@@ -372,10 +414,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
   Sim.prototype.dishAvailable = function (d) { return this.hasStation(C.DISH[d].station); };
   Sim.prototype.envMul = function () {
     var e = 0;
-    for (var y = 0; y < C.GRID_H; y++) for (var x = 0; x < C.GRID_W; x++) {
-      var id = this.grid[y][x];
-      if (id && C.FAC[id].env) e += C.FAC[id].env;
-    }
+    this.allFac().forEach(function (id) { e += C.FAC[id].env || 0; });
     return 1 + Math.min(e, 0.3);
   };
   Sim.prototype.antiReport = function () { return this.count('camera') > 0 ? C.FAC.camera.antiReport : 0; };
@@ -384,24 +423,68 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
   Sim.prototype.canBuild = function () { return this.phase === 'prep'; };
   Sim.prototype.place = function (id, x, y) {
     if (!this.canBuild()) return '营业中不能施工';
-    var f = C.FAC[id];
-    if (this.grid[y][x]) return '这里已经有东西了';
-    var z = this.zoneOf(x, y);
-    if (z === 'door') return '门口不能堵';
-    if (z !== f.zone) return f.zone === 'kitchen' ? '只能放在后厨' : '只能放在前厅';
+    var f = C.FAC[id], w = f.w || 1;
+    if (f.zone === 'wall' || f.zone === 'outside') return '点墙面或门口放置';
+    for (var i = 0; i < w; i++) {
+      if (x + i >= C.GRID_W) return '放不下';
+      if (this.grid[y][x + i]) return '这里已经有东西了';
+      var z = this.zoneOf(x + i, y);
+      if (z === 'door') return '门口不能堵';
+      if (z !== f.zone) return f.zone === 'kitchen' ? '只能放在后厨' : '只能放在前厅';
+    }
     if (this.cash < f.cost) return '钱不够';
     this.cash -= f.cost;
     this.grid[y][x] = id;
+    for (i = 1; i < w; i++) this.grid[y][x + i] = '_ext';
     this.resetDay();
     return null;
   };
+  // 多格设施：给任一格，返回主格坐标
+  Sim.prototype.anchorOf = function (x, y) {
+    while (x > 0 && this.grid[y][x] === '_ext') x--;
+    return { x: x, y: y };
+  };
   Sim.prototype.remove = function (x, y) {
     if (!this.canBuild()) return '营业中不能施工';
-    var id = this.grid[y][x];
+    var a = this.anchorOf(x, y), id = this.grid[a.y][a.x];
     if (!id) return '这里是空的';
     this.cash += Math.floor(C.FAC[id].cost / 2);
-    this.grid[y][x] = null;
+    var w = C.FAC[id].w || 1;
+    for (var i = 0; i < w; i++) this.grid[a.y][a.x + i] = null;
     this.resetDay();
+    return null;
+  };
+  // 墙上：side = 'l'（左上墙，沿 y）| 'r'（右上墙，沿 x），i = 第几格
+  Sim.prototype.placeWall = function (id, side, i) {
+    if (!this.canBuild()) return '营业中不能施工';
+    if (C.FAC[id].zone !== 'wall') return '这个不能挂墙上';
+    if (this.walls[side][i]) return '这里已经挂了东西';
+    if (this.cash < C.FAC[id].cost) return '钱不够';
+    this.cash -= C.FAC[id].cost;
+    this.walls[side][i] = id;
+    return null;
+  };
+  Sim.prototype.removeWall = function (side, i) {
+    if (!this.canBuild()) return '营业中不能施工';
+    var id = this.walls[side][i];
+    if (!id) return '这里是空的';
+    this.cash += Math.floor(C.FAC[id].cost / 2);
+    this.walls[side][i] = null;
+    return null;
+  };
+  Sim.prototype.placeOutside = function (id) {
+    if (!this.canBuild()) return '营业中不能施工';
+    if (this.outside[id]) return '门口已经有了';
+    if (this.cash < C.FAC[id].cost) return '钱不够';
+    this.cash -= C.FAC[id].cost;
+    this.outside[id] = true;
+    return null;
+  };
+  Sim.prototype.removeOutside = function (id) {
+    if (!this.canBuild()) return '营业中不能施工';
+    if (!this.outside[id]) return '这里是空的';
+    this.cash += Math.floor(C.FAC[id].cost / 2);
+    this.outside[id] = false;
     return null;
   };
   Sim.prototype.setPrice = function (d, tier) { this.prices[d] = tier; };
@@ -421,6 +504,7 @@ G.clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
       var f = C.FAC[id];
       if (f.station) this.stations.push({ type: f.station, x: x, y: y, busy: null });
       if (f.seat) this.seats.push({ x: x, y: y, occ: null });
+      for (var si = 0; si < (f.seats || 0); si++) this.seats.push({ x: x + si, y: y, occ: null });
     }
     this.chefList = [];
     for (var i = 0; i < this.chefs; i++) {
@@ -991,6 +1075,8 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     this.x = this.c.getContext('2d');
     this.w = w; this.h = h; this.S = S || 1;
     this.dw = w / this.S; this.dh = h / this.S;
+    // 占地菱形的「后角」在设计坐标里的位置：单格设施在图宽中间、离底 16
+    this.cx = this.dw / 2; this.cy = this.dh - 16;
   }
   Pen.prototype.px = function (x, y, w, h, c) {
     var S = this.S, l = Math.round(x * S), t = Math.round(y * S);
@@ -1028,7 +1114,7 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     }
   };
   // 等距坐标：(u,v) 是占地格内的位置（0–1），z 是离地高度（像素格）
-  Pen.prototype.P = function (u, v, z) { return [this.dw / 2 + (u - v) * 16, this.dh - 16 + (u + v) * 8 - (z || 0)]; };
+  Pen.prototype.P = function (u, v, z) { return [this.cx + (u - v) * 16, this.cy + (u + v) * 8 - (z || 0)]; };
   Pen.prototype.box = function (u0, v0, u1, v1, z0, z1, top, left, right) {
     var P = this.P.bind(this);
     this.poly([P(u0, v1, z0), P(u1, v1, z0), P(u1, v1, z1), P(u0, v1, z1)], left);
@@ -1077,6 +1163,12 @@ if (typeof window !== 'undefined') window.__shaxian = G;
       p.poly([P(u0, 0.85, 2), P(u0 + 0.38, 0.85, 2), P(u0 + 0.38, 0.85, 9), P(u0, 0.85, 9)], '#7a8188');
       var h = P(u0 + 0.31, 0.85, 6); p.px(h[0], h[1], 1, 1, '#2e3035');
     });
+  }
+
+  // 左上墙面上的平行四边形：x0–x1 是横向范围（设计坐标 0–16），top 是离墙顶的距离，h 是高度
+  function wallRect(p, x0, x1, top, h, c) {
+    var y = function (x) { return 8 - x / 2 + top; };
+    p.poly([[x0, y(x0)], [x1, y(x1)], [x1, y(x1) + h], [x0, y(x0) + h]], c);
   }
 
   var DRAW = {
@@ -1171,6 +1263,58 @@ if (typeof window !== 'undefined') window.__shaxian = G;
       p.box(0.3, 0.25, 0.75, 0.55, 22, 27, '#eeeeee', '#cfcfcf', '#a8a8a8');
       var l = p.P(0.75, 0.4, 25); p.px(l[0], l[1] - 1, 2, 2, '#222'); var r = p.P(0.4, 0.55, 25); p.px(r[0], r[1], 1, 1, '#ff3333');
     },
+    fridge: function (p) {
+      p.box(0.12, 0.2, 0.88, 0.8, 0, 38, '#c9cfd4', '#a3aab1', '#7d848c');
+      var P = p.P.bind(p);
+      p.poly([P(0.12, 0.8, 22), P(0.88, 0.8, 22), P(0.88, 0.8, 23), P(0.12, 0.8, 23)], '#5b5f66');
+      p.poly([P(0.5, 0.8, 1), P(0.53, 0.8, 1), P(0.53, 0.8, 21), P(0.5, 0.8, 21)], '#5b5f66');
+      var h1 = P(0.42, 0.8, 30), h2 = P(0.6, 0.8, 12);
+      p.px(h1[0], h1[1] - 4, 1, 4, '#3a3d42'); p.px(h2[0], h2[1] - 4, 1, 4, '#3a3d42');
+      var n = P(0.25, 0.8, 32); p.px(n[0], n[1], 4, 3, '#f4e9a0');
+    },
+    counter: function (p) {
+      p.box(0.15, 0.25, 0.85, 0.85, 0, 13, '#b8854f', '#9c6a3a', '#6e4520');
+      var P = p.P.bind(p);
+      p.poly([P(0.2, 0.85, 4), P(0.8, 0.85, 4), P(0.8, 0.85, 10), P(0.2, 0.85, 10)], '#8a5a2e');
+      var q = P(0.35, 0.5, 13); p.px(q[0] - 1, q[1] - 7, 4, 7, '#f4f4f4'); p.px(q[0], q[1] - 6, 2, 2, '#2a1d16');
+      var k = P(0.65, 0.55, 13); p.px(k[0] - 2, k[1] - 2, 5, 2, '#3a3d42'); p.px(k[0] - 1, k[1] - 2, 3, 1, '#9fd5a8');
+    },
+    takeout: function (p) {
+      p.box(0.15, 0.25, 0.85, 0.85, 0, 9, '#a3aab1', '#7d848c', '#5b5f66');
+      [[0.35, 0.5], [0.62, 0.55]].forEach(function (uv) {
+        var b = p.P(uv[0], uv[1], 9);
+        p.px(b[0] - 3, b[1] - 8, 7, 8, '#f4f4f4'); p.px(b[0] - 3, b[1] - 8, 7, 1, '#d8d8d8');
+        p.px(b[0] - 1, b[1] - 10, 1, 2, '#c0392b'); p.px(b[0] + 2, b[1] - 10, 1, 2, '#c0392b');
+      });
+    },
+    sign_stand: function (p) {
+      var P = p.P.bind(p);
+      var a = P(0.25, 0.5, 0), b = P(0.75, 0.5, 0);
+      p.poly([[a[0], a[1]], [a[0] + 2, a[1]], [a[0] + 7, a[1] - 26], [a[0] + 5, a[1] - 26]], '#6e4520');
+      p.poly([[b[0], b[1]], [b[0] - 2, b[1]], [b[0] - 7, b[1] - 26], [b[0] - 5, b[1] - 26]], '#6e4520');
+      p.poly([P(0.28, 0.5, 6), P(0.72, 0.5, 6), P(0.67, 0.5, 26), P(0.33, 0.5, 26)], '#9c6a3a');
+      p.poly([P(0.32, 0.5, 8), P(0.68, 0.5, 8), P(0.64, 0.5, 24), P(0.36, 0.5, 24)], '#c0392b');
+    },
+    booth: function (p) {
+      // 两格：u 0–2，v 0–1。后面一排红色长椅（客人坐这里），前面一张长桌
+      p.box(0.1, 0.05, 1.9, 0.35, 0, 7, '#d0402a', '#a83020', '#7a2016');
+      p.box(0.1, 0.05, 1.9, 0.15, 7, 18, '#d0402a', '#a83020', '#7a2016');
+      [0.3, 1.7].forEach(function (u) { var l = p.P(u, 0.75, 0); p.px(l[0], l[1] - 9, 1, 9, '#4a3015'); });
+      p.box(0.2, 0.45, 1.8, 0.85, 9, 11, '#b8854f', '#9c6a3a', '#6e4520');
+      [0.6, 1.4].forEach(function (u) { var c = p.P(u, 0.65, 11); p.ellipse(c[0], c[1], 3, 1.5, '#3a6fb0'); p.ellipse(c[0], c[1], 2, 1, '#f4f4f4'); });
+    },
+    wall_fan: function (p) {
+      wallRect(p, 6, 10, 9, 1, '#3a3d42');
+      var c = [8, 8 - 8 / 2 + 7];
+      p.ellipse(c[0], c[1], 4, 4, '#2e3035'); p.ellipse(c[0], c[1], 3, 3, '#5b5f66');
+      p.px(c[0] - 1, c[1] - 3, 1, 6, '#2a2a2e'); p.px(c[0] - 3, c[1] - 1, 6, 1, '#2a2a2e'); p.px(c[0] - 1, c[1] - 1, 2, 2, '#c0392b');
+    },
+    poster: function (p) {
+      wallRect(p, 3, 13, 3, 12, '#c0392b');
+      wallRect(p, 4, 12, 4, 10, '#f4e2b8');
+      var c = [8, 8 - 4 + 10];
+      p.ellipse(c[0], c[1], 3, 1.5, '#f4f4f4'); p.px(c[0] - 2, c[1] - 2, 4, 1, '#e8c35a'); p.px(c[0] - 1, c[1] - 3, 1, 1, '#3cb371');
+    },
     bowl: function (p) {
       p.px(4, 6, 8, 3, '#e8c35a'); p.px(5, 5, 6, 1, '#f0d27a');
       p.px(3, 8, 10, 3, '#ffffff'); p.px(4, 11, 8, 1, '#e6e6e6'); p.px(3, 8, 10, 1, '#3a6fb0');
@@ -1182,7 +1326,9 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     floor_hall: [48, 24], floor_kitchen: [48, 24], door: [48, 24], sidewalk: [48, 24], street: [48, 24], tile_mask: [48, 24],
     wall_r: [24, 48], wall_l: [24, 48], edge_l: [24, 18], edge_r: [24, 18],
     stove: [48, 48, 1], steamer: [48, 48, 1], pot: [48, 48, 1], table: [48, 48, 1], plant: [48, 48, 1], banner: [48, 48, 1], camera: [48, 48, 1],
-    bowl: [24, 24]
+    bowl: [24, 24],
+    fridge: [48, 64, 1], counter: [48, 48, 1], takeout: [48, 48, 1], sign_stand: [48, 48, 1],
+    booth: [72, 60, 1], wall_fan: [24, 48], poster: [24, 48]
   };
   var DESIGN_S = 1.5;
 
@@ -1232,6 +1378,7 @@ if (typeof window !== 'undefined') window.__shaxian = G;
       ctx.fillStyle = '#fff'; ctx.fillRect(white.x, white.y, white.w, white.h);
       Object.keys(SIZE).forEach(function (name) {
         var sz = SIZE[name], pen = new Pen(platform, sz[0], sz[1], name === 'bowl' ? 1.5 : DESIGN_S);
+        if (name === 'booth') { pen.cx = pen.dw / 2 - 8; pen.cy = pen.dh - 24; }   // 两格占地
         DRAW[name](pen);
         if (sz[2]) pen.outline();
         put(name, pen);
@@ -1242,7 +1389,10 @@ if (typeof window !== 'undefined') window.__shaxian = G;
         neighbor: { shirt: C.neighbor.shirt, hair: C.neighbor.hair, skin: '#e8bf95', bag: '#3a9a6a' },
         influencer: { shirt: C.influencer.shirt, hair: C.influencer.hair, phone: true },
         foodie: { shirt: C.foodie.shirt, hair: C.foodie.hair, glasses: true },
-        rich: { shirt: C.rich.shirt, hair: C.rich.hair, shades: true, chain: true }
+        rich: { shirt: C.rich.shirt, hair: C.rich.hair, shades: true, chain: true },
+        hero: { shirt: '#f4f4f4', apron: '#c0392b', hair: '#7a4a26' },
+        inspector: { shirt: '#22325a', hair: '#2a1d16', hat: '#1b2848', bag: '#e8e2d0' },
+        landlord: { shirt: '#7a5230', hair: '#6a5a4a', skin: '#e2b48c', chain: true }
       };
       Object.keys(people).forEach(function (k) {
         [false, true].forEach(function (back) {
@@ -1533,27 +1683,70 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     var pt = this.toLogical(sx, sy);
     if (this.ui.tap(pt.x, pt.y)) return;
     if (pt.y < WORLD_TOP || pt.y > PANEL_Y) return;
-    var cell = this.pickCell(pt.x, pt.y);
-    if (!cell) return;
-    var gx = cell.x, gy = cell.y;
-    if (this.tab !== 'build' || !this.buildSel) {
-      var id = this.sim.grid[gy][gx];
-      if (id) this.toast(C.FAC[id].name);
-      return;
+    var sim = this.sim, sel = this.tab === 'build' ? this.buildSel : null, zone = sel && sel !== 'remove' ? C.FAC[sel].zone : null, err;
+    // 墙上的东西
+    var wall = this.pickWall(pt.x, pt.y);
+    if (zone === 'wall') {
+      if (!wall) { this.toast('点后墙挂上去'); return; }
+      err = sim.placeWall(sel, wall.side, wall.i);
+    } else if (zone === 'outside') {
+      err = sim.placeOutside(sel);
+    } else if (sel === 'remove' && this.hitSign(pt.x, pt.y)) {
+      err = sim.removeOutside('sign_stand');
+    } else if (sel === 'remove' && wall && sim.walls[wall.side][wall.i]) {
+      err = sim.removeWall(wall.side, wall.i);
+    } else {
+      var cell = this.pickCell(pt.x, pt.y);
+      if (!cell) {
+        if (!sel && wall && sim.walls[wall.side][wall.i]) this.toast(C.FAC[sim.walls[wall.side][wall.i]].name);
+        else if (!sel && this.hitSign(pt.x, pt.y)) this.toast(C.FAC.sign_stand.name);
+        return;
+      }
+      var a = sim.anchorOf(cell.x, cell.y);
+      if (!sel) {
+        var id = sim.grid[a.y][a.x];
+        if (id) this.toast(C.FAC[id].name);
+        return;
+      }
+      err = sel === 'remove' ? sim.remove(a.x, a.y) : sim.place(sel, cell.x, cell.y);
     }
-    var err = this.buildSel === 'remove' ? this.sim.remove(gx, gy) : this.sim.place(this.buildSel, gx, gy);
     if (err) this.toast(err);
     else this.save();
   };
+
+  // 点到哪面墙的第几格：墙面是一格宽、36 原生像素高的平行四边形
+  Game.prototype.pickWall = function (px, py) {
+    var h = 36 * K, i, a, b, t, ly;
+    for (i = 0; i < C.GRID_W; i++) {          // 右上墙：沿 x
+      a = iso(i, 0); b = iso(i + 1, 0);
+      if (px >= a.x && px < b.x) { t = (px - a.x) / (b.x - a.x); ly = a.y + t * (b.y - a.y); if (py <= ly && py >= ly - h) return { side: 'r', i: i }; }
+    }
+    for (i = 0; i < C.GRID_H; i++) {          // 左上墙：沿 y
+      a = iso(0, i); b = iso(0, i + 1);
+      if (px <= a.x && px > b.x) { t = (a.x - px) / (a.x - b.x); ly = a.y + t * (b.y - a.y); if (py <= ly && py >= ly - h) return { side: 'l', i: i }; }
+    }
+    return null;
+  };
+  Game.prototype.hitSign = function (px, py) {
+    if (!this.sim.outside.sign_stand) return false;
+    var p = iso(C.SIGN_SPOT.x, C.SIGN_SPOT.y);
+    return Math.abs(px - p.x) < 16 && py < p.y + 10 && py > p.y - 36;
+  };
+  // 设施图在屏幕上的位置：多格设施（卡座）按整块占地居中
+  function facRect(id, x, y) {
+    var s = G.Atlas.SPR[id], w = C.FAC[id].w || 1;
+    var cx = (iso(x, y + 1).x + iso(x + w, y).x) / 2, by = iso(x + w, y + 1).y;
+    return { x: cx - s.nw * K / 2, y: by - s.nh * K, w: s.nw * K, h: s.nh * K, cx: cx, by: by };
+  }
 
   // 点到哪一格：先看是不是点在某个设施的图上（从前往后找），再按地面菱形算
   Game.prototype.pickCell = function (px, py) {
     var sim = this.sim, best = null;
     for (var y = 0; y < C.GRID_H; y++) for (var x = 0; x < C.GRID_W; x++) {
-      if (!sim.grid[y][x]) continue;
-      var b = iso(x + 1, y + 1), s = G.Atlas.SPR[sim.grid[y][x]];
-      var w = s.nw * K * 0.7, h = s.nh * K;
-      if (px >= b.x - w / 2 && px <= b.x + w / 2 && py >= b.y - h && py <= b.y && (!best || x + y > best.x + best.y)) best = { x: x, y: y };
+      var id = sim.grid[y][x];
+      if (!id || C.FAC[id].ext) continue;
+      var rc = facRect(id, x, y), w = rc.w * 0.7;
+      if (px >= rc.cx - w / 2 && px <= rc.cx + w / 2 && py >= rc.y && py <= rc.by && (!best || x + y > best.x + best.y)) best = { x: x, y: y };
     }
     var g = unIso(px, py), gx = Math.floor(g.x), gy = Math.floor(g.y);
     var onGrid = gx >= 0 && gy >= 0 && gx < C.GRID_W && gy < C.GRID_H;
@@ -1678,6 +1871,9 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     // 后墙（右上边 y=0，左上边 x=0）
     for (x = 0; x < GW; x++) { p = iso(x, 0); A.drawN(r, 'wall_r', p.x, p.y - 36 * K, K); }
     for (y = 0; y < GH; y++) { p = iso(0, y); A.drawN(r, 'wall_l', p.x - 24 * K, p.y - 36 * K, K); }
+    // 墙上的东西：美术按左上墙画，挂右上墙时水平镜像
+    for (x = 0; x < GW; x++) if (sim.walls.r[x]) { p = iso(x, 0); A.drawN(r, sim.walls.r[x], p.x, p.y - 36 * K, K, true); }
+    for (y = 0; y < GH; y++) if (sim.walls.l[y]) { p = iso(0, y); A.drawN(r, sim.walls.l[y], p.x - 24 * K, p.y - 36 * K, K); }
     // 地板
     for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
       var z = sim.zoneOf(x, y);
@@ -1690,8 +1886,18 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     // 建造提示
     if (this.tab === 'build' && this.buildSel && sim.phase === 'prep') {
       var pulse = 0.25 + 0.1 * Math.sin(this.time * 5), rm = this.buildSel === 'remove';
+      var bz = rm ? null : C.FAC[this.buildSel].zone, bw = rm ? 1 : (C.FAC[this.buildSel].w || 1);
+      if (bz === 'wall' || rm) {
+        for (x = 0; x < GW; x++) if (!sim.walls.r[x] === !rm) { p = iso(x, 0); A.drawN(r, 'wall_r', p.x, p.y - 36 * K, K, false, rm ? 1 : 0.3, rm ? 0.3 : 1, 0.3, pulse * (rm ? 0.8 : 0.6)); }
+        for (y = 0; y < GH; y++) if (!sim.walls.l[y] === !rm) { p = iso(0, y); A.drawN(r, 'wall_l', p.x - 24 * K, p.y - 36 * K, K, false, rm ? 1 : 0.3, rm ? 0.3 : 1, 0.3, pulse * (rm ? 0.8 : 0.6)); }
+      }
+      if (bz === 'outside' && !sim.outside[this.buildSel]) {
+        p = iso(C.SIGN_SPOT.x - 0.5, C.SIGN_SPOT.y - 0.5);
+        A.drawN(r, 'tile_mask', p.x - TW / 2, p.y, K, false, 0.3, 1, 0.3, pulse);
+      }
       for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
-        var ok = rm ? !!sim.grid[y][x] : !sim.grid[y][x] && sim.zoneOf(x, y) === C.FAC[this.buildSel].zone;
+        var ok = rm ? (!!sim.grid[y][x]) : (bz !== 'wall' && bz !== 'outside');
+        for (var k = 0; ok && !rm && k < bw; k++) ok = x + k < GW && !sim.grid[y][x + k] && sim.zoneOf(x + k, y) === bz;
         if (!ok) continue;
         p = iso(x, y);
         A.drawN(r, 'tile_mask', p.x - TW / 2, p.y, K, false, rm ? 1 : 0.3, rm ? 0.3 : 1, 0.3, pulse);
@@ -1700,15 +1906,22 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     // 设施与人物按纵深（x+y）排序：越靠前（屏幕越下）越后画
     var draws = [];
     for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
-      if (sim.grid[y][x]) draws.push({ d: x + y + 1, k: 'fac', id: sim.grid[y][x], x: x, y: y });
+      var gid = sim.grid[y][x];
+      if (gid && !C.FAC[gid].ext) draws.push({ d: x + y + (C.FAC[gid].w || 1), k: 'fac', id: gid, x: x, y: y });
     }
+    if (sim.outside.sign_stand) draws.push({ d: C.SIGN_SPOT.x + C.SIGN_SPOT.y, k: 'sign' });
     sim.customers.forEach(function (c) { draws.push({ d: c.x + c.y, k: 'cust', c: c }); });
     sim.chefList.forEach(function (c, i) { draws.push({ d: c.x + c.y, k: 'chef', c: c, i: i }); });
     draws.sort(function (a, b) { return a.d - b.d; });
     draws.forEach(function (d) {
       if (d.k === 'fac') {
-        var s = A.SPR[d.id], b = iso(d.x + 1, d.y + 1);
-        A.drawN(r, d.id, b.x - s.nw * K / 2, b.y - s.nh * K, K);
+        var rc = facRect(d.id, d.x, d.y);
+        A.drawN(r, d.id, rc.x, rc.y, K);
+        return;
+      }
+      if (d.k === 'sign') {
+        var sp = iso(C.SIGN_SPOT.x, C.SIGN_SPOT.y);
+        A.drawN(r, 'sign_stand', sp.x - 24 * K, sp.y - 36 * K, K);
         return;
       }
       var c = d.c, name = d.k === 'chef' ? 'chef' : c.type;
@@ -1854,21 +2067,39 @@ if (typeof window !== 'undefined') window.__shaxian = G;
   Game.prototype.renderBuild = function (y0) {
     var ui = this.ui, sim = this.sim, self = this;
     var can = sim.phase === 'prep';
-    var items = C.FAC_ORDER.concat(['remove']);
-    items.forEach(function (id, i) {
-      var col = i % 4, row = Math.floor(i / 4);
-      var x = 10 + col * 86, y = y0 + row * 50;
-      var isRemove = id === 'remove';
-      var label = isRemove ? '拆除' : C.FAC[id].name;
-      var sub = isRemove ? '退一半钱' : '¥' + fmt(C.FAC[id].cost);
-      ui.button(x, y, 80, 44, label, { sub: sub, active: self.buildSel === id, disabled: !can, size: 13, bold: true,
-        fill: isRemove ? '#4a2a2a' : '#3b3145' }, function () {
-        self.buildSel = self.buildSel === id ? null : id;
-        if (self.buildSel) self.toast(isRemove ? '点设施拆除' : (C.FAC[id].zone === 'kitchen' ? '点后厨空地放置' : '点前厅空地放置'));
+    var page = this.buildPage || 0;
+    // 分页：厨房 / 前厅 / 装饰
+    C.BUILD_TABS.forEach(function (t, i) {
+      ui.button(10 + i * 62, y0 - 2, 58, 20, t[0], { active: page === i, size: 11, radius: 10, fill: '#2b2233' }, function () {
+        self.buildPage = i;
+        if (self.buildSel && self.buildSel !== 'remove' && t[1].indexOf(self.buildSel) < 0) self.buildSel = null;
       });
     });
-    if (!can) ui.text('营业中不能施工，打烊后再改', W / 2, y0 + 104, { size: 11, color: '#a99fb2', align: 'center' });
+    if (!can) ui.text('营业中不能施工', W - 14, y0 + 8, { size: 11, color: '#a99fb2', align: 'right' });
+    var items = C.BUILD_TABS[page][1].concat(['remove']);
+    var HINT = { kitchen: '点后厨空地放置', hall: '点前厅空地放置', wall: '点后墙挂上去', outside: '点门口放立牌' };
+    items.forEach(function (id, i) {
+      var col = i % 4, row = Math.floor(i / 4);
+      var x = 10 + col * 86, y = y0 + 24 + row * 38;
+      var isRemove = id === 'remove';
+      var f = isRemove ? null : C.FAC[id];
+      var label = isRemove ? '拆除' : f.name;
+      var sub = isRemove ? '退一半钱' : '¥' + fmt(f.cost) + (f.w > 1 ? ' · 占' + f.w + '格' : '');
+      ui.button(x, y, 80, 34, label, { sub: sub, active: self.buildSel === id, disabled: !can, size: 12, bold: true,
+        fill: isRemove ? '#4a2a2a' : '#3b3145' }, function () {
+        self.buildSel = self.buildSel === id ? null : id;
+        if (!self.buildSel) return;
+        if (isRemove) self.toast('点设施拆除');
+        else if (f.zone === 'outside') {
+          var err = sim.placeOutside(id);
+          self.toast(err || (f.name + '已摆在门口'));
+          if (!err) self.save();
+          self.buildSel = null;
+        } else self.toast(HINT[f.zone]);
+      });
+    });
   };
+
 
   Game.prototype.renderStaff = function (y0) {
     var ui = this.ui, sim = this.sim, self = this;

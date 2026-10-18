@@ -86,27 +86,70 @@
     var pt = this.toLogical(sx, sy);
     if (this.ui.tap(pt.x, pt.y)) return;
     if (pt.y < WORLD_TOP || pt.y > PANEL_Y) return;
-    var cell = this.pickCell(pt.x, pt.y);
-    if (!cell) return;
-    var gx = cell.x, gy = cell.y;
-    if (this.tab !== 'build' || !this.buildSel) {
-      var id = this.sim.grid[gy][gx];
-      if (id) this.toast(C.FAC[id].name);
-      return;
+    var sim = this.sim, sel = this.tab === 'build' ? this.buildSel : null, zone = sel && sel !== 'remove' ? C.FAC[sel].zone : null, err;
+    // 墙上的东西
+    var wall = this.pickWall(pt.x, pt.y);
+    if (zone === 'wall') {
+      if (!wall) { this.toast('点后墙挂上去'); return; }
+      err = sim.placeWall(sel, wall.side, wall.i);
+    } else if (zone === 'outside') {
+      err = sim.placeOutside(sel);
+    } else if (sel === 'remove' && this.hitSign(pt.x, pt.y)) {
+      err = sim.removeOutside('sign_stand');
+    } else if (sel === 'remove' && wall && sim.walls[wall.side][wall.i]) {
+      err = sim.removeWall(wall.side, wall.i);
+    } else {
+      var cell = this.pickCell(pt.x, pt.y);
+      if (!cell) {
+        if (!sel && wall && sim.walls[wall.side][wall.i]) this.toast(C.FAC[sim.walls[wall.side][wall.i]].name);
+        else if (!sel && this.hitSign(pt.x, pt.y)) this.toast(C.FAC.sign_stand.name);
+        return;
+      }
+      var a = sim.anchorOf(cell.x, cell.y);
+      if (!sel) {
+        var id = sim.grid[a.y][a.x];
+        if (id) this.toast(C.FAC[id].name);
+        return;
+      }
+      err = sel === 'remove' ? sim.remove(a.x, a.y) : sim.place(sel, cell.x, cell.y);
     }
-    var err = this.buildSel === 'remove' ? this.sim.remove(gx, gy) : this.sim.place(this.buildSel, gx, gy);
     if (err) this.toast(err);
     else this.save();
   };
+
+  // 点到哪面墙的第几格：墙面是一格宽、36 原生像素高的平行四边形
+  Game.prototype.pickWall = function (px, py) {
+    var h = 36 * K, i, a, b, t, ly;
+    for (i = 0; i < C.GRID_W; i++) {          // 右上墙：沿 x
+      a = iso(i, 0); b = iso(i + 1, 0);
+      if (px >= a.x && px < b.x) { t = (px - a.x) / (b.x - a.x); ly = a.y + t * (b.y - a.y); if (py <= ly && py >= ly - h) return { side: 'r', i: i }; }
+    }
+    for (i = 0; i < C.GRID_H; i++) {          // 左上墙：沿 y
+      a = iso(0, i); b = iso(0, i + 1);
+      if (px <= a.x && px > b.x) { t = (a.x - px) / (a.x - b.x); ly = a.y + t * (b.y - a.y); if (py <= ly && py >= ly - h) return { side: 'l', i: i }; }
+    }
+    return null;
+  };
+  Game.prototype.hitSign = function (px, py) {
+    if (!this.sim.outside.sign_stand) return false;
+    var p = iso(C.SIGN_SPOT.x, C.SIGN_SPOT.y);
+    return Math.abs(px - p.x) < 16 && py < p.y + 10 && py > p.y - 36;
+  };
+  // 设施图在屏幕上的位置：多格设施（卡座）按整块占地居中
+  function facRect(id, x, y) {
+    var s = G.Atlas.SPR[id], w = C.FAC[id].w || 1;
+    var cx = (iso(x, y + 1).x + iso(x + w, y).x) / 2, by = iso(x + w, y + 1).y;
+    return { x: cx - s.nw * K / 2, y: by - s.nh * K, w: s.nw * K, h: s.nh * K, cx: cx, by: by };
+  }
 
   // 点到哪一格：先看是不是点在某个设施的图上（从前往后找），再按地面菱形算
   Game.prototype.pickCell = function (px, py) {
     var sim = this.sim, best = null;
     for (var y = 0; y < C.GRID_H; y++) for (var x = 0; x < C.GRID_W; x++) {
-      if (!sim.grid[y][x]) continue;
-      var b = iso(x + 1, y + 1), s = G.Atlas.SPR[sim.grid[y][x]];
-      var w = s.nw * K * 0.7, h = s.nh * K;
-      if (px >= b.x - w / 2 && px <= b.x + w / 2 && py >= b.y - h && py <= b.y && (!best || x + y > best.x + best.y)) best = { x: x, y: y };
+      var id = sim.grid[y][x];
+      if (!id || C.FAC[id].ext) continue;
+      var rc = facRect(id, x, y), w = rc.w * 0.7;
+      if (px >= rc.cx - w / 2 && px <= rc.cx + w / 2 && py >= rc.y && py <= rc.by && (!best || x + y > best.x + best.y)) best = { x: x, y: y };
     }
     var g = unIso(px, py), gx = Math.floor(g.x), gy = Math.floor(g.y);
     var onGrid = gx >= 0 && gy >= 0 && gx < C.GRID_W && gy < C.GRID_H;
@@ -231,6 +274,9 @@
     // 后墙（右上边 y=0，左上边 x=0）
     for (x = 0; x < GW; x++) { p = iso(x, 0); A.drawN(r, 'wall_r', p.x, p.y - 36 * K, K); }
     for (y = 0; y < GH; y++) { p = iso(0, y); A.drawN(r, 'wall_l', p.x - 24 * K, p.y - 36 * K, K); }
+    // 墙上的东西：美术按左上墙画，挂右上墙时水平镜像
+    for (x = 0; x < GW; x++) if (sim.walls.r[x]) { p = iso(x, 0); A.drawN(r, sim.walls.r[x], p.x, p.y - 36 * K, K, true); }
+    for (y = 0; y < GH; y++) if (sim.walls.l[y]) { p = iso(0, y); A.drawN(r, sim.walls.l[y], p.x - 24 * K, p.y - 36 * K, K); }
     // 地板
     for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
       var z = sim.zoneOf(x, y);
@@ -243,8 +289,18 @@
     // 建造提示
     if (this.tab === 'build' && this.buildSel && sim.phase === 'prep') {
       var pulse = 0.25 + 0.1 * Math.sin(this.time * 5), rm = this.buildSel === 'remove';
+      var bz = rm ? null : C.FAC[this.buildSel].zone, bw = rm ? 1 : (C.FAC[this.buildSel].w || 1);
+      if (bz === 'wall' || rm) {
+        for (x = 0; x < GW; x++) if (!sim.walls.r[x] === !rm) { p = iso(x, 0); A.drawN(r, 'wall_r', p.x, p.y - 36 * K, K, false, rm ? 1 : 0.3, rm ? 0.3 : 1, 0.3, pulse * (rm ? 0.8 : 0.6)); }
+        for (y = 0; y < GH; y++) if (!sim.walls.l[y] === !rm) { p = iso(0, y); A.drawN(r, 'wall_l', p.x - 24 * K, p.y - 36 * K, K, false, rm ? 1 : 0.3, rm ? 0.3 : 1, 0.3, pulse * (rm ? 0.8 : 0.6)); }
+      }
+      if (bz === 'outside' && !sim.outside[this.buildSel]) {
+        p = iso(C.SIGN_SPOT.x - 0.5, C.SIGN_SPOT.y - 0.5);
+        A.drawN(r, 'tile_mask', p.x - TW / 2, p.y, K, false, 0.3, 1, 0.3, pulse);
+      }
       for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
-        var ok = rm ? !!sim.grid[y][x] : !sim.grid[y][x] && sim.zoneOf(x, y) === C.FAC[this.buildSel].zone;
+        var ok = rm ? (!!sim.grid[y][x]) : (bz !== 'wall' && bz !== 'outside');
+        for (var k = 0; ok && !rm && k < bw; k++) ok = x + k < GW && !sim.grid[y][x + k] && sim.zoneOf(x + k, y) === bz;
         if (!ok) continue;
         p = iso(x, y);
         A.drawN(r, 'tile_mask', p.x - TW / 2, p.y, K, false, rm ? 1 : 0.3, rm ? 0.3 : 1, 0.3, pulse);
@@ -253,15 +309,22 @@
     // 设施与人物按纵深（x+y）排序：越靠前（屏幕越下）越后画
     var draws = [];
     for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
-      if (sim.grid[y][x]) draws.push({ d: x + y + 1, k: 'fac', id: sim.grid[y][x], x: x, y: y });
+      var gid = sim.grid[y][x];
+      if (gid && !C.FAC[gid].ext) draws.push({ d: x + y + (C.FAC[gid].w || 1), k: 'fac', id: gid, x: x, y: y });
     }
+    if (sim.outside.sign_stand) draws.push({ d: C.SIGN_SPOT.x + C.SIGN_SPOT.y, k: 'sign' });
     sim.customers.forEach(function (c) { draws.push({ d: c.x + c.y, k: 'cust', c: c }); });
     sim.chefList.forEach(function (c, i) { draws.push({ d: c.x + c.y, k: 'chef', c: c, i: i }); });
     draws.sort(function (a, b) { return a.d - b.d; });
     draws.forEach(function (d) {
       if (d.k === 'fac') {
-        var s = A.SPR[d.id], b = iso(d.x + 1, d.y + 1);
-        A.drawN(r, d.id, b.x - s.nw * K / 2, b.y - s.nh * K, K);
+        var rc = facRect(d.id, d.x, d.y);
+        A.drawN(r, d.id, rc.x, rc.y, K);
+        return;
+      }
+      if (d.k === 'sign') {
+        var sp = iso(C.SIGN_SPOT.x, C.SIGN_SPOT.y);
+        A.drawN(r, 'sign_stand', sp.x - 24 * K, sp.y - 36 * K, K);
         return;
       }
       var c = d.c, name = d.k === 'chef' ? 'chef' : c.type;
@@ -407,21 +470,39 @@
   Game.prototype.renderBuild = function (y0) {
     var ui = this.ui, sim = this.sim, self = this;
     var can = sim.phase === 'prep';
-    var items = C.FAC_ORDER.concat(['remove']);
-    items.forEach(function (id, i) {
-      var col = i % 4, row = Math.floor(i / 4);
-      var x = 10 + col * 86, y = y0 + row * 50;
-      var isRemove = id === 'remove';
-      var label = isRemove ? '拆除' : C.FAC[id].name;
-      var sub = isRemove ? '退一半钱' : '¥' + fmt(C.FAC[id].cost);
-      ui.button(x, y, 80, 44, label, { sub: sub, active: self.buildSel === id, disabled: !can, size: 13, bold: true,
-        fill: isRemove ? '#4a2a2a' : '#3b3145' }, function () {
-        self.buildSel = self.buildSel === id ? null : id;
-        if (self.buildSel) self.toast(isRemove ? '点设施拆除' : (C.FAC[id].zone === 'kitchen' ? '点后厨空地放置' : '点前厅空地放置'));
+    var page = this.buildPage || 0;
+    // 分页：厨房 / 前厅 / 装饰
+    C.BUILD_TABS.forEach(function (t, i) {
+      ui.button(10 + i * 62, y0 - 2, 58, 20, t[0], { active: page === i, size: 11, radius: 10, fill: '#2b2233' }, function () {
+        self.buildPage = i;
+        if (self.buildSel && self.buildSel !== 'remove' && t[1].indexOf(self.buildSel) < 0) self.buildSel = null;
       });
     });
-    if (!can) ui.text('营业中不能施工，打烊后再改', W / 2, y0 + 104, { size: 11, color: '#a99fb2', align: 'center' });
+    if (!can) ui.text('营业中不能施工', W - 14, y0 + 8, { size: 11, color: '#a99fb2', align: 'right' });
+    var items = C.BUILD_TABS[page][1].concat(['remove']);
+    var HINT = { kitchen: '点后厨空地放置', hall: '点前厅空地放置', wall: '点后墙挂上去', outside: '点门口放立牌' };
+    items.forEach(function (id, i) {
+      var col = i % 4, row = Math.floor(i / 4);
+      var x = 10 + col * 86, y = y0 + 24 + row * 38;
+      var isRemove = id === 'remove';
+      var f = isRemove ? null : C.FAC[id];
+      var label = isRemove ? '拆除' : f.name;
+      var sub = isRemove ? '退一半钱' : '¥' + fmt(f.cost) + (f.w > 1 ? ' · 占' + f.w + '格' : '');
+      ui.button(x, y, 80, 34, label, { sub: sub, active: self.buildSel === id, disabled: !can, size: 12, bold: true,
+        fill: isRemove ? '#4a2a2a' : '#3b3145' }, function () {
+        self.buildSel = self.buildSel === id ? null : id;
+        if (!self.buildSel) return;
+        if (isRemove) self.toast('点设施拆除');
+        else if (f.zone === 'outside') {
+          var err = sim.placeOutside(id);
+          self.toast(err || (f.name + '已摆在门口'));
+          if (!err) self.save();
+          self.buildSel = null;
+        } else self.toast(HINT[f.zone]);
+      });
+    });
   };
+
 
   Game.prototype.renderStaff = function (y0) {
     var ui = this.ui, sim = this.sim, self = this;

@@ -33,6 +33,8 @@
     this.x = this.c.getContext('2d');
     this.w = w; this.h = h; this.S = S || 1;
     this.dw = w / this.S; this.dh = h / this.S;
+    // 占地菱形的「后角」在设计坐标里的位置：单格设施在图宽中间、离底 16
+    this.cx = this.dw / 2; this.cy = this.dh - 16;
   }
   Pen.prototype.px = function (x, y, w, h, c) {
     var S = this.S, l = Math.round(x * S), t = Math.round(y * S);
@@ -70,7 +72,7 @@
     }
   };
   // 等距坐标：(u,v) 是占地格内的位置（0–1），z 是离地高度（像素格）
-  Pen.prototype.P = function (u, v, z) { return [this.dw / 2 + (u - v) * 16, this.dh - 16 + (u + v) * 8 - (z || 0)]; };
+  Pen.prototype.P = function (u, v, z) { return [this.cx + (u - v) * 16, this.cy + (u + v) * 8 - (z || 0)]; };
   Pen.prototype.box = function (u0, v0, u1, v1, z0, z1, top, left, right) {
     var P = this.P.bind(this);
     this.poly([P(u0, v1, z0), P(u1, v1, z0), P(u1, v1, z1), P(u0, v1, z1)], left);
@@ -119,6 +121,12 @@
       p.poly([P(u0, 0.85, 2), P(u0 + 0.38, 0.85, 2), P(u0 + 0.38, 0.85, 9), P(u0, 0.85, 9)], '#7a8188');
       var h = P(u0 + 0.31, 0.85, 6); p.px(h[0], h[1], 1, 1, '#2e3035');
     });
+  }
+
+  // 左上墙面上的平行四边形：x0–x1 是横向范围（设计坐标 0–16），top 是离墙顶的距离，h 是高度
+  function wallRect(p, x0, x1, top, h, c) {
+    var y = function (x) { return 8 - x / 2 + top; };
+    p.poly([[x0, y(x0)], [x1, y(x1)], [x1, y(x1) + h], [x0, y(x0) + h]], c);
   }
 
   var DRAW = {
@@ -213,6 +221,58 @@
       p.box(0.3, 0.25, 0.75, 0.55, 22, 27, '#eeeeee', '#cfcfcf', '#a8a8a8');
       var l = p.P(0.75, 0.4, 25); p.px(l[0], l[1] - 1, 2, 2, '#222'); var r = p.P(0.4, 0.55, 25); p.px(r[0], r[1], 1, 1, '#ff3333');
     },
+    fridge: function (p) {
+      p.box(0.12, 0.2, 0.88, 0.8, 0, 38, '#c9cfd4', '#a3aab1', '#7d848c');
+      var P = p.P.bind(p);
+      p.poly([P(0.12, 0.8, 22), P(0.88, 0.8, 22), P(0.88, 0.8, 23), P(0.12, 0.8, 23)], '#5b5f66');
+      p.poly([P(0.5, 0.8, 1), P(0.53, 0.8, 1), P(0.53, 0.8, 21), P(0.5, 0.8, 21)], '#5b5f66');
+      var h1 = P(0.42, 0.8, 30), h2 = P(0.6, 0.8, 12);
+      p.px(h1[0], h1[1] - 4, 1, 4, '#3a3d42'); p.px(h2[0], h2[1] - 4, 1, 4, '#3a3d42');
+      var n = P(0.25, 0.8, 32); p.px(n[0], n[1], 4, 3, '#f4e9a0');
+    },
+    counter: function (p) {
+      p.box(0.15, 0.25, 0.85, 0.85, 0, 13, '#b8854f', '#9c6a3a', '#6e4520');
+      var P = p.P.bind(p);
+      p.poly([P(0.2, 0.85, 4), P(0.8, 0.85, 4), P(0.8, 0.85, 10), P(0.2, 0.85, 10)], '#8a5a2e');
+      var q = P(0.35, 0.5, 13); p.px(q[0] - 1, q[1] - 7, 4, 7, '#f4f4f4'); p.px(q[0], q[1] - 6, 2, 2, '#2a1d16');
+      var k = P(0.65, 0.55, 13); p.px(k[0] - 2, k[1] - 2, 5, 2, '#3a3d42'); p.px(k[0] - 1, k[1] - 2, 3, 1, '#9fd5a8');
+    },
+    takeout: function (p) {
+      p.box(0.15, 0.25, 0.85, 0.85, 0, 9, '#a3aab1', '#7d848c', '#5b5f66');
+      [[0.35, 0.5], [0.62, 0.55]].forEach(function (uv) {
+        var b = p.P(uv[0], uv[1], 9);
+        p.px(b[0] - 3, b[1] - 8, 7, 8, '#f4f4f4'); p.px(b[0] - 3, b[1] - 8, 7, 1, '#d8d8d8');
+        p.px(b[0] - 1, b[1] - 10, 1, 2, '#c0392b'); p.px(b[0] + 2, b[1] - 10, 1, 2, '#c0392b');
+      });
+    },
+    sign_stand: function (p) {
+      var P = p.P.bind(p);
+      var a = P(0.25, 0.5, 0), b = P(0.75, 0.5, 0);
+      p.poly([[a[0], a[1]], [a[0] + 2, a[1]], [a[0] + 7, a[1] - 26], [a[0] + 5, a[1] - 26]], '#6e4520');
+      p.poly([[b[0], b[1]], [b[0] - 2, b[1]], [b[0] - 7, b[1] - 26], [b[0] - 5, b[1] - 26]], '#6e4520');
+      p.poly([P(0.28, 0.5, 6), P(0.72, 0.5, 6), P(0.67, 0.5, 26), P(0.33, 0.5, 26)], '#9c6a3a');
+      p.poly([P(0.32, 0.5, 8), P(0.68, 0.5, 8), P(0.64, 0.5, 24), P(0.36, 0.5, 24)], '#c0392b');
+    },
+    booth: function (p) {
+      // 两格：u 0–2，v 0–1。后面一排红色长椅（客人坐这里），前面一张长桌
+      p.box(0.1, 0.05, 1.9, 0.35, 0, 7, '#d0402a', '#a83020', '#7a2016');
+      p.box(0.1, 0.05, 1.9, 0.15, 7, 18, '#d0402a', '#a83020', '#7a2016');
+      [0.3, 1.7].forEach(function (u) { var l = p.P(u, 0.75, 0); p.px(l[0], l[1] - 9, 1, 9, '#4a3015'); });
+      p.box(0.2, 0.45, 1.8, 0.85, 9, 11, '#b8854f', '#9c6a3a', '#6e4520');
+      [0.6, 1.4].forEach(function (u) { var c = p.P(u, 0.65, 11); p.ellipse(c[0], c[1], 3, 1.5, '#3a6fb0'); p.ellipse(c[0], c[1], 2, 1, '#f4f4f4'); });
+    },
+    wall_fan: function (p) {
+      wallRect(p, 6, 10, 9, 1, '#3a3d42');
+      var c = [8, 8 - 8 / 2 + 7];
+      p.ellipse(c[0], c[1], 4, 4, '#2e3035'); p.ellipse(c[0], c[1], 3, 3, '#5b5f66');
+      p.px(c[0] - 1, c[1] - 3, 1, 6, '#2a2a2e'); p.px(c[0] - 3, c[1] - 1, 6, 1, '#2a2a2e'); p.px(c[0] - 1, c[1] - 1, 2, 2, '#c0392b');
+    },
+    poster: function (p) {
+      wallRect(p, 3, 13, 3, 12, '#c0392b');
+      wallRect(p, 4, 12, 4, 10, '#f4e2b8');
+      var c = [8, 8 - 4 + 10];
+      p.ellipse(c[0], c[1], 3, 1.5, '#f4f4f4'); p.px(c[0] - 2, c[1] - 2, 4, 1, '#e8c35a'); p.px(c[0] - 1, c[1] - 3, 1, 1, '#3cb371');
+    },
     bowl: function (p) {
       p.px(4, 6, 8, 3, '#e8c35a'); p.px(5, 5, 6, 1, '#f0d27a');
       p.px(3, 8, 10, 3, '#ffffff'); p.px(4, 11, 8, 1, '#e6e6e6'); p.px(3, 8, 10, 1, '#3a6fb0');
@@ -224,7 +284,9 @@
     floor_hall: [48, 24], floor_kitchen: [48, 24], door: [48, 24], sidewalk: [48, 24], street: [48, 24], tile_mask: [48, 24],
     wall_r: [24, 48], wall_l: [24, 48], edge_l: [24, 18], edge_r: [24, 18],
     stove: [48, 48, 1], steamer: [48, 48, 1], pot: [48, 48, 1], table: [48, 48, 1], plant: [48, 48, 1], banner: [48, 48, 1], camera: [48, 48, 1],
-    bowl: [24, 24]
+    bowl: [24, 24],
+    fridge: [48, 64, 1], counter: [48, 48, 1], takeout: [48, 48, 1], sign_stand: [48, 48, 1],
+    booth: [72, 60, 1], wall_fan: [24, 48], poster: [24, 48]
   };
   var DESIGN_S = 1.5;
 
@@ -274,6 +336,7 @@
       ctx.fillStyle = '#fff'; ctx.fillRect(white.x, white.y, white.w, white.h);
       Object.keys(SIZE).forEach(function (name) {
         var sz = SIZE[name], pen = new Pen(platform, sz[0], sz[1], name === 'bowl' ? 1.5 : DESIGN_S);
+        if (name === 'booth') { pen.cx = pen.dw / 2 - 8; pen.cy = pen.dh - 24; }   // 两格占地
         DRAW[name](pen);
         if (sz[2]) pen.outline();
         put(name, pen);
@@ -284,7 +347,10 @@
         neighbor: { shirt: C.neighbor.shirt, hair: C.neighbor.hair, skin: '#e8bf95', bag: '#3a9a6a' },
         influencer: { shirt: C.influencer.shirt, hair: C.influencer.hair, phone: true },
         foodie: { shirt: C.foodie.shirt, hair: C.foodie.hair, glasses: true },
-        rich: { shirt: C.rich.shirt, hair: C.rich.hair, shades: true, chain: true }
+        rich: { shirt: C.rich.shirt, hair: C.rich.hair, shades: true, chain: true },
+        hero: { shirt: '#f4f4f4', apron: '#c0392b', hair: '#7a4a26' },
+        inspector: { shirt: '#22325a', hair: '#2a1d16', hat: '#1b2848', bag: '#e8e2d0' },
+        landlord: { shirt: '#7a5230', hair: '#6a5a4a', skin: '#e2b48c', chain: true }
       };
       Object.keys(people).forEach(function (k) {
         [false, true].forEach(function (back) {
