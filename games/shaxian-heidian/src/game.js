@@ -426,10 +426,13 @@
   Game.prototype.renderStaff = function (y0) {
     var ui = this.ui, sim = this.sim, self = this;
     ui.text('厨师 ×' + sim.chefs + '（上限 ' + C.MAX_CHEFS + '）', 14, y0 + 12, { size: 14, bold: true });
-    ui.text('日薪 ¥' + C.CHEF_SALARY + '/人，打烊结算。一个厨师同时做一份菜。', 14, y0 + 34, { size: 11, color: '#a99fb2' });
+    ui.text('日薪合计 ¥' + sim.salaryTotal() + '，打烊结算。一个厨师同时做一份菜。', 14, y0 + 34, { size: 11, color: '#a99fb2' });
     ui.text('座位 ' + sim.seats.length + ' 个 · 灶位 ' + sim.stations.length + ' 个', 14, y0 + 52, { size: 11, color: '#a99fb2' });
-    var can = sim.phase === 'prep' && sim.chefs < C.MAX_CHEFS;
-    ui.button(14, y0 + 66, 160, 34, '招聘厨师', { sub: '¥' + fmt(C.CHEF_COST), disabled: !can, bold: true }, function () {
+    // 临时：只显示第一个应聘者。正式的员工面板（四维属性、挑人、培训）另做
+    var cand = sim.candidates[0];
+    var can = sim.phase === 'prep' && sim.chefs < C.MAX_CHEFS && !!cand;
+    var sub = cand ? cand.name + ' 厨' + cand.cook + ' 服' + cand.serve + ' 魅' + cand.charm + ' 心' + cand.heart + ' ¥' + fmt(cand.fee) : '今天没人应聘';
+    ui.button(14, y0 + 66, 220, 34, '招聘厨师', { sub: sub, disabled: !can, bold: true }, function () {
       var err = sim.hireChef();
       if (err) self.toast(err); else { self.toast('新厨师到岗'); self.save(); }
     });

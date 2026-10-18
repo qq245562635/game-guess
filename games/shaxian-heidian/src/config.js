@@ -3,7 +3,7 @@
 // 换皮（剧名/角色名/剧情）只改 TEXT 与 STORY。
 // ============================================================
 G.CFG = {
-  VERSION: 1,
+  VERSION: 2,              // 2：员工四维属性；v1 存档在 sim.load 里换算
   SAVE_KEY: 'shaxian_save_v1',
 
   // 广告：微信激励视频广告位 ID，上线前替换
@@ -22,7 +22,31 @@ G.CFG = {
   RENT: [20000, 25000, 40000, 50000],   // 第 1–3 月及之后每月的房租
   RENT_DELAY_DAYS: 3,
   AD_BONUS_RATE: 0.5,            // 看广告：当日营收额外 +50%
-  CHEF_COST: 2000, CHEF_SALARY: 150, MAX_CHEFS: 4,
+  MAX_CHEFS: 4,                  // 员工的签约费、日薪看下面 STAFF
+
+  // 员工四维属性（参照开罗《游戏发展国》）。30 为“普通”，各项效果以 30 为基准上下浮动。
+  STAFF: {
+    ATTRS: ['cook', 'serve', 'charm', 'heart'],
+    ATTR_NAMES: { cook: '厨艺', serve: '服务', charm: '魅力', heart: '心眼' },
+    ROLL: [10, 50],          // 应聘者每项属性随机范围
+    CAP: 99,                 // 培训上限
+    MID: 30,                 // 基准值
+    CANDIDATES: 3,           // 每天开店前的应聘人数
+    SALARY_PER_PT: 1.25,     // 日薪 = 四项总和 × 此值
+    HIRE_PER_PT: 16,         // 签约费 = 四项总和 × 此值
+    TRAIN_BASE: 400, TRAIN_PER_PT: 15, TRAIN_GAIN: [3, 8],   // 培训费 = BASE + 当前值 × PER_PT
+    // 每偏离基准 1 点的效果
+    COOK_SPEED: 0.005,       // 厨艺：做菜时间 -0.5%/点（自己做的菜）
+    COOK_TASTE: 0.15,        // 厨艺：全店平均厨艺每点 +0.15 味道
+    SERVE_PATIENCE: 0.006,   // 服务：客人耐心 +0.6%/点
+    SERVE_REP: 0.01,         // 服务：好评加口碑 +1%/点
+    CHARM_FLOW: 0.025,       // 魅力：网红、富豪来店权重 +2.5%/点
+    HEART_COMPLAIN: 0.02,    // 心眼：嫌贵投诉概率 -2%/点
+    HEART_BLACK: 0.015,      // 心眼：卖系统价/半价涨的黑店值 -1.5%/点
+    HEART_FINE: 0.015,       // 心眼：检查罚款 -1.5%/点
+    FIRST: { name: '李知白', cook: 30, serve: 30, charm: 30, heart: 30 },   // 开局自带的厨师（主角）
+    NAMES: ['阿强', '小美', '老王', '春花', '大刘', '阿芳', '小陈', '胖哥', '秀英', '阿杰', '小雨', '老林', '阿娟', '铁柱', '小周', '翠兰']
+  },
 
   // 客流
   BASE_FLOW: 24,
