@@ -42,6 +42,8 @@
     }
     var self = this;
     C.START_LAYOUT.forEach(function (f) { self.grid[f.y][f.x] = f.id; });
+    this.walls = emptyWalls();
+    this.outside = {};
     this.prices = {};
     C.DISH_ORDER.forEach(function (d) { self.prices[d] = 2; });
     this.gameOver = false;
@@ -113,13 +115,19 @@
     return null;
   };
 
+  function emptyWalls() {
+    var w = { l: [], r: [] };
+    for (var i = 0; i < 8; i++) { w.l.push(null); w.r.push(null); }
+    return w;
+  }
+
   // ---------- 存档 ----------
   Sim.prototype.serialize = function () {
     return {
       v: C.VERSION, cash: this.cash, day: this.day, month: this.month,
       rentDue: this.rentDue, rentDelayUsed: this.rentDelayUsed,
       rep: this.rep, black: this.black, favor: this.favor, staff: this.staff,
-      flags: this.flags, grid: this.grid, prices: this.prices
+      flags: this.flags, grid: this.grid, prices: this.prices, walls: this.walls, outside: this.outside
     };
   };
   Sim.prototype.load = function (s) {
@@ -136,6 +144,8 @@
       this.staff = s.staff;
     }
     this.chefs = this.staff.length;
+    this.walls = s.walls || emptyWalls();
+    this.outside = s.outside || {};
     this.rollCandidates();
     this.gameOver = false;
     this.resetDay();
@@ -166,7 +176,20 @@
   Sim.prototype.count = function (id) {
     var n = 0;
     for (var y = 0; y < C.GRID_H; y++) for (var x = 0; x < C.GRID_W; x++) if (this.grid[y][x] === id) n++;
+    this.walls.l.concat(this.walls.r).forEach(function (w) { if (w === id) n++; });
+    if (this.outside[id]) n++;
     return n;
+  };
+  // 所有已建设施（含墙上、门口），按 id 列出
+  Sim.prototype.allFac = function () {
+    var out = [];
+    for (var y = 0; y < C.GRID_H; y++) for (var x = 0; x < C.GRID_W; x++) {
+      var id = this.grid[y][x];
+      if (id && !C.FAC[id].ext) out.push(id);
+    }
+    this.walls.l.concat(this.walls.r).forEach(function (w) { if (w) out.push(w); });
+    for (var k in this.outside) if (this.outside[k]) out.push(k);
+    return out;
   };
   Sim.prototype.hasStation = function (station) {
     for (var y = 0; y < C.GRID_H; y++) for (var x = 0; x < C.GRID_W; x++) {
@@ -178,10 +201,7 @@
   Sim.prototype.dishAvailable = function (d) { return this.hasStation(C.DISH[d].station); };
   Sim.prototype.envMul = function () {
     var e = 0;
-    for (var y = 0; y < C.GRID_H; y++) for (var x = 0; x < C.GRID_W; x++) {
-      var id = this.grid[y][x];
-      if (id && C.FAC[id].env) e += C.FAC[id].env;
-    }
+    this.allFac().forEach(function (id) { e += C.FAC[id].env || 0; });
     return 1 + Math.min(e, 0.3);
   };
   Sim.prototype.antiReport = function () { return this.count('camera') > 0 ? C.FAC.camera.antiReport : 0; };
@@ -190,24 +210,68 @@
   Sim.prototype.canBuild = function () { return this.phase === 'prep'; };
   Sim.prototype.place = function (id, x, y) {
     if (!this.canBuild()) return '营业中不能施工';
-    var f = C.FAC[id];
-    if (this.grid[y][x]) return '这里已经有东西了';
-    var z = this.zoneOf(x, y);
-    if (z === 'door') return '门口不能堵';
-    if (z !== f.zone) return f.zone === 'kitchen' ? '只能放在后厨' : '只能放在前厅';
+    var f = C.FAC[id], w = f.w || 1;
+    if (f.zone === 'wall' || f.zone === 'outside') return '点墙面或门口放置';
+    for (var i = 0; i < w; i++) {
+      if (x + i >= C.GRID_W) return '放不下';
+      if (this.grid[y][x + i]) return '这里已经有东西了';
+      var z = this.zoneOf(x + i, y);
+      if (z === 'door') return '门口不能堵';
+      if (z !== f.zone) return f.zone === 'kitchen' ? '只能放在后厨' : '只能放在前厅';
+    }
     if (this.cash < f.cost) return '钱不够';
     this.cash -= f.cost;
     this.grid[y][x] = id;
+    for (i = 1; i < w; i++) this.grid[y][x + i] = '_ext';
     this.resetDay();
     return null;
   };
+  // 多格设施：给任一格，返回主格坐标
+  Sim.prototype.anchorOf = function (x, y) {
+    while (x > 0 && this.grid[y][x] === '_ext') x--;
+    return { x: x, y: y };
+  };
   Sim.prototype.remove = function (x, y) {
     if (!this.canBuild()) return '营业中不能施工';
-    var id = this.grid[y][x];
+    var a = this.anchorOf(x, y), id = this.grid[a.y][a.x];
     if (!id) return '这里是空的';
     this.cash += Math.floor(C.FAC[id].cost / 2);
-    this.grid[y][x] = null;
+    var w = C.FAC[id].w || 1;
+    for (var i = 0; i < w; i++) this.grid[a.y][a.x + i] = null;
     this.resetDay();
+    return null;
+  };
+  // 墙上：side = 'l'（左上墙，沿 y）| 'r'（右上墙，沿 x），i = 第几格
+  Sim.prototype.placeWall = function (id, side, i) {
+    if (!this.canBuild()) return '营业中不能施工';
+    if (C.FAC[id].zone !== 'wall') return '这个不能挂墙上';
+    if (this.walls[side][i]) return '这里已经挂了东西';
+    if (this.cash < C.FAC[id].cost) return '钱不够';
+    this.cash -= C.FAC[id].cost;
+    this.walls[side][i] = id;
+    return null;
+  };
+  Sim.prototype.removeWall = function (side, i) {
+    if (!this.canBuild()) return '营业中不能施工';
+    var id = this.walls[side][i];
+    if (!id) return '这里是空的';
+    this.cash += Math.floor(C.FAC[id].cost / 2);
+    this.walls[side][i] = null;
+    return null;
+  };
+  Sim.prototype.placeOutside = function (id) {
+    if (!this.canBuild()) return '营业中不能施工';
+    if (this.outside[id]) return '门口已经有了';
+    if (this.cash < C.FAC[id].cost) return '钱不够';
+    this.cash -= C.FAC[id].cost;
+    this.outside[id] = true;
+    return null;
+  };
+  Sim.prototype.removeOutside = function (id) {
+    if (!this.canBuild()) return '营业中不能施工';
+    if (!this.outside[id]) return '这里是空的';
+    this.cash += Math.floor(C.FAC[id].cost / 2);
+    this.outside[id] = false;
     return null;
   };
   Sim.prototype.setPrice = function (d, tier) { this.prices[d] = tier; };
@@ -227,6 +291,7 @@
       var f = C.FAC[id];
       if (f.station) this.stations.push({ type: f.station, x: x, y: y, busy: null });
       if (f.seat) this.seats.push({ x: x, y: y, occ: null });
+      for (var si = 0; si < (f.seats || 0); si++) this.seats.push({ x: x + si, y: y, occ: null });
     }
     this.chefList = [];
     for (var i = 0; i < this.chefs; i++) {

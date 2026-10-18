@@ -70,17 +70,36 @@ G.CFG = {
     { id: 'table', x: 5, y: 3 }, { id: 'table', x: 6, y: 3 }
   ],
 
-  // 设施：zone = kitchen（后厨两行）| hall（前厅）
+  // 设施：zone = kitchen（后厨两行）| hall（前厅）| wall（挂在后墙上）| outside（店门口人行道，固定位置）
+  //   w: 占几格（沿 x 方向），默认 1；seats: 提供几个座位（seat: true 等于 1 个）
+  //   env: 环境加成（菜品口味系数，所有设施合计最多 +30%）
+  // P1 装饰（fridge 起）的数值是占位，只给小额环境加成，玩法效果等制作人定。
   FAC: {
-    stove:   { name: '灶台',   cost: 800,  zone: 'kitchen', station: 'stove' },
-    steamer: { name: '蒸笼',   cost: 1000, zone: 'kitchen', station: 'steamer' },
-    pot:     { name: '汤锅',   cost: 1200, zone: 'kitchen', station: 'pot' },
-    table:   { name: '桌椅',   cost: 300,  zone: 'hall', seat: true },
-    plant:   { name: '发财树', cost: 600,  zone: 'hall', env: 0.04 },
-    banner:  { name: '锦旗墙', cost: 1500, zone: 'hall', env: 0.08 },
-    camera:  { name: '监控',   cost: 2000, zone: 'hall', antiReport: 0.5 }
+    stove:      { name: '灶台',   cost: 800,  zone: 'kitchen', station: 'stove' },
+    steamer:    { name: '蒸笼',   cost: 1000, zone: 'kitchen', station: 'steamer' },
+    pot:        { name: '汤锅',   cost: 1200, zone: 'kitchen', station: 'pot' },
+    fridge:     { name: '冰箱',   cost: 1500, zone: 'kitchen', env: 0.02 },
+    table:      { name: '桌椅',   cost: 300,  zone: 'hall', seat: true },
+    booth:      { name: '卡座',   cost: 900,  zone: 'hall', w: 2, seats: 2, env: 0.02 },
+    counter:    { name: '收银台', cost: 1200, zone: 'hall', env: 0.03 },
+    takeout:    { name: '外卖台', cost: 1000, zone: 'hall', env: 0.03 },
+    plant:      { name: '发财树', cost: 600,  zone: 'hall', env: 0.04 },
+    banner:     { name: '锦旗墙', cost: 1500, zone: 'hall', env: 0.08 },
+    camera:     { name: '监控',   cost: 2000, zone: 'hall', antiReport: 0.5 },
+    wall_fan:   { name: '壁扇',   cost: 400,  zone: 'wall', env: 0.02 },
+    poster:     { name: '海报',   cost: 300,  zone: 'wall', env: 0.03 },
+    sign_stand: { name: '立牌',   cost: 500,  zone: 'outside', env: 0.03 },
+    // 多格设施的延伸格：grid 里占位用，不能单独建造
+    _ext:       { name: '', cost: 0, zone: 'none', ext: true }
   },
   FAC_ORDER: ['stove', 'steamer', 'pot', 'table', 'plant', 'banner', 'camera'],
+  // 建造面板分三页
+  BUILD_TABS: [
+    ['厨房', ['stove', 'steamer', 'pot', 'fridge']],
+    ['前厅', ['table', 'booth', 'counter', 'takeout']],
+    ['装饰', ['plant', 'banner', 'camera', 'wall_fan', 'poster', 'sign_stand']]
+  ],
+  SIGN_SPOT: { x: 5.9, y: 8.8 },   // 立牌在门口人行道上的位置（格坐标）
 
   // 菜谱：base 沙县原价，sys 系统价
   DISH: {
