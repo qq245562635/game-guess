@@ -16,11 +16,22 @@ G.Platform = {
     return { w: info.windowWidth, h: info.windowHeight, dpr: Math.min(info.pixelRatio || 2, 3) };
   },
   onResize: function (fn) { if (wx.onWindowResize) wx.onWindowResize(fn); },
-  onTap: function (fn) {
-    wx.onTouchStart(function (e) {
-      var t = e.changedTouches && e.changedTouches[0] || e.touches[0];
-      if (t) fn(t.clientX, t.clientY);
+  // 点击在松手时触发；拖动超过 8 像素不算点击
+  onTap: function (fn) { this._tap = fn; this._bindTouch(); },
+  onDrag: function (fn) { this._drag = fn; this._bindTouch(); },
+  _bindTouch: function () {
+    if (this._bound) return;
+    this._bound = true;
+    var self = this, st = null;
+    function pt(e) { return e.changedTouches && e.changedTouches[0] || e.touches[0]; }
+    wx.onTouchStart(function (e) { var t = pt(e); if (t) st = { x: t.clientX, y: t.clientY, lx: t.clientX, ly: t.clientY, drag: false }; });
+    wx.onTouchMove(function (e) {
+      var t = pt(e); if (!st || !t) return;
+      if (!st.drag && Math.abs(t.clientX - st.x) + Math.abs(t.clientY - st.y) > 8) st.drag = true;
+      if (st.drag && self._drag) self._drag(t.clientX - st.lx, t.clientY - st.ly);
+      st.lx = t.clientX; st.ly = t.clientY;
     });
+    wx.onTouchEnd(function (e) { var t = pt(e); if (st && !st.drag && t && self._tap) self._tap(t.clientX, t.clientY); st = null; });
   },
   raf: function (fn) { requestAnimationFrame(fn); },
   now: function () { return Date.now(); },

@@ -21,10 +21,26 @@ G.Platform = {
     return { w: window.innerWidth, h: window.innerHeight, dpr: Math.min(window.devicePixelRatio || 1, 3) };
   },
   onResize: function (fn) { window.addEventListener('resize', fn); },
-  onTap: function (fn) {
-    this.mainCanvas().addEventListener('pointerdown', function (e) {
+  // 点击在松手时触发；按住拖动超过 8 像素算拖动（onDrag 收到每次的位移），不再触发点击
+  onTap: function (fn) { this._tap = fn; this._bindPointer(); },
+  onDrag: function (fn) { this._drag = fn; this._bindPointer(); },
+  _bindPointer: function () {
+    if (this._bound) return;
+    this._bound = true;
+    var self = this, c = this.mainCanvas(), st = null;
+    c.addEventListener('pointerdown', function (e) {
       e.preventDefault();
-      fn(e.clientX, e.clientY);
+      st = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, drag: false };
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!st) return;
+      if (!st.drag && Math.abs(e.clientX - st.x) + Math.abs(e.clientY - st.y) > 8) st.drag = true;
+      if (st.drag && self._drag) self._drag(e.clientX - st.lx, e.clientY - st.ly);
+      st.lx = e.clientX; st.ly = e.clientY;
+    });
+    window.addEventListener('pointerup', function (e) {
+      if (st && !st.drag && self._tap) self._tap(e.clientX, e.clientY);
+      st = null;
     });
   },
   raf: function (fn) { requestAnimationFrame(fn); },

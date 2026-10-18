@@ -878,10 +878,26 @@ G.Platform = {
     return { w: window.innerWidth, h: window.innerHeight, dpr: Math.min(window.devicePixelRatio || 1, 3) };
   },
   onResize: function (fn) { window.addEventListener('resize', fn); },
-  onTap: function (fn) {
-    this.mainCanvas().addEventListener('pointerdown', function (e) {
+  // 点击在松手时触发；按住拖动超过 8 像素算拖动（onDrag 收到每次的位移），不再触发点击
+  onTap: function (fn) { this._tap = fn; this._bindPointer(); },
+  onDrag: function (fn) { this._drag = fn; this._bindPointer(); },
+  _bindPointer: function () {
+    if (this._bound) return;
+    this._bound = true;
+    var self = this, c = this.mainCanvas(), st = null;
+    c.addEventListener('pointerdown', function (e) {
       e.preventDefault();
-      fn(e.clientX, e.clientY);
+      st = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, drag: false };
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!st) return;
+      if (!st.drag && Math.abs(e.clientX - st.x) + Math.abs(e.clientY - st.y) > 8) st.drag = true;
+      if (st.drag && self._drag) self._drag(e.clientX - st.lx, e.clientY - st.ly);
+      st.lx = e.clientX; st.ly = e.clientY;
+    });
+    window.addEventListener('pointerup', function (e) {
+      if (st && !st.drag && self._tap) self._tap(e.clientX, e.clientY);
+      st = null;
     });
   },
   raf: function (fn) { requestAnimationFrame(fn); },
@@ -1263,6 +1279,7 @@ if (typeof window !== 'undefined') window.__shaxian = G;
       p.box(0.3, 0.25, 0.75, 0.55, 22, 27, '#eeeeee', '#cfcfcf', '#a8a8a8');
       var l = p.P(0.75, 0.4, 25); p.px(l[0], l[1] - 1, 2, 2, '#222'); var r = p.P(0.4, 0.55, 25); p.px(r[0], r[1], 1, 1, '#ff3333');
     },
+    shadow: function (p) { p.ellipse(16 / 1.5 * 0.999, 6 / 1.5, 15 / 1.5, 5.5 / 1.5, '#000000'); },
     fridge: function (p) {
       p.box(0.12, 0.2, 0.88, 0.8, 0, 38, '#c9cfd4', '#a3aab1', '#7d848c');
       var P = p.P.bind(p);
@@ -1326,7 +1343,7 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     floor_hall: [48, 24], floor_kitchen: [48, 24], door: [48, 24], sidewalk: [48, 24], street: [48, 24], tile_mask: [48, 24],
     wall_r: [24, 48], wall_l: [24, 48], edge_l: [24, 18], edge_r: [24, 18],
     stove: [48, 48, 1], steamer: [48, 48, 1], pot: [48, 48, 1], table: [48, 48, 1], plant: [48, 48, 1], banner: [48, 48, 1], camera: [48, 48, 1],
-    bowl: [24, 24],
+    bowl: [24, 24], shadow: [32, 12],
     fridge: [48, 64, 1], counter: [48, 48, 1], takeout: [48, 48, 1], sign_stand: [48, 48, 1],
     booth: [72, 60, 1], wall_fan: [24, 48], poster: [24, 48]
   };
@@ -1444,7 +1461,7 @@ if (typeof window !== 'undefined') window.__shaxian = G;
       r.quad(this.tex, x, y, w, h, s.x, s.y, s.w, s.h, cr, cg, cb, ca);
     },
     rect: function (r, x, y, w, h, cr, cg, cb, ca) {
-      r.quad(this.tex, x, y, w, h, SPR.white.x + 16, SPR.white.y + 16, 32, 32, cr, cg, cb, ca);
+      r.quad(this.tex, x, y, w, h, SPR.white.x + 4, SPR.white.y + 4, 8, 8, cr, cg, cb, ca);   // 取白块中间，避开边缘采样到相邻精灵
     }
   };
 })();
@@ -1468,13 +1485,16 @@ if (typeof window !== 'undefined') window.__shaxian = G;
   }
   G.UI = UI;
 
-  UI.prototype.setScale = function (s) {
+  // h：逻辑高度（跟着屏幕长宽比变，宽固定 360）
+  UI.prototype.setScale = function (s, h) {
     s = Math.max(1, Math.min(s, 2.5));
+    if (h && h !== this.H) { this.H = h; this.scale = 0; }
     if (Math.abs(s - this.scale) < 0.01) return;
     this.scale = s;
     this.canvas.width = Math.round(this.W * s);
     this.canvas.height = Math.round(this.H * s);
   };
+
 
   UI.prototype.begin = function () {
     var c = this.ctx;
@@ -1601,10 +1621,13 @@ if (typeof window !== 'undefined') window.__shaxian = G;
 // ============================================================
 (function () {
   var C = G.CFG;
+  // 设计宽 360 固定；高度跟屏幕长宽比走（至少 640），全面屏不留黑边
   var W = 360, H = 640;
-  var PANEL_Y = 452, WORLD_TOP = 92;
+  var PANEL_H = 188, PANEL_Y = H - PANEL_H, WORLD_TOP = 92, BAR_H = 96;   // BAR_H：面板收起时底部浮动按钮占的高度
   // 斜 45° 等距视角（开罗式）：格子 (x,y) → 屏幕。一格是 TW×TH 的菱形，(0,0) 是最里面的角。
-  // 原生像素 → 逻辑像素的倍数 K：地块菱形原生 48 宽 = TW。
+  // 原生像素 → 逻辑像素的倍数 K：每个美术像素放大成整数个屏幕物理像素（layout 里算），像素才不会忽大忽小。
+  // 地块菱形原生 48 宽，屏幕上大约 TARGET_TW 逻辑像素宽。
+  var TARGET_TW = 60;
   var TW = 44, TH = 22, K = TW / 48;
   var OX = W / 2, OY = 160;
   function iso(x, y) { return { x: OX + (x - y) * TW / 2, y: OY + (x + y) * TH / 2 }; }
@@ -1629,6 +1652,7 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     this.ui = new G.UI(platform, this.r, W, H);
     this.sim = new G.Sim((platform.now() * 1000) >>> 0);
     this.tab = 'price';
+    this.sheet = false;     // 底部面板是否展开
     this.buildSel = null;
     this.speed = 1;
     this.dialog = null;
@@ -1647,6 +1671,10 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     var self = this;
     platform.onResize(function () { self.layout(); });
     platform.onTap(function (sx, sy) { self.onTap(sx, sy); });
+    if (platform.onDrag) platform.onDrag(function (dx, dy) {
+      if (self.dialog || self.modal) return;
+      var v = self.view; self.moveCam(dx * v.dpr / v.s, dy * v.dpr / v.s);
+    });
     this.last = platform.now();
     platform.raf(function loop() { self.frame(); platform.raf(loop); });
   }
@@ -1668,9 +1696,32 @@ if (typeof window !== 'undefined') window.__shaxian = G;
   Game.prototype.layout = function () {
     var sc = this.p.screen();
     var bw = Math.round(sc.w * sc.dpr), bh = Math.round(sc.h * sc.dpr);
+    H = Math.max(640, Math.min(820, Math.round(W * bh / bw)));
+    PANEL_Y = H - PANEL_H;
     var s = Math.min(bw / W, bh / H);
     this.view = { bw: bw, bh: bh, s: s, ox: (bw - W * s) / 2, oy: (bh - H * s) / 2, dpr: sc.dpr };
-    this.ui.setScale(s);
+    this.ui.setScale(s, H);
+    var n = Math.max(2, Math.round(TARGET_TW * s / 48));   // 每个美术像素 = n 个物理像素
+    K = n / s; TW = 48 * K; TH = 24 * K;
+    if (!this.cam) this.cam = { x: 0, y: 0 };
+    this.moveCam(0, 0);
+  };
+
+  // 镜头：拖动平移，店面不会被拖出屏幕。OX/OY 对齐到物理像素。
+  // 调试/测试用：格子坐标 → 逻辑坐标
+  Game.prototype.isoAt = function (x, y) { return iso(x, y); };
+  Game.prototype.worldBottom = function () { return this.sheet ? PANEL_Y : H - BAR_H; };
+  Game.prototype.moveCam = function (dx, dy) {
+    var c = this.cam, s = this.view.s;
+    var roomW = (C.GRID_W + C.GRID_H) * TW / 2, roomH = (C.GRID_W + C.GRID_H) * TH / 2 + 40 * K;
+    var top = WORLD_TOP + 8, bot = this.worldBottom() - 8;
+    var mx = Math.max(0, (roomW - W) / 2 + 24), my = Math.max(0, (roomH - (bot - top)) / 2 + 24);
+    c.x = Math.max(-mx, Math.min(mx, c.x + dx));
+    c.y = Math.max(-my, Math.min(my, c.y + dy));
+    // 店面中心：(GRID_W/2, GRID_H/2) 落在可视区中间
+    var cx = W / 2 + (C.GRID_H - C.GRID_W) / 2 * TW / 2 + c.x;
+    var cy = (top + bot) / 2 + 20 * K - (C.GRID_W + C.GRID_H) / 2 * TH / 2 + c.y;
+    OX = Math.round(cx * s) / s; OY = Math.round(cy * s) / s;
   };
 
   Game.prototype.toLogical = function (sx, sy) {
@@ -1682,7 +1733,7 @@ if (typeof window !== 'undefined') window.__shaxian = G;
   Game.prototype.onTap = function (sx, sy) {
     var pt = this.toLogical(sx, sy);
     if (this.ui.tap(pt.x, pt.y)) return;
-    if (pt.y < WORLD_TOP || pt.y > PANEL_Y) return;
+    if (pt.y < WORLD_TOP || pt.y > this.worldBottom()) return;
     var sim = this.sim, sel = this.tab === 'build' ? this.buildSel : null, zone = sel && sel !== 'remove' ? C.FAC[sel].zone : null, err;
     // 墙上的东西
     var wall = this.pickWall(pt.x, pt.y);
@@ -1730,12 +1781,18 @@ if (typeof window !== 'undefined') window.__shaxian = G;
   Game.prototype.hitSign = function (px, py) {
     if (!this.sim.outside.sign_stand) return false;
     var p = iso(C.SIGN_SPOT.x, C.SIGN_SPOT.y);
-    return Math.abs(px - p.x) < 16 && py < p.y + 10 && py > p.y - 36;
+    return Math.abs(px - p.x) < 18 * K && py < p.y + 10 * K && py > p.y - 40 * K;
   };
   // 设施图在屏幕上的位置：多格设施（卡座）按整块占地居中
   function facRect(id, x, y) {
     var s = G.Atlas.SPR[id], w = C.FAC[id].w || 1;
     var cx = (iso(x, y + 1).x + iso(x + w, y).x) / 2, by = iso(x + w, y + 1).y;
+    // 后厨贴墙的设施往墙那边挪一点，台柜靠墙，不留空隙
+    if (C.FAC[id].zone === 'kitchen') {
+      var PUSH = 0.16;
+      if (y === 0) { cx += PUSH * TW / 2; by -= PUSH * TH / 2; }
+      if (x === 0) { cx -= PUSH * TW / 2; by -= PUSH * TH / 2; }
+    }
     return { x: cx - s.nw * K / 2, y: by - s.nh * K, w: s.nw * K, h: s.nh * K, cx: cx, by: by };
   }
 
@@ -1855,18 +1912,20 @@ if (typeof window !== 'undefined') window.__shaxian = G;
   };
 
   // 地块菱形：每边多画半个像素盖住缝（非整数缩放时相邻菱形之间会漏出细线）
-  function tileAt(r, name, p) { G.Atlas.draw(r, name, p.x - TW / 2 - 0.5, p.y - 0.5, TW + 1, TH + 1); }
+  // 地块：多画 1 个物理像素盖住缝
+  function tileAt(r, name, p, e) { G.Atlas.draw(r, name, p.x - TW / 2 - e, p.y - e, TW + 2 * e, TH + 2 * e); }
 
   Game.prototype.renderWorld = function () {
     var r = this.r, A = G.Atlas, sim = this.sim, x, y, p, self = this;
     var GW = C.GRID_W, GH = C.GRID_H;
-    A.rect(r, 0, WORLD_TOP, W, PANEL_Y - WORLD_TOP, 0.75, 0.72, 0.68, 1);
+    var pe = 0.5 / this.view.s;
+    A.rect(r, 0, 0, W, H, 0.17, 0.14, 0.19, 1);   // 后墙外面：暗色，把店面框出来
     // 店外地面：人行道 + 门前马路（y=9、10 两行是马路）
-    for (y = -10; y < 22; y++) for (x = -10; x < 22; x++) {
-      if (x >= 0 && y >= 0 && x < GW && y < GH) continue;
+    for (y = -16; y < 28; y++) for (x = -16; x < 28; x++) {
+      if ((x < GW && y < GH) || y < 0) continue;   // 店内和后墙外面都不铺街面（右上墙延长线以外也算墙外）
       p = iso(x, y);
-      if (p.x < -TW || p.x > W + TW || p.y < WORLD_TOP - TH || p.y > PANEL_Y) continue;
-      tileAt(r, (y === GH + 1 || y === GH + 2) ? 'street' : 'sidewalk', p);
+      if (p.x < -TW || p.x > W + TW || p.y < -TH || p.y > H) continue;
+      tileAt(r, (y === GH + 1 || y === GH + 2) ? 'street' : 'sidewalk', p, pe);
     }
     // 后墙（右上边 y=0，左上边 x=0）
     for (x = 0; x < GW; x++) { p = iso(x, 0); A.drawN(r, 'wall_r', p.x, p.y - 36 * K, K); }
@@ -1878,7 +1937,7 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
       var z = sim.zoneOf(x, y);
       p = iso(x, y);
-      tileAt(r, z === 'kitchen' ? 'floor_kitchen' : z === 'door' ? 'door' : 'floor_hall', p);
+      tileAt(r, z === 'kitchen' ? 'floor_kitchen' : z === 'door' ? 'door' : 'floor_hall', p, pe);
     }
     // 地台前侧面
     for (x = 0; x < GW; x++) { p = iso(x, GH); A.drawN(r, 'edge_l', p.x, p.y, K); }
@@ -1913,6 +1972,18 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     sim.customers.forEach(function (c) { draws.push({ d: c.x + c.y, k: 'cust', c: c }); });
     sim.chefList.forEach(function (c, i) { draws.push({ d: c.x + c.y, k: 'chef', c: c, i: i }); });
     draws.sort(function (a, b) { return a.d - b.d; });
+    // 影子：先统一画在地上，再画设施和人
+    draws.forEach(function (d) {
+      if (d.k === 'fac') {
+        var fw = C.FAC[d.id].w || 1;
+        if (C.FAC[d.id].zone === 'kitchen') return;   // 台柜贴地，不要影子
+        var c0 = iso(d.x + fw / 2 + 0.5, d.y + 0.5);
+        A.drawN(r, 'shadow', c0.x - 16 * K * fw * 1.1, c0.y - 6 * K * 1.2, K * 1.1 * fw, false, 1, 1, 1, 0.16);
+      } else if (d.k !== 'sign') {
+        var f0 = iso(d.c.x, d.c.y);
+        A.drawN(r, 'shadow', f0.x - 9 * K, f0.y - 3.4 * K, K * 0.56, false, 1, 1, 1, 0.22);
+      }
+    });
     draws.forEach(function (d) {
       if (d.k === 'fac') {
         var rc = facRect(d.id, d.x, d.y);
@@ -1940,13 +2011,13 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     // 做菜进度条：设施头顶
     sim.orders.forEach(function (o) {
       if (o.state !== 'cooking') return;
-      var b = iso(o.station.x + 1, o.station.y + 1), bw = 30, bx = b.x - bw / 2, by = b.y - 48 * K - 6;
+      var b = iso(o.station.x + 1, o.station.y + 1), bw = 32 * K, bx = b.x - bw / 2, by = b.y - 50 * K - 6;
       A.rect(r, bx, by, bw, 5, 0, 0, 0, 0.6);
       A.rect(r, bx + 1, by + 1, (bw - 2) * Math.min(1, o.t / o.total), 3, 1, 0.82, 0.25, 1);
     });
     // 黑店值氛围：越高越暗越紫
     var bl = sim.black / 100;
-    if (bl > 0.05) A.rect(r, 0, WORLD_TOP, W, PANEL_Y - WORLD_TOP, 0.25, 0.05, 0.35, bl * 0.32);
+    if (bl > 0.05) A.rect(r, 0, 0, W, H, 0.25, 0.05, 0.35, bl * 0.32);
   };
 
   Game.prototype.renderWorldLabels = function () {
@@ -1954,7 +2025,7 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     // 对话气泡
     sim.customers.forEach(function (c) {
       if (!c.bubble) return;
-      var f = iso(c.x, c.y), px = f.x, py = f.y - 32;
+      var f = iso(c.x, c.y), px = f.x, py = f.y - 36 * K;
       var emo = c.emote ? I['emote_' + c.emote] : null, ew = emo ? 18 : 0;
       var tw = ui.measure(c.bubble, 11), w = tw + 12 + ew;
       px = Math.max(w / 2 + 2, Math.min(W - w / 2 - 2, px));
@@ -1965,15 +2036,15 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     });
     // 收款飘字
     this.floats.forEach(function (fl) {
-      var f = iso(fl.x, fl.y), py = f.y - 40 - fl.t * 26;
+      var f = iso(fl.x, fl.y), py = f.y - 44 * K - fl.t * 26;
       ui.text(fl.text, f.x, py, { size: fl.big ? 15 : 12, bold: true, color: fl.big ? GOLD : GREEN, align: 'center', shadow: 'rgba(0,0,0,0.6)' });
     });
     // 提示
     for (var i = 0; i < this.toasts.length; i++) {
       var t = this.toasts[i];
       var w = ui.measure(t.text, 13) + 24;
-      ui.round(W / 2 - w / 2, 380 + i * 30, w, 26, 13, 'rgba(20,14,26,0.88)');
-      ui.text(t.text, W / 2, 393 + i * 30, { size: 13, align: 'center' });
+      ui.round(W / 2 - w / 2, H * 0.58 + i * 30, w, 26, 13, 'rgba(20,14,26,0.88)');
+      ui.text(t.text, W / 2, H * 0.58 + 13 + i * 30, { size: 13, align: 'center' });
     }
   };
 
@@ -2022,21 +2093,27 @@ if (typeof window !== 'undefined') window.__shaxian = G;
   };
 
   Game.prototype.renderPanel = function () {
-    var ui = this.ui, sim = this.sim, self = this;
-    ui.rect(0, PANEL_Y, W, H - PANEL_Y, '#211a28');
-    ui.rect(0, PANEL_Y, W, 1, '#3b3145');
+    var ui = this.ui, self = this, open = this.sheet;
     var tabs = [['price', '定价'], ['build', '建造'], ['staff', '员工']];
+    var ty = open ? PANEL_Y + 6 : H - BAR_H + 6;
+    if (open) {
+      ui.round(0, PANEL_Y - 6, W, H - PANEL_Y + 6, 12, 'rgba(33,26,40,0.97)');
+      ui.rect(0, PANEL_Y + 38, W, 1, '#3b3145');
+    }
     tabs.forEach(function (t, i) {
-      ui.button(10 + i * 116, PANEL_Y + 6, 108, 28, t[1], { active: self.tab === t[0], size: 13, bold: true,
-        icon: self.icons['tab_' + t[0]], iconSize: 18 }, function () {
-        self.tab = t[0];
-        if (t[0] !== 'build') self.buildSel = null;
+      ui.button(10 + i * 116, ty, 108, 30, t[1], { active: open && self.tab === t[0], size: 13, bold: true,
+        fill: open ? null : 'rgba(43,34,51,0.92)', icon: self.icons['tab_' + t[0]], iconSize: 18 }, function () {
+        if (open && self.tab === t[0]) { self.sheet = false; self.buildSel = null; }
+        else { self.tab = t[0]; self.sheet = true; if (t[0] !== 'build') self.buildSel = null; }
+        self.moveCam(0, 0);
       });
     });
-    var y0 = PANEL_Y + 42;
-    if (this.tab === 'price') this.renderPricing(y0);
-    else if (this.tab === 'build') this.renderBuild(y0);
-    else this.renderStaff(y0);
+    if (open) {
+      var y0 = PANEL_Y + 44;
+      if (this.tab === 'price') this.renderPricing(y0);
+      else if (this.tab === 'build') this.renderBuild(y0);
+      else this.renderStaff(y0);
+    }
     this.renderActionBar();
   };
 
@@ -2233,7 +2310,7 @@ if (typeof window !== 'undefined') window.__shaxian = G;
     var line = d.lines[d.i], who = line[0], text = line[1];
     ui.beginModal();
     ui.rect(0, 0, W, H, 'rgba(10,6,14,0.45)');
-    var x = 12, y = 470, w = W - 24, h = 150;
+    var x = 12, y = H - 170, w = W - 24, h = 150;
     var isSys = who === '系统';
     // 立绘：主角在左，其他人在右，站在对话框上沿，下半身被框挡住
     var pb = C.PORTRAIT[who], pimg = pb ? (this.icons[pb + '_' + (line[2] || 'normal')] || this.icons[pb]) : null;
