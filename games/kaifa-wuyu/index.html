@@ -459,17 +459,19 @@ function initGL(){const sh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(
 function spr(k,x,y,flip,alpha=1){if(nq>=MAXQ)return;const s=M[k],uv=UV[k];const x0=x-(flip?s.w-s.ox:s.ox),y0=y-s.oy,x1=x0+s.w,y1=y0+s.h;const ua=flip?uv[2]:uv[0],ub=flip?uv[0]:uv[2];
   let o=nq*48;for(const v of [[x0,y0,ua,uv[1]],[x1,y0,ub,uv[1]],[x0,y1,ua,uv[3]],[x1,y0,ub,uv[1]],[x1,y1,ub,uv[3]],[x0,y1,ua,uv[3]]]){vdata.set(v,o);vdata.fill(alpha,o+4,o+8);o+=8;}nq++;}
 
-// 接地影：光从左上来，影子略偏右下。大小是相对一格的比例
-const SH_OFF=[9,5];const SH_SIZE={desk:.85,desk_back:.85,boss_desk:1.05,reception:1.05,shelf:.7,whiteboard:.6,plant:.5,cooler:.45,sofa:1,chair:.42,person:.34};
-// 靠墙物体的影子往墙那边挪（物体画在格子后半部）
-const SH_SHIFT={shelf:[0,-.28],whiteboard:[0,-.3],cooler:[-.25,0]};
-function sprS(k,x,y,sc,alpha=1){if(nq>=MAXQ)return;const s=M[k],uv=UV[k];const x0=x-s.ox*sc,y0=y-s.oy*sc,x1=x0+s.w*sc,y1=y0+s.h*sc;
+// 接地影：贴着物体底座的柔边椭圆（从素材底边量出来的），光从左上来，只往右下偏一点点。
+// FOOT[k]=[中心x, 中心y, 半宽, 半高]，相对物体锚点，逻辑像素。新家具加一行即可
+const SH_OFF=[3,1.5],SH_SOFT=1.25;
+const FOOT={boss_desk:[0,-12,60,28],desk:[0,-1,63,19],desk_back:[0,-1.5,63,19],reception:[0,-12,56,27],plant:[0,2,20,10],
+  shelf:[0,-10,41,22],cooler:[0,-2,23,11],whiteboard:[0,-4,45,20],sofa:[0,-6,58,26],chair:[0,4,17,8],person:[0,0,14,7]};
+function sprS(k,x,y,sc,alpha=1,scy=sc){if(nq>=MAXQ)return;const s=M[k],uv=UV[k];const x0=x-s.ox*sc,y0=y-s.oy*scy,x1=x0+s.w*sc,y1=y0+s.h*scy;
   let o=nq*48;for(const v of [[x0,y0,uv[0],uv[1]],[x1,y0,uv[2],uv[1]],[x0,y1,uv[0],uv[3]],[x1,y0,uv[2],uv[1]],[x1,y1,uv[2],uv[3]],[x0,y1,uv[0],uv[3]]]){vdata.set(v,o);vdata.fill(alpha,o+4,o+8);o+=8;}nq++;}
-function shadowAt(k,tx,ty){const sh=SH_SHIFT[k]||[0,0];const [sx,sy]=tc(tx+sh[0],ty+sh[1]);sprS('shadow',sx+SH_OFF[0],sy+SH_OFF[1],SH_SIZE[k]||.5);}
+function shadowXY(k,x,y,alpha=1){const f=FOOT[k];if(!f)return;sprS('shadow',x+f[0]+SH_OFF[0],y+f[1]+SH_OFF[1],f[2]/64*SH_SOFT,alpha,f[3]/32*SH_SOFT);}
+function shadowAt(k,tx,ty){const [sx,sy]=tc(tx,ty);shadowXY(k,sx,sy);}
 function drawShadows(){for(const [k,x,y] of DECOR)shadowAt(k,x,y);for(const s of SEATS)shadowAt(s.k==='a'?'desk':'desk_back',...s.d);
   shadowAt('boss_desk',...BOSS.d);shadowAt('reception',...SEC_SPOT.d);
-  const chairs=[...SEATS.map((_,i)=>seatWorld(i)),deskSeat(BOSS.d,'b'),deskSeat(SEC_SPOT.d,'b')];for(const [wx,wy] of chairs)sprS('shadow',wx+SH_OFF[0],wy+SH_OFF[1]-4,SH_SIZE.chair);
-  for(const id of [...S.staff.map(s=>s.id),'boss','secretary']){const ps=personState(id);if(ps.mode==='walk')sprS('shadow',ps.x+SH_OFF[0]*.6,ps.y+SH_OFF[1]*.6,SH_SIZE.person,ps.a??1);}}
+  for(const [wx,wy] of [...SEATS.map((_,i)=>seatWorld(i)),deskSeat(BOSS.d,'b'),deskSeat(SEC_SPOT.d,'b')])shadowXY('chair',wx,wy);
+  for(const id of [...S.staff.map(s=>s.id),'boss','secretary']){const ps=personState(id);if(ps.mode==='walk')shadowXY('person',ps.x,ps.y,ps.a??1);}}
 
 // ================= 场景布局
 const iso=(x,y)=>[(x-y)*TILE_W/2,(x+y)*TILE_H/2];
