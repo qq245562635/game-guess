@@ -191,7 +191,8 @@ function seatWorld(i){const s=SEATS[i];return deskSeat(s.d,s.k);}
 // ================= 镜头
 const cam={x:0,y:0,z:1,fit:true};let stageW=1,stageH=1;
 function fitCam(){const minX=iso(0,ROOM_H)[0]-6,maxX=iso(ROOM_W,0)[0]+6,minY=-190,maxY=iso(ROOM_W,ROOM_H)[1]+30;
-  cam.z=clamp(Math.min(stageW/(maxX-minX)*1.3,stageH/(maxY-minY)),.25,3);cam.x=stageW/2-(minX+maxX)/2*cam.z;cam.y=stageH*.43-(minY+maxY)/2*cam.z;}
+  const pad=($('#sidetab')?.offsetWidth||0)+6;  // 左右留出抽屉把手宽度，房间按可用宽度完整显示
+  cam.z=clamp(Math.min((stageW-pad*2)/(maxX-minX),stageH/(maxY-minY)),.25,3);cam.x=stageW/2-(minX+maxX)/2*cam.z;cam.y=stageH*.43-(minY+maxY)/2*cam.z;}
 const w2s=(x,y)=>[x*cam.z+cam.x,y*cam.z+cam.y];
 function resize(){const r=$('#scene').getBoundingClientRect();stageW=Math.max(1,r.width);stageH=Math.max(1,r.height);const d=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(stageW*d);canvas.height=Math.round(stageH*d);if(cam.fit)fitCam();}
 new ResizeObserver(resize).observe($('#scene'));
