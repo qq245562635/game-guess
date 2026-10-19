@@ -34,7 +34,10 @@ const M={
   wall_r:{w:64,h:200,ox:0,oy:168},wall_r_win:{w:64,h:200,ox:0,oy:168},wall_l:{w:64,h:200,ox:64,oy:168},wall_l_win:{w:64,h:200,ox:64,oy:168},
   desk:{...OBJ},chair:{w:128,h:96,ox:64,oy:64},shelf:{...OBJ},whiteboard:{...OBJ},plant:{...OBJ},sofa:{...OBJ},cooler:{...OBJ},
 };
-const CHAR_N=6;for(let i=0;i<CHAR_N;i++)for(const f of 'ab')M[`char_${i}_${f}`]={w:72,h:112,ox:36,oy:102};
+Object.assign(M,{desk_back:{...OBJ},boss_desk:{...OBJ},reception:{...OBJ},mat:{w:128,h:64,ox:64,oy:32}});
+const CHAR_N=4;const CH={w:72,h:112,ox:36,oy:102};
+for(let i=0;i<CHAR_N;i++)for(const v of ['back','front'])for(const f of 'ab')M[`char_${i}_${v}_${f}`]={...CH};
+for(const who of ['boss','secretary'])for(const f of 'ab')M[`${who}_${f}`]={...CH};
 
 // ================= 占位图绘制
 const SS=2;
@@ -59,6 +62,14 @@ const PAINT={
     box(g,cx,cy,{sx:.92,sy:.62,z:30,hh:5,top:'#F4F5F7',l:'#C9CED6',r:'#B6BCC6'});box(g,cx,cy,{y:-.14,sx:.08,sy:.08,z:35,hh:10,top:'#666',l:'#555',r:'#444'});
     box(g,cx,cy,{y:-.16,sx:.52,sy:.07,z:44,hh:34,top:'#3B4252',l:'#2E3442',r:'#262B37'});faceY(g,cx,cy,-.23,.23,-.125,47,75,'#8FD0F2');
     box(g,cx,cy,{y:.13,sx:.42,sy:.12,z:35,hh:2,top:'#D7DBE2',l:'#AEB4BE',r:'#9EA4AE'});},
+  desk_back(g,s){const cx=s.ox,cy=s.oy;for(const [a,b] of [[-.4,-.25],[.4,-.25],[-.4,.25],[.4,.25]])box(g,cx,cy,{x:a,y:b,sx:.05,sy:.05,hh:30,top:'#9AA3B0',l:'#8A93A0',r:'#7A828E'});
+    box(g,cx,cy,{sx:.92,sy:.62,z:30,hh:5,top:'#F4F5F7',l:'#C9CED6',r:'#B6BCC6'});box(g,cx,cy,{y:-.13,sx:.42,sy:.12,z:35,hh:2,top:'#D7DBE2',l:'#AEB4BE',r:'#9EA4AE'});
+    box(g,cx,cy,{y:.14,sx:.08,sy:.08,z:35,hh:10,top:'#666',l:'#555',r:'#444'});box(g,cx,cy,{y:.16,sx:.52,sy:.07,z:44,hh:34,top:'#3B4252',l:'#4A5264',r:'#262B37'});},
+  boss_desk(g,s){const cx=s.ox,cy=s.oy;box(g,cx,cy,{sx:.96,sy:.6,hh:38,top:'#9A6B42',l:'#7E5534',r:'#6A4629'});faceY(g,cx,cy,-.4,.4,.3,8,30,'#8E6240');
+    box(g,cx,cy,{x:-.25,y:-.05,sx:.3,sy:.22,z:38,hh:2,top:'#F7F3EA',l:'#DDD6C8',r:'#CFC7B8'});box(g,cx,cy,{x:.28,y:-.1,sx:.1,sy:.1,z:38,hh:10,top:'#C8574F',l:'#B04840',r:'#983C35'});},
+  reception(g,s){const cx=s.ox,cy=s.oy;box(g,cx,cy,{sx:.96,sy:.5,hh:44,top:'#F2EEE6',l:'#D9CFBF',r:'#C7BCA9'});faceY(g,cx,cy,-.42,.42,.25,14,34,'#B9D0F5');
+    box(g,cx,cy,{x:.25,y:-.08,sx:.16,sy:.12,z:44,hh:8,top:'#333',l:'#444',r:'#222'});},
+  mat(g){diamond(g,64,32,.8,'#C8574F');diamond(g,64,32,.6,'#D96A60');},
   chair(g,s){const cx=s.ox,cy=s.oy;box(g,cx,cy,{sx:.42,sy:.42,hh:3,top:'#3F4654',l:'#323844',r:'#2A2F3A'});box(g,cx,cy,{sx:.06,sy:.06,z:3,hh:14,top:'#555',l:'#4A4A4A',r:'#3E3E3E'});box(g,cx,cy,{sx:.4,sy:.4,z:17,hh:6,top:'#4B5468',l:'#3D4556',r:'#343B4A'});},
   shelf(g,s){const cx=s.ox,cy=s.oy;box(g,cx,cy,{y:-.28,sx:.92,sy:.36,hh:118,top:'#A8784B',l:'#946640',r:'#7D5534'});const cols=['#E35D6A','#4A6FE3','#F2A93B','#3FAF7A','#8E5BD8','#EDEDED'];let k=0;
     for(const z0 of [10,46,82]){faceY(g,cx,cy,-.42,.42,-.1,z0,z0+30,'#6E4A2D');let x=-.4;while(x<.36){const w=.04+(k%3)*.02;faceY(g,cx,cy,x,x+w,-.1,z0,z0+22+(k%4)*2,cols[(k++*5)%cols.length]);x+=w+.01;}}},
@@ -66,11 +77,16 @@ const PAINT={
   plant(g,s){const cx=s.ox,cy=s.oy;box(g,cx,cy,{sx:.34,sy:.34,hh:28,top:'#5A3E2B',l:'#E8E3DA',r:'#CFC8BC'});for(const [dx,dy,r,c] of [[0,-50,18,'#3E9D57'],[-12,-40,14,'#4FB566'],[12,-42,14,'#358A4B'],[-4,-64,13,'#5BC272']])circ(g,cx+dx,cy+dy-10,r,c);},
   sofa(g,s){const cx=s.ox,cy=s.oy;box(g,cx,cy,{sx:.96,sy:.56,z:4,hh:20,top:'#5B7BD6',l:'#4A67BC',r:'#3F59A6'});box(g,cx,cy,{y:-.22,sx:.96,sy:.13,z:4,hh:48,top:'#6C8BE3',l:'#5574CF',r:'#4762B5'});for(const a of [-.43,.43])box(g,cx,cy,{x:a,sx:.1,sy:.56,z:4,hh:32,top:'#6C8BE3',l:'#5574CF',r:'#4762B5'});},
   cooler(g,s){const cx=s.ox,cy=s.oy;box(g,cx,cy,{sx:.32,sy:.32,hh:62,top:'#F2F4F7',l:'#DDE1E7',r:'#C5CBD4'});ell(g,cx,cy-84,13,18,'rgba(110,180,235,.85)');},
-  char(g,s,k){const m=k.match(/char_(\d)_(a|b)/);const i=+m[1],b=m[2]==='b';const shirt=SHIRTS[i],hair=HAIRS[i],skin='#F1C7A5';
+  boss(g,s,k){front(g,'#2E3A4F','#555',k.endsWith('_b'),true);},
+  secretary(g,s,k){front(g,'#C04A52','#6A3A24',k.endsWith('_b'));},
+  char(g,s,k){const m=k.match(/char_(\d)_(back|front)_(a|b)/);const i=+m[1],b=m[3]==='b';const shirt=SHIRTS[i],hair=HAIRS[i],skin='#F1C7A5';if(m[2]==='front'){front(g,shirt,hair,b);return;}
     ell(g,36,100,18,5,'rgba(0,0,0,.12)');ell(g,18,66+(b?3:-1),6,12,shirt,.35);ell(g,54,66+(b?-1:3),6,12,shirt,-.35);ell(g,36,68,17,22,shirt);
     circ(g,22,40,3.5,skin);circ(g,50,40,3.5,skin);circ(g,36,37+(b?1:0),14,skin);ell(g,36,34+(b?1:0),15,14,hair);ell(g,36,46+(b?1:0),12,5,hair);}
 };
-function paint(k){const s=M[k];const cv=document.createElement('canvas');cv.width=s.w*SS;cv.height=s.h*SS;const g=cv.getContext('2d');g.scale(SS,SS);const fn=PAINT[k]||(k.startsWith('char_')?PAINT.char:null);if(fn)fn(g,s,k);return cv;}
+function front(g,shirt,hair,b,glasses){const skin='#F1C7A5',d=b?1:0;ell(g,36,100,18,5,'rgba(0,0,0,.12)');ell(g,36,70,17,22,shirt);
+  ell(g,20,74+(b?2:-1),6,11,shirt,-.5);ell(g,52,74+(b?-1:2),6,11,shirt,.5);circ(g,36,38+d,14,skin);ell(g,36,29+d,15,9,hair);ell(g,23,35+d,4,8,hair);ell(g,49,35+d,4,8,hair);
+  circ(g,31,40+d,1.8,'#2B2118');circ(g,41,40+d,1.8,'#2B2118');if(glasses){g.strokeStyle='#222';g.lineWidth=1.4;g.strokeRect(27,37+d,8,6);g.strokeRect(37,37+d,8,6);}}
+function paint(k){const s=M[k];const cv=document.createElement('canvas');cv.width=s.w*SS;cv.height=s.h*SS;const g=cv.getContext('2d');g.scale(SS,SS);const fn=PAINT[k]||(k.startsWith('char_')?PAINT.char:k.startsWith('boss_')?PAINT.boss:k.startsWith('secretary_')?PAINT.secretary:null);if(fn)fn(g,s,k);return cv;}
 
 // ================= WebGL 精灵批渲染
 const canvas=$('#gl');
@@ -97,16 +113,20 @@ function spr(k,x,y){if(nq>=MAXQ)return;const s=M[k],uv=UV[k];const x0=x-s.ox,y0=
 // ================= 场景布局
 const iso=(x,y)=>[(x-y)*TILE_W/2,(x+y)*TILE_H/2];
 const tc=(x,y)=>iso(x+.5,y+.5);
-const SEATS=[[2,1],[3,1],[4,1],[2,3],[3,3],[4,3]];
+// 4 人岛式工位：后排(y=2 的桌)人坐在桌后、面朝镜头；前排(y=3 的桌)人背对镜头
+const SEATS=[{d:[3,2],k:'b'},{d:[4,2],k:'b'},{d:[3,3],k:'a'},{d:[4,3],k:'a'}];
+const BOSS={d:[1,2]},SEC_SPOT={d:[5,5]};
 const SEAT_OFF=[22.4,-11.2];
-const DECOR=[['whiteboard',1,0],['shelf',5,0],['plant',6,0],['cooler',0,1],['sofa',6,2],['plant',0,5],['plant',6,5]];
+const DECOR=[['whiteboard',2,0],['shelf',4,0],['shelf',5,0],['plant',6,0],['cooler',0,4],['plant',0,5],['plant',6,2]];
 let staticFlat=[];
 function buildStatic(){staticFlat=[];
   for(let y=-4;y<ROOM_H+4;y++)for(let x=-4;x<ROOM_W+4;x++){const inRoom=x>=0&&y>=0&&x<ROOM_W&&y<ROOM_H;const [sx,sy]=tc(x,y);staticFlat.push([inRoom?((x+y)%2?'floor_b':'floor_a'):'outside',sx,sy]);}
-  {const [sx,sy]=tc(6,3);staticFlat.push(['rug',sx,sy]);}
+  {const [sx,sy]=tc(6,4);staticFlat.push(['rug',sx,sy]);}{const [sx,sy]=tc(6,5);staticFlat.push(['mat',sx,sy]);}
   for(let y=ROOM_H-1;y>=0;y--){const [sx,sy]=iso(0,y);staticFlat.push([y===3?'wall_l_win':'wall_l',sx,sy]);}
   for(let x=0;x<ROOM_W;x++){const [sx,sy]=iso(x,0);staticFlat.push([(x===2||x===4)?'wall_r_win':'wall_r',sx,sy]);}}
-function seatWorld(i){const [x,y]=SEATS[i];const [sx,sy]=tc(x,y+1);return [sx+SEAT_OFF[0],sy+SEAT_OFF[1]];}
+// k:'a' 人在桌前(y+1)背对镜头；k:'b' 人在桌后(y-1)面朝镜头。返回 [世界x, 世界y, 排序深度]
+function deskSeat(d,k){const [x,y]=d;if(k==='a'){const [sx,sy]=tc(x,y+1);return [sx+SEAT_OFF[0],sy+SEAT_OFF[1],x+y+.65];}const [sx,sy]=tc(x,y-1);return [sx-SEAT_OFF[0],sy-SEAT_OFF[1],x+y-.65];}
+function seatWorld(i){const s=SEATS[i];return deskSeat(s.d,s.k);}
 
 // ================= 镜头
 const cam={x:0,y:0,z:1,fit:true};let stageW=1,stageH=1;
@@ -173,7 +193,7 @@ function planForm(){const used=Object.values(plan.policy).reduce((a,b)=>a+b,0);
       row('类型',GN[plan.genre].n,GN[plan.genre],()=>picker('选择类型',GENRES.map(g=>({v:g.id,label:g.n,sub:'初'})),v=>{plan.genre=v;planForm();},planForm)),
       row('内容',TN[plan.type].n,TN[plan.type],()=>picker('选择内容',TYPES.map(t=>({v:t.id,label:t.n,sub:'初'})),v=>{plan.type=v;planForm();},planForm)),
       row('方针',used?`已分配 ${used} 点`:'普通开发',null,policyDlg),
-      h('div',{class:'staffstrip'},...S.staff.map(s=>h('i',{style:`background:${SHIRTS[s.look]}`})))));
+      h('div',{class:'staffstrip'},...S.staff.map(s=>h('i',{style:`background:${SHIRTS[s.look%4]}`})))));
   openDlg('新企划书',body,okFoot('确定',confirmPlan),[null,{label:'返回',fn:()=>{plan=null;closeDlg();}}]);$('#dlg').onclick=null;}
 function confirmPlan(){if(S.money<DEV_FEE){talk(['资金不够开发费用了……']);return;}
   talk(['企划书要交给谁来写呢？','剧本能力越高，游戏的趣味和创新越好。'],()=>picker('企划书负责人',[...S.staff].sort((a,b)=>b.scen-a.scen).map(s=>({v:s.id,label:s.name,sub:`${JOBN[s.job]} · 剧本 ${s.scen}`})),id=>{closeDlg();startProject(id);},planForm));}
@@ -272,10 +292,11 @@ function tapAt(x,y){for(const s of S.staff){const [wx,wy]=seatWorld(s.seat);cons
 function draw(t){if(!gl)return;gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(.68,.71,.76,1);gl.clear(gl.COLOR_BUFFER_BIT);
   nq=0;for(const [k,x,y] of staticFlat)spr(k,x,y);const items=[];
   for(const [k,x,y] of DECOR){const [sx,sy]=tc(x,y);items.push([x+y,k,sx,sy]);}
-  for(const [x,y] of SEATS){const [sx,sy]=tc(x,y);items.push([x+y,'desk',sx,sy]);}
+  for(const s of SEATS){const [x,y]=s.d;const [sx,sy]=tc(x,y);items.push([x+y,s.k==='a'?'desk':'desk_back',sx,sy]);}
+  for(const [who,o,desk] of [['boss',BOSS,'boss_desk'],['secretary',SEC_SPOT,'reception']]){const [x,y]=o.d;const [sx,sy]=tc(x,y);items.push([x+y,desk,sx,sy]);const [wx,wy,dd]=deskSeat(o.d,'b');items.push([dd-.01,'chair',wx,wy]);items.push([dd,`${who}_${Math.floor(t*.7+(who==='boss'?0:.5))%2?'b':'a'}`,wx,wy]);}
   const working=!!(S.project&&!S.project.awaiting)&&!blocking();
-  for(let i=0;i<SEATS.length;i++){const [x,y]=SEATS[i];const [wx,wy]=seatWorld(i);items.push([x+y+.64,'chair',wx,wy]);}
-  for(const s of S.staff){const [x,y]=SEATS[s.seat];const [wx,wy]=seatWorld(s.seat);const f=working?(Math.floor(t*5+s.seat*1.7)%2?'b':'a'):'a';items.push([x+y+.65,`char_${s.look%CHAR_N}_${f}`,wx,wy+(working?0:Math.sin(t*1.5+s.seat)*1.2)]);}
+  for(let i=0;i<SEATS.length;i++){const [wx,wy,dd]=seatWorld(i);items.push([dd-.01,'chair',wx,wy]);}
+  for(const s of S.staff){const [wx,wy,dd]=seatWorld(s.seat);const f=working?(Math.floor(t*5+s.seat*1.7)%2?'b':'a'):'a';items.push([dd,`char_${s.look%CHAR_N}_${SEATS[s.seat].k==='a'?'back':'front'}_${f}`,wx,wy+(working?0:Math.sin(t*1.5+s.seat)*1.2)]);}
   items.sort((a,b)=>a[0]-b[0]);for(const it of items)spr(it[1],it[2],it[3]);
   gl.uniform2f(uRes,stageW,stageH);gl.uniform3f(uCam,cam.x,cam.y,cam.z);gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferSubData(gl.ARRAY_BUFFER,0,vdata.subarray(0,nq*48));gl.drawArrays(gl.TRIANGLES,0,nq*6);}
 let last=performance.now();
