@@ -1,0 +1,374 @@
+{
+  "passed": true,
+  "sceneKeys": 38,
+  "newSceneFrames": 20,
+  "uiPortraits": 1,
+  "previous18Unchanged": true,
+  "runtimeTested": false,
+  "pairs": [
+    {
+      "a": "char_0_front_a",
+      "b": "char_0_front_b",
+      "headSilhouetteChange": 0.00562
+    },
+    {
+      "a": "char_0_back_a",
+      "b": "char_0_back_b",
+      "headSilhouetteChange": 0.00721
+    },
+    {
+      "a": "char_1_front_a",
+      "b": "char_1_front_b",
+      "headSilhouetteChange": 0.00919
+    },
+    {
+      "a": "char_1_back_a",
+      "b": "char_1_back_b",
+      "headSilhouetteChange": 0.00701
+    },
+    {
+      "a": "char_2_front_a",
+      "b": "char_2_front_b",
+      "headSilhouetteChange": 0.00661
+    },
+    {
+      "a": "char_2_back_a",
+      "b": "char_2_back_b",
+      "headSilhouetteChange": 0.00721
+    },
+    {
+      "a": "char_3_front_a",
+      "b": "char_3_front_b",
+      "headSilhouetteChange": 0.0043
+    },
+    {
+      "a": "char_3_back_a",
+      "b": "char_3_back_b",
+      "headSilhouetteChange": 0.00437
+    },
+    {
+      "a": "boss_a",
+      "b": "boss_b",
+      "headSilhouetteChange": 0.00542
+    },
+    {
+      "a": "secretary_a",
+      "b": "secretary_b",
+      "headSilhouetteChange": 0.008
+    }
+  ],
+  "files": [
+    {
+      "key": "floor_a",
+      "pixels": [
+        256,
+        128
+      ],
+      "sha256": "8cb9a81508efb08f4b2f5df56832135c9d95bbcb9f6657d63d7a9e7c213f5b2f"
+    },
+    {
+      "key": "floor_b",
+      "pixels": [
+        256,
+        128
+      ],
+      "sha256": "646e424630ee16fcf9193ae1659a26b313c4b9393f81dd3d3c3b2cb8b6cf1c18"
+    },
+    {
+      "key": "outside",
+      "pixels": [
+        256,
+        128
+      ],
+      "sha256": "c3b7afd49581329df65071fc513a85e1678b40ba83380da5a5e97b452574cf38"
+    },
+    {
+      "key": "wall_r",
+      "pixels": [
+        128,
+        400
+      ],
+      "sha256": "b6f105b3becd3bc379828cb3be2b900fbe5b1d8b3873062ee3d784af24d8235b"
+    },
+    {
+      "key": "wall_r_win",
+      "pixels": [
+        128,
+        400
+      ],
+      "sha256": "1ec8765259e0cdd4e35f6a0721935607812cafce2f6b1ff6ec09f7b746600873"
+    },
+    {
+      "key": "wall_l",
+      "pixels": [
+        128,
+        400
+      ],
+      "sha256": "9ab0e6dbd70aa6ed35089ca4bd675a9e12330ab701939af820328c1e839dde82"
+    },
+    {
+      "key": "wall_l_win",
+      "pixels": [
+        128,
+        400
+      ],
+      "sha256": "f75ca0eeb31e3450859a946ac19b4ba45d06d2db9c6fcf9e549e107ccc0de3c5"
+    },
+    {
+      "key": "desk",
+      "pixels": [
+        256,
+        352
+      ],
+      "sha256": "6dbf30a63a53701bbce88f80cac20aff5fe59bce70984d8fb3a4be6c19b712c2"
+    },
+    {
+      "key": "desk_back",
+      "pixels": [
+        256,
+        352
+      ],
+      "sha256": "f1379ab5fad4aab6a11064d92e432c70da3aa65317f53618972fe3d04a97dccd"
+    },
+    {
+      "key": "chair",
+      "pixels": [
+        256,
+        192
+      ],
+      "sha256": "6c393f5223a8e371864cd61fe4f238393ecd39aae051f998bd97c79526c089dc"
+    },
+    {
+      "key": "boss_desk",
+      "pixels": [
+        256,
+        352
+      ],
+      "sha256": "65e398eb87e728c4d6d0bb4ecdd7cc8cd858323afdaa546dfcafe1794385fa7d"
+    },
+    {
+      "key": "reception",
+      "pixels": [
+        256,
+        352
+      ],
+      "sha256": "6e79a44ef12b4fb35064e8ea0a6b74e8fe5d59e0a779ac2fc01af6ad042396b8"
+    },
+    {
+      "key": "shelf",
+      "pixels": [
+        256,
+        352
+      ],
+      "sha256": "89bd9ae4cb7afc611765ac4866dced3d0be26dd72ead6736a0d172155819431b"
+    },
+    {
+      "key": "whiteboard",
+      "pixels": [
+        256,
+        352
+      ],
+      "sha256": "441aa301da4af28c8027ccdcbff26e10e242c6bacd87c18896b6215a927c37e4"
+    },
+    {
+      "key": "plant",
+      "pixels": [
+        256,
+        352
+      ],
+      "sha256": "637d6efe3121d9b82e4c2a9735987954533c1f6820470c54d0d749df69e489a8"
+    },
+    {
+      "key": "cooler",
+      "pixels": [
+        256,
+        352
+      ],
+      "sha256": "ea1a82773717bbdf2a984939138b682223a189cfdac6a344dbf7ea2abc158b36"
+    },
+    {
+      "key": "rug",
+      "pixels": [
+        256,
+        128
+      ],
+      "sha256": "8cb17c43109f55ad7fc2d81daa7322bad9513fa29d2e1d7fcc533180b49b49a9"
+    },
+    {
+      "key": "mat",
+      "pixels": [
+        256,
+        128
+      ],
+      "sha256": "4e4a932f428b9beb50cd9b37161599e0bfa75323506f8a7db8ab7d9a9bcb03c3"
+    },
+    {
+      "key": "char_0_front_a",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "134497059acc6e69d6b6e79d4e30ee77f6d5a887cd088e610ca8846ea0c0cadc"
+    },
+    {
+      "key": "char_0_front_b",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "11ef9f07bcb529828c341e9f51d79bcf4699f6687b1cfa676815c01ed96d5aa8"
+    },
+    {
+      "key": "char_0_back_a",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "b341f62bc83fa1caed3a9bcff53bd7a662056703d9cc612019b00aa640da3025"
+    },
+    {
+      "key": "char_0_back_b",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "ccf4d558fb2ebc1b85e3a355442a928d82d22cb10c094f41984461986012b663"
+    },
+    {
+      "key": "char_1_front_a",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "48a408e59eef1af2ed402c5f1228ca38cd8e2a9ce6d06c8f2727435c85a0c32d"
+    },
+    {
+      "key": "char_1_front_b",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "4fd913071933add40e92f9a61c2a6b2cd24f732b1328974116b813d85d765916"
+    },
+    {
+      "key": "char_1_back_a",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "863387dd7ada453d82cc3d573baa9736b6dd27c78b226d39bbb7fbaaf426f842"
+    },
+    {
+      "key": "char_1_back_b",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "9c89fa6f07b5802b6160f020a8e08f8f777c8f8e8b07af03b407bc6834a70756"
+    },
+    {
+      "key": "char_2_front_a",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "045ade090cc5ce8e84e12afb1fb9a9d26c9cdfe5e8098cd72bf4615e389afe56"
+    },
+    {
+      "key": "char_2_front_b",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "fadf7e92379fdb35da30b7ecc6c880157f68b58df0e231ef77d046ee1958b98e"
+    },
+    {
+      "key": "char_2_back_a",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "e5deb2678689bcebdf7db2c3f5b014308f89e39a38970f18eeec404d1bb9eb3c"
+    },
+    {
+      "key": "char_2_back_b",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "d949358a98b7a773dbd947c6d2a123d947f6c49a190d1d8dd48a6205d727dbf1"
+    },
+    {
+      "key": "char_3_front_a",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "2d5a7a741ef11ceeabd26b224582e2333e3c17ac916a22f44c70102469f52499"
+    },
+    {
+      "key": "char_3_front_b",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "37eea9b3715a2f4392fde1babd8095ec8145510c8d5978b8f077fe17ae9e38cb"
+    },
+    {
+      "key": "char_3_back_a",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "4f844802d44aa5a5eb53f75ce4b5c45af1bf0afd51bec35137df92fd91bf122c"
+    },
+    {
+      "key": "char_3_back_b",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "3ff5723d360fb7a1f22cd5349ad6491898ea0d48d6a93d88109a670107dc7d6b"
+    },
+    {
+      "key": "boss_a",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "8d333df5867a3100ef46843a2e73e00e0d69e21cdf7d8137d173c50d137ab41e"
+    },
+    {
+      "key": "boss_b",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "6798f1a2d99b3550f6329f1dd4d053806bbc8b1a2877ecc5436f6a3fc20bc8e0"
+    },
+    {
+      "key": "secretary_a",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "a44550e06f44324c7bfc15a0fb161d9804fa5405303a972c863d07ec54dbc3af"
+    },
+    {
+      "key": "secretary_b",
+      "pixels": [
+        144,
+        224
+      ],
+      "sha256": "53ce2ba75c75d3d9719fe6916cdd6779a7d34215308ca96aef809c9a091ced6d"
+    },
+    {
+      "key": "ui_secretary",
+      "pixels": [
+        192,
+        168
+      ],
+      "sha256": "bfdf20b48237f510a30ee93aec3ad15aaf066272674760fe4150c726362b4603"
+    }
+  ]
+}

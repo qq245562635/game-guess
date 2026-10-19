@@ -7,7 +7,7 @@
     "width": 128,
     "height": 64
   },
-  "batch": "initial-office-batches-01-02",
+  "batch": "initial-office-batches-01-03",
   "keys": [
     {
       "key": "floor_a",
@@ -242,6 +242,246 @@
       "source": "batch-02/mat",
       "kind": "floor_decor",
       "batch": 2
+    },
+    {
+      "key": "char_0_front_a",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_0_front_a",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_0_front_b",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_0_front_b",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_0_back_a",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_0_back_a",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_0_back_b",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_0_back_b",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_1_front_a",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_1_front_a",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_1_front_b",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_1_front_b",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_1_back_a",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_1_back_a",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_1_back_b",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_1_back_b",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_2_front_a",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_2_front_a",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_2_front_b",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_2_front_b",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_2_back_a",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_2_back_a",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_2_back_b",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_2_back_b",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_3_front_a",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_3_front_a",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_3_front_b",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_3_front_b",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_3_back_a",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_3_back_a",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "char_3_back_b",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/char_3_back_b",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "boss_a",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/boss_a",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "boss_b",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/boss_b",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "secretary_a",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/secretary_a",
+      "kind": "character",
+      "batch": 3
+    },
+    {
+      "key": "secretary_b",
+      "width": 72,
+      "height": 112,
+      "anchor": [
+        36,
+        102
+      ],
+      "source": "batch-03/secretary_b",
+      "kind": "character",
+      "batch": 3
     }
   ],
   "layout": {
@@ -360,9 +600,24 @@
     ]
   },
   "notes": [
-    "首批10张保持不变，第二批追加8张家具和陈设。",
-    "家具逻辑128x176、锚点64,144；地垫逻辑128x64、锚点64,32；PNG为2倍尺寸。",
-    "人物、远景和UI仍为占位图；本批未验证实际游戏中的人物遮挡。",
-    "DECOR保留3处plant，不改程序坐标。"
+    "前两批18张保持原文件，第三批追加20张场景人物帧和1张UI头像。",
+    "场景人物逻辑72x112，锚点36,102；实际PNG144x224，像素锚点72,204。",
+    "每对A/B共用A帧的缩放和定位变换；原图画布1像素差异先归一到A帧。",
+    "秘书头像不加入场景index.json；由DOM对话框引用assets/ui_secretary.png。",
+    "人物实际遮挡、动作流畅性和头像DOM接入待Claude验收；远景及其他UI未交付。"
+  ],
+  "uiAssets": [
+    {
+      "key": "ui_secretary",
+      "path": "assets/ui_secretary.png",
+      "width": 96,
+      "height": 84,
+      "pixels": [
+        192,
+        168
+      ],
+      "autoLoad": false,
+      "character": "secretary"
+    }
   ]
 }

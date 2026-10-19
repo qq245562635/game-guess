@@ -1,0 +1,15 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>人物第三批 · 动作检查</title>
+<style>
+body{margin:24px;background:#f0ecdd;color:#17443f;font:16px system-ui}button{padding:10px 18px;margin:4px;border:1px solid #9ba99c;border-radius:8px;background:#fff8e8;color:inherit;cursor:pointer}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;max-width:1100px}.card{background:#fffaf0;border:1px solid #d8d4c4;border-radius:12px;padding:12px;text-align:center}.sprite{position:relative;width:144px;height:224px;margin:auto}.sprite img{position:absolute;inset:0;width:144px;height:224px}.sprite img:nth-child(2){visibility:hidden}.sprite.b img:first-child{visibility:hidden}.sprite.b img:nth-child(2){visibility:visible}.small .sprite{width:72px;height:112px}.small .sprite img{width:72px;height:112px}.card p{font-size:12px}header{margin-bottom:18px}.portrait{width:192px;height:168px}#state{margin-left:16px}
+</style>
+<header><h1>人物第三批 · 动作检查</h1><p>员工每 200ms 切帧；老板、秘书每约 1.43 秒切帧。独立素材预览，游戏遮挡请接入后验收。</p><button id="play">暂停</button><button id="a">固定 A 帧</button><button id="b">固定 B 帧</button><button id="size">切换逻辑尺寸</button><span id="state">循环播放</span></header><main id="grid"></main>
+<section><h2>秘书头像</h2><img class="portrait" src="../../assets/ui_secretary.png" alt="秘书苏苏：栗色侧马尾、奶油发带、莓红开衫"></section>
+<script>
+const grid=document.getElementById('grid'),play=document.getElementById('play'),a=document.getElementById('a'),b=document.getElementById('b'),size=document.getElementById('size'),state=document.getElementById('state');
+const bases=[];for(let i=0;i<4;i++)for(const view of ['front','back'])bases.push(`char_${i}_${view}`);bases.push('boss','secretary');
+for(const key of bases){const c=document.createElement('article');c.className='card';const p=document.createElement('p');p.textContent=key;const s=document.createElement('div');s.className='sprite';s.dataset.key=key;for(const f of ['a','b']){const img=document.createElement('img');img.src=`../../assets/${key}_${f}.png`;img.alt=`${key} ${f}`;s.append(img)}c.append(p,s);grid.append(c)}
+let running=true;const sprites=[...document.querySelectorAll('.sprite')];function fixed(b){running=false;sprites.forEach(s=>s.classList.toggle('b',b));state.textContent=b?'固定 B 帧':'固定 A 帧';play.textContent='播放'}
+play.onclick=()=>{running=!running;play.textContent=running?'暂停':'播放';state.textContent=running?'循环播放':'已暂停'};a.onclick=()=>fixed(false);b.onclick=()=>fixed(true);size.onclick=()=>grid.classList.toggle('small');
+setInterval(()=>{if(running)sprites.forEach(s=>s.classList.toggle('b',Math.floor(performance.now()/(s.dataset.key.startsWith('char_')?200:1429))%2===1))},40);
+</script></html>
