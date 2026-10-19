@@ -254,7 +254,7 @@ function mkStaff(job,i){const W={prog:{prog:1.6,scen:.6,gfx:.6,snd:.5},plan:{pro
   const st={};for(const a in W)st[a]=Math.round(11*W[a]*rnd(.8,1.2));const NAMES=['李晨','王悦','陈默','周小雨'];
   return {id:'s'+i,name:NAMES[i],job,...st,salary:Math.round(20+(st.prog+st.scen+st.gfx+st.snd)*.9),seat:i,look:i,fav:pick(INIT_G),sta:100,lv:1};}
 function freshState(){return {v:3,year:1,month:4,week:1,money:5000,fans:0,staff:['prog','plan','art','sound'].map(mkStaff),project:null,games:[],ys:{units:0,profit:0},cnt:{},known:{},unl:null};}
-function newGame(){S=freshState();S.unl=unlockedIds();if(typeof away!=='undefined')away.clear();}
+function newGame(){S=freshState();S.unl=unlockedIds();if(typeof away!=='undefined')away.clear();if(typeof pending!=='undefined')pending.length=0;if(typeof plan!=='undefined')plan=null;}
 // 旧存档（v2）补字段
 function migrate(s){if(s.v===3)return s;s.v=3;s.cnt=s.cnt||{};s.known=s.known||{};s.unl=null;
   for(const st of s.staff){st.fav=st.fav||pick(INIT_G);st.sta=st.sta??100;st.lv=st.lv||1;}
@@ -390,7 +390,7 @@ function weekTick(){S.week++;if(S.week>4){S.week=1;monthTick();}
   else if(p&&!p.awaiting)projectWeek();else if(!p)idleWeek();
   salesWeek();renderAll();checkUnlocks();}
 function monthTick(){S.month++;if(S.month>12)S.month=1;const pay=S.staff.reduce((a,s)=>a+s.salary,0);addMoney(-pay);
-  if(S.month===4){S.year++;S.ys={units:0,profit:0};}save(true);}
+  if(S.month===4){S.year++;S.ys={units:0,profit:0};}save(true);if(S.money<0)schedule(.3,brokeAsk);}
 function projectWeek(){const p=S.project;const D=DN[p.dev],G=GN[p.genre];let prog=0;
   const lvMul=1+.05*(lvOf(p.genre)-1)+.05*(lvOf(p.type)-1);
   const norm=14/p.weeks*(.9+G.fee/2000);   // 每周点数按周期归一：总量与周期基本无关，高价类型上限更高
@@ -493,7 +493,10 @@ function doTrain(i,c){const s=S.staff[i];addMoney(-c.fee);const gains=trainGains
     msg.textContent=keys.length?'培训完成！'+keys.map(k=>`${SKN[k][0]}+${gains[k]}`).join('  '):c.sta<0?'泡完温泉，体力回满了！':'培训完成！这次没什么收获…';
     const next=()=>trainPick(i);setBottom(null,{label:'确定',fn:next});setTimeout(()=>{$('#dlg').onclick=next;},0);}}
 function recordsDlg(){openDlg('作品记录',S.games.length?h('div',{},...S.games.map(g=>h('div',{class:'srow',style:'grid-template-columns:1fr 90rem 140rem'},h('span',{},`《${g.title}》`,h('small',{style:'color:var(--ink-soft);font-size:20rem;margin-left:8rem'},(CN[g.chan]||CN.web).n)),h('b',{class:'num'},`${g.total}分`),h('b',{class:'num'},fmt(g.units))))):h('div',{style:'font-size:30rem;text-align:center;padding:30rem'},'还没有发售过作品'),okFoot('确定',closeDlg),[null,{label:'返回',fn:closeDlg}]);$('#dlg').onclick=null;}
-function restartAsk(){picker('重新开始？',[{v:1,label:'清空进度，从 1 年 4 月开始'},{v:0,label:'算了'}],v=>{closeDlg();if(v){newGame();renderAll();toast('新的公司成立了');}},closeDlg);}
+function restartAsk(){picker('重新开始？',[{v:1,label:'清空进度，从 1 年 4 月开始'},{v:0,label:'算了'}],v=>{closeDlg();if(v)restartNow();},closeDlg);}
+function restartNow(){newGame();save();renderAll();toast('新的公司成立了');}
+// 月底发完工资还是负数：秘书提醒，可以直接重开
+function brokeAsk(){talk(['社长，发完工资后资金变成负数了……','要不要从头再来？'],()=>picker('资金不足',[{v:1,label:'重新开始',sub:'清空进度，从 1 年 4 月开始'},{v:0,label:'继续经营',sub:'等新作卖钱'}],v=>{closeDlg();if(v)restartNow();},null));}
 
 // ================= 信息栏
 function renderInfo(){const pg=$('#ipage');const p=S.project;const pages=p?2:1;if(UI.page>=pages)UI.page=0;
