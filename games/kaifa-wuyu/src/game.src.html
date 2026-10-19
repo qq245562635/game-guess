@@ -127,6 +127,41 @@ button{font:inherit;color:inherit;cursor:pointer}
 #tabUp.down::after{border-bottom:0;border-top:24rem solid #F07A1A}
 button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 @media (prefers-reduced-motion:reduce){.pop{animation-duration:.01s}#tick.blink{animation:none}}
+/* 新企划：列表图标、等级、方针标记 */
+.frow .flv{font-style:normal;color:var(--neg);font-size:26rem}
+.prow{min-height:64rem;height:auto;gap:16rem}
+.prow .pl{display:flex;align-items:center;gap:14rem;flex:none}
+.prow .tico{width:40rem;height:40rem;border-radius:6rem;display:grid;place-items:center;color:#fff;font-size:20rem;font-weight:700}
+.prow:disabled .tico{opacity:.35}
+.prow small{text-align:right;white-space:nowrap}
+.pmk{font-style:normal;font-size:22rem;color:#E2A400;margin-left:6rem}.pmk.x{color:var(--neg)}
+.pfoot .tico{width:40rem;height:40rem;border-radius:6rem;display:grid;place-items:center;color:#fff;font-size:20rem;font-weight:700}
+/* 制作人卡片 */
+.dlg-title.pager{display:flex;justify-content:space-between;align-items:center;padding:0 12rem}
+.dlg-title .pg{border:0;background:none;font-size:34rem;color:#D9A400;width:70rem;height:100%}
+.card{display:grid;gap:12rem}
+.chead{display:flex;justify-content:space-between;align-items:center;font-size:34rem;padding:0 24rem}
+.ctag{background:#fff;color:var(--label);font-size:26rem;padding:4rem 20rem;border:2rem solid var(--frame)}
+.cbox{display:grid;grid-template-columns:1fr 1fr;gap:12rem;border:2rem solid var(--frame);border-radius:10rem;padding:14rem;background:#fff}
+.cleft{background:#FCEFF6;padding:10rem 14rem;display:grid;gap:6rem}
+.cjob{font-size:28rem;color:var(--label)}
+.cfig{height:120rem;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.cfig .head{display:block;width:40rem;height:40rem;border-radius:50%;background:#F1C7A5;border-top:14rem solid;box-sizing:border-box}
+.cfig .body{display:block;width:56rem;height:62rem;border-radius:24rem 24rem 4rem 4rem;margin-top:2rem}
+.csta{display:flex;align-items:center;gap:10rem;font-size:22rem;color:var(--neg)}
+.csta .bar{flex:1;height:14rem;background:#DDE3EE;display:block}
+.csta .bar i{display:block;height:100%;background:#3651C9}
+.csta .bar.low i{background:var(--neg)}
+.cright{background:#EEF3EF;padding:6rem 12rem;display:grid;align-content:space-around}
+.cs{display:grid;grid-template-columns:36rem 1fr auto;gap:10rem;align-items:center;font-size:28rem;color:var(--ink-soft)}
+.cs b{color:var(--ink);font-size:32rem;font-weight:500}
+.cs.hi span:nth-child(2){color:var(--label);font-weight:700}
+.csi{width:32rem;height:32rem;border-radius:6rem;color:#fff;font-size:18rem;display:grid;place-items:center}
+.cfoot{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16rem;padding:0 10rem}
+.cfee{display:grid;font-size:28rem}.cfee .k{color:var(--label)}
+.cfav{font-size:24rem;color:var(--ink-soft);text-align:center}.cfav.on{color:var(--sel-2);font-weight:700}
+.cok{border:0;background:#B9D0F5;font-size:34rem;padding:8rem 40rem;border-radius:4rem}
+.chint{text-align:center;font-size:26rem;color:var(--label)}
 </style>
 
 <div id="app">

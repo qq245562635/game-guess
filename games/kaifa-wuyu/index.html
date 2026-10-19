@@ -134,6 +134,41 @@ button{font:inherit;color:inherit;cursor:pointer}
 #tabUp.down::after{border-bottom:0;border-top:24rem solid #F07A1A}
 button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 @media (prefers-reduced-motion:reduce){.pop{animation-duration:.01s}#tick.blink{animation:none}}
+/* 新企划：列表图标、等级、方针标记 */
+.frow .flv{font-style:normal;color:var(--neg);font-size:26rem}
+.prow{min-height:64rem;height:auto;gap:16rem}
+.prow .pl{display:flex;align-items:center;gap:14rem;flex:none}
+.prow .tico{width:40rem;height:40rem;border-radius:6rem;display:grid;place-items:center;color:#fff;font-size:20rem;font-weight:700}
+.prow:disabled .tico{opacity:.35}
+.prow small{text-align:right;white-space:nowrap}
+.pmk{font-style:normal;font-size:22rem;color:#E2A400;margin-left:6rem}.pmk.x{color:var(--neg)}
+.pfoot .tico{width:40rem;height:40rem;border-radius:6rem;display:grid;place-items:center;color:#fff;font-size:20rem;font-weight:700}
+/* 制作人卡片 */
+.dlg-title.pager{display:flex;justify-content:space-between;align-items:center;padding:0 12rem}
+.dlg-title .pg{border:0;background:none;font-size:34rem;color:#D9A400;width:70rem;height:100%}
+.card{display:grid;gap:12rem}
+.chead{display:flex;justify-content:space-between;align-items:center;font-size:34rem;padding:0 24rem}
+.ctag{background:#fff;color:var(--label);font-size:26rem;padding:4rem 20rem;border:2rem solid var(--frame)}
+.cbox{display:grid;grid-template-columns:1fr 1fr;gap:12rem;border:2rem solid var(--frame);border-radius:10rem;padding:14rem;background:#fff}
+.cleft{background:#FCEFF6;padding:10rem 14rem;display:grid;gap:6rem}
+.cjob{font-size:28rem;color:var(--label)}
+.cfig{height:120rem;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.cfig .head{display:block;width:40rem;height:40rem;border-radius:50%;background:#F1C7A5;border-top:14rem solid;box-sizing:border-box}
+.cfig .body{display:block;width:56rem;height:62rem;border-radius:24rem 24rem 4rem 4rem;margin-top:2rem}
+.csta{display:flex;align-items:center;gap:10rem;font-size:22rem;color:var(--neg)}
+.csta .bar{flex:1;height:14rem;background:#DDE3EE;display:block}
+.csta .bar i{display:block;height:100%;background:#3651C9}
+.csta .bar.low i{background:var(--neg)}
+.cright{background:#EEF3EF;padding:6rem 12rem;display:grid;align-content:space-around}
+.cs{display:grid;grid-template-columns:36rem 1fr auto;gap:10rem;align-items:center;font-size:28rem;color:var(--ink-soft)}
+.cs b{color:var(--ink);font-size:32rem;font-weight:500}
+.cs.hi span:nth-child(2){color:var(--label);font-weight:700}
+.csi{width:32rem;height:32rem;border-radius:6rem;color:#fff;font-size:18rem;display:grid;place-items:center}
+.cfoot{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16rem;padding:0 10rem}
+.cfee{display:grid;font-size:28rem}.cfee .k{color:var(--label)}
+.cfav{font-size:24rem;color:var(--ink-soft);text-align:center}.cfav.on{color:var(--sel-2);font-weight:700}
+.cok{border:0;background:#B9D0F5;font-size:34rem;padding:8rem 40rem;border-radius:4rem}
+.chint{text-align:center;font-size:26rem;color:var(--label)}
 </style>
 
 <div id="app">
@@ -168,18 +203,78 @@ function hash(s){let x=2166136261;for(const ch of s){x^=ch.charCodeAt(0);x=Math.
 function h(tag,attrs,...kids){const el=document.createElement(tag);attrs=attrs||{};for(const k in attrs){const v=attrs[k];if(k==='class')el.className=v;else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(k==='style')el.style.cssText=v;else if(v!==false&&v!=null)el.setAttribute(k,v===true?'':v);}for(const c of kids.flat()){if(c==null||c===false)continue;el.append(c.nodeType?c:document.createTextNode(String(c)));}return el;}
 
 // ================= 数据（只保留主线需要的）
-const WEEK_SEC=2, PRICE=2, DEV_FEE=500, POLICY_BUDGET=10;
+const WEEK_SEC=2, PRICE=2;
 const STATK=['fun','creat','gfx','snd'];
 const STATN={fun:'趣味',creat:'创新',gfx:'画面',snd:'声音'};
 const STATC={fun:'var(--c-fun)',creat:'var(--c-creat)',gfx:'var(--c-gfx)',snd:'var(--c-snd)',bug:'var(--c-bug)'};
 const STATG={fun:'趣',creat:'创',gfx:'画',snd:'声',bug:'虫'};
-const PLATFORMS=[{id:'pc',n:'电脑',own:true},{id:'sx',n:'星环 SX',own:false},{id:'pk',n:'口袋机 PK',own:false}];
-const GENRES=[{id:'board',n:'桌上游戏',c:'#E0484E'},{id:'act',n:'动作',c:'#E2701A'},{id:'adv',n:'冒险',c:'#1C9660'},{id:'rpg',n:'角色扮演',c:'#8A4FE3'},{id:'sim',n:'模拟',c:'#2A7BDB'},{id:'puz',n:'解谜',c:'#0E8F9A'}];
-const TYPES=[{id:'treasure',n:'寻宝',c:'#3FAF4A'},{id:'ninja',n:'忍者',c:'#33465F'},{id:'robot',n:'机器人',c:'#6B7A90'},{id:'space',n:'太空',c:'#24308A'},{id:'school',n:'校园',c:'#E35D9A'},{id:'cook',n:'料理',c:'#D98A1E'}];
-const GN=Object.fromEntries(GENRES.map(x=>[x.id,x])),TN=Object.fromEntries(TYPES.map(x=>[x.id,x]));
+const PROG_BASE=35, CH_BASE=4000;
+const LVN=['初','中','高','极','神'],LV_AT=[0,1,3,6,10];
 const POLICY=[['cute','可爱度'],['real','真实性'],['friendly','亲和度'],['hardcore','资深度'],['control','操作性'],['novel','新颖度'],['world','世界观'],['detail','精细度']];
-// 每个类型/内容偏好的两项方针（发售后显示在评语里）
-const LIKE=Object.fromEntries([...GENRES,...TYPES].map(x=>{const a=hash(x.id)%8;let b=hash(x.id+'b')%8;if(b===a)b=(b+3)%8;return [x.id,[POLICY[a][0],POLICY[b][0]]];}));
+const PN=Object.fromEntries(POLICY);
+// 渠道（替代原作主机）。share=[第1年,第3年] 市场占比；cut=开发者分成；rev=审核周数；un=解锁条件；bonus=销量偏好加成
+const CHANNELS=[
+  {id:'web',n:'自家官网',c:'#5C6478',fee:0,cut:1,share:[.03,.02],rev:0,bonus:()=>1},
+  {id:'h5',n:'嘿嘿小游戏站',c:'#E2701A',fee:0,cut:.5,share:[.12,.08],rev:1,bonus:g=>['puz','board','idle'].includes(g.genre)?1.2:1},
+  {id:'wx',n:'微讯小游戏',c:'#3FAF4A',fee:300,cut:.6,share:[.25,.28],rev:2,mass:true,bonus:g=>g.policy.friendly>=4?1.2:1},
+  {id:'tap',n:'塔塔社区',c:'#0E8F9A',fee:200,cut:.85,share:[.10,.14],rev:2,un:'g:1',bonus:g=>g.creatScore>=7?1.3:1},
+  {id:'steam',n:'蒸汽平台',c:'#24308A',fee:100,cut:.7,share:[.08,.10],rev:1,un:'y:2',bonus:g=>(g.policy.hardcore>=4||['act','rpg','strat'].includes(g.genre))?1.2:1},
+  {id:'hw',n:'华光应用市场',c:'#E0383E',fee:1000,cut:.5,share:[.20,.18],rev:4,un:'fans:2000',bonus:g=>['rpg','card'].includes(g.genre)?1.2:1},
+  {id:'qe',n:'企鹅游戏',c:'#2A7BDB',fee:3000,cut:.3,share:[.30,.32],rev:6,mass:true,un:'fans:10000',bonus:g=>g.policy.friendly>=4?1.2:1}];
+const GENRES=[
+  {id:'board',n:'桌上游戏',c:'#E0484E',fee:200,wk:8,like:['friendly','detail'],hate:'hardcore'},
+  {id:'puz',n:'解谜',c:'#0E8F9A',fee:200,wk:8,like:['novel','detail'],hate:'real'},
+  {id:'act',n:'动作',c:'#E2701A',fee:400,wk:12,like:['control','real'],hate:'friendly'},
+  {id:'adv',n:'冒险',c:'#1C9660',fee:400,wk:12,like:['world','novel'],hate:'control'},
+  {id:'sim',n:'模拟经营',c:'#2A7BDB',fee:500,wk:14,like:['real','detail'],hate:'cute'},
+  {id:'rpg',n:'角色扮演',c:'#8A4FE3',fee:600,wk:16,like:['world','hardcore'],hate:'friendly'},
+  {id:'edu',n:'教育',c:'#3FAF4A',fee:300,wk:10,like:['friendly','real'],hate:'hardcore',un:'y:2'},
+  {id:'idle',n:'放置',c:'#D98A1E',fee:300,wk:8,like:['friendly','cute'],hate:'control',un:'g:1'},
+  {id:'rhythm',n:'音乐节奏',c:'#E35D9A',fee:500,wk:12,like:['control','cute'],hate:'world',un:'snd:60'},
+  {id:'card',n:'卡牌',c:'#6B4FA0',fee:500,wk:14,like:['hardcore','cute'],hate:'real',un:'fans:1000'},
+  {id:'shoot',n:'射击',c:'#4A5568',fee:700,wk:18,like:['control','real'],hate:'cute',un:'y:3'},
+  {id:'strat',n:'策略',c:'#8A6A2E',fee:700,wk:18,like:['hardcore','world'],hate:'friendly',un:'y:3'}];
+const TYPES=[
+  {id:'treasure',n:'寻宝',c:'#3FAF4A',fee:100,like:['novel','world']},
+  {id:'animal',n:'萌宠',c:'#E89B3A',fee:100,like:['cute','friendly']},
+  {id:'robot',n:'机器人',c:'#6B7A90',fee:150,like:['real','detail']},
+  {id:'school',n:'校园',c:'#E35D9A',fee:100,like:['friendly','real']},
+  {id:'cook',n:'料理',c:'#D98A1E',fee:100,like:['detail','cute']},
+  {id:'space',n:'太空',c:'#24308A',fee:200,like:['world','novel']},
+  {id:'wuxia',n:'武侠',c:'#8A3A2E',fee:200,like:['world','control'],un:'y:2'},
+  {id:'sanguo',n:'三国',c:'#A0522D',fee:250,like:['hardcore','real'],un:'y:2'},
+  {id:'detective',n:'侦探',c:'#33465F',fee:200,like:['detail','novel'],un:'made:adv'},
+  {id:'xianxia',n:'修仙',c:'#5E8BD6',fee:250,like:['world','hardcore'],un:'lv:wuxia:2'},
+  {id:'idol',n:'偶像',c:'#F06BA8',fee:200,like:['cute','friendly'],un:'fans:3000'},
+  {id:'doom',n:'末日',c:'#5A5A5A',fee:250,like:['real','hardcore'],un:'y:3'}];
+const DEVPLANS=[
+  {id:'normal',n:'普通开发',fee:1,wk:1,pts:1,bug:1,d:'标准'},
+  {id:'speed',n:'速度优先',fee:.8,wk:.7,pts:.85,bug:1.4,d:'周期短·品质略降·Bug多'},
+  {id:'quality',n:'质量优先',fee:1.3,wk:1.3,pts:1.2,bug:.7,d:'周期长·品质高·Bug少'},
+  {id:'budget',n:'增加预算',fee:2,wk:1,pts:1.35,bug:1,d:'砸钱换品质',un:'y:2'}];
+const GN=Object.fromEntries(GENRES.map(x=>[x.id,x])),TN=Object.fromEntries(TYPES.map(x=>[x.id,x])),CN=Object.fromEntries(CHANNELS.map(x=>[x.id,x])),DN=Object.fromEntries(DEVPLANS.map(x=>[x.id,x]));
+const INIT_G=['board','puz','act','adv','sim','rpg'];
+// 相性（隐藏）：3 绝配 2 良好 1 一般 0 不搭
+const COMPAT={};
+'adv|treasure sim|cook rpg|xianxia strat|sanguo rhythm|idol adv|detective idle|animal shoot|space act|wuxia edu|school'.split(' ').forEach(k=>COMPAT[k]=3);
+'act|robot board|animal card|sanguo sim|school shoot|doom'.split(' ').forEach(k=>COMPAT[k]=2);
+'edu|doom board|doom rhythm|sanguo puz|wuxia'.split(' ').forEach(k=>COMPAT[k]=0);
+function compat(g,t){const k=COMPAT[g+'|'+t];if(k!=null)return k;const G=GN[g],T=TN[t];if(T.like.includes(G.hate))return 0;return T.like.some(x=>G.like.includes(x))?2:1;}
+const COMPAT_MOD=[-.15,0,.08,.2];
+// 方针方向 → 四项点数侧重（每点）
+const PEFF={cute:{gfx:.03,fun:.01},real:{gfx:.02,snd:.02},friendly:{fun:.03},hardcore:{fun:.02,creat:.02},control:{fun:.03},novel:{creat:.04},world:{creat:.02,snd:.02},detail:{fun:.01,creat:.01,gfx:.01,snd:.01}};
+const lvOf=id=>{const n=S.cnt[id]||0;let l=1;for(let i=1;i<LV_AT.length;i++)if(n>=LV_AT[i])l=i+1;return l;};
+const share=c=>{const t=clamp((S.year-1)/2,0,1);return c.share[0]+(c.share[1]-c.share[0])*t;};
+function cond(c){if(!c)return {ok:true};const [k,a,b]=c.split(':');
+  if(k==='y')return {ok:S.year>=+a,txt:`第 ${a} 年开放`};
+  if(k==='g')return {ok:S.games.length>=+a,txt:`发售过 ${a} 部作品后开放`};
+  if(k==='fans')return {ok:S.fans>=+a,txt:`粉丝 ${fmt(+a)} 后开放`};
+  if(k==='snd')return {ok:S.staff.some(s=>s.snd>=+a),txt:`有员工作曲 ≥ ${a} 后开放`};
+  if(k==='made')return {ok:S.games.some(g=>g.genre===a),txt:`发售过${GN[a].n}作品后开放`};
+  if(k==='lv')return {ok:lvOf(a)>=+b,txt:`${TN[a].n}达到「${LVN[b-1]}」后开放`};
+  return {ok:true};}
+const unlockedIds=()=>[...CHANNELS,...GENRES,...TYPES,...DEVPLANS].filter(x=>cond(x.un).ok).map(x=>x.id);
+const ico=it=>h('span',{class:'tico',style:`background:${it.c}`},it.n[0]);
 const REVIEWERS=[{n:'阿杰',pref:'fun'},{n:'小米',pref:'gfx'},{n:'老K',pref:'creat'},{n:'Echo',pref:'snd'}];
 const IDLE_TALK=['嘿咻','……','想到个点子','咖啡呢','今天也加油'];
 const SECRETARY='秘书 苏苏';
@@ -298,8 +393,15 @@ new ResizeObserver(resize).observe($('#scene'));
 let S=null;
 function mkStaff(job,i){const W={prog:{prog:1.6,scen:.6,gfx:.6,snd:.5},plan:{prog:.6,scen:1.6,gfx:.7,snd:.5},art:{prog:.5,scen:.7,gfx:1.6,snd:.6},sound:{prog:.5,scen:.6,gfx:.6,snd:1.6}}[job];
   const st={};for(const a in W)st[a]=Math.round(11*W[a]*rnd(.8,1.2));const NAMES=['李晨','王悦','陈默','周小雨'];
-  return {id:'s'+i,name:NAMES[i],job,...st,salary:Math.round(20+(st.prog+st.scen+st.gfx+st.snd)*.9),seat:i,look:i};}
-function freshState(){return {v:2,year:1,month:4,week:1,money:5000,fans:0,staff:['prog','plan','art','sound'].map(mkStaff),project:null,games:[],ys:{units:0,profit:0}};}
+  return {id:'s'+i,name:NAMES[i],job,...st,salary:Math.round(20+(st.prog+st.scen+st.gfx+st.snd)*.9),seat:i,look:i,fav:pick(INIT_G),sta:100};}
+function freshState(){return {v:3,year:1,month:4,week:1,money:5000,fans:0,staff:['prog','plan','art','sound'].map(mkStaff),project:null,games:[],ys:{units:0,profit:0},cnt:{},known:{},unl:null};}
+function newGame(){S=freshState();S.unl=unlockedIds();}
+// 旧存档（v2）补字段
+function migrate(s){if(s.v===3)return s;s.v=3;s.cnt=s.cnt||{};s.known=s.known||{};s.unl=null;
+  for(const st of s.staff){st.fav=st.fav||pick(INIT_G);st.sta=st.sta??100;}
+  for(const g of s.games){if(!TN[g.type])g.type='animal';g.chan=g.chan||'web';g.cut=g.cut??1;g.policy=g.policy||{};}
+  const p=s.project;if(p){if(!TN[p.type])p.type='animal';p.chan=p.chan||'web';p.dev=p.dev||'normal';p.weeks=p.weeks||14;delete p.plat;}
+  return s;}
 function addMoney(d){S.money+=d;S.ys.profit+=d;}
 const JOBN={prog:'程序员',plan:'剧本作家',art:'设计师',sound:'音效师'};
 
@@ -336,84 +438,150 @@ const okFoot=(label,fn)=>h('div',{class:'dlg-foot'},h('button',{type:'button',on
 function talk(lines,done){let i=0;const show=()=>{const box=h('div',{},h('div',{class:'talkbox'},lines[i]),h('div',{class:'speaker'},h('span',{},SECRETARY),h('span',{class:'face'})));
     openDlg('对话框',box,null,null);setTimeout(()=>{$('#dlg').onclick=()=>{i++;$('#dlg').onclick=null;if(i<lines.length)show();else{closeDlg();done&&done();}};},0);};show();}
 // 选择列表
-function picker(title,rows,onPick,back){openDlg(title,h('div',{style:'display:grid'},...rows.map(r=>h('button',{type:'button',class:'prow',disabled:!!r.disabled,onclick:e=>{e.stopPropagation();onPick(r.v);}},h('span',{},r.label),r.sub?h('small',{},r.sub):null))),null,[null,back?{label:'返回',fn:back}:null]);$('#dlg').onclick=null;}
+function picker(title,rows,onPick,back){openDlg(title,h('div',{style:'display:grid'},...rows.map(r=>h('button',{type:'button',class:'prow'+(r.sel?' sel':''),disabled:!!r.disabled,onclick:e=>{e.stopPropagation();onPick(r.v);}},h('span',{class:'pl'},r.ico?ico(r.ico):null,r.label),r.sub?h('small',{},r.sub):null))),null,[null,back?{label:'返回',fn:back}:null]);$('#dlg').onclick=null;}
 
-// ---- 新企划书
+// ---- 新企划书（界面①）
 let plan=null;
-function newPlan(){if(S.project){talk([`现在正在开发《${S.project.title}》，等它完成再说吧。`]);return;}
-  plan={plat:'pc',genre:'board',type:'treasure',policy:Object.fromEntries(POLICY.map(p=>[p[0],0]))};planForm();}
-function planForm(){const used=Object.values(plan.policy).reduce((a,b)=>a+b,0);
-  const row=(label,val,ico,fn)=>h('button',{type:'button',class:'frow',onclick:fn},h('span',{class:'fl'},label),h('span',{class:'fv'},ico?h('span',{class:'tico',style:`background:${ico.c}`},ico.n[0]):null,val));
+const planCost=p=>Math.round((GN[p.genre].fee+TN[p.type].fee)*DN[p.dev].fee)+CN[p.chan].fee;
+function newPlan(){const p=S.project;if(p){talk([p.awaiting==='review'?`《${p.title}》还在${CN[p.chan].n}审核中，等它发售再说吧。`:`现在正在开发《${p.title}》，等它完成再说吧。`]);return;}
+  plan={chan:'web',genre:'board',type:'treasure',dev:'normal',policy:Object.fromEntries(POLICY.map(p=>[p[0],0]))};planForm();}
+function listPick(title,list,cur,sub,onPick){picker(title,list.map(x=>{const u=cond(x.un);return {v:x.id,label:x.n,ico:x.c?x:null,sel:x.id===cur,disabled:!u.ok,sub:u.ok?sub(x):u.txt};}),v=>{onPick(v);planForm();},planForm);}
+function planForm(){const cost=planCost(plan);
+  const row=(label,val,it,lv,fn)=>h('button',{type:'button',class:'frow',onclick:fn},h('span',{class:'fl'},label),h('span',{class:'fv'},it?ico(it):null,val,lv?h('em',{class:'flv'},lv):null));
   const body=h('div',{style:'display:grid;gap:14rem'},
-    h('div',{class:'cost'},h('span',{class:'k'},'开发费用'),h('span',{class:'num'},fmt(DEV_FEE)+'金')),
+    h('div',{class:'cost'},h('span',{class:'k'},'开发费用'),h('span',{class:'num',style:S.money<cost?'color:var(--neg)':''},fmt(cost)+'金')),
     h('div',{class:'fbox'},
-      row('主机',PLATFORMS.find(p=>p.id===plan.plat).n,null,()=>picker('选择主机',PLATFORMS.map(p=>({v:p.id,label:p.n,sub:p.own?'':'未取得授权',disabled:!p.own})),v=>{plan.plat=v;planForm();},planForm)),
-      row('类型',GN[plan.genre].n,GN[plan.genre],()=>picker('选择类型',GENRES.map(g=>({v:g.id,label:g.n,sub:'初'})),v=>{plan.genre=v;planForm();},planForm)),
-      row('内容',TN[plan.type].n,TN[plan.type],()=>picker('选择内容',TYPES.map(t=>({v:t.id,label:t.n,sub:'初'})),v=>{plan.type=v;planForm();},planForm)),
-      row('方针',used?`已分配 ${used} 点`:'普通开发',null,policyDlg),
-      h('div',{class:'staffstrip'},...S.staff.map(s=>h('i',{style:`background:${SHIRTS[s.look%4]}`})))));
-  openDlg('新企划书',body,okFoot('确定',confirmPlan),[null,{label:'返回',fn:()=>{plan=null;closeDlg();}}]);$('#dlg').onclick=null;}
-function confirmPlan(){if(S.money<DEV_FEE){talk(['资金不够开发费用了……']);return;}
-  talk(['企划书要交给谁来写呢？','剧本能力越高，游戏的趣味和创新越好。'],()=>picker('企划书负责人',[...S.staff].sort((a,b)=>b.scen-a.scen).map(s=>({v:s.id,label:s.name,sub:`${JOBN[s.job]} · 剧本 ${s.scen}`})),id=>{closeDlg();startProject(id);},planForm));}
-// ---- 方针
-function policyDlg(){let sel=POLICY[0][0];
-  const render=()=>{const used=Object.values(plan.policy).reduce((a,b)=>a+b,0);
-    const cell=([k,n])=>h('button',{type:'button',class:'pcell'+(sel===k?' sel':''),onclick:()=>{sel=k;render();}},h('span',{class:'pn'},n),
-      h('span',{class:'pslide'},h('span',{class:'ar',onclick:e=>{e.stopPropagation();if(plan.policy[k]>0){plan.policy[k]--;render();}}},'◀'),h('span',{class:'segs'},...Array.from({length:10},(_,i)=>h('i',{class:i<plan.policy[k]?'on':''}))),h('span',{class:'ar',onclick:e=>{e.stopPropagation();if(used<POLICY_BUDGET&&plan.policy[k]<10){plan.policy[k]++;render();}}},'▶')));
-    const body=h('div',{style:'display:grid;gap:14rem'},h('div',{class:'remain'},'剩余方针点数',h('b',{class:'num'},POLICY_BUDGET-used)),h('div',{class:'pgrid'},...POLICY.map(cell)),
-      h('div',{class:'pfoot'},h('div',{class:'lv'},h('span',{class:'tico',style:`width:40rem;height:40rem;border-radius:6rem;display:grid;place-items:center;color:#fff;background:${GN[plan.genre].c}`},GN[plan.genre].n[0]),h('span',{},GN[plan.genre].n),h('em',{},'初'),
-        h('span',{class:'tico',style:`width:40rem;height:40rem;border-radius:6rem;display:grid;place-items:center;color:#fff;background:${TN[plan.type].c}`},TN[plan.type].n[0]),h('span',{},TN[plan.type].n),h('em',{},'初')),h('button',{type:'button',onclick:planForm},'确定')));
-    openDlg('此次游戏的方针',body,null,[{label:'帮助',fn:()=>talk(['方针点数分配到 8 个方向上。','不同类型和内容各有喜欢的方向，对上了评分会更高。'],policyDlg)},{label:'返回',fn:planForm}]);$('#dlg').onclick=null;};
+      row('渠道',CN[plan.chan].n,CN[plan.chan],null,()=>listPick('选择渠道',CHANNELS,plan.chan,c=>`分成${Math.round(c.cut*100)}% · 占比${Math.round(share(c)*100)}% · 上架${c.fee?fmt(c.fee)+'金':'免费'}`,v=>plan.chan=v)),
+      row('类型',GN[plan.genre].n,GN[plan.genre],LVN[lvOf(plan.genre)-1],()=>listPick('选择类型',GENRES,plan.genre,g=>`${LVN[lvOf(g.id)-1]} · ${fmt(g.fee)}金 · 约${g.wk}周`,v=>plan.genre=v)),
+      row('内容',TN[plan.type].n,TN[plan.type],LVN[lvOf(plan.type)-1],()=>listPick('选择内容',TYPES,plan.type,t=>`${LVN[lvOf(t.id)-1]} · ${fmt(t.fee)}金`,v=>plan.type=v)),
+      row('开发方针',DN[plan.dev].n,null,null,()=>listPick('开发方针',DEVPLANS,plan.dev,d=>`${d.d} · 费用×${d.fee}`,v=>plan.dev=v)),
+      h('div',{class:'staffstrip'},...S.staff.map(s=>h('i',{style:`background:${SHIRTS[s.look%SHIRTS.length]}`})))));
+  openDlg('新企划书',body,okFoot('确定',()=>{if(S.money<planCost(plan)){talk(['资金不够开发费用了……'],planForm);return;}clampPolicy();policyDlg();}),[null,{label:'返回',fn:()=>{plan=null;closeDlg();}}]);$('#dlg').onclick=null;}
+
+// ---- 此次游戏的方针（界面②）
+const policyBudget=()=>10+lvOf(plan.genre)+lvOf(plan.type);
+const policyUsed=()=>Object.values(plan.policy).reduce((a,b)=>a+b,0);
+function clampPolicy(){const b=policyBudget();while(policyUsed()>b){const k=Object.keys(plan.policy).sort((x,y)=>plan.policy[y]-plan.policy[x])[0];plan.policy[k]--;}}
+function policyMark(k){const G=GN[plan.genre],T=TN[plan.type];let like=false,hate=false;
+  if(S.known[G.id]){like=G.like.includes(k);hate=G.hate===k;}if(S.known[T.id]&&T.like.includes(k))like=true;
+  return hate?h('i',{class:'pmk x'},'✕'):like?h('i',{class:'pmk'},'★'):null;}
+function policyHelp(){const G=GN[plan.genre],T=TN[plan.type];const hints=[];
+  if(S.known[G.id])hints.push(`「${G.n}」的玩家好像很重视${PN[G.like[0]]}和${PN[G.like[1]]}，不太喜欢${PN[G.hate]}。`);
+  if(S.known[T.id])hints.push(`「${T.n}」题材适合多给${PN[T.like[0]]}和${PN[T.like[1]]}。`);
+  talk(['方针点数分配到 8 个方向上，可以不用完。','类型和内容各有喜欢的方向，对上了评分更高；单项 8 点以上会成为作品特色。',...(hints.length?hints:['这个组合还没做过，先做一部试试看吧。'])],policyDlg);}
+function policyDlg(){let sel=POLICY[0][0];const budget=policyBudget();
+  const render=()=>{const used=policyUsed();
+    const cell=([k,n])=>h('button',{type:'button',class:'pcell'+(sel===k?' sel':''),onclick:()=>{sel=k;render();}},h('span',{class:'pn'},n,policyMark(k)),
+      h('span',{class:'pslide'},h('span',{class:'ar',onclick:e=>{e.stopPropagation();if(plan.policy[k]>0){plan.policy[k]--;render();}}},'◀'),h('span',{class:'segs'},...Array.from({length:10},(_,i)=>h('i',{class:i<plan.policy[k]?'on':''}))),h('span',{class:'ar',onclick:e=>{e.stopPropagation();if(used<budget&&plan.policy[k]<10){plan.policy[k]++;render();}}},'▶')));
+    const G=GN[plan.genre],T=TN[plan.type];
+    const body=h('div',{style:'display:grid;gap:14rem'},h('div',{class:'remain'},'剩余方针点数',h('b',{class:'num'},budget-used)),h('div',{class:'pgrid'},...POLICY.map(cell)),
+      h('div',{class:'pfoot'},h('div',{class:'lv'},ico(G),h('span',{},G.n),h('em',{},'等级 '+LVN[lvOf(G.id)-1]),ico(T),h('span',{},T.n),h('em',{},'等级 '+LVN[lvOf(T.id)-1])),h('button',{type:'button',onclick:askProducer},'确定')));
+    openDlg('此次游戏的方针',body,null,[{label:'帮助',fn:policyHelp},{label:'返回',fn:planForm}]);$('#dlg').onclick=null;};
+  render();}
+
+// ---- 制作人 / 负责人（界面③，员工卡片翻页）
+const PICK={plan:{t:'制作人',k:'scen'},gfx:{t:'画面负责人',k:'gfx'},snd:{t:'声音负责人',k:'snd'}};
+const SKC={prog:'#5C6478',scen:'#E2701A',gfx:'var(--c-gfx)',snd:'var(--c-snd)'};
+function askProducer(){talk(['这次让谁来当制作人？','编剧能力越高，游戏的趣味和创新越好。'],()=>staffPick('plan',id=>{closeDlg();startProject(id);},policyDlg));}
+function staffPick(kind,onPick,back){const key=PICK[kind].k;const list=[...S.staff].sort((a,b)=>b[key]-a[key]);let i=0;const genre=S.project?S.project.genre:plan.genre;
+  const render=()=>{const s=list[i];const fav=s.fav===genre;
+    const stat=(k,n,g)=>h('div',{class:'cs'+(k===key?' hi':'')},h('span',{class:'csi',style:`background:${SKC[k]}`},g),h('span',{},n),h('b',{class:'num'},s[k]));
+    const body=h('div',{class:'card'},
+      h('div',{class:'chead'},h('span',{},s.name),h('span',{class:'ctag'},'自营')),
+      h('div',{class:'cbox'},
+        h('div',{class:'cleft'},h('div',{class:'cjob'},JOBN[s.job]),
+          h('div',{class:'cfig'},h('i',{class:'head',style:`border-top-color:${HAIRS[s.look%HAIRS.length]}`}),h('i',{class:'body',style:`background:${SHIRTS[s.look%SHIRTS.length]}`})),
+          h('div',{class:'csta'},h('span',{},'体力'),h('span',{class:'bar'+(s.sta<30?' low':'')},h('i',{style:`width:${Math.round(s.sta)}%`})))),
+        h('div',{class:'cright'},stat('prog','编程','程'),stat('scen','编剧','剧'),stat('gfx','画面','画'),stat('snd','作曲','曲'))),
+      h('div',{class:'cfoot'},h('div',{class:'cfee'},h('span',{class:'k'},'费用'),h('span',{},'免费')),
+        h('div',{class:'cfav'+(fav?' on':'')},`擅长 ${GN[s.fav].n}${fav?' ★':''}`),
+        h('button',{type:'button',class:'cok',onclick:()=>onPick(s.id)},'确定')),
+      h('div',{class:'chint'},'左右箭头翻页，点「确定」选择'));
+    openDlg(`${PICK[kind].t} ${i+1}/${list.length}`,body,null,[null,back?{label:'返回',fn:back}:null]);$('#dlg').onclick=null;
+    const t=$('#dlg .dlg-title');t.classList.add('pager');
+    t.prepend(h('button',{type:'button',class:'pg',onclick:()=>{i=(i+list.length-1)%list.length;render();}},'◀'));
+    t.append(h('button',{type:'button',class:'pg',onclick:()=>{i=(i+1)%list.length;render();}},'▶'));};
   render();}
 
 // ---- 开发
-function startProject(leaderId){addMoney(-DEV_FEE);const title=TN[plan.type].n+pick(['大冒险','传说','物语','大作战','研究所','王国']);
-  S.project={title,plat:plan.plat,genre:plan.genre,type:plan.type,policy:plan.policy,progress:0,fun:0,creat:0,gfx:0,snd:0,bugs:0,hype:0,leaders:{plan:leaderId},awaiting:null};plan=null;
-  const s=S.staff.find(x=>x.id===leaderId);applyLeader('plan',s);UI.page=0;renderAll();talk([`《${title}》开始开发了！`,'大家加油！']);}
+function startProject(leaderId){const P=plan;const G=GN[P.genre],D=DN[P.dev];const cost=planCost(P);addMoney(-cost);
+  const weeks=Math.round(G.wk*D.wk*(1+P.policy.detail*.02));
+  const title=TN[P.type].n+pick(['大冒险','传说','物语','大作战','研究所','王国']);
+  S.project={title,chan:P.chan,genre:P.genre,type:P.type,dev:P.dev,policy:P.policy,weeks,cost,progress:0,fun:0,creat:0,gfx:0,snd:0,bugs:0,hype:0,leaders:{plan:leaderId},awaiting:null,review:0};plan=null;
+  const s=S.staff.find(x=>x.id===leaderId);const tired=s.sta<30;s.sta=Math.max(0,s.sta-30);applyLeader('plan',s);UI.page=0;renderAll();
+  const lines=[`《${title}》开始开发了！预计 ${weeks} 周左右。`];if(s.fav===P.genre)lines.push(`${G.n}正是${s.name}擅长的类型！`);if(tired)lines.push(`${s.name}有点累了，效率会下降……`);lines.push('大家加油！');talk(lines);}
 function applyLeader(kind,s){const p=S.project;const [x,y]=seatWorld(s.seat);const add=kind==='plan'?[['fun',s.scen*2],['creat',s.scen*1.5]]:kind==='gfx'?[['gfx',s.gfx*3]]:[['snd',s.snd*3]];
   add.forEach(([k,v],i)=>{p[k]+=v;setTimeout(()=>popWorld(x,y-110,`${STATN[k]}+${Math.round(v)}`,STATC[k]),400+i*450);});}
-function leaderAsk(kind){const p=S.project;const stat=kind==='gfx'?'gfx':'snd';
-  talk([`《${p.title}》进入${kind==='gfx'?'画面':'声音'}制作阶段了。`,'要交给谁负责？'],()=>picker(kind==='gfx'?'画面负责人':'声音负责人',[...S.staff].sort((a,b)=>b[stat]-a[stat]).map(s=>({v:s.id,label:s.name,sub:`${JOBN[s.job]} · ${STATN[stat]} ${s[stat]}`})),id=>{closeDlg();p.leaders[kind]=id;p.awaiting=null;applyLeader(kind,S.staff.find(x=>x.id===id));renderInfo();}));}
-
+function leaderAsk(kind){const p=S.project;
+  talk([`《${p.title}》进入${kind==='gfx'?'画面':'声音'}制作阶段了。`,'要交给谁负责？'],()=>staffPick(kind,id=>{closeDlg();p.leaders[kind]=id;p.awaiting=null;const s=S.staff.find(x=>x.id===id);s.sta=Math.max(0,s.sta-20);applyLeader(kind,s);renderInfo();},null));}
+// 解锁提示
+function checkUnlocks(){const fresh=unlockedIds().filter(id=>!S.unl.includes(id));if(!fresh.length)return;S.unl.push(...fresh);
+  talk(fresh.map(id=>CN[id]?`${CN[id].n}邀请我们入驻了！以后可以在那里发售。`:GN[id]?`新的类型「${GN[id].n}」可以开发了。`:TN[id]?`新的内容「${TN[id].n}」可以开发了。`:`新的开发方针「${DN[id].n}」可以选了。`));}
 // ================= 模拟
 let simT=0,weekAcc=0;const pending=[];
 function schedule(d,fn){pending.push({at:simT+d,fn});}
 function weekTick(){S.week++;if(S.week>4){S.week=1;monthTick();}
-  if(S.project&&!S.project.awaiting)projectWeek();else if(!S.project)idleWeek();
-  salesWeek();renderAll();}
+  for(const s of S.staff)s.sta=Math.min(100,(s.sta??100)+3);
+  const p=S.project;
+  if(p&&p.awaiting==='review'){p.review--;if(p.review<=0){p.awaiting='done';schedule(.5,release);}}
+  else if(p&&!p.awaiting)projectWeek();else if(!p)idleWeek();
+  salesWeek();renderAll();checkUnlocks();}
 function monthTick(){S.month++;if(S.month>12)S.month=1;const pay=S.staff.reduce((a,s)=>a+s.salary,0);addMoney(-pay);
   if(S.month===4){S.year++;S.ys={units:0,profit:0};}save(true);}
-function projectWeek(){const p=S.project;let prog=0;
-  for(const s of S.staff){const r=()=>rnd(.6,1.4);const pts={fun:(s.scen*.5+s.prog*.1)*.4*r(),creat:(s.scen*.3+s.gfx*.2+s.snd*.1)*.36*r(),gfx:s.gfx*.26*r(),snd:s.snd*.26*r()};
-    for(const k of STATK)p[k]+=pts[k];prog+=s.prog*.2;const bug=Math.max(0,(30-s.prog)/30)*.35*rnd(0,2);p.bugs+=bug;
+function projectWeek(){const p=S.project;const D=DN[p.dev],G=GN[p.genre];let prog=0;
+  const lvMul=1+.05*(lvOf(p.genre)-1)+.05*(lvOf(p.type)-1);
+  const norm=14/p.weeks*(.9+G.fee/2000);   // 每周点数按周期归一：总量与周期基本无关，高价类型上限更高
+  const prod=S.staff.find(x=>x.id===p.leaders.plan);const favMul=prod&&prod.fav===p.genre?1.15:1;
+  const dir={};for(const k of STATK){dir[k]=1;for(const d in PEFF)dir[k]+=(PEFF[d][k]||0)*(p.policy[d]||0);}
+  const bugMul=D.bug*Math.max(.2,1+.01*(p.policy.control||0)-.03*(p.policy.detail||0))*14/p.weeks;
+  for(const s of S.staff){const r=()=>rnd(.6,1.4);const m=D.pts*lvMul*favMul*(s.sta<30?.8:1)*norm;
+    const pts={fun:(s.scen*.5+s.prog*.1)*.4*r()*m*dir.fun,creat:(s.scen*.3+s.gfx*.2+s.snd*.1)*.36*r()*m*dir.creat,gfx:s.gfx*.26*r()*m*dir.gfx,snd:s.snd*.26*r()*m*dir.snd};
+    for(const k of STATK)p[k]+=pts[k];prog+=s.prog;const bug=Math.max(0,(30-s.prog)/30)*.35*rnd(0,2)*bugMul;p.bugs+=bug;
     const [x,y]=seatWorld(s.seat);const top=STATK.map(k=>[k,pts[k]]).sort((a,b)=>b[1]-a[1])[0];
     schedule(rnd(0,WEEK_SEC*.6),()=>popWorld(x,y-104,`${STATN[top[0]]}+${Math.max(1,Math.round(top[1]))}`,STATC[top[0]]));
     if(bug>.5)schedule(rnd(0,WEEK_SEC*.9),()=>popWorld(x,y-104,'Bug',STATC.bug));}
   p.hype+=(p.fun+p.creat)/400;
-  const before=p.progress;p.progress=Math.min(100,p.progress+prog);
+  const before=p.progress;p.progress=Math.min(100,p.progress+100/p.weeks*prog/PROG_BASE);
   if(!p.leaders.gfx&&p.progress>=40){p.progress=Math.max(before,40);p.awaiting='gfx';schedule(.5,()=>leaderAsk('gfx'));}
   else if(!p.leaders.snd&&p.progress>=75){p.progress=Math.max(before,75);p.awaiting='snd';schedule(.5,()=>leaderAsk('snd'));}
-  else if(p.progress>=100){p.awaiting='done';schedule(.5,()=>talk([`《${p.title}》完成了！`,'马上发售吧。'],release));}}
+  else if(p.progress>=100){p.awaiting='done';const C=CN[p.chan];
+    schedule(.5,()=>talk([`《${p.title}》完成了！`,C.rev?`提交到${C.n}审核，大约要 ${C.rev} 周。`:'马上发售吧。'],()=>{if(C.rev){p.awaiting='review';p.review=C.rev;renderInfo();}else release();}));}}
 function idleWeek(){for(const s of S.staff)if(Math.random()<.2){const [x,y]=seatWorld(s.seat);schedule(rnd(0,WEEK_SEC),()=>popWorld(x,y-104,pick(IDLE_TALK),'',true));}}
-function salesWeek(){let units=0;for(const g of S.games){if(!g.onSale)continue;const u=Math.round(g.base*Math.pow(.85,g.weeks)*rnd(.9,1.1));g.weeks++;
-    if(u<15||g.weeks>30){g.onSale=false;continue;}g.units+=u;units+=u;S.fans+=Math.round(u*.06*(g.total/40));}
-  if(units){addMoney(units*PRICE);S.ys.units+=units;const [x,y]=tc(3,2.5);schedule(WEEK_SEC*.5,()=>popWorld(x,y-60,`销售 ${fmt(units)} +${fmt(units*PRICE)}金`,'var(--gold)'));}}
-function release(){const p=S.project;const E=180*(1+.14*(S.year-1));const r={fun:p.fun/E,creat:p.creat/E,gfx:p.gfx/E,snd:p.snd/E};
-  const overall=(r.fun*1.3+r.creat+r.gfx+r.snd*.8)/4.1;const likes=[...LIKE[p.genre],...LIKE[p.type]];const match=likes.reduce((a,k)=>a+p.policy[k],0)/POLICY_BUDGET;
-  const pm=1+.35*match;const bugPen=Math.min(4,p.bugs*.15);
+function salesWeek(){let units=0,money=0;for(const g of S.games){if(!g.onSale)continue;const C=CN[g.chan]||CN.web;
+    const aud=300+S.fans*.3+share(C)*CH_BASE;
+    const u=Math.round(aud*Math.pow(g.total/40,2.2)*3*(g.bonus||1)*Math.pow(.85,g.weeks)*rnd(.9,1.1));g.weeks++;
+    if(u<15||g.weeks>30){g.onSale=false;continue;}const m=Math.round(u*PRICE*(g.cut??1));
+    g.units+=u;g.rev=(g.rev||0)+m;units+=u;money+=m;S.fans+=Math.round(u*.06*(g.total/40)*(g.fanMul||1));}
+  if(units){addMoney(money);S.ys.units+=units;const [x,y]=tc(3,2.5);schedule(WEEK_SEC*.5,()=>popWorld(x,y-60,`销售 ${fmt(units)} +${fmt(money)}金`,'var(--gold)'));}}
+function release(){const p=S.project;const G=GN[p.genre],T=TN[p.type],C=CN[p.chan];
+  const E=180*(1+.14*(S.year-1));const r={fun:p.fun/E,creat:p.creat/E,gfx:p.gfx/E,snd:p.snd/E};
+  const budget=10+lvOf(p.genre)+lvOf(p.type);
+  const likeSum=[...G.like,...T.like].reduce((a,k)=>a+(p.policy[k]||0),0);
+  const match=(likeSum-(p.policy[G.hate]||0)*1.5)/budget;const pMod=clamp(match*.12,-.15,.2);
+  const cp=compat(p.genre,p.type);const feat=POLICY.find(([k])=>(p.policy[k]||0)>=8);if(feat)r.creat*=1.1;
+  const overall=(r.fun*1.3+r.creat+r.gfx+r.snd*.8)/4.1;const pm=(1+pMod)*(1+COMPAT_MOD[cp]);const bugPen=Math.min(4,p.bugs*.15);
   const scores=REVIEWERS.map(rv=>clamp(Math.round(10*(1-Math.exp(-(.6*overall+.4*r[rv.pref])*pm))-bugPen+rnd(-.9,.9)),1,10));const total=scores.reduce((a,b)=>a+b,0);
-  const g={title:p.title,genre:p.genre,type:p.type,scores,total,base:Math.round((500+S.fans*.3)*Math.pow(total/40,2.2)*5*(20/30)),weeks:0,units:0,onSale:true,year:S.year,month:S.month};
+  const prod=S.staff.find(x=>x.id===p.leaders.plan);
+  const g={title:p.title,genre:p.genre,type:p.type,chan:p.chan,dev:p.dev,policy:p.policy,cut:C.cut,scores,total,creatScore:scores[2],compat:cp,feat:feat?feat[0]:null,producer:prod?prod.name:'',weeks:0,units:0,rev:0,onSale:true,year:S.year,month:S.month};
+  g.bonus=C.bonus(g)*(C.mass?1+.02*(p.policy.friendly||0):1);g.fanMul=1+.02*(p.policy.hardcore||0);
+  const lvBefore=[lvOf(p.genre),lvOf(p.type)];S.cnt[p.genre]=(S.cnt[p.genre]||0)+1;S.cnt[p.type]=(S.cnt[p.type]||0)+1;const lvAfter=[lvOf(p.genre),lvOf(p.type)];
+  S.known[p.genre]=true;S.known[p.type]=true;
   S.games.unshift(g);S.project=null;save(true);
+  const lines=[total>=30?'评价非常好，一定会大卖！':total>=20?'评价还不错。':'评价不太理想……下次再加油。'];
+  if(cp===3)lines.push(`「${G.n}」配「${T.n}」，搭配得天衣无缝！`);else if(cp===2)lines.push(`「${G.n}」和「${T.n}」挺搭的。`);else if(cp===0)lines.push(`「${G.n}」和「${T.n}」这个组合好像不太搭……`);
+  if(feat)lines.push(`「${feat[1]}」成了这部作品的特色。`);
+  lines.push(`「${G.n}」的玩家似乎很在意「${PN[G.like[0]]}」和「${PN[G.like[1]]}」，不太喜欢「${PN[G.hate]}」。`,`「${T.n}」题材适合多给「${PN[T.like[0]]}」和「${PN[T.like[1]]}」。`);
+  [[G,0],[T,1]].forEach(([x,i])=>{if(lvAfter[i]>lvBefore[i])lines.push(`${x.n}升到「${LVN[lvAfter[i]-1]}」了，方针点数增加！`);});
+  lines.push(`《${g.title}》在${C.n}发售了！`);
   const rows=REVIEWERS.map((rv,i)=>h('div',{class:'rv'},h('span',{},rv.n),h('b',{class:'num'},scores[i]),h('small',{},['完全玩不下去','问题不少','中规中矩','值得一玩','非常出色'][Math.min(4,Math.floor((scores[i]-1)/2))])));
   const tot=h('div',{class:'rtotal num'},`${total} / 40`);
-  openDlg('媒体评分',h('div',{style:'display:grid;gap:8rem'},h('div',{style:'text-align:center;font-size:30rem'},`《${g.title}》`),...rows,tot),okFoot('确定',()=>{closeDlg();talk([total>=30?'评价非常好，一定会大卖！':total>=20?'评价还不错。':'评价不太理想……下次再加油。',`玩家似乎很在意「${POLICY.find(x=>x[0]===likes[0])[1]}」和「${POLICY.find(x=>x[0]===likes[2])[1]}」。`]);}),[null,null]);
+  openDlg('媒体评分',h('div',{style:'display:grid;gap:8rem'},h('div',{style:'text-align:center;font-size:30rem'},`《${g.title}》`),...rows,tot),okFoot('确定',()=>{closeDlg();talk(lines);}),[null,null]);
   $('#dlg').onclick=null;rows.forEach((el,i)=>setTimeout(()=>el.classList.add('on'),300+i*400));setTimeout(()=>tot.classList.add('on'),2000);renderAll();}
-
 // ---- 其他弹窗（只读）
 function staffDlg(){openDlg('职员一览',h('div',{},h('div',{class:'srow',style:'color:var(--ink-soft)'},h('span',{},'姓名'),...['程序','剧本','画面','声音'].map(t=>h('b',{style:'font-weight:500'},t))),
   ...S.staff.map(s=>h('div',{class:'srow'},h('span',{},`${s.name}（${JOBN[s.job]}）`),...['prog','scen','gfx','snd'].map(k=>h('b',{class:'num'},s[k]))))),okFoot('确定',closeDlg),[null,{label:'返回',fn:closeDlg}]);$('#dlg').onclick=null;}
-function recordsDlg(){openDlg('作品记录',S.games.length?h('div',{},...S.games.map(g=>h('div',{class:'srow',style:'grid-template-columns:1fr 90rem 140rem'},h('span',{},`《${g.title}》`),h('b',{class:'num'},`${g.total}分`),h('b',{class:'num'},fmt(g.units))))):h('div',{style:'font-size:30rem;text-align:center;padding:30rem'},'还没有发售过作品'),okFoot('确定',closeDlg),[null,{label:'返回',fn:closeDlg}]);$('#dlg').onclick=null;}
-function restartAsk(){picker('重新开始？',[{v:1,label:'清空进度，从 1 年 4 月开始'},{v:0,label:'算了'}],v=>{closeDlg();if(v){S=freshState();renderAll();toast('新的公司成立了');}},closeDlg);}
+function recordsDlg(){openDlg('作品记录',S.games.length?h('div',{},...S.games.map(g=>h('div',{class:'srow',style:'grid-template-columns:1fr 90rem 140rem'},h('span',{},`《${g.title}》`,h('small',{style:'color:var(--ink-soft);font-size:20rem;margin-left:8rem'},(CN[g.chan]||CN.web).n)),h('b',{class:'num'},`${g.total}分`),h('b',{class:'num'},fmt(g.units))))):h('div',{style:'font-size:30rem;text-align:center;padding:30rem'},'还没有发售过作品'),okFoot('确定',closeDlg),[null,{label:'返回',fn:closeDlg}]);$('#dlg').onclick=null;}
+function restartAsk(){picker('重新开始？',[{v:1,label:'清空进度，从 1 年 4 月开始'},{v:0,label:'算了'}],v=>{closeDlg();if(v){newGame();renderAll();toast('新的公司成立了');}},closeDlg);}
 
 // ================= 信息栏
 function renderInfo(){const pg=$('#ipage');const p=S.project;const pages=p?2:1;if(UI.page>=pages)UI.page=0;
@@ -421,7 +589,7 @@ function renderInfo(){const pg=$('#ipage');const p=S.project;const pages=p?2:1;i
     pg.className='ipd';pg.replaceChildren(h('div',{class:'r'},h('span',{class:'lab',style:'width:110rem;color:var(--ink)'},'新作'),ic('fun'),ic('creat'),ic('gfx'),ic('snd')),
       h('div',{class:'r'},h('span',{class:'pct num'},Math.floor(p.progress)+'%'),h('span',{class:'lab'},'期待度 ',h('b',{class:'num',style:'color:var(--ink)'},Math.round(p.hype))),h('span',{class:'lab'},'知名度 ',h('b',{class:'num',style:'color:var(--ink)'},fmt(S.fans))),ic('bug')));}
   else{pg.className='ip';pg.replaceChildren(h('div',{class:'ys'},h('div',{},h('span',{},'全年销售'),h('b',{class:'num'},fmt(S.ys.units))),h('div',{},h('span',{},'全年收益'),h('b',{class:'num',style:S.ys.profit<0?'color:var(--neg)':''},fmt(S.ys.profit)+'金'))),
-      h('div',{class:'div'}),h('div',{class:'rt'},p?`《${p.title}》开发中`:'无新作开发'));}
+      h('div',{class:'div'}),h('div',{class:'rt'},p?(p.awaiting==='review'?`《${p.title}》审核中`:`《${p.title}》开发中`):'无新作开发'));}
   $('#thumb').style.top=pages>1?(UI.page*50)+'%':'0';$('#thumb').style.height=(100/pages)+'%';}
 $('#pgUp').onclick=()=>{UI.page=Math.max(0,UI.page-1);renderInfo();};
 $('#pgDn').onclick=()=>{UI.page=Math.min(S.project?1:0,UI.page+1);renderInfo();};
@@ -433,7 +601,7 @@ function popWorld(wx,wy,text,color,talkStyle){const [x,y]=w2s(wx,wy);const el=h(
 const KEY='kaifa_wuyu_v2';
 function doSave(){try{localStorage.setItem(KEY,JSON.stringify(S));toast('已保存');}catch(e){toast('这个浏览器不能本地存档');}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.v===2){S=s;return true;}}catch(e){}return false;}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&(s.v===2||s.v===3)){S=migrate(s);return true;}}catch(e){}return false;}
 $('#sidetab').onclick=()=>{if(!blocking())talk(['这里以后放快捷列表（职员状态、在售作品）。']);};
 $('#tabUp').onclick=()=>{UI.collapsed=!UI.collapsed;$('#info').hidden=UI.collapsed;$('#tabUp').classList.toggle('down',UI.collapsed);};
 
@@ -462,7 +630,7 @@ function frame(now){const dt=Math.min(.1,(now-last)/1000);last=now;
   if(!blocking()){simT+=dt;weekAcc+=dt;for(let i=pending.length-1;i>=0;i--)if(pending[i].at<=simT){const p=pending.splice(i,1)[0];p.fn();}if(weekAcc>=WEEK_SEC){weekAcc-=WEEK_SEC;weekTick();}}
   renderTop();draw(now/1000);requestAnimationFrame(frame);}
 function tryLoadArt(){return fetch('assets/index.json').then(r=>r.ok?r.json():[]).catch(()=>[]).then(keys=>Promise.all((Array.isArray(keys)?keys:[]).filter(k=>M[k]).map(k=>new Promise(res=>{const img=new Image();img.onload=()=>{overrides[k]=img;res();};img.onerror=()=>res();img.src=`assets/${k}.png`;}))));}
-function start(){if(gl)initGL();buildStatic();buildAtlas();if(!load())S=freshState();
+function start(){if(gl)initGL();buildStatic();buildAtlas();if(!load())newGame();if(!S.unl)S.unl=unlockedIds();
   if(S.project&&S.project.awaiting==='gfx'||S.project&&S.project.awaiting==='snd')setTimeout(()=>leaderAsk(S.project.awaiting),300);
   if(S.project&&S.project.awaiting==='done')setTimeout(release,300);
   resize();idleBottom();renderAll();requestAnimationFrame(frame);tryLoadArt().then(()=>{if(Object.keys(overrides).length)buildAtlas();});}
