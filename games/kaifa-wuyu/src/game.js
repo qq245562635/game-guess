@@ -96,7 +96,7 @@ const M={
   wall_r:{w:64,h:200,ox:0,oy:168},wall_r_win:{w:64,h:200,ox:0,oy:168},wall_l:{w:64,h:200,ox:64,oy:168},wall_l_win:{w:64,h:200,ox:64,oy:168},
   desk:{...OBJ},chair:{w:128,h:96,ox:64,oy:64},shelf:{...OBJ},whiteboard:{...OBJ},plant:{...OBJ},sofa:{...OBJ},cooler:{...OBJ},
 };
-Object.assign(M,{car:{w:121,h:89,ox:60,oy:64},car_front:{w:121,h:89,ox:60,oy:64},shadow:{w:128,h:64,ox:64,oy:32},ao_back:{w:7*64+39,h:7*32+20,ox:39,oy:0,ss:1},ao_left:{w:6*64+39,h:6*32+20,ox:39,oy:0,ss:1},desk_back:{...OBJ},boss_desk:{...OBJ},reception:{...OBJ},mat:{w:128,h:64,ox:64,oy:32}});
+Object.assign(M,{car:{w:121,h:89,ox:60,oy:64},car_front:{w:121,h:89,ox:60,oy:64},car_2:{w:121,h:89,ox:60,oy:64},car_front_2:{w:121,h:89,ox:60,oy:64},shadow:{w:128,h:64,ox:64,oy:32},ao_back:{w:7*64+39,h:7*32+20,ox:39,oy:0,ss:1},ao_left:{w:6*64+39,h:6*32+20,ox:39,oy:0,ss:1},desk_back:{...OBJ},boss_desk:{...OBJ},reception:{...OBJ},mat:{w:128,h:64,ox:64,oy:32}});
 const CHAR_N=4;const CH={w:72,h:112,ox:36,oy:102};
 for(let i=0;i<CHAR_N;i++)for(const v of ['back','front'])for(const f of 'ab')M[`char_${i}_${v}_${f}`]={...CH};
 for(const who of ['boss','secretary'])for(const f of 'ab')M[`${who}_${f}`]={...CH};
@@ -219,16 +219,18 @@ function drawShadows(){for(const [k,x,y] of DECOR)shadowAt(k,x,y);for(const s of
 // ================= 马路上的车
 // 马路是 L 形：左前方马路沿 x 方向（ty 7.5~10.5），右前方马路沿 y 方向（tx 8.5~11.5），在房间前角下面相交。
 // car = 车尾朝镜头（往左上开），水平镜像后往右上开；car_front = 车头朝镜头（往右下开），镜像后往左下开。
-// 两条环线，每次只放一辆车，交替发车。没有 car_front 时只跑驶离路口的半程（在路口淡入）。
-const CAR_SPEED=1.6,CAR_GAP=[3,7];const car={on:false,t:0,wait:2,loop:0};
+// 起止点刚好在屏幕外一点（可见范围横向约 x-390~454）。两条环线，每次只放一辆车，交替发车。没有 car_front 时只跑驶离路口的半程（在路口淡入）。
+const CAR_SPEED=1.6,CAR_GAP=[3,7];const car={on:false,t:0,wait:2,loop:0,sfx:''};
+// 配色：每次发车随机选一种已交付的颜色（car / car_2 …，前后视角成对）
+const carColors=()=>['','_2','_3','_4'].filter(c=>overrides['car'+c]&&overrides['car_front'+c]||(c===''&&overrides.car));
 const LOOPS=[
-  [{from:[-9,9.5],to:[9.5,9.5],k:'car_front',flip:false},{from:[9.5,9.5],to:[9.5,-9],k:'car',flip:true}],
-  [{from:[10.5,-9],to:[10.5,8.5],k:'car_front',flip:true},{from:[10.5,8.5],to:[-9,8.5],k:'car',flip:false}]];
+  [{from:[1.5,9.5],to:[9.5,9.5],k:'car_front',flip:false},{from:[9.5,9.5],to:[9.5,1.2],k:'car',flip:true}],
+  [{from:[10.5,1.8],to:[10.5,8.5],k:'car_front',flip:true},{from:[10.5,8.5],to:[1.2,8.5],k:'car',flip:false}]];
 function carLegs(){const L=LOOPS[car.loop];return overrides.car_front?L:[L[1]];}
-function updateCar(dt){if(!overrides.car)return;if(!car.on){car.wait-=dt;if(car.wait<=0){car.on=true;car.t=0;}return;}car.t+=dt*CAR_SPEED;
+function updateCar(dt){if(!overrides.car)return;if(!car.on){car.wait-=dt;if(car.wait<=0){car.on=true;car.t=0;car.sfx=pick(carColors());}return;}car.t+=dt*CAR_SPEED;
   const total=carLegs().reduce((a,l)=>a+Math.hypot(l.to[0]-l.from[0],l.to[1]-l.from[1]),0);if(car.t>=total){car.on=false;car.loop^=1;car.wait=rnd(...CAR_GAP);}}
 function carSprite(){if(!car.on)return null;const legs=carLegs();let d=car.t;for(const l of legs){const len=Math.hypot(l.to[0]-l.from[0],l.to[1]-l.from[1]);
-  if(d<=len){const u=d/len,tx=l.from[0]+(l.to[0]-l.from[0])*u,ty=l.from[1]+(l.to[1]-l.from[1])*u;const [x,y]=iso(tx,ty);const fade=legs.length===1?Math.min(1,d/.8):1;return [l.k,x,y,l.flip,fade];}d-=len;}return null;}
+  if(d<=len){const u=d/len,tx=l.from[0]+(l.to[0]-l.from[0])*u,ty=l.from[1]+(l.to[1]-l.from[1])*u;const [x,y]=iso(tx,ty);const fade=legs.length===1?Math.min(1,d/.8):1;return [l.k+(overrides[l.k+car.sfx]?car.sfx:''),x,y,l.flip,fade];}d-=len;}return null;}
 
 // ================= 场景布局
 const iso=(x,y)=>[(x-y)*TILE_W/2,(x+y)*TILE_H/2];
