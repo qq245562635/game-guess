@@ -35,7 +35,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* ② 场景 */
 #scene{flex:1;position:relative;overflow:hidden;background:#AEB6C2;touch-action:none;min-height:0}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block}
-#night{position:absolute;inset:0;pointer-events:none;background:#141C46;opacity:0}
 #fx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .pop{position:absolute;transform:translate(-50%,-100%);font:700 22rem/1 system-ui,sans-serif;color:#fff;background:var(--c);padding:6rem 10rem;border-radius:14rem;white-space:nowrap;animation:rise 1.4s ease-out forwards}
 .pop.talk{background:#fff;color:var(--ink);font-weight:500;border:2rem solid var(--frame)}
@@ -176,7 +175,6 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
   <header id="topbar"><div class="in"><span class="num" id="date">1年 4月 1周 <span id="tick">·</span></span><span class="num" id="money">5,000金</span></div></header>
   <main id="scene">
     <canvas id="gl"></canvas>
-    <div id="night"></div>
     <div id="fx"></div>
     <div id="badge"><div class="ico">粉</div><b class="num" id="badgeNum">0</b></div>
     <button id="sidetab" type="button" aria-label="快捷列表">›</button>
@@ -205,8 +203,9 @@ function hash(s){let x=2166136261;for(const ch of s){x^=ch.charCodeAt(0);x=Math.
 function h(tag,attrs,...kids){const el=document.createElement(tag);attrs=attrs||{};for(const k in attrs){const v=attrs[k];if(k==='class')el.className=v;else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(k==='style')el.style.cssText=v;else if(v!==false&&v!=null)el.setAttribute(k,v===true?'':v);}for(const c of kids.flat()){if(c==null||c===false)continue;el.append(c.nodeType?c:document.createTextNode(String(c)));}return el;}
 
 // ================= 数据（只保留主线需要的）
-const DAY_SEC=5, WEEK_DAYS=5, WEEK_SEC=DAY_SEC*WEEK_DAYS, PRICE=2;
-const WALK_SPEED=12, WALK_MAX=.5, NIGHT_AT=4.7;  // 每秒走几格；单程最长秒数；几秒时天黑（此时所有人都已离开）
+const WEEK_SEC=2, PRICE=2;
+// 体力：坐班开发时每周消耗；低了就有概率回家休息，回来后体力回满
+const WALK_SPEED=2.2, STA_LOW=25, REST_SEC=[1.5,3], MAX_AWAY=2;
 const STATK=['fun','creat','gfx','snd'];
 const STATN={fun:'趣味',creat:'创新',gfx:'画面',snd:'声音'};
 const STATC={fun:'var(--c-fun)',creat:'var(--c-creat)',gfx:'var(--c-gfx)',snd:'var(--c-snd)',bug:'var(--c-bug)'};
@@ -394,7 +393,7 @@ function deskSeat(d,k){const [x,y]=d;if(k==='a'){const [sx,sy]=tc(x,y+1);return 
 function seatWorld(i){const s=SEATS[i];return deskSeat(s.d,s.k);}
 
 // ================= 上下班
-// 每天：早上从门外沿地板格子走到座位，傍晚原路走出去；路线用 BFS 在 7×9 格（y≥6 为室外）里绕开家具
+// 原作没有「天」，以周为单位。员工体力用光会起身走出门回家，休息一会儿再走回来；路线用 BFS 绕开家具
 const DOOR=[6,6],GRID_H=7;  // 门垫 (6,5) 外面一格进出，进出门时淡入淡出
 const seatTile=st=>st.k==='a'?[st.d[0],st.d[1]+1]:[st.d[0],st.d[1]-1];
 let ROUTES=null;
@@ -406,18 +405,14 @@ function buildRoutes(){const block=new Set([...DECOR.map(([,x,y])=>x+','+y),...S
   const mk=(id,st,seatW,order)=>{const tiles=bfs(seatTile(st));const pts=tiles.map(([x,y])=>{const [wx,wy]=tc(x,y);return {x:wx,y:wy,d:x+y+.1,tx:x,ty:y};});
     pts.push({x:seatW[0],y:seatW[1],d:seatW[2],tx:tiles.at(-1)[0],ty:tiles.at(-1)[1]});
     let len=0;for(let i=1;i<pts.length;i++){pts[i].at=len+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y)/(TILE_W*.56);}pts[0].at=0;
-    const dur=Math.min(len/WALK_SPEED,WALK_MAX);
-    return {id,pts,len,dur,inAt:.02+order*.03,outAt:NIGHT_AT-.03-dur-(5-order)*.03};};
+    return {id,pts,len,dur:len/WALK_SPEED};};
   ROUTES={boss:mk('boss',{d:BOSS.d,k:'b'},deskSeat(BOSS.d,'b'),0),secretary:mk('secretary',{d:SEC_SPOT.d,k:'b'},deskSeat(SEC_SPOT.d,'b'),1)};
   SEATS.forEach((st,i)=>{ROUTES['seat'+i]=mk('seat'+i,st,seatWorld(i),2+i);});}
-const curDay=()=>Math.min(WEEK_DAYS-1,Math.floor(weekAcc/DAY_SEC));
 // 返回 {mode:'absent'|'walk'|'seat', x,y,d,key,flip}
 function personState(id){if(!ROUTES)buildRoutes();let who=id,r=ROUTES[id];
   if(!r){const s=S.staff.find(x=>x.id===id);if(!s)return {mode:'absent'};r=ROUTES['seat'+s.seat];who=`char_${s.look%CHAR_N}`;}
-  const t=weekAcc%DAY_SEC;let p;
-  if(t<r.inAt||t>=r.outAt+r.dur)return {mode:'absent'};
-  if(t<r.inAt+r.dur)p=(t-r.inAt)/r.dur;else if(t<r.outAt)return {mode:'seat'};else p=1-(t-r.outAt)/r.dur;
-  const leaving=t>=r.outAt;const dist=p*r.len,P=r.pts;let i=1;while(i<P.length-1&&P[i].at<dist)i++;
+  const c=away.get(id);if(!c)return {mode:'seat'};if(c.phase==='home')return {mode:'absent'};
+  const e=clamp((simT-c.t0)/r.dur,0,1),leaving=c.phase==='out',p=leaving?1-e:e;const dist=p*r.len,P=r.pts;let i=1;while(i<P.length-1&&P[i].at<dist)i++;
   const a=P[i-1],b=P[i],u=clamp((dist-a.at)/((b.at-a.at)||1),0,1);
   // 方向按格子走向：+y 左下(front)、+x 右下(front 镜像)、-x 左上(back)、-y 右上(back 镜像)
   let seg=i;while(seg>1&&P[seg].tx===P[seg-1].tx&&P[seg].ty===P[seg-1].ty)seg--;
@@ -425,6 +420,17 @@ function personState(id){if(!ROUTES)buildRoutes();let who=id,r=ROUTES[id];
   const fr=dx>0||dy>0,flip=dx>0||dy<0;
   return {mode:'walk',x:a.x+(b.x-a.x)*u,y:a.y+(b.y-a.y)*u,d:a.d+(b.d-a.d)*u+.05,key:`${who}_walk_${fr?'front':'back'}_${Math.floor(dist*2)%2?'b':'a'}`,flip,a:clamp(dist/.8,0,1)};}
 const isSeated=id=>personState(id).mode==='seat';
+// 不在座位的员工：phase out(走出门) → home(在家休息) → in(走回来)。只存在内存里，读档后大家都在座位上
+const away=new Map();
+function goHome(s){if(away.has(s.id))return;away.set(s.id,{phase:'out',t0:simT});const [x,y]=seatWorld(s.seat);popWorld(x,y-104,pick(['好累，先回家了','撑不住了…','回去睡一觉']),'',true);}
+function updateAway(){if(!ROUTES)buildRoutes();for(const [id,c] of away){const s=S.staff.find(x=>x.id===id);if(!s){away.delete(id);continue;}const r=ROUTES['seat'+s.seat];
+  if(c.phase==='out'&&simT-c.t0>=r.dur){c.phase='home';c.t0=simT;c.rest=rnd(...REST_SEC);}
+  else if(c.phase==='home'&&simT-c.t0>=c.rest){c.phase='in';c.t0=simT;s.sta=100;}
+  else if(c.phase==='in'&&simT-c.t0>=r.dur){away.delete(id);const [x,y]=seatWorld(s.seat);popWorld(x,y-104,pick(['早！','精神满满','继续干活']),'',true);}}}
+// 每周：坐班的人消耗体力，体力低时有概率回家
+function staminaWeek(){const dev=!!(S.project&&!S.project.awaiting);
+  for(const s of S.staff){if(away.has(s.id))continue;s.sta=Math.max(0,(s.sta??100)-(dev?rnd(3,6):rnd(0,1)));
+    if(s.sta<STA_LOW&&away.size<MAX_AWAY&&Math.random()<(s.sta<8?.7:.2))goHome(s);}}
 
 // ================= 镜头
 const cam={x:0,y:0,z:1,fit:true};let stageW=1,stageH=1;
@@ -441,7 +447,7 @@ function mkStaff(job,i){const W={prog:{prog:1.6,scen:.6,gfx:.6,snd:.5},plan:{pro
   const st={};for(const a in W)st[a]=Math.round(11*W[a]*rnd(.8,1.2));const NAMES=['李晨','王悦','陈默','周小雨'];
   return {id:'s'+i,name:NAMES[i],job,...st,salary:Math.round(20+(st.prog+st.scen+st.gfx+st.snd)*.9),seat:i,look:i,fav:pick(INIT_G),sta:100};}
 function freshState(){return {v:3,year:1,month:4,week:1,money:5000,fans:0,staff:['prog','plan','art','sound'].map(mkStaff),project:null,games:[],ys:{units:0,profit:0},cnt:{},known:{},unl:null};}
-function newGame(){S=freshState();S.unl=unlockedIds();}
+function newGame(){S=freshState();S.unl=unlockedIds();if(typeof away!=='undefined')away.clear();}
 // 旧存档（v2）补字段
 function migrate(s){if(s.v===3)return s;s.v=3;s.cnt=s.cnt||{};s.known=s.known||{};s.unl=null;
   for(const st of s.staff){st.fav=st.fav||pick(INIT_G);st.sta=st.sta??100;}
@@ -567,7 +573,7 @@ function checkUnlocks(){const fresh=unlockedIds().filter(id=>!S.unl.includes(id)
 let simT=0,weekAcc=0;const pending=[];
 function schedule(d,fn){pending.push({at:simT+d,fn});}
 function weekTick(){S.week++;if(S.week>4){S.week=1;monthTick();}
-  for(const s of S.staff)s.sta=Math.min(100,(s.sta??100)+3);
+  staminaWeek();
   const p=S.project;
   if(p&&p.awaiting==='review'){p.review--;if(p.review<=0){p.awaiting='done';schedule(.5,release);}}
   else if(p&&!p.awaiting)projectWeek();else if(!p)idleWeek();
@@ -580,7 +586,7 @@ function projectWeek(){const p=S.project;const D=DN[p.dev],G=GN[p.genre];let pro
   const prod=S.staff.find(x=>x.id===p.leaders.plan);const favMul=prod&&prod.fav===p.genre?1.15:1;
   const dir={};for(const k of STATK){dir[k]=1;for(const d in PEFF)dir[k]+=(PEFF[d][k]||0)*(p.policy[d]||0);}
   const bugMul=D.bug*Math.max(.2,1+.01*(p.policy.control||0)-.03*(p.policy.detail||0))*14/p.weeks;
-  for(const s of S.staff){const r=()=>rnd(.6,1.4);const m=D.pts*lvMul*favMul*(s.sta<30?.8:1)*norm;
+  for(const s of S.staff){if(!isSeated(s.id))continue;const r=()=>rnd(.6,1.4);const m=D.pts*lvMul*favMul*(s.sta<30?.8:1)*norm;
     const pts={fun:(s.scen*.5+s.prog*.1)*.4*r()*m*dir.fun,creat:(s.scen*.3+s.gfx*.2+s.snd*.1)*.36*r()*m*dir.creat,gfx:s.gfx*.26*r()*m*dir.gfx,snd:s.snd*.26*r()*m*dir.snd};
     for(const k of STATK)p[k]+=pts[k];prog+=s.prog;const bug=Math.max(0,(30-s.prog)/30)*.35*rnd(0,2)*bugMul;p.bugs+=bug;
     const [x,y]=seatWorld(s.seat);const top=STATK.map(k=>[k,pts[k]]).sort((a,b)=>b[1]-a[1])[0];
@@ -639,7 +645,7 @@ function renderInfo(){const pg=$('#ipage');const p=S.project;const pages=p?2:1;i
   $('#thumb').style.top=pages>1?(UI.page*50)+'%':'0';$('#thumb').style.height=(100/pages)+'%';}
 $('#pgUp').onclick=()=>{UI.page=Math.max(0,UI.page-1);renderInfo();};
 $('#pgDn').onclick=()=>{UI.page=Math.min(S.project?1:0,UI.page+1);renderInfo();};
-function renderTop(){$('#date').firstChild.textContent=`${S.year}年 ${S.month}月 ${S.week}周 周${'一二三四五'[curDay()]} `;$('#tick').classList.toggle('blink',!blocking());$('#money').textContent=fmt(S.money)+'金';$('#money').style.color=S.money<0?'var(--neg)':'';$('#badgeNum').textContent=fmt(S.fans);}
+function renderTop(){$('#date').firstChild.textContent=`${S.year}年 ${S.month}月 ${S.week}周 `;$('#tick').classList.toggle('blink',!blocking());$('#money').textContent=fmt(S.money)+'金';$('#money').style.color=S.money<0?'var(--neg)':'';$('#badgeNum').textContent=fmt(S.fans);}
 function renderAll(){renderTop();renderInfo();}
 
 // ================= 杂项
@@ -673,8 +679,8 @@ function draw(t){if(!gl)return;gl.viewport(0,0,canvas.width,canvas.height);gl.cl
   gl.uniform2f(uRes,stageW,stageH);gl.uniform3f(uCam,cam.x,cam.y,cam.z);gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferSubData(gl.ARRAY_BUFFER,0,vdata.subarray(0,nq*48));gl.drawArrays(gl.TRIANGLES,0,nq*6);}
 let last=performance.now();
 function frame(now){const dt=Math.min(.1,(now-last)/1000);last=now;
-  if(!blocking()){simT+=dt;weekAcc+=dt;for(let i=pending.length-1;i>=0;i--)if(pending[i].at<=simT){const p=pending.splice(i,1)[0];p.fn();}if(weekAcc>=WEEK_SEC){weekAcc-=WEEK_SEC;weekTick();}}
-  renderTop();const dt2=weekAcc%DAY_SEC;$('#night').style.opacity=dt2<.2?(1-dt2/.2)*.45:dt2>NIGHT_AT-.3?Math.min(1,(dt2-(NIGHT_AT-.3))/.3)*.45:0;draw(now/1000);requestAnimationFrame(frame);}
+  if(!blocking()){simT+=dt;weekAcc+=dt;updateAway();for(let i=pending.length-1;i>=0;i--)if(pending[i].at<=simT){const p=pending.splice(i,1)[0];p.fn();}if(weekAcc>=WEEK_SEC){weekAcc-=WEEK_SEC;weekTick();}}
+  renderTop();draw(now/1000);requestAnimationFrame(frame);}
 function tryLoadArt(){return fetch('assets/index.json').then(r=>r.ok?r.json():[]).catch(()=>[]).then(keys=>Promise.all((Array.isArray(keys)?keys:[]).filter(k=>M[k]).map(k=>new Promise(res=>{const img=new Image();img.onload=()=>{overrides[k]=img;res();};img.onerror=()=>res();img.src=`assets/${k}.png`;}))));}
 function start(){if(gl)initGL();buildStatic();buildAtlas();if(!load())newGame();if(!S.unl)S.unl=unlockedIds();
   if(S.project&&S.project.awaiting==='gfx'||S.project&&S.project.awaiting==='snd')setTimeout(()=>leaderAsk(S.project.awaiting),300);
