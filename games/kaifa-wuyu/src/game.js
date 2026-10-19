@@ -274,16 +274,16 @@ function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTim
 // ---- 菜单（场景左侧竖排 + 右侧子菜单）
 const todo=()=>talk(['这个功能还在规划中，先把开发新作这条线跑通。']);
 const MENU=[
-  {n:'开发',c:'#3FAF4A',sub:[['新企划',newPlan],['委托开发',todo]]},
-  {n:'职员',c:'#E2701A',sub:[['职员一览',staffDlg],['招聘',todo],['培训',()=>trainPick(0)]]},
-  {n:'行动',c:'#2A7BDB',sub:[['宣传',todo],['取得授权',todo]]},
-  {n:'信息',c:'#E0383E',sub:[['作品记录',recordsDlg],['公司数据',todo]]},
-  {n:'系统',c:'#5C6478',sub:[['保存',()=>{closeMenu();doSave();}],['重新开始',restartAsk]]},
+  {n:'开发',ic:'dev',c:'#3FAF4A',sub:[['新企划',newPlan],['委托开发',todo]]},
+  {n:'职员',ic:'staff',c:'#E2701A',sub:[['职员一览',staffDlg],['招聘',todo],['培训',()=>trainPick(0)]]},
+  {n:'行动',ic:'action',c:'#2A7BDB',sub:[['宣传',todo],['取得授权',todo]]},
+  {n:'信息',ic:'info',c:'#E0383E',sub:[['作品记录',recordsDlg],['公司数据',todo]]},
+  {n:'系统',ic:'system',c:'#5C6478',sub:[['保存',()=>{closeMenu();doSave();}],['重新开始',restartAsk]]},
 ];
 let menuSel=-1;
 function openMenu(){UI.menu=true;menuSel=-1;renderMenu();setBottom(null,{label:'返回',fn:closeMenu});}
 function closeMenu(){UI.menu=false;$('#menu').hidden=true;$('#submenu').hidden=true;if(!UI.dlg)idleBottom();}
-function renderMenu(){const m=$('#menu');m.hidden=false;m.replaceChildren(...MENU.map((it,i)=>h('button',{type:'button',class:'mitem'+(i===menuSel?' sel':''),onclick:()=>{menuSel=i;renderMenu();}},h('span',{class:'mico',style:`background:${it.c}`},it.n[0]),h('span',{},it.n))));
+function renderMenu(){const m=$('#menu');m.hidden=false;m.replaceChildren(...MENU.map((it,i)=>h('button',{type:'button',class:'mitem'+(i===menuSel?' sel':''),onclick:()=>{menuSel=i;renderMenu();}},h('span',{class:'mico',style:`background:${it.c} url(assets/ui/ui_menu_icon_${it.ic}.png) center/100% 100% no-repeat`}),h('span',{},it.n))));
   const sm=$('#submenu');if(menuSel<0){sm.hidden=true;return;}sm.hidden=false;sm.style.top=(m.offsetTop+menuSel*76)+'px';
   sm.replaceChildren(...MENU[menuSel].sub.map(([n,fn],j)=>h('button',{type:'button',class:'mitem'+(j===0?'':''),onclick:()=>{fn();}},h('span',{},n))));}
 

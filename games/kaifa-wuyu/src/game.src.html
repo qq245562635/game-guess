@@ -216,7 +216,11 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 #tabUp{box-shadow:none;border-radius:0;background:url('assets/ui/ui_tab_up.png') center/100% 100% no-repeat}
 #tabUp::after{border:0;width:44rem;height:24rem;background:url('assets/ui/ui_tab_arrow_up.png') center/contain no-repeat}
 #tabUp.down::after{border:0;background-image:url('assets/ui/ui_tab_arrow_down.png')}
-/* 菜单 / 弹窗：素材未交付前先用同色板 CSS */
+/* 信息栏文字：照母版，墨青粗体 */
+.ip .ys div,.ip .rt,.ipd .r{font-weight:700;color:var(--ink)}
+.ip .ys span,.ipd .lab{color:var(--ink)}
+/* 菜单 / 弹窗：素材未交付前先用同色板 CSS（菜单图标为从确认稿临时切出） */
+.mitem .mico{border-radius:10rem}
 #menu,#submenu,#dlg{border-radius:14rem}
 .mitem{border-radius:10rem;font-weight:700}
 .dlg-in{border-radius:10rem;overflow:hidden}
