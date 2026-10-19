@@ -96,7 +96,7 @@ const M={
   wall_r:{w:64,h:200,ox:0,oy:168},wall_r_win:{w:64,h:200,ox:0,oy:168},wall_l:{w:64,h:200,ox:64,oy:168},wall_l_win:{w:64,h:200,ox:64,oy:168},
   desk:{...OBJ},chair:{w:128,h:96,ox:64,oy:64},shelf:{...OBJ},whiteboard:{...OBJ},plant:{...OBJ},sofa:{...OBJ},cooler:{...OBJ},
 };
-Object.assign(M,{shadow:{w:128,h:64,ox:64,oy:32},ao_r:{w:90,h:46,ox:26,oy:0},desk_back:{...OBJ},boss_desk:{...OBJ},reception:{...OBJ},mat:{w:128,h:64,ox:64,oy:32}});
+Object.assign(M,{shadow:{w:128,h:64,ox:64,oy:32},ao_back:{w:7*64+39,h:7*32+20,ox:39,oy:0,ss:1},ao_left:{w:6*64+39,h:6*32+20,ox:39,oy:0,ss:1},desk_back:{...OBJ},boss_desk:{...OBJ},reception:{...OBJ},mat:{w:128,h:64,ox:64,oy:32}});
 const CHAR_N=4;const CH={w:72,h:112,ox:36,oy:102};
 for(let i=0;i<CHAR_N;i++)for(const v of ['back','front'])for(const f of 'ab')M[`char_${i}_${v}_${f}`]={...CH};
 for(const who of ['boss','secretary'])for(const f of 'ab')M[`${who}_${f}`]={...CH};
@@ -117,11 +117,14 @@ function ell(g,x,y,rx,ry,fill,rot=0){g.beginPath();g.ellipse(x,y,rx,ry,rot,0,Mat
 const SHIRTS=['#4A6FE3','#E35D6A','#3FAF7A','#F2A93B','#8E5BD8','#33465F'],HAIRS=['#2B2118','#6A4426','#1C1C1C','#C68A3E','#3A2A1E','#8A5532'];
 function planks(g,c){diamond(g,64,32,1,c);g.strokeStyle='rgba(120,80,40,.18)';for(let i=1;i<4;i++){g.beginPath();g.moveTo(i*16,32-i*8);g.lineTo(64+i*16,64-i*8);g.stroke();}diamond(g,64,32,1,null,'rgba(120,80,40,.25)');}
 // 程序生成的阴影：shadow=柔边椭圆接地影；ao_r=后墙根的地面暗带（左墙用水平镜像）
+// 一整条墙根暗带：沿墙 n 格，向房内伸 0.4 格；渐变方向垂直于墙线，所以整条均匀，没有分段
+function aoStrip(g,n){const o=39,L=[64*n,32*n],d=[-38.4,19.2],nrm=[-1/Math.sqrt(5),2/Math.sqrt(5)],depth=d[0]*nrm[0]+d[1]*nrm[1];
+  const gr=g.createLinearGradient(o,0,o+nrm[0]*depth,nrm[1]*depth);gr.addColorStop(0,'rgba(70,35,10,.55)');gr.addColorStop(.45,'rgba(70,35,10,.2)');gr.addColorStop(1,'rgba(70,35,10,0)');
+  g.fillStyle=gr;g.beginPath();g.moveTo(o,0);g.lineTo(o+L[0],L[1]);g.lineTo(o+L[0]+d[0],L[1]+d[1]);g.lineTo(o+d[0],d[1]);g.closePath();g.fill();}
 const SHADOW_PAINT={
   shadow(g){const r=g.createRadialGradient(64,32,0,64,32,64);r.addColorStop(0,'rgba(55,28,8,.7)');r.addColorStop(.55,'rgba(55,28,8,.42)');r.addColorStop(1,'rgba(60,30,10,0)');
     g.save();g.translate(64,32);g.scale(1,.5);g.translate(-64,-32);g.fillStyle=r;g.beginPath();g.arc(64,32,64,0,Math.PI*2);g.fill();g.restore();},
-  ao_r(g){const o=26,d=[-25.6,12.8];const gr=g.createLinearGradient(o+32,16,o+32+d[0],16+d[1]);gr.addColorStop(0,'rgba(70,35,10,.45)');gr.addColorStop(1,'rgba(70,35,10,0)');
-    g.fillStyle=gr;g.beginPath();g.moveTo(o,0);g.lineTo(o+64,32);g.lineTo(o+64+d[0],32+d[1]);g.lineTo(o+d[0],d[1]);g.closePath();g.fill();},
+  ao_back(g){aoStrip(g,7);},ao_left(g){aoStrip(g,6);},
 };
 const PAINT={...SHADOW_PAINT,
   outside(g){diamond(g,64,32,1,'#C3C8D0','#B4BAC4');},floor_a(g){planks(g,'#DDBF93');},floor_b(g){planks(g,'#D3B385');},
@@ -164,7 +167,7 @@ function walkPaint(g,s,k){const m=k.match(/^(.*)_walk_(front|back)_(a|b)$/);cons
 function front(g,shirt,hair,b,glasses){const skin='#F1C7A5',d=b?1:0;ell(g,36,100,18,5,'rgba(0,0,0,.12)');ell(g,36,70,17,22,shirt);
   ell(g,20,74+(b?2:-1),6,11,shirt,-.5);ell(g,52,74+(b?-1:2),6,11,shirt,.5);circ(g,36,38+d,14,skin);ell(g,36,29+d,15,9,hair);ell(g,23,35+d,4,8,hair);ell(g,49,35+d,4,8,hair);
   circ(g,31,40+d,1.8,'#2B2118');circ(g,41,40+d,1.8,'#2B2118');if(glasses){g.strokeStyle='#222';g.lineWidth=1.4;g.strokeRect(27,37+d,8,6);g.strokeRect(37,37+d,8,6);}}
-function paint(k){const s=M[k];const cv=document.createElement('canvas');cv.width=s.w*SS;cv.height=s.h*SS;const g=cv.getContext('2d');g.scale(SS,SS);const fn=PAINT[k]||(k.includes('_walk_')?walkPaint:k.startsWith('char_')?PAINT.char:k.startsWith('boss_')?PAINT.boss:k.startsWith('secretary_')?PAINT.secretary:null);if(fn)fn(g,s,k);return cv;}
+function paint(k){const s=M[k];const ss=s.ss||SS;const cv=document.createElement('canvas');cv.width=s.w*ss;cv.height=s.h*ss;const g=cv.getContext('2d');g.scale(ss,ss);const fn=PAINT[k]||(k.includes('_walk_')?walkPaint:k.startsWith('char_')?PAINT.char:k.startsWith('boss_')?PAINT.boss:k.startsWith('secretary_')?PAINT.secretary:null);if(fn)fn(g,s,k);return cv;}
 
 // ================= WebGL 精灵批渲染
 const canvas=$('#gl');
@@ -172,7 +175,7 @@ const gl=canvas.getContext('webgl',{alpha:false,antialias:true,premultipliedAlph
 const overrides={};let UV={},tex=null;const ATLAS=2048;
 function buildAtlas(){const cv=document.createElement('canvas');cv.width=cv.height=ATLAS;const g=cv.getContext('2d');
   const keys=Object.keys(M).sort((a,b)=>M[b].h-M[a].h);let x=2,y=2,rowH=0;UV={};
-  for(const k of keys){const w=M[k].w*SS,hh=M[k].h*SS;if(x+w+2>ATLAS){x=2;y+=rowH+4;rowH=0;}g.drawImage(overrides[k]||paint(k),x,y,w,hh);UV[k]=[x/ATLAS,y/ATLAS,(x+w)/ATLAS,(y+hh)/ATLAS];x+=w+4;rowH=Math.max(rowH,hh);}
+  for(const k of keys){const ss=M[k].ss||SS,w=M[k].w*ss,hh=M[k].h*ss;if(x+w+2>ATLAS){x=2;y+=rowH+4;rowH=0;}g.drawImage(overrides[k]||paint(k),x,y,w,hh);UV[k]=[x/ATLAS,y/ATLAS,(x+w)/ATLAS,(y+hh)/ATLAS];x+=w+4;rowH=Math.max(rowH,hh);}
   if(!gl)return;if(!tex)tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,true);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cv);
   for(const [p,v] of [[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,p,v);}
@@ -200,7 +203,7 @@ function spr(k,x,y,flip,alpha=1){if(nq>=MAXQ)return;const s=M[k],uv=UV[k];const 
   let o=nq*48;for(const v of [[x0,y0,ua,uv[1]],[x1,y0,ub,uv[1]],[x0,y1,ua,uv[3]],[x1,y0,ub,uv[1]],[x1,y1,ub,uv[3]],[x0,y1,ua,uv[3]]]){vdata.set(v,o);vdata.fill(alpha,o+4,o+8);o+=8;}nq++;}
 
 // 接地影：光从左上来，影子略偏右下。大小是相对一格的比例
-const SH_OFF=[5,3];const SH_SIZE={desk:.62,desk_back:.62,boss_desk:.8,reception:.8,shelf:.55,whiteboard:.5,plant:.38,cooler:.34,sofa:.8,chair:.36,person:.3};
+const SH_OFF=[9,5];const SH_SIZE={desk:.85,desk_back:.85,boss_desk:1.05,reception:1.05,shelf:.7,whiteboard:.6,plant:.5,cooler:.45,sofa:1,chair:.42,person:.34};
 // 靠墙物体的影子往墙那边挪（物体画在格子后半部）
 const SH_SHIFT={shelf:[0,-.28],whiteboard:[0,-.3],cooler:[-.25,0]};
 function sprS(k,x,y,sc,alpha=1){if(nq>=MAXQ)return;const s=M[k],uv=UV[k];const x0=x-s.ox*sc,y0=y-s.oy*sc,x1=x0+s.w*sc,y1=y0+s.h*sc;
@@ -223,8 +226,7 @@ let staticFlat=[];
 function buildStatic(){staticFlat=[];
   for(let y=-4;y<ROOM_H+4;y++)for(let x=-4;x<ROOM_W+4;x++){const inRoom=x>=0&&y>=0&&x<ROOM_W&&y<ROOM_H;const [sx,sy]=tc(x,y);staticFlat.push([inRoom?((x+y)%2?'floor_b':'floor_a'):'outside',sx,sy]);}
   {const [sx,sy]=tc(6,4);staticFlat.push(['rug',sx,sy]);}{const [sx,sy]=tc(6,5);staticFlat.push(['mat',sx,sy]);}
-  for(let x=0;x<ROOM_W;x++){const [sx,sy]=iso(x,0);staticFlat.push(['ao_r',sx,sy]);}
-  for(let y=0;y<ROOM_H;y++){const [sx,sy]=iso(0,y);staticFlat.push(['ao_r',sx,sy,true]);}
+  {const [sx,sy]=iso(0,0);staticFlat.push(['ao_back',sx,sy],['ao_left',sx,sy,true]);}
   for(let y=ROOM_H-1;y>=0;y--){const [sx,sy]=iso(0,y);staticFlat.push([y===3?'wall_l_win':'wall_l',sx,sy]);}
   for(let x=0;x<ROOM_W;x++){const [sx,sy]=iso(x,0);staticFlat.push([(x===2||x===4)?'wall_r_win':'wall_r',sx,sy]);}}
 // k:'a' 人在桌前(y+1)背对镜头；k:'b' 人在桌后(y-1)面朝镜头。返回 [世界x, 世界y, 排序深度]
