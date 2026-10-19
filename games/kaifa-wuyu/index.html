@@ -658,10 +658,18 @@ $('#sidetab').onclick=()=>{if(!blocking())talk(['这里以后放快捷列表（�
 $('#tabUp').onclick=()=>{UI.collapsed=!UI.collapsed;$('#info').hidden=UI.collapsed;$('#tabUp').classList.toggle('down',UI.collapsed);};
 
 // 镜头拖动 / 缩放 / 点员工
-const ptrs=new Map();let drag=null,moved=0;
-canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,1);moved=0;drag={x:e.offsetX,y:e.offsetY,cx:cam.x,cy:cam.y};});
-canvas.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.offsetX-drag.x,dy=e.offsetY-drag.y;moved=Math.max(moved,Math.hypot(dx,dy));if(moved>6){cam.fit=false;cam.x=drag.cx+dx;cam.y=drag.cy+dy;}});
-canvas.addEventListener('pointerup',e=>{if(drag&&moved<=6&&!blocking())tapAt(e.offsetX,e.offsetY);drag=null;ptrs.delete(e.pointerId);});
+// ptrs: 当前按下的手指 id → {x,y}；pinch: 双指缩放起始状态；multi: 本次手势出现过多指（不触发点击）
+const ptrs=new Map();let drag=null,moved=0,pinch=null,multi=false;
+function startDrag(x,y){drag={x,y,cx:cam.x,cy:cam.y};}
+function startPinch(){const [a,b]=[...ptrs.values()];const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;pinch={d:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),z:cam.z,wx:(mx-cam.x)/cam.z,wy:(my-cam.y)/cam.z};drag=null;}
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY});if(ptrs.size===1){moved=0;multi=false;startDrag(e.offsetX,e.offsetY);}else if(ptrs.size===2){multi=true;startPinch();}});
+canvas.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;p.x=e.offsetX;p.y=e.offsetY;
+  if(pinch&&ptrs.size>=2){const [a,b]=[...ptrs.values()];const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const z=clamp(pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d,.25,3);cam.fit=false;cam.z=z;cam.x=mx-pinch.wx*z;cam.y=my-pinch.wy*z;return;}
+  if(!drag)return;const dx=e.offsetX-drag.x,dy=e.offsetY-drag.y;moved=Math.max(moved,Math.hypot(dx,dy));if(moved>6){cam.fit=false;cam.x=drag.cx+dx;cam.y=drag.cy+dy;}});
+function endPtr(e,tap){if(!ptrs.has(e.pointerId))return;if(tap&&ptrs.size===1&&drag&&!multi&&moved<=6&&!blocking())tapAt(e.offsetX,e.offsetY);ptrs.delete(e.pointerId);
+  if(ptrs.size===1){pinch=null;const [p]=[...ptrs.values()];startDrag(p.x,p.y);moved=99;}else if(ptrs.size>=2)startPinch();else{pinch=null;drag=null;}}
+canvas.addEventListener('pointerup',e=>endPtr(e,true));
+canvas.addEventListener('pointercancel',e=>endPtr(e,false));
 canvas.addEventListener('wheel',e=>{e.preventDefault();const z=clamp(cam.z*Math.exp(-e.deltaY*.0015),.25,3);const wx=(e.offsetX-cam.x)/cam.z,wy=(e.offsetY-cam.y)/cam.z;cam.fit=false;cam.z=z;cam.x=e.offsetX-wx*z;cam.y=e.offsetY-wy*z;},{passive:false});
 canvas.addEventListener('dblclick',()=>{cam.fit=true;fitCam();});
 function tapAt(x,y){for(const s of S.staff){const ps=personState(s.id);if(ps.mode==='absent')continue;const [wx,wy]=ps.mode==='walk'?[ps.x,ps.y]:seatWorld(s.seat);const [sx,sy]=w2s(wx,wy);if(Math.abs(x-sx)<20*cam.z&&y>sy-100*cam.z&&y<sy+6*cam.z){staffDlg();return;}}}
