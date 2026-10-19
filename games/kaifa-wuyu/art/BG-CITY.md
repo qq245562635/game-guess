@@ -1,4 +1,6 @@
-# 远景 bg_city · 第一版交付
+# 远景 bg_city · 第一版历史交付
+
+> v1 的地面透视后来确认不符合 2:1 网格；下文的覆盖与锚点检查不足以证明透视正确。当前交付与验收请看 [BG-CITY-V2.md](BG-CITY-V2.md)，PNG/JPG 已由 v2 同步替换。下文保留作历史记录。
 
 运行时文件：`../assets/bg_city.png`。
 
@@ -26,13 +28,3 @@
 - 当前加载器还会尝试可选的 bg_city_front.png；因本批未制作，该请求是 404，加载器按现有回退继续，不影响 bg_city。未为了消除这个可选请求而添加空前景文件。
 
 验收只覆盖默认适配镜头；无限拖动或极端缩小超出整张图边界仍可能看到画布底色，属于现有镜头行为。
-
-## Claude 接入记录
-
-- 已接入游戏，实测三种手机尺寸正常。
-- 原 PNG 7MB 对手机太大，另存 `assets/bg_city.jpg`（约 0.9MB，质量 86），游戏优先读 jpg，读不到再读 png。以后更新远景请同时更新 jpg，或只交 png 由 Claude 转。
-- `bg_city_front` 只有写进 `assets/index.json` 才会加载（避免缺图时 404）。
-
-## 待返工（Claude 验收意见）
-
-地面透视不是严格 2:1：左前树篱/路缘比网格陡，右前比网格平，与地板边缘之间形成楔形，游戏中地板看起来翘起。对照 `previews/bg_city-v1-grid-check.png`，按 `reference/bg_city-ground-grid.png` 重画地面部分，要求见 ASSETS.md「远景」。

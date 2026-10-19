@@ -1,0 +1,146 @@
+[
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "jpg preferred",
+    "responses": [
+      {
+        "file": "bg_city.jpg",
+        "status": 200
+      }
+    ],
+    "errors": [],
+    "state": {
+      "bgLoaded": true,
+      "scene": {
+        "w": 390,
+        "h": 642.515625
+      },
+      "camera": {
+        "x": 180.2132701421801,
+        "y": 274.9612055687204,
+        "z": 0.46208530805687204,
+        "fit": true
+      },
+      "bounds": {
+        "l": -41.58767772511848,
+        "t": -50.34685130331752,
+        "r": 431.5876777251185,
+        "b": 718.5631013033176
+      },
+      "loadedArt": 38,
+      "coversScene": true
+    }
+  },
+  {
+    "viewport": [
+      360,
+      640
+    ],
+    "mode": "jpg preferred",
+    "responses": [
+      {
+        "file": "bg_city.jpg",
+        "status": 200
+      }
+    ],
+    "errors": [],
+    "state": {
+      "bgLoaded": true,
+      "scene": {
+        "w": 333.90625,
+        "h": 467.5
+      },
+      "camera": {
+        "x": 154.29317239336493,
+        "y": 192.4601895734597,
+        "z": 0.395623518957346,
+        "fit": true
+      },
+      "bounds": {
+        "l": -35.606116706161146,
+        "t": -86.05876777251186,
+        "r": 369.5123667061612,
+        "b": 572.2587677725119
+      },
+      "loadedArt": 38,
+      "coversScene": true
+    }
+  },
+  {
+    "viewport": [
+      360,
+      800
+    ],
+    "mode": "jpg preferred",
+    "responses": [
+      {
+        "file": "bg_city.jpg",
+        "status": 200
+      }
+    ],
+    "errors": [],
+    "state": {
+      "bgLoaded": true,
+      "scene": {
+        "w": 360,
+        "h": 614
+      },
+      "camera": {
+        "x": 166.35071090047393,
+        "y": 264.68284360189574,
+        "z": 0.4265402843601896,
+        "fit": true
+      },
+      "bounds": {
+        "l": -38.38862559241707,
+        "t": -35.601516587677736,
+        "r": 398.38862559241704,
+        "b": 674.1615165876777
+      },
+      "loadedArt": 38,
+      "coversScene": true
+    }
+  },
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "mode": "png fallback",
+    "responses": [
+      {
+        "file": "bg_city.jpg",
+        "status": 404
+      },
+      {
+        "file": "bg_city.png",
+        "status": 200
+      }
+    ],
+    "errors": [],
+    "state": {
+      "bgLoaded": true,
+      "scene": {
+        "w": 390,
+        "h": 642.515625
+      },
+      "camera": {
+        "x": 180.2132701421801,
+        "y": 274.9612055687204,
+        "z": 0.46208530805687204,
+        "fit": true
+      },
+      "bounds": {
+        "l": -41.58767772511848,
+        "t": -50.34685130331752,
+        "r": 431.5876777251185,
+        "b": 718.5631013033176
+      },
+      "loadedArt": 38,
+      "coversScene": true
+    }
+  }
+]
