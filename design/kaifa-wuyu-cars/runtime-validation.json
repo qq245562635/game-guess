@@ -1,0 +1,169 @@
+{
+  "responses": [
+    {
+      "file": "car.png",
+      "status": 200
+    },
+    {
+      "file": "car_front.png",
+      "status": 200
+    }
+  ],
+  "errors": [],
+  "cases": [
+    {
+      "loop": 0,
+      "name": "enter",
+      "distance": 16,
+      "legs": 2,
+      "sprite": [
+        "car_front",
+        -160,
+        528,
+        false,
+        1
+      ],
+      "anchor": {
+        "w": 121,
+        "h": 89,
+        "ox": 60,
+        "oy": 64
+      }
+    },
+    {
+      "loop": 0,
+      "name": "before-turn",
+      "distance": 18.49,
+      "legs": 2,
+      "sprite": [
+        "car_front",
+        -0.6400000000001,
+        607.68,
+        false,
+        1
+      ],
+      "anchor": {
+        "w": 121,
+        "h": 89,
+        "ox": 60,
+        "oy": 64
+      }
+    },
+    {
+      "loop": 0,
+      "name": "after-turn",
+      "distance": 18.51,
+      "legs": 2,
+      "sprite": [
+        "car",
+        0.6400000000001,
+        607.68,
+        true,
+        1
+      ],
+      "anchor": {
+        "w": 121,
+        "h": 89,
+        "ox": 60,
+        "oy": 64
+      }
+    },
+    {
+      "loop": 0,
+      "name": "leave",
+      "distance": 27,
+      "legs": 2,
+      "sprite": [
+        "car",
+        544,
+        336,
+        true,
+        1
+      ],
+      "anchor": {
+        "w": 121,
+        "h": 89,
+        "ox": 60,
+        "oy": 64
+      }
+    },
+    {
+      "loop": 1,
+      "name": "enter",
+      "distance": 16,
+      "legs": 2,
+      "sprite": [
+        "car_front",
+        224,
+        560,
+        true,
+        1
+      ],
+      "anchor": {
+        "w": 121,
+        "h": 89,
+        "ox": 60,
+        "oy": 64
+      }
+    },
+    {
+      "loop": 1,
+      "name": "before-turn",
+      "distance": 18.49,
+      "legs": 2,
+      "sprite": [
+        "car",
+        64.6400000000001,
+        576.32,
+        false,
+        1
+      ],
+      "anchor": {
+        "w": 121,
+        "h": 89,
+        "ox": 60,
+        "oy": 64
+      }
+    },
+    {
+      "loop": 1,
+      "name": "after-turn",
+      "distance": 18.51,
+      "legs": 2,
+      "sprite": [
+        "car",
+        63.3599999999999,
+        575.68,
+        false,
+        1
+      ],
+      "anchor": {
+        "w": 121,
+        "h": 89,
+        "ox": 60,
+        "oy": 64
+      }
+    },
+    {
+      "loop": 1,
+      "name": "leave",
+      "distance": 27,
+      "legs": 2,
+      "sprite": [
+        "car",
+        -480,
+        304,
+        false,
+        1
+      ],
+      "anchor": {
+        "w": 121,
+        "h": 89,
+        "ox": 60,
+        "oy": 64
+      }
+    }
+  ],
+  "gameCodeChanged": false,
+  "fullRoute": true
+}

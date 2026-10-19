@@ -1,0 +1,5 @@
+Edit this exact car sprite: change ONLY the bright blue body paint to warm muted coral red, paper-felt texture retained. Preserve geometry, pose, camera, tires, window tint, headlights or taillights and plate, and body proportions. Single isolated car on genuinely transparent background, no road scraps, no scenery, no cast shadow, no text or border. Keep original facing direction exactly, don't rotate. This is a matching alternate color for the same mobile game car, not a new car model.
+
+Front target: car_front-generated.png. Preserve front view and white headlights.
+Rear target: source/car.png. Additional instruction: This is REAR view: keep rear hatch window, red taillights, yellow rear plate at lower right, nose points UPPER LEFT away from viewer. Do not add a front hood or white headlights.
+Tool: built-in image_gen, transparent_background=true, one call per variant.

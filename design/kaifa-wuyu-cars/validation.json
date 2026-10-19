@@ -1,0 +1,87 @@
+{
+  "assets": [
+    {
+      "key": "car_front",
+      "pixels": [
+        242,
+        178
+      ],
+      "logical": [
+        121,
+        89
+      ],
+      "anchorPixels": [
+        120,
+        128
+      ],
+      "anchorLogical": [
+        60,
+        64
+      ],
+      "visibleBox": [
+        10,
+        4,
+        222,
+        158
+      ],
+      "transparent": true,
+      "largestComponentOnly": true
+    },
+    {
+      "key": "car_front_2",
+      "pixels": [
+        242,
+        178
+      ],
+      "logical": [
+        121,
+        89
+      ],
+      "anchorPixels": [
+        120,
+        128
+      ],
+      "anchorLogical": [
+        60,
+        64
+      ],
+      "visibleBox": [
+        10,
+        4,
+        222,
+        158
+      ],
+      "transparent": true,
+      "largestComponentOnly": true
+    },
+    {
+      "key": "car_2",
+      "pixels": [
+        242,
+        178
+      ],
+      "logical": [
+        121,
+        89
+      ],
+      "anchorPixels": [
+        120,
+        128
+      ],
+      "anchorLogical": [
+        60,
+        64
+      ],
+      "visibleBox": [
+        10,
+        4,
+        222,
+        158
+      ],
+      "transparent": true,
+      "largestComponentOnly": true
+    }
+  ],
+  "manifestCount": 40,
+  "extraColorsAutoLoaded": false
+}
