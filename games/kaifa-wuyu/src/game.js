@@ -96,7 +96,7 @@ const M={
   wall_r:{w:64,h:200,ox:0,oy:168},wall_r_win:{w:64,h:200,ox:0,oy:168},wall_l:{w:64,h:200,ox:64,oy:168},wall_l_win:{w:64,h:200,ox:64,oy:168},
   desk:{...OBJ},chair:{w:128,h:96,ox:64,oy:64},shelf:{...OBJ},whiteboard:{...OBJ},plant:{...OBJ},sofa:{...OBJ},cooler:{...OBJ},
 };
-Object.assign(M,{shadow:{w:128,h:64,ox:64,oy:32},ao_back:{w:7*64+39,h:7*32+20,ox:39,oy:0,ss:1},ao_left:{w:6*64+39,h:6*32+20,ox:39,oy:0,ss:1},desk_back:{...OBJ},boss_desk:{...OBJ},reception:{...OBJ},mat:{w:128,h:64,ox:64,oy:32}});
+Object.assign(M,{car:{w:121,h:89,ox:60,oy:64},car_front:{w:121,h:89,ox:60,oy:64},shadow:{w:128,h:64,ox:64,oy:32},ao_back:{w:7*64+39,h:7*32+20,ox:39,oy:0,ss:1},ao_left:{w:6*64+39,h:6*32+20,ox:39,oy:0,ss:1},desk_back:{...OBJ},boss_desk:{...OBJ},reception:{...OBJ},mat:{w:128,h:64,ox:64,oy:32}});
 const CHAR_N=4;const CH={w:72,h:112,ox:36,oy:102};
 for(let i=0;i<CHAR_N;i++)for(const v of ['back','front'])for(const f of 'ab')M[`char_${i}_${v}_${f}`]={...CH};
 for(const who of ['boss','secretary'])for(const f of 'ab')M[`${who}_${f}`]={...CH};
@@ -215,6 +215,20 @@ function drawShadows(){for(const [k,x,y] of DECOR)shadowAt(k,x,y);for(const s of
   shadowAt('boss_desk',...BOSS.d);shadowAt('reception',...SEC_SPOT.d);
   for(const [wx,wy] of [...SEATS.map((_,i)=>seatWorld(i)),deskSeat(BOSS.d,'b'),deskSeat(SEC_SPOT.d,'b')])shadowXY('chair',wx,wy);
   for(const id of [...S.staff.map(s=>s.id),'boss','secretary']){const ps=personState(id);if(ps.mode==='walk')shadowXY('person',ps.x,ps.y,ps.a??1);}}
+
+// ================= 马路上的车
+// 马路是 L 形：左前方马路沿 x 方向（ty 7.5~10.5），右前方马路沿 y 方向（tx 8.5~11.5），在房间前角下面相交。
+// car = 车尾朝镜头（往左上开），水平镜像后往右上开；car_front = 车头朝镜头（往右下开），镜像后往左下开。
+// 两条环线，每次只放一辆车，交替发车。没有 car_front 时只跑驶离路口的半程（在路口淡入）。
+const CAR_SPEED=1.6,CAR_GAP=[3,7];const car={on:false,t:0,wait:2,loop:0};
+const LOOPS=[
+  [{from:[-9,9.5],to:[9.5,9.5],k:'car_front',flip:false},{from:[9.5,9.5],to:[9.5,-9],k:'car',flip:true}],
+  [{from:[10.5,-9],to:[10.5,8.5],k:'car_front',flip:true},{from:[10.5,8.5],to:[-9,8.5],k:'car',flip:false}]];
+function carLegs(){const L=LOOPS[car.loop];return overrides.car_front?L:[L[1]];}
+function updateCar(dt){if(!overrides.car)return;if(!car.on){car.wait-=dt;if(car.wait<=0){car.on=true;car.t=0;}return;}car.t+=dt*CAR_SPEED;
+  const total=carLegs().reduce((a,l)=>a+Math.hypot(l.to[0]-l.from[0],l.to[1]-l.from[1]),0);if(car.t>=total){car.on=false;car.loop^=1;car.wait=rnd(...CAR_GAP);}}
+function carSprite(){if(!car.on)return null;const legs=carLegs();let d=car.t;for(const l of legs){const len=Math.hypot(l.to[0]-l.from[0],l.to[1]-l.from[1]);
+  if(d<=len){const u=d/len,tx=l.from[0]+(l.to[0]-l.from[0])*u,ty=l.from[1]+(l.to[1]-l.from[1])*u;const [x,y]=iso(tx,ty);const fade=legs.length===1?Math.min(1,d/.8):1;return [l.k,x,y,l.flip,fade];}d-=len;}return null;}
 
 // ================= 场景布局
 const iso=(x,y)=>[(x-y)*TILE_W/2,(x+y)*TILE_H/2];
@@ -582,7 +596,7 @@ function draw(t){if(!gl)return;gl.viewport(0,0,canvas.width,canvas.height);gl.cl
   const working=!!(S.project&&!S.project.awaiting)&&!blocking();
   for(let i=0;i<SEATS.length;i++){const [wx,wy,dd]=seatWorld(i);items.push([dd-.01,'chair',wx,wy]);}
   for(const s of S.staff){const ps=personState(s.id);if(ps.mode==='walk'){items.push([ps.d,ps.key,ps.x,ps.y,ps.flip,ps.a]);continue;}if(ps.mode!=='seat')continue;const [wx,wy,dd]=seatWorld(s.seat);const f=working?(Math.floor(t*5+s.seat*1.7)%2?'b':'a'):'a';items.push([dd,`char_${s.look%CHAR_N}_${SEATS[s.seat].k==='a'?'back':'front'}_${f}`,wx,wy+(working?0:Math.sin(t*1.5+s.seat)*1.2)]);}
-  items.sort((a,b)=>a[0]-b[0]);for(const it of items)spr(it[1],it[2],it[3],it[4],it[5]);const q1=nq;if(bgTex.bg_city_front)bgQuad();
+  items.sort((a,b)=>a[0]-b[0]);for(const it of items)spr(it[1],it[2],it[3],it[4],it[5]);const cs=carSprite();if(cs)spr(...cs);const q1=nq;if(bgTex.bg_city_front)bgQuad();
   gl.uniform2f(uRes,stageW,stageH);gl.uniform3f(uCam,cam.x,cam.y,cam.z);gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferSubData(gl.ARRAY_BUFFER,0,vdata.subarray(0,nq*48));
   if(hasBG){gl.bindTexture(gl.TEXTURE_2D,bgTex.bg_city);gl.drawArrays(gl.TRIANGLES,0,q0*6);}
   gl.bindTexture(gl.TEXTURE_2D,tex);gl.drawArrays(gl.TRIANGLES,q0*6,(q1-q0)*6);
@@ -590,7 +604,7 @@ function draw(t){if(!gl)return;gl.viewport(0,0,canvas.width,canvas.height);gl.cl
 let last=performance.now();
 function frame(now){const dt=Math.min(.1,(now-last)/1000);last=now;
   if(!blocking()){simT+=dt;weekAcc+=dt;updateAway();for(let i=pending.length-1;i>=0;i--)if(pending[i].at<=simT){const p=pending.splice(i,1)[0];p.fn();}if(weekAcc>=WEEK_SEC){weekAcc-=WEEK_SEC;weekTick();}}
-  renderTop();draw(now/1000);requestAnimationFrame(frame);}
+  updateCar(dt);renderTop();draw(now/1000);requestAnimationFrame(frame);}
 function tryLoadArt(){return fetch('assets/index.json').then(r=>r.ok?r.json():[]).catch(()=>[]).then(keys=>{keys=Array.isArray(keys)?keys:[];loadBG(keys);return Promise.all((Array.isArray(keys)?keys:[]).filter(k=>M[k]).map(k=>new Promise(res=>{const img=new Image();img.onload=()=>{overrides[k]=img;res();};img.onerror=()=>res();img.src=`assets/${k}.png`;})));});}
 function start(){if(gl)initGL();buildStatic();buildAtlas();if(!load())newGame();if(!S.unl)S.unl=unlockedIds();
   if(S.project&&S.project.awaiting==='gfx'||S.project&&S.project.awaiting==='snd')setTimeout(()=>leaderAsk(S.project.awaiting),300);
