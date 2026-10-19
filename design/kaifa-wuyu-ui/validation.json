@@ -1,0 +1,133 @@
+{
+  "count": 21,
+  "scale": 2,
+  "checks": [
+    {
+      "key": "ui_topbar_frame",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_topbar_panel",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_info_frame",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_info_panel",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_bb_btn",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_bb_btn_down",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_bb_btn_empty",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_tab_up",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_tab_arrow_up",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_tab_arrow_down",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_badge_icon",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_coin",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_sidetab",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 14
+    },
+    {
+      "key": "ui_sidetab_back",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 14
+    },
+    {
+      "key": "ui_info_divider",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 227
+    },
+    {
+      "key": "ui_date_dot",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_scroll_up",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_scroll_down",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_scroll_track",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_scroll_thumb",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 0
+    },
+    {
+      "key": "ui_bottombar_bg",
+      "dimensions": "pass",
+      "rgba": "pass",
+      "cornerAlpha": 255
+    }
+  ],
+  "scope": "file dimensions/alpha only; contact sheet inspected separately; runtime not integrated"
+}

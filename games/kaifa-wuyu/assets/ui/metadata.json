@@ -1,0 +1,499 @@
+{
+  "schema": 1,
+  "batch": "ui-main-v2",
+  "scale": 2,
+  "master": "art/reference/ui-main-v2.png",
+  "sourceSize": [
+    870,
+    1808
+  ],
+  "nineSliceOrder": "top,right,bottom,left; logical pixels, multiply by 2 for source PNG",
+  "assets": [
+    {
+      "key": "ui_topbar_frame",
+      "path": "assets/ui/ui_topbar_frame.png",
+      "width": 720,
+      "height": 68,
+      "pixels": [
+        1440,
+        136
+      ],
+      "nineSlice": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "safeNineSlice": [
+        22,
+        24,
+        22,
+        24
+      ],
+      "method": "master perimeter; text, coin and divider removed from stretch region",
+      "sourceRect": [
+        1,
+        26,
+        868,
+        88
+      ]
+    },
+    {
+      "key": "ui_topbar_panel",
+      "path": "assets/ui/ui_topbar_panel.png",
+      "width": 708,
+      "height": 56,
+      "pixels": [
+        1416,
+        112
+      ],
+      "nineSlice": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "safeNineSlice": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "method": "uniform master palette inner layer",
+      "sourceRect": null
+    },
+    {
+      "key": "ui_info_frame",
+      "path": "assets/ui/ui_info_frame.png",
+      "width": 720,
+      "height": 118,
+      "pixels": [
+        1440,
+        236
+      ],
+      "nineSlice": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "safeNineSlice": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "method": "master perimeter; text, divider and scrollbar removed",
+      "sourceRect": [
+        1,
+        1485,
+        868,
+        136
+      ]
+    },
+    {
+      "key": "ui_info_panel",
+      "path": "assets/ui/ui_info_panel.png",
+      "width": 710,
+      "height": 108,
+      "pixels": [
+        1420,
+        216
+      ],
+      "nineSlice": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "safeNineSlice": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "method": "uniform master palette inner layer",
+      "sourceRect": null
+    },
+    {
+      "key": "ui_bb_btn",
+      "path": "assets/ui/ui_bb_btn.png",
+      "width": 196,
+      "height": 84,
+      "pixels": [
+        392,
+        168
+      ],
+      "nineSlice": [
+        14,
+        14,
+        14,
+        14
+      ],
+      "safeNineSlice": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "method": "master button perimeter; uniform blank center",
+      "sourceRect": [
+        20,
+        1650,
+        244,
+        100
+      ]
+    },
+    {
+      "key": "ui_bb_btn_down",
+      "path": "assets/ui/ui_bb_btn_down.png",
+      "width": 196,
+      "height": 84,
+      "pixels": [
+        392,
+        168
+      ],
+      "nineSlice": [
+        14,
+        14,
+        14,
+        14
+      ],
+      "safeNineSlice": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "method": "same master silhouette; pressed tonal variant",
+      "sourceRect": null
+    },
+    {
+      "key": "ui_bb_btn_empty",
+      "path": "assets/ui/ui_bb_btn_empty.png",
+      "width": 196,
+      "height": 84,
+      "pixels": [
+        392,
+        168
+      ],
+      "nineSlice": [
+        14,
+        14,
+        14,
+        14
+      ],
+      "safeNineSlice": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "method": "same master silhouette; inset teal state",
+      "sourceRect": null
+    },
+    {
+      "key": "ui_tab_up",
+      "path": "assets/ui/ui_tab_up.png",
+      "width": 200,
+      "height": 56,
+      "pixels": [
+        400,
+        112
+      ],
+      "nineSlice": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "safeNineSlice": [
+        16,
+        22,
+        16,
+        22
+      ],
+      "method": "master pull tab perimeter; arrow separated",
+      "sourceRect": [
+        355,
+        1703,
+        159,
+        55
+      ]
+    },
+    {
+      "key": "ui_tab_arrow_up",
+      "path": "assets/ui/ui_tab_arrow_up.png",
+      "width": 44,
+      "height": 24,
+      "pixels": [
+        88,
+        48
+      ],
+      "nineSlice": null,
+      "safeNineSlice": null,
+      "method": "isolated original orange triangle",
+      "sourceRect": [
+        408,
+        1715,
+        54,
+        33
+      ]
+    },
+    {
+      "key": "ui_tab_arrow_down",
+      "path": "assets/ui/ui_tab_arrow_down.png",
+      "width": 44,
+      "height": 24,
+      "pixels": [
+        88,
+        48
+      ],
+      "nineSlice": null,
+      "safeNineSlice": null,
+      "method": "vertical flip of extracted triangle",
+      "sourceRect": null
+    },
+    {
+      "key": "ui_badge_icon",
+      "path": "assets/ui/ui_badge_icon.png",
+      "width": 56,
+      "height": 56,
+      "pixels": [
+        112,
+        112
+      ],
+      "nineSlice": null,
+      "safeNineSlice": null,
+      "method": "original blue crowd badge, excluding count and sky",
+      "sourceRect": [
+        32,
+        141,
+        75,
+        73
+      ]
+    },
+    {
+      "key": "ui_coin",
+      "path": "assets/ui/ui_coin.png",
+      "width": 48,
+      "height": 48,
+      "pixels": [
+        96,
+        96
+      ],
+      "nineSlice": null,
+      "safeNineSlice": null,
+      "method": "isolated original coin stack; separate from frame",
+      "sourceRect": [
+        584,
+        39,
+        66,
+        63
+      ]
+    },
+    {
+      "key": "ui_sidetab",
+      "path": "assets/ui/ui_sidetab.png",
+      "width": 52,
+      "height": 118,
+      "pixels": [
+        104,
+        236
+      ],
+      "nineSlice": [
+        12,
+        16,
+        12,
+        0
+      ],
+      "safeNineSlice": [
+        18,
+        18,
+        18,
+        0
+      ],
+      "method": "master shape and original chevron; remove underlying scene; uniform translucent teal",
+      "sourceRect": [
+        0,
+        954,
+        64,
+        134
+      ]
+    },
+    {
+      "key": "ui_sidetab_back",
+      "path": "assets/ui/ui_sidetab_back.png",
+      "width": 52,
+      "height": 118,
+      "pixels": [
+        104,
+        236
+      ],
+      "nineSlice": [
+        12,
+        16,
+        12,
+        0
+      ],
+      "safeNineSlice": [
+        18,
+        18,
+        18,
+        0
+      ],
+      "method": "same left-flush tab with mirrored chevron only",
+      "sourceRect": null
+    },
+    {
+      "key": "ui_info_divider",
+      "path": "assets/ui/ui_info_divider.png",
+      "width": 2,
+      "height": 80,
+      "pixels": [
+        4,
+        160
+      ],
+      "nineSlice": null,
+      "safeNineSlice": null,
+      "method": "master sampled tan; uniform stretch-safe divider",
+      "sourceRect": null
+    },
+    {
+      "key": "ui_date_dot",
+      "path": "assets/ui/ui_date_dot.png",
+      "width": 6,
+      "height": 6,
+      "pixels": [
+        12,
+        12
+      ],
+      "nineSlice": null,
+      "safeNineSlice": null,
+      "method": "separate blink indicator in master ink color",
+      "sourceRect": null
+    },
+    {
+      "key": "ui_scroll_up",
+      "path": "assets/ui/ui_scroll_up.png",
+      "width": 36,
+      "height": 24,
+      "pixels": [
+        72,
+        48
+      ],
+      "nineSlice": null,
+      "safeNineSlice": null,
+      "method": "original scrollbar up mark",
+      "sourceRect": [
+        831,
+        1497,
+        22,
+        18
+      ]
+    },
+    {
+      "key": "ui_scroll_down",
+      "path": "assets/ui/ui_scroll_down.png",
+      "width": 36,
+      "height": 24,
+      "pixels": [
+        72,
+        48
+      ],
+      "nineSlice": null,
+      "safeNineSlice": null,
+      "method": "original scrollbar down mark",
+      "sourceRect": [
+        831,
+        1591,
+        22,
+        18
+      ]
+    },
+    {
+      "key": "ui_scroll_track",
+      "path": "assets/ui/ui_scroll_track.png",
+      "width": 12,
+      "height": 60,
+      "pixels": [
+        24,
+        120
+      ],
+      "nineSlice": [
+        6,
+        0,
+        6,
+        0
+      ],
+      "safeNineSlice": [
+        6,
+        0,
+        6,
+        0
+      ],
+      "method": "original blue scroll track",
+      "sourceRect": [
+        833,
+        1517,
+        18,
+        72
+      ]
+    },
+    {
+      "key": "ui_scroll_thumb",
+      "path": "assets/ui/ui_scroll_thumb.png",
+      "width": 12,
+      "height": 30,
+      "pixels": [
+        24,
+        60
+      ],
+      "nineSlice": [
+        6,
+        0,
+        6,
+        0
+      ],
+      "safeNineSlice": [
+        6,
+        0,
+        6,
+        0
+      ],
+      "method": "original saturated-blue thumb",
+      "sourceRect": [
+        833,
+        1517,
+        18,
+        37
+      ]
+    },
+    {
+      "key": "ui_bottombar_bg",
+      "path": "assets/ui/ui_bottombar_bg.png",
+      "width": 720,
+      "height": 186,
+      "pixels": [
+        1440,
+        372
+      ],
+      "nineSlice": null,
+      "safeNineSlice": null,
+      "method": "master blank footer paper, mirrored seamless tile; no controls or scene",
+      "sourceRect": [
+        280,
+        1768,
+        48,
+        32
+      ]
+    }
+  ],
+  "notes": [
+    "Menu/dialog are preview-only pending user approval.",
+    "Frame assets are self-contained; optional inner panels belong behind dynamic content.",
+    "All labels, money, fan count and date are rendered by code. Coin, divider and date dot are separate.",
+    "Uniform centers deliberately remove text and prevent texture distortion.",
+    "No office or town pixels are included. Not yet integrated into the game."
+  ]
+}

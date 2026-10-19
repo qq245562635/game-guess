@@ -1,0 +1,23 @@
+[
+  "ui_topbar_frame",
+  "ui_topbar_panel",
+  "ui_info_frame",
+  "ui_info_panel",
+  "ui_bb_btn",
+  "ui_bb_btn_down",
+  "ui_bb_btn_empty",
+  "ui_tab_up",
+  "ui_tab_arrow_up",
+  "ui_tab_arrow_down",
+  "ui_badge_icon",
+  "ui_coin",
+  "ui_sidetab",
+  "ui_sidetab_back",
+  "ui_info_divider",
+  "ui_date_dot",
+  "ui_scroll_up",
+  "ui_scroll_down",
+  "ui_scroll_track",
+  "ui_scroll_thumb",
+  "ui_bottombar_bg"
+]
