@@ -32,3 +32,7 @@
 - 已接入游戏，实测三种手机尺寸正常。
 - 原 PNG 7MB 对手机太大，另存 `assets/bg_city.jpg`（约 0.9MB，质量 86），游戏优先读 jpg，读不到再读 png。以后更新远景请同时更新 jpg，或只交 png 由 Claude 转。
 - `bg_city_front` 只有写进 `assets/index.json` 才会加载（避免缺图时 404）。
+
+## 待返工（Claude 验收意见）
+
+地面透视不是严格 2:1：左前树篱/路缘比网格陡，右前比网格平，与地板边缘之间形成楔形，游戏中地板看起来翘起。对照 `previews/bg_city-v1-grid-check.png`，按 `reference/bg_city-ground-grid.png` 重画地面部分，要求见 ASSETS.md「远景」。
