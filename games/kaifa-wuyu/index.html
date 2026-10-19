@@ -169,6 +169,33 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 .cfav{font-size:24rem;color:var(--ink-soft);text-align:center}.cfav.on{color:var(--sel-2);font-weight:700}
 .cok{border:0;background:#B9D0F5;font-size:34rem;padding:8rem 40rem;border-radius:4rem}
 .chint{text-align:center;font-size:26rem;color:var(--label)}
+/* 职员卡补充：等级、月薪、培训按钮 */
+.cjob{display:flex;justify-content:space-between;align-items:center}
+.clv{font-size:22rem;color:#1C9660;font-weight:700}.clv b{font-size:34rem;color:#24308A;margin-left:4rem}
+.csal{display:flex;gap:40rem}.csal .k{color:var(--label)}
+.tfoot{display:flex;justify-content:center}.cok:disabled{opacity:.45}
+/* 培训画面 */
+.tscene{position:relative;min-height:220rem;overflow:hidden;border:3rem solid #6B7486;background:#9FD3F2}
+.tbar{position:absolute;left:14rem;right:14rem;top:12rem;height:20rem;background:#7A1F1F;border:2rem solid #3A3F4C;z-index:3}
+.tbar i{display:block;height:100%;width:0;background:linear-gradient(#7BE36B,#2FA43A)}
+.tsky{position:absolute;inset:0;background:linear-gradient(#7CC4EE,#CFEBFA 70%)}
+.tcity{position:absolute;left:0;right:0;bottom:62rem;height:70rem;opacity:.55;background:
+  linear-gradient(#8FA6BE,#8FA6BE) 4% 100%/14% 70% no-repeat,linear-gradient(#7F97B0,#7F97B0) 22% 100%/10% 100% no-repeat,
+  linear-gradient(#97ACC2,#97ACC2) 40% 100%/16% 55% no-repeat,linear-gradient(#8098B2,#8098B2) 62% 100%/12% 85% no-repeat,
+  linear-gradient(#90A7BF,#90A7BF) 84% 100%/18% 62% no-repeat}
+.tground{position:absolute;left:0;right:0;bottom:0;height:62rem;background:linear-gradient(#E9DCC5 0 18rem,#CDBA98 18rem 22rem,#D9C8A8 22rem)}
+.tfig{position:absolute;left:50%;bottom:22rem;height:auto;transform:translateX(-50%) scale(.8);transform-origin:50% 100%;z-index:2}
+.t-walk,.t-jam{animation:tbob .5s ease-in-out infinite}
+.t-code,.t-read,.t-sketch,.t-music,.t-class{animation:tnod 1s ease-in-out infinite}
+.t-spa .body{background:#6EC3E8!important;border-radius:30rem 30rem 6rem 6rem}
+.t-spa{animation:tbob 1.6s ease-in-out infinite}
+@keyframes tbob{50%{transform:translateX(-50%) scale(.8) translateY(-8rem)}}
+@keyframes tnod{50%{transform:translateX(-50%) scale(.8) rotate(-3deg)}}
+.cs{position:relative}
+.cs.up b{color:#E0383E}
+.tplus{position:absolute;right:-8rem;top:-6rem;font:700 24rem/1 system-ui,sans-serif;font-style:normal;color:#E0383E;animation:tplus .9s ease-out forwards;pointer-events:none}
+@keyframes tplus{0%{opacity:0;transform:translateY(8rem)}20%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-26rem)}}
+@media (prefers-reduced-motion:reduce){.tfig,.tplus{animation-duration:.01s;animation-iteration-count:1}}
 </style>
 
 <div id="app">
@@ -445,12 +472,12 @@ new ResizeObserver(resize).observe($('#scene'));
 let S=null;
 function mkStaff(job,i){const W={prog:{prog:1.6,scen:.6,gfx:.6,snd:.5},plan:{prog:.6,scen:1.6,gfx:.7,snd:.5},art:{prog:.5,scen:.7,gfx:1.6,snd:.6},sound:{prog:.5,scen:.6,gfx:.6,snd:1.6}}[job];
   const st={};for(const a in W)st[a]=Math.round(11*W[a]*rnd(.8,1.2));const NAMES=['李晨','王悦','陈默','周小雨'];
-  return {id:'s'+i,name:NAMES[i],job,...st,salary:Math.round(20+(st.prog+st.scen+st.gfx+st.snd)*.9),seat:i,look:i,fav:pick(INIT_G),sta:100};}
+  return {id:'s'+i,name:NAMES[i],job,...st,salary:Math.round(20+(st.prog+st.scen+st.gfx+st.snd)*.9),seat:i,look:i,fav:pick(INIT_G),sta:100,lv:1};}
 function freshState(){return {v:3,year:1,month:4,week:1,money:5000,fans:0,staff:['prog','plan','art','sound'].map(mkStaff),project:null,games:[],ys:{units:0,profit:0},cnt:{},known:{},unl:null};}
 function newGame(){S=freshState();S.unl=unlockedIds();if(typeof away!=='undefined')away.clear();}
 // 旧存档（v2）补字段
 function migrate(s){if(s.v===3)return s;s.v=3;s.cnt=s.cnt||{};s.known=s.known||{};s.unl=null;
-  for(const st of s.staff){st.fav=st.fav||pick(INIT_G);st.sta=st.sta??100;}
+  for(const st of s.staff){st.fav=st.fav||pick(INIT_G);st.sta=st.sta??100;st.lv=st.lv||1;}
   for(const g of s.games){if(!TN[g.type])g.type='animal';g.chan=g.chan||'web';g.cut=g.cut??1;g.policy=g.policy||{};}
   const p=s.project;if(p){if(!TN[p.type])p.type='animal';p.chan=p.chan||'web';p.dev=p.dev||'normal';p.weeks=p.weeks||14;delete p.plat;}
   return s;}
@@ -468,7 +495,7 @@ function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTim
 const todo=()=>talk(['这个功能还在规划中，先把开发新作这条线跑通。']);
 const MENU=[
   {n:'开发',c:'#3FAF4A',sub:[['新企划',newPlan],['委托开发',todo]]},
-  {n:'职员',c:'#E2701A',sub:[['职员一览',staffDlg],['招聘',todo],['培训',todo]]},
+  {n:'职员',c:'#E2701A',sub:[['职员一览',staffDlg],['招聘',todo],['培训',()=>trainPick(0)]]},
   {n:'行动',c:'#2A7BDB',sub:[['宣传',todo],['取得授权',todo]]},
   {n:'信息',c:'#E0383E',sub:[['作品记录',recordsDlg],['公司数据',todo]]},
   {n:'系统',c:'#5C6478',sub:[['保存',()=>{closeMenu();doSave();}],['重新开始',restartAsk]]},
@@ -534,17 +561,21 @@ function policyDlg(){let sel=POLICY[0][0];const budget=policyBudget();
 // ---- 制作人 / 负责人（界面③，员工卡片翻页）
 const PICK={plan:{t:'制作人',k:'scen'},gfx:{t:'画面负责人',k:'gfx'},snd:{t:'声音负责人',k:'snd'}};
 const SKC={prog:'#5C6478',scen:'#E2701A',gfx:'var(--c-gfx)',snd:'var(--c-snd)'};
+// 职员卡片中部：左边职业/等级/小人/体力，右边四项能力。hiKey 高亮一项；left 可替换左栏（培训画面用）
+const SKN={prog:['编程','程'],scen:['编剧','剧'],gfx:['画面','画'],snd:['作曲','曲']};
+const staffFig=s=>h('div',{class:'cfig'},h('i',{class:'head',style:`border-top-color:${HAIRS[s.look%HAIRS.length]}`}),h('i',{class:'body',style:`background:${SHIRTS[s.look%SHIRTS.length]}`}));
+const statRow=(s,k,hiKey)=>h('div',{class:'cs'+(k===hiKey?' hi':''),'data-k':k},h('span',{class:'csi',style:`background:${SKC[k]}`},SKN[k][1]),h('span',{},SKN[k][0]),h('b',{class:'num'},s[k]));
+function staffBox(s,hiKey,left){return h('div',{class:'cbox'},
+  left||h('div',{class:'cleft'},h('div',{class:'cjob'},h('span',{},JOBN[s.job]),h('span',{class:'clv'},'等级',h('b',{},s.lv||1))),staffFig(s),
+    h('div',{class:'csta'},h('span',{},'体力'),h('span',{class:'bar'+(s.sta<30?' low':'')},h('i',{style:`width:${Math.round(s.sta)}%`})))),
+  h('div',{class:'cright'},...STAFFK.map(k=>statRow(s,k,hiKey))));}
+const STAFFK=['prog','scen','gfx','snd'];
 function askProducer(){talk(['这次让谁来当制作人？','编剧能力越高，游戏的趣味和创新越好。'],()=>staffPick('plan',id=>{closeDlg();startProject(id);},policyDlg));}
 function staffPick(kind,onPick,back){const key=PICK[kind].k;const list=[...S.staff].sort((a,b)=>b[key]-a[key]);let i=0;const genre=S.project?S.project.genre:plan.genre;
   const render=()=>{const s=list[i];const fav=s.fav===genre;
-    const stat=(k,n,g)=>h('div',{class:'cs'+(k===key?' hi':'')},h('span',{class:'csi',style:`background:${SKC[k]}`},g),h('span',{},n),h('b',{class:'num'},s[k]));
     const body=h('div',{class:'card'},
       h('div',{class:'chead'},h('span',{},s.name),h('span',{class:'ctag'},'自营')),
-      h('div',{class:'cbox'},
-        h('div',{class:'cleft'},h('div',{class:'cjob'},JOBN[s.job]),
-          h('div',{class:'cfig'},h('i',{class:'head',style:`border-top-color:${HAIRS[s.look%HAIRS.length]}`}),h('i',{class:'body',style:`background:${SHIRTS[s.look%SHIRTS.length]}`})),
-          h('div',{class:'csta'},h('span',{},'体力'),h('span',{class:'bar'+(s.sta<30?' low':'')},h('i',{style:`width:${Math.round(s.sta)}%`})))),
-        h('div',{class:'cright'},stat('prog','编程','程'),stat('scen','编剧','剧'),stat('gfx','画面','画'),stat('snd','作曲','曲'))),
+      staffBox(s,key),
       h('div',{class:'cfoot'},h('div',{class:'cfee'},h('span',{class:'k'},'费用'),h('span',{},'免费')),
         h('div',{class:'cfav'+(fav?' on':'')},`擅长 ${GN[s.fav].n}${fav?' ★':''}`),
         h('button',{type:'button',class:'cok',onclick:()=>onPick(s.id)},'确定')),
@@ -632,6 +663,55 @@ function release(){const p=S.project;const G=GN[p.genre],T=TN[p.type],C=CN[p.cha
 // ---- 其他弹窗（只读）
 function staffDlg(){openDlg('职员一览',h('div',{},h('div',{class:'srow',style:'color:var(--ink-soft)'},h('span',{},'姓名'),...['程序','剧本','画面','声音'].map(t=>h('b',{style:'font-weight:500'},t))),
   ...S.staff.map(s=>h('div',{class:'srow'},h('span',{},`${s.name}（${JOBN[s.job]}）`),...['prog','scen','gfx','snd'].map(k=>h('b',{class:'num'},s[k]))))),okFoot('确定',closeDlg),[null,{label:'返回',fn:closeDlg}]);$('#dlg').onclick=null;}
+// ---- 职员培训：选职员 → 选培训内容 → 培训动画（时间暂停）→ 回到选职员
+// fee=费用；sta=消耗体力（负数=恢复）；gain=各项基础成长（main=本职能力）；un=解锁条件
+const TRAINS=[
+  {id:'walk',n:'散步',fee:50,sta:5,gain:{rand:2},d:'随机小幅提升'},
+  {id:'code',n:'刷算法题',fee:200,sta:12,gain:{prog:4},d:'编程↑'},
+  {id:'read',n:'读书充电',fee:200,sta:10,gain:{scen:4},d:'编剧↑'},
+  {id:'sketch',n:'写生速写',fee:200,sta:10,gain:{gfx:4},d:'画面↑'},
+  {id:'music',n:'扒谱练琴',fee:200,sta:10,gain:{snd:4},d:'作曲↑'},
+  {id:'jam',n:'参加 GameJam',fee:600,sta:30,gain:{prog:3,scen:3,gfx:3,snd:3},d:'全面提升·很累',un:'g:1'},
+  {id:'class',n:'大厂进修班',fee:1500,sta:20,gain:{main:10,all:2},d:'本职大幅提升',un:'y:2'},
+  {id:'spa',n:'泡温泉',fee:300,sta:-100,gain:{},d:'体力回满'}];
+const MAINK={prog:'prog',plan:'scen',art:'gfx',sound:'snd'};
+// 能力越高越难涨；有基础成长的项至少 +1
+function trainGains(s,c){const base={};const G=c.gain;
+  if(G.rand)for(const k of STAFFK)base[k]=rint(0,G.rand);
+  for(const k of STAFFK)if(G[k])base[k]=(base[k]||0)+G[k];
+  if(G.all)for(const k of STAFFK)base[k]=(base[k]||0)+G.all;
+  if(G.main)base[MAINK[s.job]]=(base[MAINK[s.job]]||0)+G.main;
+  const out={};for(const k in base){if(!base[k])continue;out[k]=Math.max(1,Math.round(base[k]*rnd(.7,1.3)*clamp(60/(40+s[k]),.3,1.4)));}return out;}
+function trainPick(i){const list=S.staff;i=(i+list.length)%list.length;const s=list[i];const out=away.has(s.id);
+  const body=h('div',{class:'card'},
+    h('div',{class:'chead'},h('span',{},s.name),h('span',{class:'csal'},h('span',{class:'k'},'月薪'),h('span',{class:'num'},fmt(s.salary)+'金'))),
+    staffBox(s,MAINK[s.job]),
+    h('div',{class:'chint'},out?'正在外面休息，回来后才能培训':'选择要培训的职员'),
+    h('div',{class:'tfoot'},h('button',{type:'button',class:'cok',disabled:out,onclick:()=>trainCourse(i)},'培训')));
+  openDlg(`选择职员 ${i+1}/${list.length}`,body,null,[null,{label:'返回',fn:closeDlg}]);$('#dlg').onclick=null;
+  const t=$('#dlg .dlg-title');t.classList.add('pager');
+  t.prepend(h('button',{type:'button',class:'pg',onclick:()=>trainPick(i-1)},'◀'));
+  t.append(h('button',{type:'button',class:'pg',onclick:()=>trainPick(i+1)},'▶'));}
+function trainCourse(i){const s=S.staff[i];
+  picker(`培训内容 · ${s.name}`,TRAINS.map(c=>{const u=cond(c.un);const noMoney=S.money<c.fee,tired=c.sta>0&&s.sta<c.sta,full=c.sta<0&&s.sta>=100;
+    return {v:c.id,label:c.n,disabled:!u.ok||noMoney||tired||full,
+      sub:!u.ok?u.txt:noMoney?`${fmt(c.fee)}金 · 资金不足`:tired?`体力不足（需 ${c.sta}）`:full?'体力已满':`${fmt(c.fee)}金 · ${c.sta>0?'体力-'+c.sta:'体力回满'} · ${c.d}`};}),
+    id=>doTrain(i,TRAINS.find(c=>c.id===id)),()=>trainPick(i));}
+function doTrain(i,c){const s=S.staff[i];addMoney(-c.fee);const gains=trainGains(s,c);const before={};for(const k of STAFFK)before[k]=s[k];
+  for(const k in gains)s[k]+=gains[k];s.sta=clamp(s.sta-c.sta,0,100);save();
+  const fill=h('i',{}),fig=staffFig(s);fig.classList.add('tfig','t-'+c.id);
+  const left=h('div',{class:'tscene'},h('div',{class:'tbar'},fill),h('div',{class:'tsky'}),h('div',{class:'tcity'}),h('div',{class:'tground'}),fig);
+  const box=staffBox({...s,...before},null,left);const msg=h('div',{class:'chint'},`正在培训${c.n}`);
+  openDlg('正在培训',h('div',{class:'card'},h('div',{class:'chead',style:'justify-content:center'},s.name),box,msg),null,[null,null]);$('#dlg').onclick=null;renderAll();
+  const DUR=2400,keys=Object.keys(gains);const t0=performance.now();
+  // 每项分几次往上跳，并在数字旁冒「+n」
+  const steps=[];for(const k of keys){let left=gains[k];const n=Math.min(left,3);for(let j=0;j<n;j++){const d=j===n-1?left:Math.max(1,Math.round(gains[k]/n));left-=d;steps.push([k,d]);}}
+  steps.sort(()=>Math.random()-.5).forEach(([k,d],j)=>setTimeout(()=>{const row=box.querySelector(`.cs[data-k="${k}"]`);if(!row)return;const b=row.querySelector('b');b.textContent=+b.textContent+d;
+    row.classList.add('up');const pl=h('em',{class:'tplus'},'+'+d);row.append(pl);pl.addEventListener('animationend',()=>pl.remove());},DUR*(j+1)/(steps.length+1)));
+  const tick=now=>{const u=clamp((now-t0)/DUR,0,1);fill.style.width=(u*100)+'%';if(u<1)requestAnimationFrame(tick);else done();};requestAnimationFrame(tick);
+  function done(){for(const k of STAFFK){const row=box.querySelector(`.cs[data-k="${k}"] b`);if(row)row.textContent=s[k];}
+    msg.textContent=keys.length?'培训完成！'+keys.map(k=>`${SKN[k][0]}+${gains[k]}`).join('  '):c.sta<0?'泡完温泉，体力回满了！':'培训完成！这次没什么收获…';
+    const next=()=>trainPick(i);setBottom(null,{label:'确定',fn:next});setTimeout(()=>{$('#dlg').onclick=next;},0);}}
 function recordsDlg(){openDlg('作品记录',S.games.length?h('div',{},...S.games.map(g=>h('div',{class:'srow',style:'grid-template-columns:1fr 90rem 140rem'},h('span',{},`《${g.title}》`,h('small',{style:'color:var(--ink-soft);font-size:20rem;margin-left:8rem'},(CN[g.chan]||CN.web).n)),h('b',{class:'num'},`${g.total}分`),h('b',{class:'num'},fmt(g.units))))):h('div',{style:'font-size:30rem;text-align:center;padding:30rem'},'还没有发售过作品'),okFoot('确定',closeDlg),[null,{label:'返回',fn:closeDlg}]);$('#dlg').onclick=null;}
 function restartAsk(){picker('重新开始？',[{v:1,label:'清空进度，从 1 年 4 月开始'},{v:0,label:'算了'}],v=>{closeDlg();if(v){newGame();renderAll();toast('新的公司成立了');}},closeDlg);}
 

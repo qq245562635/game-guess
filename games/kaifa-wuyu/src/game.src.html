@@ -162,6 +162,33 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 .cfav{font-size:24rem;color:var(--ink-soft);text-align:center}.cfav.on{color:var(--sel-2);font-weight:700}
 .cok{border:0;background:#B9D0F5;font-size:34rem;padding:8rem 40rem;border-radius:4rem}
 .chint{text-align:center;font-size:26rem;color:var(--label)}
+/* 职员卡补充：等级、月薪、培训按钮 */
+.cjob{display:flex;justify-content:space-between;align-items:center}
+.clv{font-size:22rem;color:#1C9660;font-weight:700}.clv b{font-size:34rem;color:#24308A;margin-left:4rem}
+.csal{display:flex;gap:40rem}.csal .k{color:var(--label)}
+.tfoot{display:flex;justify-content:center}.cok:disabled{opacity:.45}
+/* 培训画面 */
+.tscene{position:relative;min-height:220rem;overflow:hidden;border:3rem solid #6B7486;background:#9FD3F2}
+.tbar{position:absolute;left:14rem;right:14rem;top:12rem;height:20rem;background:#7A1F1F;border:2rem solid #3A3F4C;z-index:3}
+.tbar i{display:block;height:100%;width:0;background:linear-gradient(#7BE36B,#2FA43A)}
+.tsky{position:absolute;inset:0;background:linear-gradient(#7CC4EE,#CFEBFA 70%)}
+.tcity{position:absolute;left:0;right:0;bottom:62rem;height:70rem;opacity:.55;background:
+  linear-gradient(#8FA6BE,#8FA6BE) 4% 100%/14% 70% no-repeat,linear-gradient(#7F97B0,#7F97B0) 22% 100%/10% 100% no-repeat,
+  linear-gradient(#97ACC2,#97ACC2) 40% 100%/16% 55% no-repeat,linear-gradient(#8098B2,#8098B2) 62% 100%/12% 85% no-repeat,
+  linear-gradient(#90A7BF,#90A7BF) 84% 100%/18% 62% no-repeat}
+.tground{position:absolute;left:0;right:0;bottom:0;height:62rem;background:linear-gradient(#E9DCC5 0 18rem,#CDBA98 18rem 22rem,#D9C8A8 22rem)}
+.tfig{position:absolute;left:50%;bottom:22rem;height:auto;transform:translateX(-50%) scale(.8);transform-origin:50% 100%;z-index:2}
+.t-walk,.t-jam{animation:tbob .5s ease-in-out infinite}
+.t-code,.t-read,.t-sketch,.t-music,.t-class{animation:tnod 1s ease-in-out infinite}
+.t-spa .body{background:#6EC3E8!important;border-radius:30rem 30rem 6rem 6rem}
+.t-spa{animation:tbob 1.6s ease-in-out infinite}
+@keyframes tbob{50%{transform:translateX(-50%) scale(.8) translateY(-8rem)}}
+@keyframes tnod{50%{transform:translateX(-50%) scale(.8) rotate(-3deg)}}
+.cs{position:relative}
+.cs.up b{color:#E0383E}
+.tplus{position:absolute;right:-8rem;top:-6rem;font:700 24rem/1 system-ui,sans-serif;font-style:normal;color:#E0383E;animation:tplus .9s ease-out forwards;pointer-events:none}
+@keyframes tplus{0%{opacity:0;transform:translateY(8rem)}20%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-26rem)}}
+@media (prefers-reduced-motion:reduce){.tfig,.tplus{animation-duration:.01s;animation-iteration-count:1}}
 </style>
 
 <div id="app">
