@@ -27,6 +27,7 @@ index.html          构建产物，单文件可玩版本
 src/game.js         渲染、模拟、UI 逻辑
 src/game.src.html   布局与样式，构建时内联 src/game.js
 tools/build.py      生成 index.html：python3 tools/build.py
+策划案-新企划.md      新企划流程策划案（渠道/类型/内容/开发方针/方针/制作人）
 UI需求.md            给 Codex 的 UI 出图需求
 ASSETS.md           给 Codex 的场景出图需求
 docs/ui/            各界面状态截图
