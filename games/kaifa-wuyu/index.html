@@ -426,6 +426,12 @@ function buildAtlas(){const cv=document.createElement('canvas');cv.width=cv.heig
   if(!gl)return;if(!tex)tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,true);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cv);
   for(const [p,v] of [[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,p,v);}
+// 远景：bg_city（房间后面，含天空、远山、房屋、树、街道）与可选 bg_city_front（压在房间前面的树/车等）。
+// 逻辑 1024×1664，交付 2 倍；图内 (480,704) 对齐世界原点 = 房间地板后角。见 ASSETS.md「远景」。
+const BG={w:1024,h:1664,ax:480,ay:704};const bgTex={};
+function loadBG(){return Promise.all(['bg_city','bg_city_front'].map(k=>new Promise(res=>{const img=new Image();img.onload=()=>{if(gl){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
+  for(const [p,v] of [[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,p,v);bgTex[k]=t;}res();};img.onerror=()=>res();img.src=`assets/${k}.png`;})));}
+function bgQuad(){const x0=-BG.ax,y0=-BG.ay,x1=x0+BG.w,y1=y0+BG.h;let o=nq*48;for(const v of [[x0,y0,0,0],[x1,y0,1,0],[x0,y1,0,1],[x1,y0,1,0],[x1,y1,1,1],[x0,y1,0,1]]){vdata.set(v,o);vdata.fill(1,o+4,o+8);o+=8;}nq++;}
 let buf,uRes,uCam;const MAXQ=3000;const vdata=new Float32Array(MAXQ*48);let nq=0;
 function initGL(){const sh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;};
   const prog=gl.createProgram();
@@ -499,8 +505,8 @@ function staminaWeek(){const dev=!!(S.project&&!S.project.awaiting);
 // ================= 镜头
 const cam={x:0,y:0,z:1,fit:true};let stageW=1,stageH=1;
 function fitCam(){const minX=iso(0,ROOM_H)[0]-6,maxX=iso(ROOM_W,0)[0]+6,minY=-190,maxY=iso(ROOM_W,ROOM_H)[1]+30;
-  const pad=($('#sidetab')?.offsetWidth||0)+6;  // 左右留出抽屉把手宽度，房间按可用宽度完整显示
-  cam.z=clamp(Math.min((stageW-pad*2)/(maxX-minX),stageH/(maxY-minY)),.25,3);cam.x=stageW/2-(minX+maxX)/2*cam.z;cam.y=stageH*.43-(minY+maxY)/2*cam.z;}
+  // 照效果图：房间左右角贴住屏幕两边（抽屉把手允许压在左角上），房间整体在场景区竖直略偏下
+  cam.z=clamp(Math.min(stageW/(maxX-minX),stageH/(maxY-minY)),.25,3);cam.x=stageW/2-(minX+maxX)/2*cam.z;cam.y=stageH*.52-(minY+maxY)/2*cam.z;}
 const w2s=(x,y)=>[x*cam.z+cam.x,y*cam.z+cam.y];
 function resize(){const r=$('#scene').getBoundingClientRect();stageW=Math.max(1,r.width);stageH=Math.max(1,r.height);const d=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(stageW*d);canvas.height=Math.round(stageH*d);if(cam.fit)fitCam();}
 new ResizeObserver(resize).observe($('#scene'));
@@ -796,15 +802,18 @@ function tapAt(x,y){for(const s of S.staff){const ps=personState(s.id);if(ps.mod
 
 // ================= 渲染循环
 function draw(t){if(!gl)return;gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(.68,.71,.76,1);gl.clear(gl.COLOR_BUFFER_BIT);
-  nq=0;for(const [k,x,y] of staticFlat)spr(k,x,y);const items=[];
+  nq=0;const hasBG=!!bgTex.bg_city;if(hasBG)bgQuad();const q0=nq;for(const [k,x,y] of staticFlat)if(!(hasBG&&k==='outside'))spr(k,x,y);const items=[];
   for(const [k,x,y] of DECOR){const [sx,sy]=tc(x,y);items.push([x+y,k,sx,sy]);}
   for(const s of SEATS){const [x,y]=s.d;const [sx,sy]=tc(x,y);items.push([x+y,s.k==='a'?'desk':'desk_back',sx,sy]);}
   for(const [who,o,desk] of [['boss',BOSS,'boss_desk'],['secretary',SEC_SPOT,'reception']]){const [x,y]=o.d;const [sx,sy]=tc(x,y);items.push([x+y,desk,sx,sy]);const [wx,wy,dd]=deskSeat(o.d,'b');items.push([dd-.01,'chair',wx,wy]);const ps=personState(who);if(ps.mode==='seat')items.push([dd,`${who}_${Math.floor(t*.7+(who==='boss'?0:.5))%2?'b':'a'}`,wx,wy]);else if(ps.mode==='walk')items.push([ps.d,ps.key,ps.x,ps.y,ps.flip,ps.a]);}
   const working=!!(S.project&&!S.project.awaiting)&&!blocking();
   for(let i=0;i<SEATS.length;i++){const [wx,wy,dd]=seatWorld(i);items.push([dd-.01,'chair',wx,wy]);}
   for(const s of S.staff){const ps=personState(s.id);if(ps.mode==='walk'){items.push([ps.d,ps.key,ps.x,ps.y,ps.flip,ps.a]);continue;}if(ps.mode!=='seat')continue;const [wx,wy,dd]=seatWorld(s.seat);const f=working?(Math.floor(t*5+s.seat*1.7)%2?'b':'a'):'a';items.push([dd,`char_${s.look%CHAR_N}_${SEATS[s.seat].k==='a'?'back':'front'}_${f}`,wx,wy+(working?0:Math.sin(t*1.5+s.seat)*1.2)]);}
-  items.sort((a,b)=>a[0]-b[0]);for(const it of items)spr(it[1],it[2],it[3],it[4],it[5]);
-  gl.uniform2f(uRes,stageW,stageH);gl.uniform3f(uCam,cam.x,cam.y,cam.z);gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferSubData(gl.ARRAY_BUFFER,0,vdata.subarray(0,nq*48));gl.drawArrays(gl.TRIANGLES,0,nq*6);}
+  items.sort((a,b)=>a[0]-b[0]);for(const it of items)spr(it[1],it[2],it[3],it[4],it[5]);const q1=nq;if(bgTex.bg_city_front)bgQuad();
+  gl.uniform2f(uRes,stageW,stageH);gl.uniform3f(uCam,cam.x,cam.y,cam.z);gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferSubData(gl.ARRAY_BUFFER,0,vdata.subarray(0,nq*48));
+  if(hasBG){gl.bindTexture(gl.TEXTURE_2D,bgTex.bg_city);gl.drawArrays(gl.TRIANGLES,0,q0*6);}
+  gl.bindTexture(gl.TEXTURE_2D,tex);gl.drawArrays(gl.TRIANGLES,q0*6,(q1-q0)*6);
+  if(nq>q1){gl.bindTexture(gl.TEXTURE_2D,bgTex.bg_city_front);gl.drawArrays(gl.TRIANGLES,q1*6,(nq-q1)*6);}}
 let last=performance.now();
 function frame(now){const dt=Math.min(.1,(now-last)/1000);last=now;
   if(!blocking()){simT+=dt;weekAcc+=dt;updateAway();for(let i=pending.length-1;i>=0;i--)if(pending[i].at<=simT){const p=pending.splice(i,1)[0];p.fn();}if(weekAcc>=WEEK_SEC){weekAcc-=WEEK_SEC;weekTick();}}
@@ -813,7 +822,7 @@ function tryLoadArt(){return fetch('assets/index.json').then(r=>r.ok?r.json():[]
 function start(){if(gl)initGL();buildStatic();buildAtlas();if(!load())newGame();if(!S.unl)S.unl=unlockedIds();
   if(S.project&&S.project.awaiting==='gfx'||S.project&&S.project.awaiting==='snd')setTimeout(()=>leaderAsk(S.project.awaiting),300);
   if(S.project&&S.project.awaiting==='done')setTimeout(release,300);
-  resize();idleBottom();renderAll();requestAnimationFrame(frame);tryLoadArt().then(()=>{if(Object.keys(overrides).length)buildAtlas();});}
+  resize();idleBottom();renderAll();requestAnimationFrame(frame);tryLoadArt().then(()=>{if(Object.keys(overrides).length)buildAtlas();});loadBG();}
 start();
 
 </script>
