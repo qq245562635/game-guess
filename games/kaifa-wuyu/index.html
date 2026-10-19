@@ -353,7 +353,7 @@ const M={
   wall_r:{w:64,h:200,ox:0,oy:168},wall_r_win:{w:64,h:200,ox:0,oy:168},wall_l:{w:64,h:200,ox:64,oy:168},wall_l_win:{w:64,h:200,ox:64,oy:168},
   desk:{...OBJ},chair:{w:128,h:96,ox:64,oy:64},shelf:{...OBJ},whiteboard:{...OBJ},plant:{...OBJ},sofa:{...OBJ},cooler:{...OBJ},
 };
-Object.assign(M,{desk_back:{...OBJ},boss_desk:{...OBJ},reception:{...OBJ},mat:{w:128,h:64,ox:64,oy:32}});
+Object.assign(M,{shadow:{w:128,h:64,ox:64,oy:32},ao_r:{w:90,h:46,ox:26,oy:0},desk_back:{...OBJ},boss_desk:{...OBJ},reception:{...OBJ},mat:{w:128,h:64,ox:64,oy:32}});
 const CHAR_N=4;const CH={w:72,h:112,ox:36,oy:102};
 for(let i=0;i<CHAR_N;i++)for(const v of ['back','front'])for(const f of 'ab')M[`char_${i}_${v}_${f}`]={...CH};
 for(const who of ['boss','secretary'])for(const f of 'ab')M[`${who}_${f}`]={...CH};
@@ -373,7 +373,14 @@ function circ(g,x,y,r,fill){g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fillStyle=f
 function ell(g,x,y,rx,ry,fill,rot=0){g.beginPath();g.ellipse(x,y,rx,ry,rot,0,Math.PI*2);g.fillStyle=fill;g.fill();}
 const SHIRTS=['#4A6FE3','#E35D6A','#3FAF7A','#F2A93B','#8E5BD8','#33465F'],HAIRS=['#2B2118','#6A4426','#1C1C1C','#C68A3E','#3A2A1E','#8A5532'];
 function planks(g,c){diamond(g,64,32,1,c);g.strokeStyle='rgba(120,80,40,.18)';for(let i=1;i<4;i++){g.beginPath();g.moveTo(i*16,32-i*8);g.lineTo(64+i*16,64-i*8);g.stroke();}diamond(g,64,32,1,null,'rgba(120,80,40,.25)');}
-const PAINT={
+// 程序生成的阴影：shadow=柔边椭圆接地影；ao_r=后墙根的地面暗带（左墙用水平镜像）
+const SHADOW_PAINT={
+  shadow(g){const r=g.createRadialGradient(64,32,0,64,32,64);r.addColorStop(0,'rgba(55,28,8,.7)');r.addColorStop(.55,'rgba(55,28,8,.42)');r.addColorStop(1,'rgba(60,30,10,0)');
+    g.save();g.translate(64,32);g.scale(1,.5);g.translate(-64,-32);g.fillStyle=r;g.beginPath();g.arc(64,32,64,0,Math.PI*2);g.fill();g.restore();},
+  ao_r(g){const o=26,d=[-25.6,12.8];const gr=g.createLinearGradient(o+32,16,o+32+d[0],16+d[1]);gr.addColorStop(0,'rgba(70,35,10,.45)');gr.addColorStop(1,'rgba(70,35,10,0)');
+    g.fillStyle=gr;g.beginPath();g.moveTo(o,0);g.lineTo(o+64,32);g.lineTo(o+64+d[0],32+d[1]);g.lineTo(o+d[0],d[1]);g.closePath();g.fill();},
+};
+const PAINT={...SHADOW_PAINT,
   outside(g){diamond(g,64,32,1,'#C3C8D0','#B4BAC4');},floor_a(g){planks(g,'#DDBF93');},floor_b(g){planks(g,'#D3B385');},
   rug(g){diamond(g,64,32,.86,'#C8574F');diamond(g,64,32,.66,'#E0837A');diamond(g,64,32,.46,'#C8574F');},
   wall_r(g){poly(g,[[0,168],[64,200],[64,32],[0,0]],'#ECE4D6');poly(g,[[0,168],[64,200],[64,186],[0,154]],'#B08155');poly(g,[[0,8],[64,40],[64,32],[0,0]],'#D8CDBB');},
@@ -449,6 +456,18 @@ function initGL(){const sh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(
 function spr(k,x,y,flip,alpha=1){if(nq>=MAXQ)return;const s=M[k],uv=UV[k];const x0=x-(flip?s.w-s.ox:s.ox),y0=y-s.oy,x1=x0+s.w,y1=y0+s.h;const ua=flip?uv[2]:uv[0],ub=flip?uv[0]:uv[2];
   let o=nq*48;for(const v of [[x0,y0,ua,uv[1]],[x1,y0,ub,uv[1]],[x0,y1,ua,uv[3]],[x1,y0,ub,uv[1]],[x1,y1,ub,uv[3]],[x0,y1,ua,uv[3]]]){vdata.set(v,o);vdata.fill(alpha,o+4,o+8);o+=8;}nq++;}
 
+// 接地影：光从左上来，影子略偏右下。大小是相对一格的比例
+const SH_OFF=[5,3];const SH_SIZE={desk:.62,desk_back:.62,boss_desk:.8,reception:.8,shelf:.55,whiteboard:.5,plant:.38,cooler:.34,sofa:.8,chair:.36,person:.3};
+// 靠墙物体的影子往墙那边挪（物体画在格子后半部）
+const SH_SHIFT={shelf:[0,-.28],whiteboard:[0,-.3],cooler:[-.25,0]};
+function sprS(k,x,y,sc,alpha=1){if(nq>=MAXQ)return;const s=M[k],uv=UV[k];const x0=x-s.ox*sc,y0=y-s.oy*sc,x1=x0+s.w*sc,y1=y0+s.h*sc;
+  let o=nq*48;for(const v of [[x0,y0,uv[0],uv[1]],[x1,y0,uv[2],uv[1]],[x0,y1,uv[0],uv[3]],[x1,y0,uv[2],uv[1]],[x1,y1,uv[2],uv[3]],[x0,y1,uv[0],uv[3]]]){vdata.set(v,o);vdata.fill(alpha,o+4,o+8);o+=8;}nq++;}
+function shadowAt(k,tx,ty){const sh=SH_SHIFT[k]||[0,0];const [sx,sy]=tc(tx+sh[0],ty+sh[1]);sprS('shadow',sx+SH_OFF[0],sy+SH_OFF[1],SH_SIZE[k]||.5);}
+function drawShadows(){for(const [k,x,y] of DECOR)shadowAt(k,x,y);for(const s of SEATS)shadowAt(s.k==='a'?'desk':'desk_back',...s.d);
+  shadowAt('boss_desk',...BOSS.d);shadowAt('reception',...SEC_SPOT.d);
+  const chairs=[...SEATS.map((_,i)=>seatWorld(i)),deskSeat(BOSS.d,'b'),deskSeat(SEC_SPOT.d,'b')];for(const [wx,wy] of chairs)sprS('shadow',wx+SH_OFF[0],wy+SH_OFF[1]-4,SH_SIZE.chair);
+  for(const id of [...S.staff.map(s=>s.id),'boss','secretary']){const ps=personState(id);if(ps.mode==='walk')sprS('shadow',ps.x+SH_OFF[0]*.6,ps.y+SH_OFF[1]*.6,SH_SIZE.person,ps.a??1);}}
+
 // ================= 场景布局
 const iso=(x,y)=>[(x-y)*TILE_W/2,(x+y)*TILE_H/2];
 const tc=(x,y)=>iso(x+.5,y+.5);
@@ -461,6 +480,8 @@ let staticFlat=[];
 function buildStatic(){staticFlat=[];
   for(let y=-4;y<ROOM_H+4;y++)for(let x=-4;x<ROOM_W+4;x++){const inRoom=x>=0&&y>=0&&x<ROOM_W&&y<ROOM_H;const [sx,sy]=tc(x,y);staticFlat.push([inRoom?((x+y)%2?'floor_b':'floor_a'):'outside',sx,sy]);}
   {const [sx,sy]=tc(6,4);staticFlat.push(['rug',sx,sy]);}{const [sx,sy]=tc(6,5);staticFlat.push(['mat',sx,sy]);}
+  for(let x=0;x<ROOM_W;x++){const [sx,sy]=iso(x,0);staticFlat.push(['ao_r',sx,sy]);}
+  for(let y=0;y<ROOM_H;y++){const [sx,sy]=iso(0,y);staticFlat.push(['ao_r',sx,sy,true]);}
   for(let y=ROOM_H-1;y>=0;y--){const [sx,sy]=iso(0,y);staticFlat.push([y===3?'wall_l_win':'wall_l',sx,sy]);}
   for(let x=0;x<ROOM_W;x++){const [sx,sy]=iso(x,0);staticFlat.push([(x===2||x===4)?'wall_r_win':'wall_r',sx,sy]);}}
 // k:'a' 人在桌前(y+1)背对镜头；k:'b' 人在桌后(y-1)面朝镜头。返回 [世界x, 世界y, 排序深度]
@@ -807,7 +828,7 @@ function tapAt(x,y){for(const s of S.staff){const ps=personState(s.id);if(ps.mod
 
 // ================= 渲染循环
 function draw(t){if(!gl)return;gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(.68,.71,.76,1);gl.clear(gl.COLOR_BUFFER_BIT);
-  nq=0;const hasBG=!!bgTex.bg_city;if(hasBG)bgQuad();const q0=nq;for(const [k,x,y] of staticFlat)if(!(hasBG&&k==='outside'))spr(k,x,y);const items=[];
+  nq=0;const hasBG=!!bgTex.bg_city;if(hasBG)bgQuad();const q0=nq;for(const [k,x,y,fl] of staticFlat)if(!(hasBG&&k==='outside'))spr(k,x,y,fl);drawShadows();const items=[];
   for(const [k,x,y] of DECOR){const [sx,sy]=tc(x,y);items.push([x+y,k,sx,sy]);}
   for(const s of SEATS){const [x,y]=s.d;const [sx,sy]=tc(x,y);items.push([x+y,s.k==='a'?'desk':'desk_back',sx,sy]);}
   for(const [who,o,desk] of [['boss',BOSS,'boss_desk'],['secretary',SEC_SPOT,'reception']]){const [x,y]=o.d;const [sx,sy]=tc(x,y);items.push([x+y,desk,sx,sy]);const [wx,wy,dd]=deskSeat(o.d,'b');items.push([dd-.01,'chair',wx,wy]);const ps=personState(who);if(ps.mode==='seat')items.push([dd,`${who}_${Math.floor(t*.7+(who==='boss'?0:.5))%2?'b':'a'}`,wx,wy]);else if(ps.mode==='walk')items.push([ps.d,ps.key,ps.x,ps.y,ps.flip,ps.a]);}
