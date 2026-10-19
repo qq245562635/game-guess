@@ -1,0 +1,136 @@
+{
+  "passed": true,
+  "count": 10,
+  "scale": 2,
+  "checks": [
+    "runtime keys",
+    "2x dimensions",
+    "RGBA alpha",
+    "anchor bounds",
+    "exact 2:1 floor masks",
+    "4x4 tiled coverage with no holes or overlaps",
+    "source seat coordinates"
+  ],
+  "assets": [
+    {
+      "key": "floor_a",
+      "pixels": [
+        256,
+        128
+      ],
+      "anchor2x": [
+        128,
+        64
+      ],
+      "rgba": true
+    },
+    {
+      "key": "floor_b",
+      "pixels": [
+        256,
+        128
+      ],
+      "anchor2x": [
+        128,
+        64
+      ],
+      "rgba": true
+    },
+    {
+      "key": "outside",
+      "pixels": [
+        256,
+        128
+      ],
+      "anchor2x": [
+        128,
+        64
+      ],
+      "rgba": true
+    },
+    {
+      "key": "wall_r",
+      "pixels": [
+        128,
+        400
+      ],
+      "anchor2x": [
+        0,
+        336
+      ],
+      "rgba": true
+    },
+    {
+      "key": "wall_r_win",
+      "pixels": [
+        128,
+        400
+      ],
+      "anchor2x": [
+        0,
+        336
+      ],
+      "rgba": true
+    },
+    {
+      "key": "wall_l",
+      "pixels": [
+        128,
+        400
+      ],
+      "anchor2x": [
+        128,
+        336
+      ],
+      "rgba": true
+    },
+    {
+      "key": "wall_l_win",
+      "pixels": [
+        128,
+        400
+      ],
+      "anchor2x": [
+        128,
+        336
+      ],
+      "rgba": true
+    },
+    {
+      "key": "desk",
+      "pixels": [
+        256,
+        352
+      ],
+      "anchor2x": [
+        128,
+        288
+      ],
+      "rgba": true
+    },
+    {
+      "key": "desk_back",
+      "pixels": [
+        256,
+        352
+      ],
+      "anchor2x": [
+        128,
+        288
+      ],
+      "rgba": true
+    },
+    {
+      "key": "chair",
+      "pixels": [
+        256,
+        192
+      ],
+      "anchor2x": [
+        128,
+        128
+      ],
+      "rgba": true
+    }
+  ]
+}

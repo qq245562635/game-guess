@@ -1,0 +1,273 @@
+{
+  "schema": 1,
+  "sourceCommit": "373254076c3b99a61d2892271877a7d5c497aca7",
+  "styleReference": "games/kaifa-wuyu/art/reference/style-locked.png",
+  "scale": 2,
+  "tile": {
+    "width": 128,
+    "height": 64
+  },
+  "batch": "initial-office-batch-01",
+  "keys": [
+    {
+      "key": "floor_a",
+      "width": 128,
+      "height": 64,
+      "anchor": [
+        64,
+        32
+      ],
+      "source": "floor_a",
+      "kind": "floor"
+    },
+    {
+      "key": "floor_b",
+      "width": 128,
+      "height": 64,
+      "anchor": [
+        64,
+        32
+      ],
+      "source": "floor_b",
+      "kind": "floor"
+    },
+    {
+      "key": "outside",
+      "width": 128,
+      "height": 64,
+      "anchor": [
+        64,
+        32
+      ],
+      "source": "outside",
+      "kind": "floor"
+    },
+    {
+      "key": "wall_r",
+      "width": 64,
+      "height": 200,
+      "anchor": [
+        0,
+        168
+      ],
+      "source": "wall_plain",
+      "kind": "wall_r"
+    },
+    {
+      "key": "wall_r_win",
+      "width": 64,
+      "height": 200,
+      "anchor": [
+        0,
+        168
+      ],
+      "source": "wall_window",
+      "kind": "wall_r"
+    },
+    {
+      "key": "wall_l",
+      "width": 64,
+      "height": 200,
+      "anchor": [
+        64,
+        168
+      ],
+      "source": "wall_plain",
+      "kind": "wall_l"
+    },
+    {
+      "key": "wall_l_win",
+      "width": 64,
+      "height": 200,
+      "anchor": [
+        64,
+        168
+      ],
+      "source": "wall_window",
+      "kind": "wall_l"
+    },
+    {
+      "key": "desk",
+      "width": 128,
+      "height": 176,
+      "anchor": [
+        64,
+        144
+      ],
+      "source": "desk-square",
+      "kind": "desk",
+      "plane2x": {
+        "left": [
+          0,
+          218
+        ],
+        "right": [
+          256,
+          218
+        ],
+        "front": [
+          128,
+          282
+        ]
+      }
+    },
+    {
+      "key": "desk_back",
+      "width": 128,
+      "height": 176,
+      "anchor": [
+        64,
+        144
+      ],
+      "source": "desk_back-square",
+      "kind": "desk",
+      "plane2x": {
+        "left": [
+          0,
+          218
+        ],
+        "right": [
+          256,
+          218
+        ],
+        "front": [
+          128,
+          282
+        ]
+      }
+    },
+    {
+      "key": "chair",
+      "width": 128,
+      "height": 96,
+      "anchor": [
+        64,
+        64
+      ],
+      "source": "chair",
+      "kind": "chair"
+    }
+  ],
+  "layout": {
+    "room": {
+      "width": 7,
+      "height": 6
+    },
+    "island": [
+      {
+        "key": "desk_back",
+        "grid": [
+          3,
+          2
+        ],
+        "facing": "front"
+      },
+      {
+        "key": "desk_back",
+        "grid": [
+          4,
+          2
+        ],
+        "facing": "front"
+      },
+      {
+        "key": "desk",
+        "grid": [
+          3,
+          3
+        ],
+        "facing": "back"
+      },
+      {
+        "key": "desk",
+        "grid": [
+          4,
+          3
+        ],
+        "facing": "back"
+      }
+    ],
+    "boss": {
+      "key": "boss_desk",
+      "grid": [
+        1,
+        2
+      ],
+      "facing": "front"
+    },
+    "secretary": {
+      "key": "reception",
+      "grid": [
+        5,
+        5
+      ],
+      "facing": "front"
+    },
+    "decor": [
+      {
+        "key": "whiteboard",
+        "grid": [
+          2,
+          0
+        ]
+      },
+      {
+        "key": "shelf",
+        "grid": [
+          4,
+          0
+        ]
+      },
+      {
+        "key": "shelf",
+        "grid": [
+          5,
+          0
+        ]
+      },
+      {
+        "key": "plant",
+        "grid": [
+          6,
+          0
+        ]
+      },
+      {
+        "key": "cooler",
+        "grid": [
+          0,
+          4
+        ]
+      },
+      {
+        "key": "plant",
+        "grid": [
+          0,
+          5
+        ]
+      },
+      {
+        "key": "plant",
+        "grid": [
+          6,
+          2
+        ]
+      }
+    ],
+    "rug": [
+      6,
+      4
+    ],
+    "mat": [
+      6,
+      5
+    ]
+  },
+  "notes": [
+    "场景概念图用来核对风格和六席构成；实际摆位以 layout 与原代码为准。",
+    "首批不包含人物、老板桌、秘书前台、装饰和UI单图；现有原型继续保留这些占位图。",
+    "源代码DECOR有3处plant，ASSETS.md写2盆；保留程序坐标，数量差异记录为待后续统一。",
+    "生成原图另存raw，正式素材经过尺寸、透明轮廓和网格规范化。",
+    "桌面基准按三可见角点配准到 2:1 网格；正反桌共用最终桌面平面。"
+  ]
+}
