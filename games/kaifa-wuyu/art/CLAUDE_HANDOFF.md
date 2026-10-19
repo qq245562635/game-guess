@@ -1,6 +1,8 @@
-# 给 Claude：接入开发物语首批美术
+# 给 Claude：接入开发物语美术（累计两批）
 
 用户已确认继续使用 `art/reference/style-locked.png` 的毛毡 / 纸感 / 手作风。以该图为唯一风格母版，不换成极简风、不加重褶皱和饱和度。六席概念稿只是美术参考，实际摆位由程序坐标控制。
+
+第二批已追加，优先阅读 [BATCH-02.md](BATCH-02.md)。首批实际接入结果由用户反馈通过；第二批还需游戏内遮挡验收。
 
 ## 本次已经上传什么
 
@@ -8,22 +10,23 @@
 - 地面：`floor_a.png`、`floor_b.png`、`outside.png`。
 - 墙：`wall_r.png`、`wall_r_win.png`、`wall_l.png`、`wall_l_win.png`。
 - 家具：`desk.png`、`desk_back.png`、`chair.png`。
-- `index.json` 是 10 个 key 的数组；`metadata.json` 是尺寸、锚点及坐标说明。
+- 新增：`boss_desk`、`reception`、`shelf`、`whiteboard`、`plant`、`cooler`、`rug`、`mat`。
+- `index.json` 是 18 个 key 的数组；`metadata.json` 是尺寸、锚点及坐标说明。
 
 所有 PNG 均为 ASSETS.md 所列逻辑尺寸的 2 倍，RGBA 透明图，透明留白是锚点的一部分。不能自动紧裁切、改变画布比例，也不能把 2 倍 PNG 尺寸再写回逻辑尺寸表 M。
 
-尚未交付：人物、老板桌、秘书前台、装饰、远景城市、UI 单图。这些保留原来的程序占位图。不要把首批说成整套美术已完成，不要把概念稿作为整屏背景盖住游戏。
+尚未交付：人物、远景城市、UI 单图。这些保留原来的程序占位图。不要把首批说成整套美术已完成，不要把概念稿作为整屏背景盖住游戏。
 
 ## 接入步骤
 
 1. 更新到包含此美术提交的 main 分支，读取 ASSETS.md、UI需求.md 与 assets/metadata.json。
-2. 检查 assets/index.json 与上述 10 张 PNG 同目录。当前 src/game.js 已有：
+2. 检查 assets/index.json 与上述 18 张 PNG 同目录。当前 src/game.js 已有：
    - tryLoadArt()：fetch('assets/index.json')，仅加载 M 中已注册的 key。
    - img.onload 写入 overrides[key]；缺图仍回退到 paint(key)。
    - start() 加载完成后调用 buildAtlas()；后者 drawImage(overrides[key] || paint(key), ...)。
    因此本批通常**不用重写加载逻辑**，直接上传这些文件就会自动替换同名占位图。
 3. 用 HTTP 打开游戏测试。不要以 file:// 双击结果判断加载失败；它可能阻止 fetch。
-4. 检查 Network：assets/index.json 和 10 张 PNG 全部返回 200；Console 无纹理加载错误。若是旧缓存，禁用缓存并刷新，或为资产 URL 增加批次版本参数。
+4. 检查 Network：assets/index.json 和 18 张 PNG 全部返回 200；Console 无纹理加载错误。若是旧缓存，禁用缓存并刷新，或为资产 URL 增加批次版本参数。
 5. 只有确实需要修改加载逻辑或 atlas 时才编辑 src/game.js，保留 paint 占位回退。改源码后执行：
    `python games/kaifa-wuyu/tools/build.py`
    重新生成游戏 index.html；不要只修改生成后的 index.html。

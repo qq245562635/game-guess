@@ -1,0 +1,260 @@
+{
+  "passed": true,
+  "count": 18,
+  "firstBatchUnchanged": true,
+  "runtimeTested": false,
+  "files": [
+    {
+      "key": "floor_a",
+      "size": [
+        256,
+        128
+      ],
+      "alphaBounds": [
+        1,
+        0,
+        255,
+        128
+      ],
+      "sha256": "8cb9a81508efb08f4b2f5df56832135c9d95bbcb9f6657d63d7a9e7c213f5b2f"
+    },
+    {
+      "key": "floor_b",
+      "size": [
+        256,
+        128
+      ],
+      "alphaBounds": [
+        1,
+        0,
+        255,
+        128
+      ],
+      "sha256": "646e424630ee16fcf9193ae1659a26b313c4b9393f81dd3d3c3b2cb8b6cf1c18"
+    },
+    {
+      "key": "outside",
+      "size": [
+        256,
+        128
+      ],
+      "alphaBounds": [
+        1,
+        0,
+        255,
+        128
+      ],
+      "sha256": "c3b7afd49581329df65071fc513a85e1678b40ba83380da5a5e97b452574cf38"
+    },
+    {
+      "key": "wall_r",
+      "size": [
+        128,
+        400
+      ],
+      "alphaBounds": [
+        0,
+        0,
+        128,
+        400
+      ],
+      "sha256": "b6f105b3becd3bc379828cb3be2b900fbe5b1d8b3873062ee3d784af24d8235b"
+    },
+    {
+      "key": "wall_r_win",
+      "size": [
+        128,
+        400
+      ],
+      "alphaBounds": [
+        0,
+        0,
+        128,
+        400
+      ],
+      "sha256": "1ec8765259e0cdd4e35f6a0721935607812cafce2f6b1ff6ec09f7b746600873"
+    },
+    {
+      "key": "wall_l",
+      "size": [
+        128,
+        400
+      ],
+      "alphaBounds": [
+        0,
+        0,
+        128,
+        400
+      ],
+      "sha256": "9ab0e6dbd70aa6ed35089ca4bd675a9e12330ab701939af820328c1e839dde82"
+    },
+    {
+      "key": "wall_l_win",
+      "size": [
+        128,
+        400
+      ],
+      "alphaBounds": [
+        0,
+        0,
+        128,
+        400
+      ],
+      "sha256": "f75ca0eeb31e3450859a946ac19b4ba45d06d2db9c6fcf9e549e107ccc0de3c5"
+    },
+    {
+      "key": "desk",
+      "size": [
+        256,
+        352
+      ],
+      "alphaBounds": [
+        0,
+        126,
+        256,
+        319
+      ],
+      "sha256": "6dbf30a63a53701bbce88f80cac20aff5fe59bce70984d8fb3a4be6c19b712c2"
+    },
+    {
+      "key": "desk_back",
+      "size": [
+        256,
+        352
+      ],
+      "alphaBounds": [
+        0,
+        157,
+        256,
+        318
+      ],
+      "sha256": "f1379ab5fad4aab6a11064d92e432c70da3aa65317f53618972fe3d04a97dccd"
+    },
+    {
+      "key": "chair",
+      "size": [
+        256,
+        192
+      ],
+      "alphaBounds": [
+        93,
+        66,
+        163,
+        146
+      ],
+      "sha256": "6c393f5223a8e371864cd61fe4f238393ecd39aae051f998bd97c79526c089dc"
+    },
+    {
+      "key": "boss_desk",
+      "size": [
+        256,
+        352
+      ],
+      "alphaBounds": [
+        8,
+        132,
+        248,
+        320
+      ],
+      "sha256": "65e398eb87e728c4d6d0bb4ecdd7cc8cd858323afdaa546dfcafe1794385fa7d"
+    },
+    {
+      "key": "reception",
+      "size": [
+        256,
+        352
+      ],
+      "alphaBounds": [
+        16,
+        129,
+        240,
+        320
+      ],
+      "sha256": "6e79a44ef12b4fb35064e8ea0a6b74e8fe5d59e0a779ac2fc01af6ad042396b8"
+    },
+    {
+      "key": "shelf",
+      "size": [
+        256,
+        352
+      ],
+      "alphaBounds": [
+        45,
+        44,
+        211,
+        314
+      ],
+      "sha256": "89bd9ae4cb7afc611765ac4866dced3d0be26dd72ead6736a0d172155819431b"
+    },
+    {
+      "key": "whiteboard",
+      "size": [
+        256,
+        352
+      ],
+      "alphaBounds": [
+        37,
+        70,
+        219,
+        320
+      ],
+      "sha256": "441aa301da4af28c8027ccdcbff26e10e242c6bacd87c18896b6215a927c37e4"
+    },
+    {
+      "key": "plant",
+      "size": [
+        256,
+        352
+      ],
+      "alphaBounds": [
+        63,
+        150,
+        193,
+        304
+      ],
+      "sha256": "637d6efe3121d9b82e4c2a9735987954533c1f6820470c54d0d749df69e489a8"
+    },
+    {
+      "key": "cooler",
+      "size": [
+        256,
+        352
+      ],
+      "alphaBounds": [
+        82,
+        106,
+        174,
+        306
+      ],
+      "sha256": "ea1a82773717bbdf2a984939138b682223a189cfdac6a344dbf7ea2abc158b36"
+    },
+    {
+      "key": "rug",
+      "size": [
+        256,
+        128
+      ],
+      "alphaBounds": [
+        10,
+        5,
+        246,
+        123
+      ],
+      "sha256": "8cb17c43109f55ad7fc2d81daa7322bad9513fa29d2e1d7fcc533180b49b49a9"
+    },
+    {
+      "key": "mat",
+      "size": [
+        256,
+        128
+      ],
+      "alphaBounds": [
+        22,
+        11,
+        234,
+        117
+      ],
+      "sha256": "4e4a932f428b9beb50cd9b37161599e0bfa75323506f8a7db8ab7d9a9bcb03c3"
+    }
+  ]
+}

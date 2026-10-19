@@ -7,7 +7,7 @@
     "width": 128,
     "height": 64
   },
-  "batch": "initial-office-batch-01",
+  "batch": "initial-office-batches-01-02",
   "keys": [
     {
       "key": "floor_a",
@@ -146,6 +146,102 @@
       ],
       "source": "chair",
       "kind": "chair"
+    },
+    {
+      "key": "boss_desk",
+      "width": 128,
+      "height": 176,
+      "anchor": [
+        64,
+        144
+      ],
+      "source": "batch-02/boss_desk",
+      "kind": "furniture",
+      "batch": 2
+    },
+    {
+      "key": "reception",
+      "width": 128,
+      "height": 176,
+      "anchor": [
+        64,
+        144
+      ],
+      "source": "batch-02/reception",
+      "kind": "furniture",
+      "batch": 2
+    },
+    {
+      "key": "shelf",
+      "width": 128,
+      "height": 176,
+      "anchor": [
+        64,
+        144
+      ],
+      "source": "batch-02/shelf",
+      "kind": "furniture",
+      "batch": 2
+    },
+    {
+      "key": "whiteboard",
+      "width": 128,
+      "height": 176,
+      "anchor": [
+        64,
+        144
+      ],
+      "source": "batch-02/whiteboard",
+      "kind": "furniture",
+      "batch": 2
+    },
+    {
+      "key": "plant",
+      "width": 128,
+      "height": 176,
+      "anchor": [
+        64,
+        144
+      ],
+      "source": "batch-02/plant",
+      "kind": "furniture",
+      "batch": 2
+    },
+    {
+      "key": "cooler",
+      "width": 128,
+      "height": 176,
+      "anchor": [
+        64,
+        144
+      ],
+      "source": "batch-02/cooler",
+      "kind": "furniture",
+      "batch": 2
+    },
+    {
+      "key": "rug",
+      "width": 128,
+      "height": 64,
+      "anchor": [
+        64,
+        32
+      ],
+      "source": "batch-02/rug",
+      "kind": "floor_decor",
+      "batch": 2
+    },
+    {
+      "key": "mat",
+      "width": 128,
+      "height": 64,
+      "anchor": [
+        64,
+        32
+      ],
+      "source": "batch-02/mat",
+      "kind": "floor_decor",
+      "batch": 2
     }
   ],
   "layout": {
@@ -264,10 +360,9 @@
     ]
   },
   "notes": [
-    "场景概念图用来核对风格和六席构成；实际摆位以 layout 与原代码为准。",
-    "首批不包含人物、老板桌、秘书前台、装饰和UI单图；现有原型继续保留这些占位图。",
-    "源代码DECOR有3处plant，ASSETS.md写2盆；保留程序坐标，数量差异记录为待后续统一。",
-    "生成原图另存raw，正式素材经过尺寸、透明轮廓和网格规范化。",
-    "桌面基准按三可见角点配准到 2:1 网格；正反桌共用最终桌面平面。"
+    "首批10张保持不变，第二批追加8张家具和陈设。",
+    "家具逻辑128x176、锚点64,144；地垫逻辑128x64、锚点64,32；PNG为2倍尺寸。",
+    "人物、远景和UI仍为占位图；本批未验证实际游戏中的人物遮挡。",
+    "DECOR保留3处plant，不改程序坐标。"
   ]
 }
