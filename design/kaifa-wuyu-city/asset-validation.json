@@ -1,0 +1,46 @@
+{
+  "width": 2048,
+  "height": 3328,
+  "opaque": true,
+  "bytes": 7065956,
+  "compression": {
+    "before": 14021644,
+    "after": 7065956,
+    "pixelsIdentical": true
+  },
+  "sha256": "b0148a957ce8d6a1dda6fd617eccf1af7e6392fb1fa69861ad700558a62290e5",
+  "sourceGeneratedSize": [
+    984,
+    1599
+  ],
+  "exportScale": 2.0813008130081303,
+  "aspectRatioPreserved": true,
+  "anchorLogical": [
+    480,
+    704
+  ],
+  "anchorPixels": [
+    960,
+    1408
+  ],
+  "floorLogical": [
+    [
+      480,
+      704
+    ],
+    [
+      928,
+      928
+    ],
+    [
+      544,
+      1120
+    ],
+    [
+      96,
+      896
+    ]
+  ],
+  "publishedForeground": false,
+  "renderedBelowRoom": true
+}

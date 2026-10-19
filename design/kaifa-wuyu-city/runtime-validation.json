@@ -1,0 +1,191 @@
+[
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "errors": [],
+    "responses": [
+      {
+        "url": "http://127.0.0.1:52886/games/kaifa-wuyu/assets/bg_city_front.png",
+        "status": 404
+      },
+      {
+        "url": "http://127.0.0.1:52886/games/kaifa-wuyu/assets/bg_city.png",
+        "status": 200
+      }
+    ],
+    "state": {
+      "bgLoaded": true,
+      "frontLoaded": false,
+      "scene": {
+        "w": 390,
+        "h": 642.515625
+      },
+      "camera": {
+        "x": 180.2132701421801,
+        "y": 274.9612055687204,
+        "z": 0.46208530805687204,
+        "fit": true
+      },
+      "backgroundBounds": {
+        "left": -41.58767772511848,
+        "top": -50.34685130331752,
+        "right": 431.5876777251185,
+        "bottom": 718.5631013033176
+      },
+      "anchor": {
+        "w": 1024,
+        "h": 1664,
+        "ax": 480,
+        "ay": 704
+      },
+      "roomFloor": [
+        [
+          480,
+          704
+        ],
+        [
+          928,
+          928
+        ],
+        [
+          544,
+          1120
+        ],
+        [
+          96,
+          896
+        ]
+      ],
+      "loadedOfficeAssets": 38,
+      "coversScene": true
+    }
+  },
+  {
+    "viewport": [
+      360,
+      640
+    ],
+    "errors": [],
+    "responses": [
+      {
+        "url": "http://127.0.0.1:52886/games/kaifa-wuyu/assets/bg_city_front.png",
+        "status": 404
+      },
+      {
+        "url": "http://127.0.0.1:52886/games/kaifa-wuyu/assets/bg_city.png",
+        "status": 200
+      }
+    ],
+    "state": {
+      "bgLoaded": true,
+      "frontLoaded": false,
+      "scene": {
+        "w": 333.90625,
+        "h": 467.5
+      },
+      "camera": {
+        "x": 154.29317239336493,
+        "y": 192.4601895734597,
+        "z": 0.395623518957346,
+        "fit": true
+      },
+      "backgroundBounds": {
+        "left": -35.606116706161146,
+        "top": -86.05876777251186,
+        "right": 369.5123667061612,
+        "bottom": 572.2587677725119
+      },
+      "anchor": {
+        "w": 1024,
+        "h": 1664,
+        "ax": 480,
+        "ay": 704
+      },
+      "roomFloor": [
+        [
+          480,
+          704
+        ],
+        [
+          928,
+          928
+        ],
+        [
+          544,
+          1120
+        ],
+        [
+          96,
+          896
+        ]
+      ],
+      "loadedOfficeAssets": 38,
+      "coversScene": true
+    }
+  },
+  {
+    "viewport": [
+      360,
+      800
+    ],
+    "errors": [],
+    "responses": [
+      {
+        "url": "http://127.0.0.1:52886/games/kaifa-wuyu/assets/bg_city_front.png",
+        "status": 404
+      },
+      {
+        "url": "http://127.0.0.1:52886/games/kaifa-wuyu/assets/bg_city.png",
+        "status": 200
+      }
+    ],
+    "state": {
+      "bgLoaded": true,
+      "frontLoaded": false,
+      "scene": {
+        "w": 360,
+        "h": 614
+      },
+      "camera": {
+        "x": 166.35071090047393,
+        "y": 264.68284360189574,
+        "z": 0.4265402843601896,
+        "fit": true
+      },
+      "backgroundBounds": {
+        "left": -38.38862559241707,
+        "top": -35.601516587677736,
+        "right": 398.38862559241704,
+        "bottom": 674.1615165876777
+      },
+      "anchor": {
+        "w": 1024,
+        "h": 1664,
+        "ax": 480,
+        "ay": 704
+      },
+      "roomFloor": [
+        [
+          480,
+          704
+        ],
+        [
+          928,
+          928
+        ],
+        [
+          544,
+          1120
+        ],
+        [
+          96,
+          896
+        ]
+      ],
+      "loadedOfficeAssets": 38,
+      "coversScene": true
+    }
+  }
+]
