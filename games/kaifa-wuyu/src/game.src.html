@@ -226,6 +226,13 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 .dlg-in{border-radius:10rem;overflow:hidden}
 .dlg-title{border-bottom-color:var(--line);font-weight:700}
 .frow{box-shadow:0 0 0 3rem var(--frame-dark)}
+/* 职员立绘（有素材时）：卡片里高 120，培训画面里 A/B 帧交替 */
+.cfig.art{position:relative;width:80rem;height:128rem;margin:0 auto;display:block}
+.cfig.art img{position:absolute;left:0;bottom:0;width:80rem;height:128rem;object-fit:contain;object-position:center bottom}
+.cfig.art .fb{opacity:0}
+.tfig.cfig.art .fa{animation:fa 0.5s steps(1) infinite}.tfig.cfig.art .fb{animation:fb 0.5s steps(1) infinite}
+@keyframes fa{50%{opacity:0}}@keyframes fb{0%{opacity:0}50%{opacity:1}}
+.staffstrip .smini{height:70rem;width:44rem;object-fit:contain;object-position:center bottom}
 </style>
 
 <div id="app">

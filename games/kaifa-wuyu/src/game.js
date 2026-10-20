@@ -366,7 +366,7 @@ function planForm(){const cost=planCost(plan);
       row('类型',GN[plan.genre].n,GN[plan.genre],LVN[lvOf(plan.genre)-1],()=>listPick('选择类型',GENRES,plan.genre,g=>`${LVN[lvOf(g.id)-1]} · ${fmt(g.fee)}金 · 约${g.wk}周`,v=>plan.genre=v)),
       row('内容',TN[plan.type].n,TN[plan.type],LVN[lvOf(plan.type)-1],()=>listPick('选择内容',TYPES,plan.type,t=>`${LVN[lvOf(t.id)-1]} · ${fmt(t.fee)}金`,v=>plan.type=v)),
       row('开发方针',DN[plan.dev].n,null,null,()=>listPick('开发方针',DEVPLANS,plan.dev,d=>`${d.d} · 费用×${d.fee}`,v=>plan.dev=v)),
-      h('div',{class:'staffstrip'},...S.staff.map(s=>h('i',{style:`background:${SHIRTS[s.look%SHIRTS.length]}`})))));
+      h('div',{class:'staffstrip'},...S.staff.map(s=>STAFF_ART[s.look%CHAR_N+'a']?h('img',{class:'smini',src:staffArtSrc(s,'a'),alt:''}):h('i',{style:`background:${SHIRTS[s.look%SHIRTS.length]}`})))));
   openDlg('新企划书',body,okFoot('确定',()=>{if(S.money<planCost(plan)){talk(['资金不够开发费用了……'],planForm);return;}clampPolicy();policyDlg();}),[null,{label:'返回',fn:()=>{plan=null;closeDlg();}}]);$('#dlg').onclick=null;}
 
 // ---- 此次游戏的方针（界面②）
@@ -395,7 +395,11 @@ const PICK={plan:{t:'制作人',k:'scen'},gfx:{t:'画面负责人',k:'gfx'},snd:
 const SKC={prog:'#5C6478',scen:'#E2701A',gfx:'var(--c-gfx)',snd:'var(--c-snd)'};
 // 职员卡片中部：左边职业/等级/小人/体力，右边四项能力。hiKey 高亮一项；left 可替换左栏（培训画面用）
 const SKN={prog:['编程','程'],scen:['编剧','剧'],gfx:['画面','画'],snd:['作曲','曲']};
-const staffFig=s=>h('div',{class:'cfig'},h('i',{class:'head',style:`border-top-color:${HAIRS[s.look%HAIRS.length]}`}),h('i',{class:'body',style:`background:${SHIRTS[s.look%SHIRTS.length]}`}));
+// 职员立绘：assets/ui/ui_staff_<外观>_a/b.png（站立正面全身，A=常态 B=动作帧）。没交付时退回色块小人
+const STAFF_ART={};function loadStaffArt(){for(let i=0;i<CHAR_N;i++)for(const f of 'ab'){const img=new Image();img.onload=()=>{STAFF_ART[i+f]=true;};img.src=`assets/ui/ui_staff_${i}_${f}.png`;}}
+const staffArtSrc=(s,f)=>`assets/ui/ui_staff_${s.look%CHAR_N}_${f}.png`;
+const staffFig=s=>{const L=s.look%CHAR_N;if(STAFF_ART[L+'a'])return h('div',{class:'cfig art'},h('img',{class:'fa',src:staffArtSrc(s,'a'),alt:''}),STAFF_ART[L+'b']?h('img',{class:'fb',src:staffArtSrc(s,'b'),alt:''}):null);
+  return h('div',{class:'cfig'},h('i',{class:'head',style:`border-top-color:${HAIRS[s.look%HAIRS.length]}`}),h('i',{class:'body',style:`background:${SHIRTS[s.look%SHIRTS.length]}`}));};
 const statRow=(s,k,hiKey)=>h('div',{class:'cs'+(k===hiKey?' hi':''),'data-k':k},h('span',{class:'csi',style:`background:${SKC[k]}`},SKN[k][1]),h('span',{},SKN[k][0]),h('b',{class:'num'},s[k]));
 function staffBox(s,hiKey,left){return h('div',{class:'cbox'},
   left||h('div',{class:'cleft'},h('div',{class:'cjob'},h('span',{},JOBN[s.job]),h('span',{class:'clv'},'等级',h('b',{},s.lv||1))),staffFig(s),
@@ -611,5 +615,5 @@ function tryLoadArt(){return fetch('assets/index.json').then(r=>r.ok?r.json():[]
 function start(){if(gl)initGL();buildStatic();buildAtlas();if(!load())newGame();if(!S.unl)S.unl=unlockedIds();
   if(S.project&&S.project.awaiting==='gfx'||S.project&&S.project.awaiting==='snd')setTimeout(()=>leaderAsk(S.project.awaiting),300);
   if(S.project&&S.project.awaiting==='done')setTimeout(release,300);
-  resize();idleBottom();renderAll();requestAnimationFrame(frame);tryLoadArt().then(()=>{if(Object.keys(overrides).length)buildAtlas();});}
+  resize();idleBottom();renderAll();requestAnimationFrame(frame);loadStaffArt();tryLoadArt().then(()=>{if(Object.keys(overrides).length)buildAtlas();});}
 start();
