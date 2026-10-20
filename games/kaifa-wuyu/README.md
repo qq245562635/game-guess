@@ -38,6 +38,7 @@ src/game.src.html   布局与样式，构建时内联 src/game.js
 tools/build.py      生成 index.html（内联 audio.js + game.js）：python3 tools/build.py
 策划案-新企划.md      新企划流程策划案（渠道/类型/内容/开发方针/方针/制作人）
 杂志系统.md          游戏杂志 / 事件框架（出刊规则、事件字段、效果类型）
+策划案-缺失功能.md    对照原作的缺失功能清单与优先级（标题画面、委托、招聘、续作……）
 UI需求.md            给 Codex 的 UI 出图需求
 ASSETS.md           给 Codex 的场景出图需求
 AUDIO.md            音乐 / 音效清单与替换规格
