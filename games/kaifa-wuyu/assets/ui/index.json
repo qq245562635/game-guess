@@ -19,5 +19,13 @@
   "ui_scroll_down",
   "ui_scroll_track",
   "ui_scroll_thumb",
-  "ui_bottombar_bg"
+  "ui_bottombar_bg",
+  "ui_staff_0_a",
+  "ui_staff_0_b",
+  "ui_staff_1_a",
+  "ui_staff_1_b",
+  "ui_staff_2_a",
+  "ui_staff_2_b",
+  "ui_staff_3_a",
+  "ui_staff_3_b"
 ]

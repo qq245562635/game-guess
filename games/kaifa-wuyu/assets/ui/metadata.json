@@ -487,6 +487,142 @@
         48,
         32
       ]
+    },
+    {
+      "key": "ui_staff_0_a",
+      "path": "assets/ui/ui_staff_0_a.png",
+      "width": 80,
+      "height": 128,
+      "pixels": [
+        160,
+        256
+      ],
+      "nineSlice": null,
+      "batch": "staff-ui-56dd16c",
+      "anchorPixels": [
+        80,
+        248
+      ],
+      "frameDurationMs": 500
+    },
+    {
+      "key": "ui_staff_0_b",
+      "path": "assets/ui/ui_staff_0_b.png",
+      "width": 80,
+      "height": 128,
+      "pixels": [
+        160,
+        256
+      ],
+      "nineSlice": null,
+      "batch": "staff-ui-56dd16c",
+      "anchorPixels": [
+        80,
+        248
+      ],
+      "frameDurationMs": 500
+    },
+    {
+      "key": "ui_staff_1_a",
+      "path": "assets/ui/ui_staff_1_a.png",
+      "width": 80,
+      "height": 128,
+      "pixels": [
+        160,
+        256
+      ],
+      "nineSlice": null,
+      "batch": "staff-ui-56dd16c",
+      "anchorPixels": [
+        80,
+        248
+      ],
+      "frameDurationMs": 500
+    },
+    {
+      "key": "ui_staff_1_b",
+      "path": "assets/ui/ui_staff_1_b.png",
+      "width": 80,
+      "height": 128,
+      "pixels": [
+        160,
+        256
+      ],
+      "nineSlice": null,
+      "batch": "staff-ui-56dd16c",
+      "anchorPixels": [
+        80,
+        248
+      ],
+      "frameDurationMs": 500
+    },
+    {
+      "key": "ui_staff_2_a",
+      "path": "assets/ui/ui_staff_2_a.png",
+      "width": 80,
+      "height": 128,
+      "pixels": [
+        160,
+        256
+      ],
+      "nineSlice": null,
+      "batch": "staff-ui-56dd16c",
+      "anchorPixels": [
+        80,
+        248
+      ],
+      "frameDurationMs": 500
+    },
+    {
+      "key": "ui_staff_2_b",
+      "path": "assets/ui/ui_staff_2_b.png",
+      "width": 80,
+      "height": 128,
+      "pixels": [
+        160,
+        256
+      ],
+      "nineSlice": null,
+      "batch": "staff-ui-56dd16c",
+      "anchorPixels": [
+        80,
+        248
+      ],
+      "frameDurationMs": 500
+    },
+    {
+      "key": "ui_staff_3_a",
+      "path": "assets/ui/ui_staff_3_a.png",
+      "width": 80,
+      "height": 128,
+      "pixels": [
+        160,
+        256
+      ],
+      "nineSlice": null,
+      "batch": "staff-ui-56dd16c",
+      "anchorPixels": [
+        80,
+        248
+      ],
+      "frameDurationMs": 500
+    },
+    {
+      "key": "ui_staff_3_b",
+      "path": "assets/ui/ui_staff_3_b.png",
+      "width": 80,
+      "height": 128,
+      "pixels": [
+        160,
+        256
+      ],
+      "nineSlice": null,
+      "batch": "staff-ui-56dd16c",
+      "anchorPixels": [
+        80,
+        248
+      ],
+      "frameDurationMs": 500
     }
   ],
   "notes": [

@@ -1,0 +1,38 @@
+{
+  "provider": "built-in image_gen",
+  "referenceCommit": "56dd16c",
+  "prompts": [
+    {
+      "key": "ui_staff_0_a",
+      "prompt": "Use case: stylized-concept. Asset type: single game UI character ui_staff_0_a. Reference image is an IDENTITY AND EXACT ART STYLE reference, not an edit target. Employee 0 ONLY: the FIRST seated character at far left, tousled brown short hair, royal blue hoodie with white drawstrings, charcoal trousers and dark simple shoes. Match reference face, hair silhouette, outfit colors, accessories and soft felt/paper handmade illustration perfectly. Transform seated character to FRONT FACING STANDING FULL BODY, relaxed arms down, both feet planted symmetrically. Big head, cute compact chibi proportions matching reference. Pants and shoes visible. One isolated character only. Portrait 5:8 canvas. Figure centered, head at about 8% from top, shoe soles at 96% from top, feet centered horizontally. Full head and body inside canvas with transparent margin. Actual transparent background, no ground shadow, no text, no panels, no other figures or objects. This is idle frame A; fixed neutral cheerful expression."
+    },
+    {
+      "key": "ui_staff_1_a",
+      "prompt": "Use case: stylized-concept. Asset type: single game UI character ui_staff_1_a. Reference image is an IDENTITY AND EXACT ART STYLE reference, not an edit target. Employee 1 ONLY: the THIRD seated figure from left (second identity): chestnut high messy bun with coral red hair tie, loose side locks, coral cardigan over cream shirt, charcoal trousers and dark simple shoes. Match reference face, hair silhouette, outfit colors, accessories and soft felt/paper handmade illustration perfectly. Transform seated character to FRONT FACING STANDING FULL BODY, relaxed arms down, both feet planted symmetrically. Big head, cute compact chibi proportions matching reference. Pants and shoes visible. One isolated character only. Portrait 5:8 canvas. Figure centered, head at about 8% from top, shoe soles at 96% from top, feet centered horizontally. Full head and body inside canvas with transparent margin. Actual transparent background, no ground shadow, no text, no panels, no other figures or objects. This is idle frame A; fixed neutral cheerful expression."
+    },
+    {
+      "key": "ui_staff_2_a",
+      "prompt": "Use case: stylized-concept. Asset type: single game UI character ui_staff_2_a. Reference image is an IDENTITY AND EXACT ART STYLE reference, not an edit target. Employee 2 ONLY: the FIFTH seated figure from left (third identity): ribbed dark green beanie, round dark glasses, brown fringe, teal hoodie with white drawstrings, charcoal trousers and dark simple shoes. Match reference face, hair silhouette, outfit colors, accessories and soft felt/paper handmade illustration perfectly. Transform seated character to FRONT FACING STANDING FULL BODY, relaxed arms down, both feet planted symmetrically. Big head, cute compact chibi proportions matching reference. Pants and shoes visible. One isolated character only. Portrait 5:8 canvas. Figure centered, head at about 8% from top, shoe soles at 96% from top, feet centered horizontally. Full head and body inside canvas with transparent margin. Actual transparent background, no ground shadow, no text, no panels, no other figures or objects. This is idle frame A; fixed neutral cheerful expression."
+    },
+    {
+      "key": "ui_staff_3_a",
+      "prompt": "Use case: stylized-concept. Asset type: single game UI character ui_staff_3_a. Reference image is an IDENTITY AND EXACT ART STYLE reference, not an edit target. Employee 3 ONLY: the SEVENTH seated figure from left (fourth identity): chin-length dark brown bob and bangs, mustard yellow knit sweater, charcoal trousers and dark simple shoes. Match reference face, hair silhouette, outfit colors, accessories and soft felt/paper handmade illustration perfectly. Transform seated character to FRONT FACING STANDING FULL BODY, relaxed arms down, both feet planted symmetrically. Big head, cute compact chibi proportions matching reference. Pants and shoes visible. One isolated character only. Portrait 5:8 canvas. Figure centered, head at about 8% from top, shoe soles at 96% from top, feet centered horizontally. Full head and body inside canvas with transparent margin. Actual transparent background, no ground shadow, no text, no panels, no other figures or objects. This is idle frame A; fixed neutral cheerful expression."
+    },
+    {
+      "key": "ui_staff_0_b",
+      "prompt": "Use case: identity-preserve. Edit target is the supplied standing character A frame. Make matching B animation frame. Change ONLY the character's right forearm (on viewer LEFT) to a small friendly bent-elbow fist held beside the waist/chest, below the chin. Preserve EXACT same canvas, scale, head, face, hair, torso outline, sweater/hoodie, left arm, legs and shoes, and all their exact positions. Feet and body must not move by even a pixel between A and B. Do not redraw the rest, preserve all textures. Single front facing full body character on actual transparent background, no shadow, no text. Retain transparent margins and original image dimensions."
+    },
+    {
+      "key": "ui_staff_1_b",
+      "prompt": "Use case: identity-preserve. Edit target is the supplied standing character A frame. Make matching B animation frame. Change ONLY the character's right forearm (on viewer LEFT) to a small friendly bent-elbow fist held beside the waist/chest, below the chin. Preserve EXACT same canvas, scale, head, face, hair, torso outline, sweater/hoodie, left arm, legs and shoes, and all their exact positions. Feet and body must not move by even a pixel between A and B. Do not redraw the rest, preserve all textures. Single front facing full body character on actual transparent background, no shadow, no text. Retain transparent margins and original image dimensions."
+    },
+    {
+      "key": "ui_staff_2_b",
+      "prompt": "Edit target: supplied standing green beanie character A frame. Produce B animation frame. Change ONLY his right forearm, on viewer left, bending the elbow to hold a small encouraging fist beside waist/chest below chin. Keep the entire head, hat, glasses, expression, torso, other arm, trousers, shoes and foot positions EXACTLY identical. Keep exact canvas and scale and transparent background. Same front facing standing full body. No shadow, no text. Everything except one forearm is locked in place."
+    },
+    {
+      "key": "ui_staff_3_b",
+      "prompt": "Edit A frame: bend only viewer-left forearm into small encouraging fist. Preserve head, torso, legs, feet, canvas, scale, textures and transparent background; no text or shadow."
+    }
+  ]
+}
