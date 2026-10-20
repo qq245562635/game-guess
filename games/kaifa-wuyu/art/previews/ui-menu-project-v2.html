@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>Issue #16 · 菜单与新企划书 · Noto Sans SC</title>
+<style>
+@font-face {
+  font-family: 'Noto Sans SC';
+  src: url('../../assets/fonts/NotoSansSC-wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+}
+html, body { margin: 0; background: #075c63; }
+canvas { display: block; width: 1263px; height: 1245px; }
+</style>
+<canvas width="1263" height="1245" aria-label="统一使用 Noto Sans SC 的菜单展开和新企划书效果图"></canvas>
+<script>
+// All typography, including numerals, comes from the delivered font file.
+// Positions are in the approved v1 review board's native pixels.
+window.ready = (async () => {
+  await document.fonts.load('700 32px "Noto Sans SC"');
+  await document.fonts.load('600 26px "Noto Sans SC"');
+  if (!document.fonts.check('700 32px "Noto Sans SC"')) throw Error('Font not loaded');
+  const image = new Image();
+  image.src = 'ui-menu-project-v2-background.png';
+  await image.decode();
+  if (image.width !== 1263 || image.height !== 1245) throw Error('Unexpected background size');
+  const canvas = document.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(image, 0, 0);
+  const labels = [];
+  function text(value, x, y, size = 26, weight = 700, align = 'center', color = '#043E3D') {
+    ctx.font = `${weight} ${size}px "Noto Sans SC"`;
+    ctx.textAlign = align;
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    ctx.fillText(value, x, y);
+    labels.push({ value, x, y, size, weight, align, color, width: ctx.measureText(value).width });
+  }
+  for (const offset of [0, 637]) {
+    text('1年 4月 1周 ·', offset + 38, 54, 30, 700, 'left');
+    text('5,000金', offset + 597, 54, 30, 700, 'right');
+    text('0', offset + 109, 132, 36, 700);
+    text('全年销售', offset + 32, 1074, 24, 700, 'left');
+    text('全年收益', offset + 32, 1113, 24, 700, 'left');
+    text('0', offset + 278, 1074, 26);
+    text('0金', offset + 270, 1113, 26);
+    text('无新作开发', offset + 457, 1095, 26);
+    text('返回', offset + 516, 1187, 26);
+  }
+  ['开发', '职员', '行动', '信息', '系统'].forEach((value, i) => text(value, 168, 397 + i * 81, 32));
+  text('新企划书', 947, 321, 32);
+  text('开发费用', 1008, 388, 26);
+  text('500金', 1177, 388, 26, 700, 'right');
+  ['渠道', '类型', '内容', '方针'].forEach((value, i) => text(value, 768, 449 + i * 62.5, 26, 600, 'center', '#FFFFFF'));
+  text('电脑', 1026, 449, 27, 600);
+  text('桌上游戏', 1030, 511.5, 27, 600);
+  text('寻宝', 1006, 574, 27, 600);
+  text('普通开发', 1018, 636.5, 27, 600);
+  text('确定', 947, 864, 30);
+  window.typography = { family: 'Noto Sans SC', labels, width: canvas.width, height: canvas.height };
+  return window.typography;
+})();
+</script>
+</html>
