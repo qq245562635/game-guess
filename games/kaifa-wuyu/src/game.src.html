@@ -340,6 +340,14 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 #btnL{left:23rem} #btnR{right:23rem}
 #tabUp{width:154rem;height:49rem;bottom:26rem}
 #tabUp::after{width:38rem;height:21rem}
+/* ===== 游戏杂志：栏目条（浅青描边 + 右侧栏目图标）+ 正文纸（首行缩进） ===== */
+.mag{display:grid;gap:14rem}
+.mag-cat{height:96rem;display:flex;align-items:center;justify-content:space-between;padding:0 18rem 0 30rem;border:3rem solid #8CC7BE;background:linear-gradient(#FFFFFF,#E3F2EE);font-size:36rem;font-weight:700;color:var(--c)}
+.mag-cat span{flex:1;text-align:center}
+.mag-ico{width:80rem;height:64rem;flex:none;background:var(--c) center/contain no-repeat;border-radius:8rem;opacity:.9}
+.mag-ico.art{background-color:transparent;border-radius:0;opacity:1}
+.mag-paper{border:2rem solid #CBD3EA;border-radius:10rem;background:#fff;padding:26rem 34rem;min-height:300rem}
+.mag-paper p{margin:0 0 6rem;font-size:32rem;line-height:1.8;text-indent:2em}
 </style>
 
 <div id="app">
