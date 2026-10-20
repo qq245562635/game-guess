@@ -447,7 +447,7 @@ function startProject(leaderId){const P=plan;const G=GN[P.genre],D=DN[P.dev];con
   const weeks=Math.round(G.wk*D.wk*(1+P.policy.detail*.02));
   const title=TN[P.type].n+pick(['大冒险','传说','物语','大作战','研究所','王国']);
   S.project={title,chan:P.chan,genre:P.genre,type:P.type,dev:P.dev,policy:P.policy,weeks,cost,progress:0,fun:0,creat:0,gfx:0,snd:0,bugs:0,hype:0,leaders:{plan:leaderId},awaiting:null,review:0};plan=null;
-  const s=S.staff.find(x=>x.id===leaderId);UI.page=0;renderAll();
+  const s=S.staff.find(x=>x.id===leaderId);UI.pk='dev';renderAll();
   leaderWork('plan',s,ev=>{const lines=[`《${title}》开始开发了！预计 ${weeks} 周左右。`,...ev,'大家加油！'];renderAll();talk(lines);});}
 // ================= 负责人工作画面（照原作「正在整理企划」）
 // 选好负责人后弹出：左边负责人在工位上敲键盘，右边「第 N 次」逐次累加四项点数，最后说一句收尾台词。
@@ -535,10 +535,13 @@ function projectWeek(){const p=S.project;const D=DN[p.dev],G=GN[p.genre];let pro
   else if(p.progress>=100){p.awaiting='done';const C=CN[p.chan];
     schedule(.5,()=>talk([`《${p.title}》完成了！`,C.rev?`提交到${C.n}审核，大约要 ${C.rev} 周。`:'马上发售吧。'],()=>{if(C.rev){p.awaiting='review';p.review=C.rev;renderInfo();}else release();}));}}
 function idleWeek(){for(const s of S.staff)if(Math.random()<.2){const [x,y]=seatWorld(s.seat);schedule(rnd(0,WEEK_SEC),()=>isSeated(s.id)&&popWorld(x,y-104,pick(IDLE_TALK),'',true));}}
+// 销量曲线（相对首周）：爆发段 .55×.75^w 几周内消退，长尾段 .45×.93^w 慢慢走低。
+// 和旧曲线 .85^w 比：首周相同，总销量约 1.3 倍，在售时间约长 60%。
+const SALE_MAX_WEEKS=52;const saleCurve=w=>.55*Math.pow(.75,w)+.45*Math.pow(.93,w);
 function salesWeek(){let units=0,money=0;for(const g of S.games){if(!g.onSale)continue;const C=CN[g.chan]||CN.web;
     const aud=300+S.fans*.3+share(C)*CH_BASE;
-    const u=Math.round(aud*Math.pow(g.total/40,2.2)*3*(g.bonus||1)*(1+(g.ad||0))*Math.pow(.85,g.weeks)*rnd(.9,1.1));g.weeks++;if(g.ad){g.ad*=AD_DECAY;if(g.ad<.02)delete g.ad;}
-    if(u<15||g.weeks>30){g.onSale=false;continue;}const m=Math.round(u*PRICE*(g.cut??1));
+    const u=Math.round(aud*Math.pow(g.total/40,2.2)*3*(g.bonus||1)*(1+(g.ad||0))*saleCurve(g.weeks)*rnd(.9,1.1));g.weeks++;if(g.ad){g.ad*=AD_DECAY;if(g.ad<.02)delete g.ad;}
+    if(u<15||g.weeks>SALE_MAX_WEEKS){g.onSale=false;continue;}(g.hist||(g.hist=[])).push(u);const m=Math.round(u*PRICE*(g.cut??1));
     g.units+=u;g.rev=(g.rev||0)+m;units+=u;money+=m;S.fans+=Math.round(u*.06*(g.total/40)*(g.fanMul||1));}
   if(units){addMoney(money);S.ys.units+=units;const [x,y]=tc(3,2.5);schedule(WEEK_SEC*.5,()=>popWorld(x,y-60,`销售 ${fmt(units)} +${fmt(money)}金`,'var(--gold)'));}}
 function release(){const p=S.project;const G=GN[p.genre],T=TN[p.type],C=CN[p.chan];
@@ -554,7 +557,7 @@ function release(){const p=S.project;const G=GN[p.genre],T=TN[p.type],C=CN[p.cha
   g.bonus=C.bonus(g)*(C.mass?1+.02*(p.policy.friendly||0):1);g.fanMul=1+.02*(p.policy.hardcore||0);
   const lvBefore=[lvOf(p.genre),lvOf(p.type)];S.cnt[p.genre]=(S.cnt[p.genre]||0)+1;S.cnt[p.type]=(S.cnt[p.type]||0)+1;const lvAfter=[lvOf(p.genre),lvOf(p.type)];
   S.known[p.genre]=true;S.known[p.type]=true;S.combos[p.genre+'|'+p.type]=true;
-  S.games.unshift(g);S.project=null;save(true);
+  S.games.unshift(g);S.project=null;UI.pk='sale';save(true);
   const lines=[total>=30?'评价非常好，一定会大卖！':total>=20?'评价还不错。':'评价不太理想……下次再加油。'];
   if(cp===3)lines.push(`「${G.n}」配「${T.n}」，搭配得天衣无缝！`);else if(cp===2)lines.push(`「${G.n}」和「${T.n}」挺搭的。`);else if(cp===0)lines.push(`「${G.n}」和「${T.n}」这个组合好像不太搭……`);
   if(feat)lines.push(`「${feat[1]}」成了这部作品的特色。`);
@@ -675,15 +678,28 @@ function restartNow(){newGame();save();renderAll();toast('新的公司成立了'
 function brokeAsk(){talk(['社长，发完工资后资金变成负数了……','要不要从头再来？'],()=>picker('资金不足',[{v:1,label:'重新开始',sub:'清空进度，从 1 年 4 月开始'},{v:0,label:'继续经营',sub:'等新作卖钱'}],v=>{closeDlg();if(v)restartNow();},null));}
 
 // ================= 信息栏
-function renderInfo(){const pg=$('#ipage');const p=S.project;const pages=p?2:1;if(UI.page>=pages)UI.page=0;
-  if(p&&UI.page===0){const ic=k=>h('span',{},icon(k),h('span',{class:'cnt num'+(k==='bug'?' bug':'')},Math.round(k==='bug'?p.bugs:p[k])));
+// 信息栏分页：sale = 最新在售作品的每周销量柱状图；dev = 新作开发进度；year = 全年销售/收益
+const infoPages=()=>[S.games[0]?'sale':null,S.project?'dev':null,'year'].filter(Boolean);
+let chartSeen={title:null,n:0};
+function salePage(pg,g){const hist=g.hist||[],N=Math.max(24,hist.length),last=hist[hist.length-1]||0,mx=Math.max(1,...hist);
+  const isNew=chartSeen.title===g.title&&hist.length>chartSeen.n;const from=isNew?g.units-last:g.units;chartSeen={title:g.title,n:hist.length};
+  const bars=[];for(let i=0;i<N;i++){const v=hist[i];bars.push(h('i',{class:v==null?'':(i===hist.length-1?'cur'+(isNew?' grow':''):''),style:v==null?'':`height:${Math.max(4,v/mx*100)}%`}));}
+  const tot=h('b',{class:'num'},fmt(from));
+  pg.className='isale';pg.replaceChildren(
+    h('div',{class:'sl'},h('div',{class:'st'},`《${g.title}》`),h('div',{class:'sr'},h('span',{class:g.onSale?'':'off'},g.onSale?`第${hist.length}周`:'已下架'),h('b',{class:'num'},hist.length?'+'+fmt(last):'—')),h('div',{class:'sr'},h('span',{},'累计'),h('span',{},tot,'套'))),
+    h('div',{class:'div'}),
+    h('div',{class:'chart',style:`--n:${N}`},...bars));
+  if(isNew&&last>0){const t0=performance.now(),D=900;const step=now=>{const k=Math.min(1,(now-t0)/D),e=1-Math.pow(1-k,3);tot.textContent=fmt(Math.round(from+last*e));if(k<1&&tot.isConnected)requestAnimationFrame(step);};requestAnimationFrame(step);}}
+function renderInfo(){const pg=$('#ipage');const p=S.project;const pages=infoPages();if(!pages.includes(UI.pk))UI.pk=pages[0];const pi=pages.indexOf(UI.pk);
+  if(UI.pk==='sale')salePage(pg,S.games[0]);
+  else if(UI.pk==='dev'){const ic=k=>h('span',{},icon(k),h('span',{class:'cnt num'+(k==='bug'?' bug':'')},Math.round(k==='bug'?p.bugs:p[k])));
     pg.className='ipd';pg.replaceChildren(h('div',{class:'r'},h('span',{class:'lab',style:'width:110rem;color:var(--ink)'},'新作'),ic('fun'),ic('creat'),ic('gfx'),ic('snd')),
       h('div',{class:'r'},h('span',{class:'pct num'},Math.floor(p.progress)+'%'),h('span',{class:'lab'},'期待度 ',h('b',{class:'num',style:'color:var(--ink)'},Math.round(p.hype))),h('span',{class:'lab'},'知名度 ',h('b',{class:'num',style:'color:var(--ink)'},fmt(S.fans))),ic('bug')));}
   else{pg.className='ip';pg.replaceChildren(h('div',{class:'ys'},h('div',{},h('span',{},'全年销售'),h('b',{class:'num'},fmt(S.ys.units))),h('div',{},h('span',{},'全年收益'),h('b',{class:'num',style:S.ys.profit<0?'color:var(--neg)':''},fmt(S.ys.profit)+'金'))),
       h('div',{class:'div'}),h('div',{class:'rt'},p?(p.awaiting==='review'?`《${p.title}》审核中`:`《${p.title}》开发中`):'无新作开发'));}
-  $('#thumb').style.top=pages>1?(UI.page*50)+'%':'0';$('#thumb').style.height=(100/pages)+'%';}
-$('#pgUp').onclick=()=>{UI.page=Math.max(0,UI.page-1);renderInfo();};
-$('#pgDn').onclick=()=>{UI.page=Math.min(S.project?1:0,UI.page+1);renderInfo();};
+  $('#thumb').style.top=(pi*100/pages.length)+'%';$('#thumb').style.height=(100/pages.length)+'%';}
+$('#pgUp').onclick=()=>{const ps=infoPages();UI.pk=ps[Math.max(0,ps.indexOf(UI.pk)-1)];renderInfo();};
+$('#pgDn').onclick=()=>{const ps=infoPages();UI.pk=ps[Math.min(ps.length-1,ps.indexOf(UI.pk)+1)];renderInfo();};
 function renderTop(){$('#date').firstChild.textContent=`${S.year}年 ${S.month}月 ${S.week}周 `;$('#tick').classList.toggle('blink',!blocking());$('#money').textContent=fmt(S.money)+'金';$('#money').style.color=S.money<0?'var(--neg)':'';$('#badgeNum').textContent=fmt(S.fans);}
 function renderAll(){renderTop();renderInfo();}
 
