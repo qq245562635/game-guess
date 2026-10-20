@@ -332,11 +332,12 @@ const MENU=[
   {n:'信息',ic:'info',c:'#E0383E',sub:[['作品记录',recordsDlg],['公司数据',todo]]},
   {n:'系统',ic:'system',c:'#5C6478',sub:[['保存',()=>{closeMenu();doSave();}],['重新开始',restartAsk]]},
 ];
-let menuSel=-1;
-function openMenu(){UI.menu=true;menuSel=-1;renderMenu();setBottom(null,{label:'返回',fn:closeMenu});}
+// menuSel：当前高亮项（打开菜单默认高亮第一项「开发」，照效果图）；subOpen：是否已展开该项的子菜单
+let menuSel=0,subOpen=false;
+function openMenu(){UI.menu=true;menuSel=0;subOpen=false;renderMenu();setBottom(null,{label:'返回',fn:closeMenu});}
 function closeMenu(){UI.menu=false;$('#menu').hidden=true;$('#submenu').hidden=true;if(!UI.dlg)idleBottom();}
-function renderMenu(){const m=$('#menu');m.hidden=false;m.replaceChildren(...MENU.map((it,i)=>h('button',{type:'button',class:'mitem'+(i===menuSel?' sel':''),onclick:()=>{menuSel=i;renderMenu();}},h('span',{class:'mico',style:`background:${it.c} url(assets/ui/ui_menu_icon_${it.ic}.png) center/100% 100% no-repeat`}),h('span',{},it.n))));
-  const sm=$('#submenu');if(menuSel<0){sm.hidden=true;return;}sm.hidden=false;
+function renderMenu(){const m=$('#menu');m.hidden=false;m.replaceChildren(...MENU.map((it,i)=>h('button',{type:'button',class:'mitem'+(i===menuSel?' sel':''),onclick:()=>{menuSel=i;subOpen=true;renderMenu();}},h('span',{class:'mico',style:`background:url(assets/ui/ui_menu_icon_${it.ic}.png) center/100% 100% no-repeat`}),h('span',{},it.n))));
+  const sm=$('#submenu');if(menuSel<0||!subOpen){sm.hidden=true;return;}sm.hidden=false;
   sm.replaceChildren(...MENU[menuSel].sub.map(([n,fn],j)=>h('button',{type:'button',class:'mitem'+(j===0?'':''),onclick:()=>{fn();}},h('span',{},n))));
   // 子菜单首项对齐选中项：用实际 DOM 位置（不要用设计像素 76，rem≠px 时会跑偏）；超出场景底部则上移
   const it=m.children[menuSel],pad=sm.firstChild?sm.firstChild.offsetTop:0,H=sm.offsetParent?sm.offsetParent.clientHeight:innerHeight;

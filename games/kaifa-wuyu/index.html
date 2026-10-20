@@ -280,6 +280,32 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
   box-shadow:inset 0 2rem 0 #DCE9AE,inset 0 -3rem 0 #A9C46A}
 .dlg-foot button:disabled,.pfoot button:disabled,.cok:disabled{background:#E2E3DC;border-color:#9AA5A3;color:#8E9894;
   box-shadow:inset 0 2rem 0 #F4F4EE,inset 0 -3rem 0 #CCCFC6;opacity:1;cursor:default}
+/* ===== Issue #20：按效果图 art/previews/ui-menu-project-v2.png 对齐（效果图 627px 屏宽 → 720 设计宽，×1.148） ===== */
+/* 5) 菜单图标：图标原图自带圆角色块，不再垫背景色；按效果图比例放大（图标高 ≈ 菜单项高 × 0.8） */
+.mitem .mico{width:54rem;height:54rem;border-radius:0;background-color:transparent}
+.mitem{padding:0 12rem}
+/* 3) 粉丝徽章数字：实心墨青，和顶栏金额同一渲染（去掉白描边） */
+#badge b{-webkit-text-stroke:0;paint-order:normal;font-weight:700;color:var(--ink);font-size:40rem}
+/* 6) 信息栏字号：效果图标签 24/数字 26（效果图像素）→ 设计 28/30，整栏约缩小 17% */
+.ip .ys{gap:4rem}
+.ip .ys div{font-size:28rem;align-items:baseline}
+.ip .ys b{font-size:30rem}
+.ip .rt{font-size:30rem}
+.ipd .r{font-size:25rem}
+.ipd .pct{font-size:30rem;width:92rem}
+.ipd .cnt{font-size:20rem;min-width:30rem}
+/* 2) 滚动条：细轨道 + 小号深色三角 + 细蓝滑块，贴信息栏右缘（效果图中心距屏右 ≈ 28） */
+#info .in{grid-template-columns:1fr 34rem}
+#scroll{padding:10rem 14rem 10rem 0;gap:4rem}
+#scroll button{width:18rem;height:12rem;background-size:100% 100%}
+#scroll .track{width:14rem;margin:0 2rem}
+#scroll .thumb{left:0;right:0}
+/* 4) 底栏：效果图底栏高 105 → 设计 122；左右键 207×73、距顶 16、距侧 23；上拉键 154×49，压在底栏下缘（距底 26） */
+#bottombar{height:122rem}
+.bb{top:16rem;width:207rem;height:73rem}
+#btnL{left:23rem} #btnR{right:23rem}
+#tabUp{width:154rem;height:49rem;bottom:26rem}
+#tabUp::after{width:38rem;height:21rem}
 </style>
 
 <div id="app">
@@ -636,11 +662,12 @@ const MENU=[
   {n:'信息',ic:'info',c:'#E0383E',sub:[['作品记录',recordsDlg],['公司数据',todo]]},
   {n:'系统',ic:'system',c:'#5C6478',sub:[['保存',()=>{closeMenu();doSave();}],['重新开始',restartAsk]]},
 ];
-let menuSel=-1;
-function openMenu(){UI.menu=true;menuSel=-1;renderMenu();setBottom(null,{label:'返回',fn:closeMenu});}
+// menuSel：当前高亮项（打开菜单默认高亮第一项「开发」，照效果图）；subOpen：是否已展开该项的子菜单
+let menuSel=0,subOpen=false;
+function openMenu(){UI.menu=true;menuSel=0;subOpen=false;renderMenu();setBottom(null,{label:'返回',fn:closeMenu});}
 function closeMenu(){UI.menu=false;$('#menu').hidden=true;$('#submenu').hidden=true;if(!UI.dlg)idleBottom();}
-function renderMenu(){const m=$('#menu');m.hidden=false;m.replaceChildren(...MENU.map((it,i)=>h('button',{type:'button',class:'mitem'+(i===menuSel?' sel':''),onclick:()=>{menuSel=i;renderMenu();}},h('span',{class:'mico',style:`background:${it.c} url(assets/ui/ui_menu_icon_${it.ic}.png) center/100% 100% no-repeat`}),h('span',{},it.n))));
-  const sm=$('#submenu');if(menuSel<0){sm.hidden=true;return;}sm.hidden=false;
+function renderMenu(){const m=$('#menu');m.hidden=false;m.replaceChildren(...MENU.map((it,i)=>h('button',{type:'button',class:'mitem'+(i===menuSel?' sel':''),onclick:()=>{menuSel=i;subOpen=true;renderMenu();}},h('span',{class:'mico',style:`background:url(assets/ui/ui_menu_icon_${it.ic}.png) center/100% 100% no-repeat`}),h('span',{},it.n))));
+  const sm=$('#submenu');if(menuSel<0||!subOpen){sm.hidden=true;return;}sm.hidden=false;
   sm.replaceChildren(...MENU[menuSel].sub.map(([n,fn],j)=>h('button',{type:'button',class:'mitem'+(j===0?'':''),onclick:()=>{fn();}},h('span',{},n))));
   // 子菜单首项对齐选中项：用实际 DOM 位置（不要用设计像素 76，rem≠px 时会跑偏）；超出场景底部则上移
   const it=m.children[menuSel],pad=sm.firstChild?sm.firstChild.offsetTop:0,H=sm.offsetParent?sm.offsetParent.clientHeight:innerHeight;
