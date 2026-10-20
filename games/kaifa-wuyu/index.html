@@ -616,8 +616,11 @@ let menuSel=-1;
 function openMenu(){UI.menu=true;menuSel=-1;renderMenu();setBottom(null,{label:'返回',fn:closeMenu});}
 function closeMenu(){UI.menu=false;$('#menu').hidden=true;$('#submenu').hidden=true;if(!UI.dlg)idleBottom();}
 function renderMenu(){const m=$('#menu');m.hidden=false;m.replaceChildren(...MENU.map((it,i)=>h('button',{type:'button',class:'mitem'+(i===menuSel?' sel':''),onclick:()=>{menuSel=i;renderMenu();}},h('span',{class:'mico',style:`background:${it.c} url(assets/ui/ui_menu_icon_${it.ic}.png) center/100% 100% no-repeat`}),h('span',{},it.n))));
-  const sm=$('#submenu');if(menuSel<0){sm.hidden=true;return;}sm.hidden=false;sm.style.top=(m.offsetTop+menuSel*76)+'px';
-  sm.replaceChildren(...MENU[menuSel].sub.map(([n,fn],j)=>h('button',{type:'button',class:'mitem'+(j===0?'':''),onclick:()=>{fn();}},h('span',{},n))));}
+  const sm=$('#submenu');if(menuSel<0){sm.hidden=true;return;}sm.hidden=false;
+  sm.replaceChildren(...MENU[menuSel].sub.map(([n,fn],j)=>h('button',{type:'button',class:'mitem'+(j===0?'':''),onclick:()=>{fn();}},h('span',{},n))));
+  // 子菜单首项对齐选中项：用实际 DOM 位置（不要用设计像素 76，rem≠px 时会跑偏）；超出场景底部则上移
+  const it=m.children[menuSel],pad=sm.firstChild?sm.firstChild.offsetTop:0,H=sm.offsetParent?sm.offsetParent.clientHeight:innerHeight;
+  sm.style.top=Math.max(0,Math.min(m.offsetTop+it.offsetTop-pad,H-sm.offsetHeight-8))+'px';}
 
 // ---- 弹窗
 function openDlg(title,body,foot,bottom){UI.menu=false;$('#menu').hidden=true;$('#submenu').hidden=true;UI.dlg=title||'talk';
