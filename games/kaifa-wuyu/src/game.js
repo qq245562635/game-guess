@@ -542,10 +542,31 @@ function release(){const p=S.project;const G=GN[p.genre],T=TN[p.type],C=CN[p.cha
   lines.push(`「${G.n}」的玩家似乎很在意「${PN[G.like[0]]}」和「${PN[G.like[1]]}」，不太喜欢「${PN[G.hate]}」。`,`「${T.n}」题材适合多给「${PN[T.like[0]]}」和「${PN[T.like[1]]}」。`);
   [[G,0],[T,1]].forEach(([x,i])=>{if(lvAfter[i]>lvBefore[i])lines.push(`${x.n}升到「${LVN[lvAfter[i]-1]}」了，方针点数增加！`);});
   lines.push(`《${g.title}》在${C.n}发售了！`);
-  const rows=REVIEWERS.map((rv,i)=>h('div',{class:'rv'},h('span',{},rv.n),h('b',{class:'num'},scores[i]),h('small',{},['完全玩不下去','问题不少','中规中矩','值得一玩','非常出色'][Math.min(4,Math.floor((scores[i]-1)/2))])));
-  const tot=h('div',{class:'rtotal num'},`${total} / 40`);
-  openDlg('媒体评分',h('div',{style:'display:grid;gap:8rem'},h('div',{style:'text-align:center;font-size:30rem'},`《${g.title}》`),...rows,tot),okFoot('确定',()=>{closeDlg();talk(lines);}),[null,null]);
-  $('#dlg').onclick=null;rows.forEach((el,i)=>setTimeout(()=>el.classList.add('on'),300+i*400));setTimeout(()=>tot.classList.add('on'),2000);renderAll();}
+  const cmt=s=>['完全玩不下去','问题不少','中规中矩','值得一玩','非常出色'][Math.min(4,Math.floor((s-1)/2))];
+  const rows=REVIEWERS.map((rv,i)=>h('div',{class:'rv'},h('span',{},rv.n),h('b',{class:'num'},''),h('small',{},cmt(scores[i]))));
+  const totN=h('b',{class:'num'},''),tot=h('div',{class:'rtotal num'},totN,' / 40');
+  const title=h('div',{class:'rtitle'},`《${g.title}》`);
+  let done=false;const foot=okFoot('确定',()=>{if(!done){finish();return;}closeDlg();talk(lines);});
+  openDlg('媒体评分',h('div',{style:'display:grid;gap:8rem'},title,...rows,tot),foot,[null,null]);
+  $('#dlg').onclick=null;renderAll();
+  // 开奖式揭晓：标题 → 每位评审依次出现，分数在最终值附近来回跳、越跳越慢后落定 → 评语 → 总分滚动落定。
+  // 动画中点「确定」= 跳过，直接显示结果；再点才关闭。
+  const timers=[];const later=(fn,ms)=>timers.push(setTimeout(fn,ms));
+  const near=(v,lo,hi,span,prev)=>{let x;do{x=clamp(v+Math.round(rnd(-span,span)),lo,hi);}while(x===prev&&hi>lo);return x;};
+  // el 里的数字在 v 附近跳 dur 毫秒，间隔从 50ms 慢慢拉长到 ~260ms，最后落在 v
+  const roll=(el,v,lo,hi,span,dur,onLand)=>{let t=0,prev=-1;el.classList.add('rolling');
+    const step=()=>{const k=t/dur;if(k>=1){el.textContent=v;el.classList.remove('rolling');el.classList.add('land');onLand&&onLand();return;}
+      prev=near(v,lo,hi,span,prev);el.textContent=prev;const gap=50+210*k*k;t+=gap;later(step,gap);};step();};
+  const tier=s=>s>=8?'hi':s<=3?'lo':'';
+  const showRow=(el,i)=>{el.classList.add('on');roll(el.children[1],scores[i],1,10,2,1300,()=>{el.children[1].classList.add(tier(scores[i])||'mid');later(()=>el.classList.add('said'),200);});};
+  later(()=>title.classList.add('on'),150);
+  rows.forEach((el,i)=>later(()=>showRow(el,i),600+i*1900));
+  const tStart=600+rows.length*1900+300;
+  later(()=>{tot.classList.add('on');roll(totN,total,0,40,4,1800,()=>{tot.classList.add('land',total>=30?'hi':total<20?'lo':'mid');done=true;foot.firstChild.textContent='确定';});},tStart);
+  function finish(){timers.forEach(clearTimeout);timers.length=0;done=true;title.classList.add('on');
+    rows.forEach((el,i)=>{const b=el.children[1];b.textContent=scores[i];b.classList.remove('rolling');b.classList.add(tier(scores[i])||'mid');el.classList.add('on','said');});
+    totN.textContent=total;totN.classList.remove('rolling');tot.classList.add('on','land',total>=30?'hi':total<20?'lo':'mid');foot.firstChild.textContent='确定';}
+  foot.firstChild.textContent='跳过';}
 // ---- 其他弹窗（只读）
 function staffDlg(){openDlg('职员一览',h('div',{},h('div',{class:'srow',style:'color:var(--ink-soft)'},h('span',{},'姓名'),...['程序','剧本','画面','声音'].map(t=>h('b',{style:'font-weight:500'},t))),
   ...S.staff.map(s=>h('div',{class:'srow'},h('span',{},`${s.name}（${JOBN[s.job]}）`),...['prog','scen','gfx','snd'].map(k=>h('b',{class:'num'},s[k]))))),okFoot('确定',closeDlg),[null,{label:'返回',fn:closeDlg}]);$('#dlg').onclick=null;}
