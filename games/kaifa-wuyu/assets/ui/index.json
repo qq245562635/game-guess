@@ -27,5 +27,8 @@
   "ui_staff_2_a",
   "ui_staff_2_b",
   "ui_staff_3_a",
-  "ui_staff_3_b"
+  "ui_staff_3_b",
+  "ui_ad_list",
+  "ui_ad_row",
+  "ui_work_box"
 ]
