@@ -346,7 +346,7 @@ const MENU=[
   {n:'职员',ic:'staff',c:'#E2701A',sub:[['职员一览',staffDlg],['招聘',todo],['培训',()=>trainPick(0)]]},
   {n:'行动',ic:'action',c:'#2A7BDB',sub:[['宣传',adDlg],['取得授权',todo]]},
   {n:'信息',ic:'info',c:'#E0383E',sub:[['作品记录',recordsDlg],['公司数据',todo]]},
-  {n:'系统',ic:'system',c:'#5C6478',sub:[['保存',()=>{closeMenu();doSave();}],['重新开始',restartAsk]]},
+  {n:'系统',ic:'system',c:'#5C6478',sub:[['保存',()=>{closeMenu();doSave();}],['声音',soundDlg],['重新开始',restartAsk]]},
 ];
 // menuSel：当前高亮项（打开菜单默认高亮第一项「开发」，照效果图）；subOpen：是否已展开该项的子菜单
 let menuSel=0,subOpen=false;
@@ -366,7 +366,7 @@ function openDlg(title,body,foot,bottom){UI.menu=false;$('#menu').hidden=true;$(
 function closeDlg(){UI.dlg=null;$('#dlg').hidden=true;idleBottom();renderInfo();}
 const okFoot=(label,fn)=>h('div',{class:'dlg-foot'},h('button',{type:'button',onclick:fn},label));
 // 秘书对话框：一组台词，点一下翻页，最后执行 done
-function talk(lines,done){let i=0;const show=()=>{const box=h('div',{},h('div',{class:'talkbox'},lines[i]),h('div',{class:'speaker'},h('span',{},SECRETARY),h('span',{class:'face'})));
+function talk(lines,done){let i=0;const show=()=>{SND.sfx('talk');const box=h('div',{},h('div',{class:'talkbox'},lines[i]),h('div',{class:'speaker'},h('span',{},SECRETARY),h('span',{class:'face'})));
     openDlg('对话框',box,null,null);setTimeout(()=>{$('#dlg').onclick=()=>{i++;$('#dlg').onclick=null;if(i<lines.length)show();else{closeDlg();done&&done();}};},0);};show();}
 // 选择列表
 function picker(title,rows,onPick,back){openDlg(title,h('div',{style:'display:grid'},...rows.map(r=>h('button',{type:'button',class:'prow'+(r.sel?' sel':''),disabled:!!r.disabled,onclick:e=>{e.stopPropagation();onPick(r.v);}},h('span',{class:'pl'},r.ico?ico(r.ico):null,r.label),r.sub?h('small',{},r.sub):null))),null,[null,back?{label:'返回',fn:back}:null]);$('#dlg').onclick=null;}
@@ -387,7 +387,7 @@ function planForm(){const cost=planCost(plan);
       row('内容',TN[plan.type].n,TN[plan.type],LVN[lvOf(plan.type)-1],()=>listPick('选择内容',TYPES,plan.type,t=>`${LVN[lvOf(t.id)-1]} · ${fmt(t.fee)}金`,v=>plan.type=v)),
       row('开发方针',DN[plan.dev].n,null,null,()=>listPick('开发方针',DEVPLANS,plan.dev,d=>`${d.d} · 费用×${d.fee}`,v=>plan.dev=v)),
       h('div',{class:'staffstrip'},...S.staff.map(s=>STAFF_ART[s.look%CHAR_N+'a']?h('img',{class:'smini',src:staffArtSrc(s,'a'),alt:''}):h('i',{style:`background:${SHIRTS[s.look%SHIRTS.length]}`})))));
-  openDlg('新企划书',body,okFoot('确定',()=>{if(S.money<planCost(plan)){talk(['资金不够开发费用了……'],planForm);return;}clampPolicy();policyDlg();}),[null,{label:'返回',fn:()=>{plan=null;closeDlg();}}]);$('#dlg').onclick=null;}
+  openDlg('新企划书',body,okFoot('确定',()=>{if(S.money<planCost(plan)){SND.sfx('deny');talk(['资金不够开发费用了……'],planForm);return;}clampPolicy();policyDlg();}),[null,{label:'返回',fn:()=>{plan=null;closeDlg();}}]);$('#dlg').onclick=null;}
 
 // ---- 此次游戏的方针（界面②）
 const policyBudget=()=>10+lvOf(plan.genre)+lvOf(plan.type);
@@ -447,7 +447,7 @@ function startProject(leaderId){const P=plan;const G=GN[P.genre],D=DN[P.dev];con
   const weeks=Math.round(G.wk*D.wk*(1+P.policy.detail*.02));
   const title=TN[P.type].n+pick(['大冒险','传说','物语','大作战','研究所','王国']);
   S.project={title,chan:P.chan,genre:P.genre,type:P.type,dev:P.dev,policy:P.policy,weeks,cost,progress:0,fun:0,creat:0,gfx:0,snd:0,bugs:0,hype:0,leaders:{plan:leaderId},awaiting:null,review:0};plan=null;
-  const s=S.staff.find(x=>x.id===leaderId);UI.pk='dev';renderAll();
+  const s=S.staff.find(x=>x.id===leaderId);UI.pk='dev';renderAll();SND.sfx('start');
   leaderWork('plan',s,ev=>{const lines=[`《${title}》开始开发了！预计 ${weeks} 周左右。`,...ev,'大家加油！'];renderAll();talk(lines);});}
 // ================= 负责人工作画面（照原作「正在整理企划」）
 // 选好负责人后弹出：左边负责人在工位上敲键盘，右边「第 N 次」逐次累加四项点数，最后说一句收尾台词。
@@ -463,7 +463,7 @@ function deskScene(s){const W=220,H=200,ss=2,cv=h('canvas',{class:'wdesk',width:
   const src=k=>overrides[k]||(deskScene.c[k]||(deskScene.c[k]=paint(k)));const put=(k,x,y)=>{const m=M[k];g.drawImage(src(k),x-m.ox,y-m.oy,m.w,m.h);};
   const dx=130,dy=148,sx=dx-41.6,sy=dy+20.8;let f=0,alive=true;
   const draw=()=>{g.clearRect(0,0,W,H);put('desk',dx,dy);put('chair',sx,sy);put(`char_${s.look%CHAR_N}_back_${f?'b':'a'}`,sx,sy);};
-  draw();const iv=setInterval(()=>{if(!cv.isConnected||!alive){clearInterval(iv);return;}f^=1;draw();},220);
+  draw();const iv=setInterval(()=>{if(!cv.isConnected||!alive){clearInterval(iv);return;}f^=1;draw();if(Math.random()<.7)SND.sfx('type');},220);
   return {el:cv,stop:()=>{alive=false;f=0;draw();}};}
 deskScene.c={};
 function leaderWork(kind,s,done){const p=S.project,W=WORK[kind],G=GN[p.genre],T=TN[p.type];
@@ -489,21 +489,21 @@ function leaderWork(kind,s,done){const p=S.project,W=WORK[kind],G=GN[p.genre],T=
   const body=h('div',{class:'wbody'},h('div',{class:'wsub'},W.t),h('div',{class:'wbox'},stage,h('div',{class:'wright'},round,stats)),say);
   openDlg(s.name,body,null,[null,null]);$('#dlg').onclick=null;
   const R=Math.max(WORK_ROUND_MIN,WORK_TOTAL_MS/n),tickMs=R*.7/WORK_TICKS;
-  const bump=k=>{nums[k].textContent=shown[k];nums[k].classList.remove('bump');void nums[k].offsetWidth;nums[k].classList.add('bump');};
-  const popIcon=k=>{const pi=icon(k,'wpop ico-s');pi.style.left=(28+Math.random()*24)+'%';stage.append(pi);pi.addEventListener('animationend',()=>pi.remove());};
+  const bump=k=>{SND.sfx('tick',shown.fun+shown.creat+shown.gfx+shown.snd);nums[k].textContent=shown[k];nums[k].classList.remove('bump');void nums[k].offsetWidth;nums[k].classList.add('bump');};
+  const popIcon=k=>{SND.sfx('pop',k);const pi=icon(k,'wpop ico-s');pi.style.left=(28+Math.random()*24)+'%';stage.append(pi);pi.addEventListener('animationend',()=>pi.remove());};
   let i=0;const next=()=>{if(!body.isConnected)return;if(i<steps.length){const st=steps[i++];round.textContent=`第${i}次`;
       // 本次的点数分 WORK_TICKS 下加完，每下冒一个刚涨的那项图标
       const part=STATK.map(k=>{const a=[];let l=st[k];for(let j=0;j<WORK_TICKS;j++){const d=j===WORK_TICKS-1?l:Math.min(l,Math.round(st[k]/WORK_TICKS*rnd(.5,1.5)));a.push(d);l-=d;}return a;});
       for(let j=0;j<WORK_TICKS;j++)setTimeout(()=>{if(!body.isConnected)return;const up=[];STATK.forEach((k,ki)=>{const d=part[ki][j];if(d>0){shown[k]+=d;bump(k);up.push(k);}});if(up.length)popIcon(pick(up));},250+j*tickMs);
       setTimeout(next,R);return;}
-    scene.stop();say.textContent=quote;for(const k of STATK)p[k]+=gain[k];renderInfo();
+    scene.stop();say.textContent=quote;SND.sfx(insp?'unlock':tired?'bad':'good');for(const k of STATK)p[k]+=gain[k];renderInfo();
     setTimeout(()=>{$('#dlg').onclick=()=>{$('#dlg').onclick=null;closeDlg();done(ev);};},0);};
   setTimeout(next,600);}
 function leaderAsk(kind){const p=S.project;
   talk([`《${p.title}》进入${kind==='gfx'?'画面':'声音'}制作阶段了。`,'要交给谁负责？'],()=>staffPick(kind,id=>{p.leaders[kind]=id;const s=S.staff.find(x=>x.id===id);
     leaderWork(kind,s,ev=>{p.awaiting=null;renderInfo();if(ev.length)talk(ev);});},null));}
 // 解锁提示
-function checkUnlocks(){const fresh=unlockedIds().filter(id=>!S.unl.includes(id));if(!fresh.length)return;S.unl.push(...fresh);
+function checkUnlocks(){const fresh=unlockedIds().filter(id=>!S.unl.includes(id));if(!fresh.length)return;S.unl.push(...fresh);SND.sfx('unlock');
   talk(fresh.map(id=>CN[id]?`${CN[id].n}邀请我们入驻了！以后可以在那里发售。`:GN[id]?`新的类型「${GN[id].n}」可以开发了。`:TN[id]?`新的内容「${TN[id].n}」可以开发了。`:`新的开发方针「${DN[id].n}」可以选了。`));}
 // ================= 模拟
 let simT=0,weekAcc=0;const pending=[];
@@ -533,7 +533,7 @@ function projectWeek(){const p=S.project;const D=DN[p.dev],G=GN[p.genre];let pro
   if(!p.leaders.gfx&&p.progress>=40){p.progress=Math.max(before,40);p.awaiting='gfx';schedule(.5,()=>leaderAsk('gfx'));}
   else if(!p.leaders.snd&&p.progress>=75){p.progress=Math.max(before,75);p.awaiting='snd';schedule(.5,()=>leaderAsk('snd'));}
   else if(p.progress>=100){p.awaiting='done';const C=CN[p.chan];
-    schedule(.5,()=>talk([`《${p.title}》完成了！`,C.rev?`提交到${C.n}审核，大约要 ${C.rev} 周。`:'马上发售吧。'],()=>{if(C.rev){p.awaiting='review';p.review=C.rev;renderInfo();}else release();}));}}
+    schedule(.5,()=>SND.sfx('complete')||talk([`《${p.title}》完成了！`,C.rev?`提交到${C.n}审核，大约要 ${C.rev} 周。`:'马上发售吧。'],()=>{if(C.rev){p.awaiting='review';p.review=C.rev;renderInfo();}else release();}));}}
 function idleWeek(){for(const s of S.staff)if(Math.random()<.2){const [x,y]=seatWorld(s.seat);schedule(rnd(0,WEEK_SEC),()=>isSeated(s.id)&&popWorld(x,y-104,pick(IDLE_TALK),'',true));}}
 // 销量曲线（相对首周）：爆发段 .55×.75^w 几周内消退，长尾段 .45×.93^w 慢慢走低。
 // 和旧曲线 .85^w 比：首周相同，总销量约 1.3 倍，在售时间约长 60%。
@@ -543,7 +543,7 @@ function salesWeek(){let units=0,money=0;for(const g of S.games){if(!g.onSale)co
     const u=Math.round(aud*Math.pow(g.total/40,2.2)*3*(g.bonus||1)*(1+(g.ad||0))*saleCurve(g.weeks)*rnd(.9,1.1));g.weeks++;if(g.ad){g.ad*=AD_DECAY;if(g.ad<.02)delete g.ad;}
     if(u<15||g.weeks>SALE_MAX_WEEKS){g.onSale=false;continue;}(g.hist||(g.hist=[])).push(u);const m=Math.round(u*PRICE*(g.cut??1));
     g.units+=u;g.rev=(g.rev||0)+m;units+=u;money+=m;S.fans+=Math.round(u*.06*(g.total/40)*(g.fanMul||1));}
-  if(units){addMoney(money);S.ys.units+=units;const [x,y]=tc(3,2.5);schedule(WEEK_SEC*.5,()=>popWorld(x,y-60,`销售 ${fmt(units)} +${fmt(money)}金`,'var(--gold)'));}}
+  if(units){addMoney(money);S.ys.units+=units;const [x,y]=tc(3,2.5);schedule(WEEK_SEC*.5,()=>{SND.sfx('coin');popWorld(x,y-60,`销售 ${fmt(units)} +${fmt(money)}金`,'var(--gold)');});}}
 function release(){const p=S.project;const G=GN[p.genre],T=TN[p.type],C=CN[p.chan];
   const E=180*(1+.14*(S.year-1));const r={fun:p.fun/E,creat:p.creat/E,gfx:p.gfx/E,snd:p.snd/E};
   const budget=10+lvOf(p.genre)+lvOf(p.type);
@@ -578,14 +578,15 @@ function release(){const p=S.project;const G=GN[p.genre],T=TN[p.type],C=CN[p.cha
   // el 里的数字在 v 附近跳 dur 毫秒，间隔从 50ms 慢慢拉长到 ~260ms，最后落在 v
   const roll=(el,v,lo,hi,span,dur,onLand)=>{let t=0,prev=-1;el.classList.add('rolling');
     const step=()=>{const k=t/dur;if(k>=1){el.textContent=v;el.classList.remove('rolling');el.classList.add('land');onLand&&onLand();return;}
-      prev=near(v,lo,hi,span,prev);el.textContent=prev;const gap=50+210*k*k;t+=gap;later(step,gap);};step();};
+      prev=near(v,lo,hi,span,prev);el.textContent=prev;SND.sfx('roll');const gap=50+210*k*k;t+=gap;later(step,gap);};step();};
   const tier=s=>s>=8?'hi':s<=3?'lo':'';
-  const showRow=(el,i)=>{el.classList.add('on');roll(el.children[1],scores[i],1,10,2,1300,()=>{el.children[1].classList.add(tier(scores[i])||'mid');later(()=>el.classList.add('said'),200);});};
+  let said=false;const verdict=()=>{if(said)return;said=true;SND.sfx(total>=30?'fanfare':total<20?'bad':'good');};
+  const showRow=(el,i)=>{el.classList.add('on');roll(el.children[1],scores[i],1,10,2,1300,()=>{SND.sfx('land',tier(scores[i]));el.children[1].classList.add(tier(scores[i])||'mid');later(()=>el.classList.add('said'),200);});};
   later(()=>title.classList.add('on'),150);
   rows.forEach((el,i)=>later(()=>showRow(el,i),600+i*1900));
   const tStart=600+rows.length*1900+300;
-  later(()=>{tot.classList.add('on');roll(totN,total,0,40,4,1800,()=>{tot.classList.add('land',total>=30?'hi':total<20?'lo':'mid');done=true;foot.firstChild.textContent='确定';});},tStart);
-  function finish(){timers.forEach(clearTimeout);timers.length=0;done=true;title.classList.add('on');
+  later(()=>{tot.classList.add('on');roll(totN,total,0,40,4,1800,()=>{verdict();tot.classList.add('land',total>=30?'hi':total<20?'lo':'mid');done=true;foot.firstChild.textContent='确定';});},tStart);
+  function finish(){timers.forEach(clearTimeout);timers.length=0;done=true;verdict();title.classList.add('on');
     rows.forEach((el,i)=>{const b=el.children[1];b.textContent=scores[i];b.classList.remove('rolling');b.classList.add(tier(scores[i])||'mid');el.classList.add('on','said');});
     totN.textContent=total;totN.classList.remove('rolling');tot.classList.add('on','land',total>=30?'hi':total<20?'lo':'mid');foot.firstChild.textContent='确定';}
   foot.firstChild.textContent='跳过';}
@@ -636,10 +637,10 @@ function doTrain(i,c){const s=S.staff[i];addMoney(-c.fee);const gains=trainGains
   // 每项分几次往上跳，并在数字旁冒「+n」
   const steps=[];for(const k of keys){let left=gains[k];const n=Math.min(left,3);for(let j=0;j<n;j++){const d=j===n-1?left:Math.max(1,Math.round(gains[k]/n));left-=d;steps.push([k,d]);}}
   steps.sort(()=>Math.random()-.5).forEach(([k,d],j)=>setTimeout(()=>{const row=box.querySelector(`.cs[data-k="${k}"]`);if(!row)return;const b=row.querySelector('b');b.textContent=+b.textContent+d;
-    row.classList.add('up');const pl=h('em',{class:'tplus'},'+'+d);row.append(pl);pl.addEventListener('animationend',()=>pl.remove());},DUR*(j+1)/(steps.length+1)));
+    SND.sfx('plus');row.classList.add('up');const pl=h('em',{class:'tplus'},'+'+d);row.append(pl);pl.addEventListener('animationend',()=>pl.remove());},DUR*(j+1)/(steps.length+1)));
   const tick=now=>{const u=clamp((now-t0)/DUR,0,1);fill.style.width=(u*100)+'%';if(u<1)requestAnimationFrame(tick);else done();};requestAnimationFrame(tick);
   function done(){for(const k of STAFFK){const row=box.querySelector(`.cs[data-k="${k}"] b`);if(row)row.textContent=s[k];}
-    msg.textContent=keys.length?'培训完成！'+keys.map(k=>`${SKN[k][0]}+${gains[k]}`).join('  '):c.sta<0?'泡完温泉，体力回满了！':'培训完成！这次没什么收获…';
+    SND.sfx(keys.length||c.sta<0?'levelup':'bad');msg.textContent=keys.length?'培训完成！'+keys.map(k=>`${SKN[k][0]}+${gains[k]}`).join('  '):c.sta<0?'泡完温泉，体力回满了！':'培训完成！这次没什么收获…';
     const next=()=>trainPick(i);setBottom(null,{label:'确定',fn:next});setTimeout(()=>{$('#dlg').onclick=next;},0);}}
 // ---- 宣传：花钱涨粉丝，并让在售作品接下来几周销量上涨。只有游戏上线（在售）后才能宣传
 // fee=费用；fans=基础涨粉；boost=在售作品销量加成（每周衰减 AD_DECAY）；un=解锁条件
@@ -668,14 +669,18 @@ function doAd(a){if(S.money<a.fee)return;addMoney(-a.fee);const games=onSale();
   const fans=Math.round(a.fans*rnd(.8,1.2)*(.5+best/40));S.fans+=fans;
   // 同一部作品连续宣传，边际效果递减
   for(const g of games)g.ad=(g.ad||0)+a.boost/(1+(g.ad||0));
-  save();renderAll();const [x,y]=tc(3,2.5);popWorld(x,y-60,`粉丝 +${fmt(fans)}`,'var(--gold)');
+  save();renderAll();SND.sfx('promo');const [x,y]=tc(3,2.5);popWorld(x,y-60,`粉丝 +${fmt(fans)}`,'var(--gold)');
   const names=games.slice(0,2).map(g=>`《${g.title}》`).join('、')+(games.length>2?'等作品':'');
   talk([`${a.n}，粉丝增加了 ${fmt(fans)} 人！`,`${names}接下来几周的销量会上涨。`]);}
 function recordsDlg(){openDlg('作品记录',S.games.length?h('div',{},...S.games.map(g=>h('div',{class:'srow',style:'grid-template-columns:1fr 90rem 140rem'},h('span',{},`《${g.title}》`,h('small',{style:'color:var(--ink-soft);font-size:20rem;margin-left:8rem'},(CN[g.chan]||CN.web).n)),h('b',{class:'num'},`${g.total}分`),h('b',{class:'num'},fmt(g.units))))):h('div',{style:'font-size:30rem;text-align:center;padding:30rem'},'还没有发售过作品'),okFoot('确定',closeDlg),[null,{label:'返回',fn:closeDlg}]);$('#dlg').onclick=null;}
+// 声音设置：音乐 / 音效各自开关，记在本地
+function soundDlg(){const row=(k,n)=>({v:k,label:`${n}　${SND.get(k)?'开':'关'}`,sel:SND.get(k)});
+  picker('声音',[row('mus','音乐'),row('sfx','音效')],k=>{SND.set(k,!SND.get(k));soundDlg();},closeDlg);}
+document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('button,.ar');if(b&&!b.disabled)SND.sfx('tap');},true);
 function restartAsk(){picker('重新开始？',[{v:1,label:'清空进度，从 1 年 4 月开始'},{v:0,label:'算了'}],v=>{closeDlg();if(v)restartNow();},closeDlg);}
-function restartNow(){newGame();save();renderAll();toast('新的公司成立了');}
+function restartNow(){newGame();save();renderAll();SND.sfx('start');toast('新的公司成立了');}
 // 月底发完工资还是负数：秘书提醒，可以直接重开
-function brokeAsk(){talk(['社长，发完工资后资金变成负数了……','要不要从头再来？'],()=>picker('资金不足',[{v:1,label:'重新开始',sub:'清空进度，从 1 年 4 月开始'},{v:0,label:'继续经营',sub:'等新作卖钱'}],v=>{closeDlg();if(v)restartNow();},null));}
+function brokeAsk(){SND.sfx('bad');talk(['社长，发完工资后资金变成负数了……','要不要从头再来？'],()=>picker('资金不足',[{v:1,label:'重新开始',sub:'清空进度，从 1 年 4 月开始'},{v:0,label:'继续经营',sub:'等新作卖钱'}],v=>{closeDlg();if(v)restartNow();},null));}
 
 // ================= 信息栏
 // 信息栏分页：sale = 最新在售作品的每周销量柱状图；dev = 新作开发进度；year = 全年销售/收益
@@ -701,12 +706,12 @@ function renderInfo(){const pg=$('#ipage');const p=S.project;const pages=infoPag
 $('#pgUp').onclick=()=>{const ps=infoPages();UI.pk=ps[Math.max(0,ps.indexOf(UI.pk)-1)];renderInfo();};
 $('#pgDn').onclick=()=>{const ps=infoPages();UI.pk=ps[Math.min(ps.length-1,ps.indexOf(UI.pk)+1)];renderInfo();};
 function renderTop(){$('#date').firstChild.textContent=`${S.year}年 ${S.month}月 ${S.week}周 `;$('#tick').classList.toggle('blink',!blocking());$('#money').textContent=fmt(S.money)+'金';$('#money').style.color=S.money<0?'var(--neg)':'';$('#badgeNum').textContent=fmt(S.fans);}
-function renderAll(){renderTop();renderInfo();}
+function renderAll(){renderTop();renderInfo();SND.music(S.project?'dev':'office');}
 
 // ================= 杂项
-function popWorld(wx,wy,text,color,talkStyle,ik){const [x,y]=w2s(wx,wy);const el=h('div',{class:'pop'+(talkStyle?' talk':'')+(ik?' ipop':''),style:`left:${x}px;top:${y}px;--c:${color||'#3651C9'}`},ik?icon(ik,'pico','stat','transparent'):null,text);$('#fx').append(el);el.addEventListener('animationend',()=>el.remove());}
+function popWorld(wx,wy,text,color,talkStyle,ik){const [x,y]=w2s(wx,wy);const el=h('div',{class:'pop'+(talkStyle?' talk':'')+(ik?' ipop':''),style:`left:${x}px;top:${y}px;--c:${color||'#3651C9'}`},ik?icon(ik,'pico','stat','transparent'):null,text);$('#fx').append(el);el.addEventListener('animationend',()=>el.remove());if(ik)SND.sfx(ik==='bug'?'bug':'pop',ik);}
 const KEY='kaifa_wuyu_v2';
-function doSave(){try{localStorage.setItem(KEY,JSON.stringify(S));toast('已保存');}catch(e){toast('这个浏览器不能本地存档');}}
+function doSave(){try{localStorage.setItem(KEY,JSON.stringify(S));toast('已保存');SND.sfx('save');}catch(e){toast('这个浏览器不能本地存档');}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&(s.v===2||s.v===3)){S=migrate(s);if(!S.combos)S.combos=Object.fromEntries(S.games.map(g=>[g.genre+'|'+g.type,true]));return true;}}catch(e){}return false;}
 $('#sidetab').onclick=()=>{if(!blocking())talk(['这里以后放快捷列表（职员状态、在售作品）。']);};

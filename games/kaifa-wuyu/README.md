@@ -16,6 +16,10 @@
 
 其他菜单项（委托开发、招聘、授权、公司数据）先占位，点了由秘书提示「还在规划中」。
 
+## 声音
+
+音乐和音效全部用 WebAudio 现场合成（`src/audio.js`），不需要音频文件：平时一首轻 bossa，开发中换成明快的 pop；按钮、秘书说话、冒点数、评分滚动、大卖号角、销售入账等都有音效。「菜单 → 系统 → 声音」可分别开关。换正式音频的 key 和规格见 `AUDIO.md`，试听：`docs/audio-preview.mp3`（前 22 秒平时 BGM，接着开发中 BGM，最后是全部音效）。
+
 ## 美术
 
 - UI：`UI需求.md`，各界面状态截图在 `docs/ui/`。
@@ -26,11 +30,13 @@
 
 ```
 index.html          构建产物，单文件可玩版本
+src/audio.js        音乐和音效（WebAudio 合成，可被 assets/audio/ 里的文件替换）
 src/game.js         渲染、模拟、UI 逻辑
 src/game.src.html   布局与样式，构建时内联 src/game.js
-tools/build.py      生成 index.html：python3 tools/build.py
+tools/build.py      生成 index.html（内联 audio.js + game.js）：python3 tools/build.py
 策划案-新企划.md      新企划流程策划案（渠道/类型/内容/开发方针/方针/制作人）
 UI需求.md            给 Codex 的 UI 出图需求
 ASSETS.md           给 Codex 的场景出图需求
+AUDIO.md            音乐 / 音效清单与替换规格
 docs/ui/            各界面状态截图
 ```
