@@ -328,7 +328,7 @@ const todo=()=>talk(['这个功能还在规划中，先把开发新作这条线�
 const MENU=[
   {n:'开发',ic:'dev',c:'#3FAF4A',sub:[['新企划',newPlan],['委托开发',todo]]},
   {n:'职员',ic:'staff',c:'#E2701A',sub:[['职员一览',staffDlg],['招聘',todo],['培训',()=>trainPick(0)]]},
-  {n:'行动',ic:'action',c:'#2A7BDB',sub:[['宣传',todo],['取得授权',todo]]},
+  {n:'行动',ic:'action',c:'#2A7BDB',sub:[['宣传',adDlg],['取得授权',todo]]},
   {n:'信息',ic:'info',c:'#E0383E',sub:[['作品记录',recordsDlg],['公司数据',todo]]},
   {n:'系统',ic:'system',c:'#5C6478',sub:[['保存',()=>{closeMenu();doSave();}],['重新开始',restartAsk]]},
 ];
@@ -471,7 +471,7 @@ function projectWeek(){const p=S.project;const D=DN[p.dev],G=GN[p.genre];let pro
 function idleWeek(){for(const s of S.staff)if(Math.random()<.2){const [x,y]=seatWorld(s.seat);schedule(rnd(0,WEEK_SEC),()=>isSeated(s.id)&&popWorld(x,y-104,pick(IDLE_TALK),'',true));}}
 function salesWeek(){let units=0,money=0;for(const g of S.games){if(!g.onSale)continue;const C=CN[g.chan]||CN.web;
     const aud=300+S.fans*.3+share(C)*CH_BASE;
-    const u=Math.round(aud*Math.pow(g.total/40,2.2)*3*(g.bonus||1)*Math.pow(.85,g.weeks)*rnd(.9,1.1));g.weeks++;
+    const u=Math.round(aud*Math.pow(g.total/40,2.2)*3*(g.bonus||1)*(1+(g.ad||0))*Math.pow(.85,g.weeks)*rnd(.9,1.1));g.weeks++;if(g.ad){g.ad*=AD_DECAY;if(g.ad<.02)delete g.ad;}
     if(u<15||g.weeks>30){g.onSale=false;continue;}const m=Math.round(u*PRICE*(g.cut??1));
     g.units+=u;g.rev=(g.rev||0)+m;units+=u;money+=m;S.fans+=Math.round(u*.06*(g.total/40)*(g.fanMul||1));}
   if(units){addMoney(money);S.ys.units+=units;const [x,y]=tc(3,2.5);schedule(WEEK_SEC*.5,()=>popWorld(x,y-60,`销售 ${fmt(units)} +${fmt(money)}金`,'var(--gold)'));}}
@@ -551,6 +551,36 @@ function doTrain(i,c){const s=S.staff[i];addMoney(-c.fee);const gains=trainGains
   function done(){for(const k of STAFFK){const row=box.querySelector(`.cs[data-k="${k}"] b`);if(row)row.textContent=s[k];}
     msg.textContent=keys.length?'培训完成！'+keys.map(k=>`${SKN[k][0]}+${gains[k]}`).join('  '):c.sta<0?'泡完温泉，体力回满了！':'培训完成！这次没什么收获…';
     const next=()=>trainPick(i);setBottom(null,{label:'确定',fn:next});setTimeout(()=>{$('#dlg').onclick=next;},0);}}
+// ---- 宣传：花钱涨粉丝，并让在售作品接下来几周销量上涨。只有游戏上线（在售）后才能宣传
+// fee=费用；fans=基础涨粉；boost=在售作品销量加成（每周衰减 AD_DECAY）；un=解锁条件
+const ADS=[
+  {id:'media',n:'在游戏媒体发软文',fee:300,fans:60,boost:.15},
+  {id:'feed',n:'投放信息流广告',fee:500,fans:120,boost:.25},
+  {id:'video',n:'找主播短视频推荐',fee:800,fans:220,boost:.4},
+  {id:'demo',n:'发布试玩版',fee:1500,fans:450,boost:.7,un:'g:2'},
+  {id:'expo',n:'漫展摆摊宣传',fee:2500,fans:800,boost:1,un:'y:2'}];
+const AD_DECAY=.7;
+const onSale=()=>S.games.filter(g=>g.onSale);
+function adDlg(){if(!onSale().length){closeMenu();talk(['现在没有在售的作品。','游戏上线了才能宣传哦。']);return;}
+  let sel=null;
+  const render=()=>{const rows=ADS.map(a=>{const u=cond(a.un),poor=S.money<a.fee,dis=!u.ok||poor;
+      return h('button',{type:'button',class:'prow adrow'+(sel===a.id?' sel':''),disabled:dis,onclick:()=>{sel=a.id;render();}},
+        h('span',{class:'pl'},a.n),h('small',{class:'num'},!u.ok?u.txt:fmt(a.fee)+'金'));});
+    const body=h('div',{class:'adbox'},
+      h('div',{class:'adhead'},h('span',{},'宣传方式'),h('span',{},'费用')),
+      h('div',{class:'adlist'},...rows),
+      h('div',{class:'chint'},'知名度与公司粉丝产生变化'));
+    const foot=okFoot('确定',()=>{if(sel)doAd(ADS.find(a=>a.id===sel));});foot.firstChild.disabled=!sel;
+    openDlg('宣传方式 1/1',body,foot,[null,{label:'返回',fn:closeDlg}]);$('#dlg').onclick=null;};
+  render();}
+function doAd(a){if(S.money<a.fee)return;addMoney(-a.fee);const games=onSale();
+  const best=Math.max(...games.map(g=>g.total));
+  const fans=Math.round(a.fans*rnd(.8,1.2)*(.5+best/40));S.fans+=fans;
+  // 同一部作品连续宣传，边际效果递减
+  for(const g of games)g.ad=(g.ad||0)+a.boost/(1+(g.ad||0));
+  save();renderAll();const [x,y]=tc(3,2.5);popWorld(x,y-60,`粉丝 +${fmt(fans)}`,'var(--gold)');
+  const names=games.slice(0,2).map(g=>`《${g.title}》`).join('、')+(games.length>2?'等作品':'');
+  talk([`${a.n}，粉丝增加了 ${fmt(fans)} 人！`,`${names}接下来几周的销量会上涨。`]);}
 function recordsDlg(){openDlg('作品记录',S.games.length?h('div',{},...S.games.map(g=>h('div',{class:'srow',style:'grid-template-columns:1fr 90rem 140rem'},h('span',{},`《${g.title}》`,h('small',{style:'color:var(--ink-soft);font-size:20rem;margin-left:8rem'},(CN[g.chan]||CN.web).n)),h('b',{class:'num'},`${g.total}分`),h('b',{class:'num'},fmt(g.units))))):h('div',{style:'font-size:30rem;text-align:center;padding:30rem'},'还没有发售过作品'),okFoot('确定',closeDlg),[null,{label:'返回',fn:closeDlg}]);$('#dlg').onclick=null;}
 function restartAsk(){picker('重新开始？',[{v:1,label:'清空进度，从 1 年 4 月开始'},{v:0,label:'算了'}],v=>{closeDlg();if(v)restartNow();},closeDlg);}
 function restartNow(){newGame();save();renderAll();toast('新的公司成立了');}
