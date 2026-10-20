@@ -348,6 +348,33 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 .mag-ico.art{background-color:transparent;border-radius:0;opacity:1}
 .mag-paper{border:2rem solid #CBD3EA;border-radius:10rem;background:#fff;padding:26rem 34rem;min-height:300rem}
 .mag-paper p{margin:0 0 6rem;font-size:32rem;line-height:1.8;text-indent:2em}
+/* ===== 标题画面：收起顶栏和信息栏，场景当背景，上方 Logo + 中间三个按钮（素材交付前用 CSS） ===== */
+.titlemode #topbar,.titlemode #info,.titlemode #badge,.titlemode #sidetab,.titlemode #tabUp{display:none}
+#title{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;padding-top:14%;gap:9%;background:linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,0) 45%)}
+#dlg{z-index:6}
+#toast{z-index:7}
+.tlogo{display:grid;justify-items:center;gap:6rem;padding:22rem 44rem;border-radius:20rem;background:rgba(255,248,234,.92);border:4rem solid var(--frame-dark);box-shadow:0 8rem 0 rgba(7,92,99,.35)}
+.tlogo b{font-size:84rem;letter-spacing:8rem;color:var(--frame-dark);-webkit-text-stroke:2rem #fff;paint-order:stroke}
+.tlogo small{font-size:24rem;letter-spacing:6rem;color:#E2701A;font-weight:700}
+.tbtns{display:grid;gap:22rem}
+.tbtn{width:340rem;height:84rem;border:3rem solid #03424B;border-radius:14rem;background:#E4EEBE;box-shadow:inset 0 2rem 0 #FFFFE8,inset 0 -4rem 0 #BED680,0 6rem 0 rgba(0,0,0,.25);
+  color:#043E3D;font-size:36rem;font-weight:700;letter-spacing:6rem;font-family:inherit}
+.tbtn:active{background:#C9DD8E}
+.tbtn:disabled{background:#E2E3DC;border-color:#9AA5A3;color:#8E9894;box-shadow:inset 0 2rem 0 #F4F4EE,inset 0 -4rem 0 #CCCFC6}
+/* 输入框 */
+.inbox{display:grid;gap:16rem;padding:8rem 0}
+.inhint{font-size:30rem}
+.tin{height:76rem;font-size:34rem;padding:0 20rem;border:3rem solid var(--frame);border-radius:10rem;background:#fff;color:var(--ink);font-family:inherit;-webkit-user-select:text;user-select:text;outline:none;box-sizing:border-box;width:100%}
+.tin:focus{border-color:#E2701A}
+/* 纪录 */
+.hsec{font-size:26rem;font-weight:700;color:var(--frame-dark);padding:14rem 6rem 6rem;border-bottom:2rem solid var(--line)}
+.hsub{display:block;font-size:20rem;color:var(--ink-soft)}
+.hnone{font-size:26rem;color:var(--ink-soft);padding:18rem 6rem}
+/* 职员一览：行可点 */
+.srow.sbtn{width:100%;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.srow.sbtn:active{background:var(--panel-2)}
+/* 信息栏委托页 */
+.ipd .jn{flex:1;text-align:center;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10rem}
 </style>
 
 <div id="app">
@@ -359,6 +386,7 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
     <button id="sidetab" type="button" aria-label="快捷列表">›</button>
     <div id="menu" hidden></div>
     <div id="submenu" hidden></div>
+    <div id="title" hidden></div>
     <div id="dlg" hidden role="dialog" aria-modal="true"></div>
     <div id="toast" hidden></div>
   </main>
