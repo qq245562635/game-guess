@@ -1,5 +1,7 @@
 # 主界面 UI · v2 母版切图
 
+标题正式素材已交付 **14 张**（Logo 中英、浅绿/木牌两套三态按钮、3 图标、暖云层、输入框两态）。见 [给 Claude 的接入说明](../../art/TITLE-ASSETS.md) 与 [素材总览](../../art/previews/title-v1-assets.png)。按钮无字，按下底图已含下沉；只下移文字/图标，不再次下移 PNG。
+
 21 张 RGBA PNG，设计宽 720，交付为逻辑尺寸的 2 倍。来源：`../../art/reference/ui-main-v2.png`，尺寸 870×1808。文件清单、逻辑尺寸、源图裁切框、九宫格参数详见 metadata.json。
 
 ## 接入

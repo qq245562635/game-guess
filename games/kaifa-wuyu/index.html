@@ -355,24 +355,50 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 .mag-ico.art{background-color:transparent;border-radius:0;opacity:1}
 .mag-paper{border:2rem solid #CBD3EA;border-radius:10rem;background:#fff;padding:26rem 34rem;min-height:300rem}
 .mag-paper p{margin:0 0 6rem;font-size:32rem;line-height:1.8;text-indent:2em}
-/* ===== 标题画面：收起顶栏和信息栏，场景当背景，上方 Logo + 中间三个按钮（素材交付前用 CSS） ===== */
-.titlemode #topbar,.titlemode #info,.titlemode #badge,.titlemode #sidetab,.titlemode #tabUp{display:none}
-#title{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;padding-top:14%;gap:9%;background:linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,0) 45%)}
+/* ===== 标题画面（正式素材，Codex PR #34；参数见 art/TITLE-ASSETS.md）：收起顶栏和信息栏，场景当背景 ===== */
+.titlemode #topbar,.titlemode #info,.titlemode #badge,.titlemode #sidetab,.titlemode #tabUp,.titlemode #btnL{display:none}
+#title{position:absolute;inset:0;z-index:4}
 #dlg{z-index:6}
 #toast{z-index:7}
-.tlogo{display:grid;justify-items:center;gap:6rem;padding:22rem 44rem;border-radius:20rem;background:rgba(255,248,234,.92);border:4rem solid var(--frame-dark);box-shadow:0 8rem 0 rgba(7,92,99,.35)}
-.tlogo b{font-size:84rem;letter-spacing:8rem;color:var(--frame-dark);-webkit-text-stroke:2rem #fff;paint-order:stroke}
-.tlogo small{font-size:24rem;letter-spacing:6rem;color:#E2701A;font-weight:700}
-.tbtns{display:grid;gap:22rem}
-.tbtn{width:340rem;height:84rem;border:3rem solid #03424B;border-radius:14rem;background:#E4EEBE;box-shadow:inset 0 2rem 0 #FFFFE8,inset 0 -4rem 0 #BED680,0 6rem 0 rgba(0,0,0,.25);
-  color:#043E3D;font-size:36rem;font-weight:700;letter-spacing:6rem;font-family:inherit}
-.tbtn:active{background:#C9DD8E}
-.tbtn:disabled{background:#E2E3DC;border-color:#9AA5A3;color:#8E9894;box-shadow:inset 0 2rem 0 #F4F4EE,inset 0 -4rem 0 #CCCFC6}
+/* 暖云层：已含暖光和暗角，按场景区拉伸铺满，不再叠别的背景 */
+.tshade{position:absolute;inset:0;background:url('assets/ui/ui_title_shade.png') center/100% 100% no-repeat;pointer-events:none}
+.tgroup{position:absolute;top:30rem;left:0;right:0;display:flex;flex-direction:column;align-items:center}
+/* Logo：布局盒 560×224，图 560×240（下方 16 是投影，允许溢出，不推按钮） */
+.tlogo{width:560rem;height:224rem;flex:none}
+.tlogo img{display:block;width:100%;height:auto}
+.tbtns{margin-top:30rem;display:flex;flex-direction:column;gap:20rem;position:relative;isolation:isolate}
+/* 麻绳：程序画，组内 x=35 和 x=321，顶部超出 14 */
+.tbtns::before,.tbtns::after{content:"";position:absolute;top:-14rem;bottom:25rem;width:4rem;background:repeating-linear-gradient(32deg,#b1905d 0 2rem,#dfbd7d 2rem 4rem);box-shadow:1rem 0 #fff4cf80;z-index:-1}
+.tbtns::before{left:35rem}.tbtns::after{right:35rem}
+/* 按钮：九宫格 20（源图 40），下沉 5 已画进 _down 图，只让文字图标组下移 */
+.tbtn{width:360rem;height:88rem;padding:0;border:20rem solid transparent;border-image:url('assets/ui/ui_title_btn.png') 40 fill/20rem stretch;background:none;
+  display:flex;align-items:center;justify-content:center;gap:17rem;font-weight:700;font-size:34rem;line-height:1;font-family:inherit;letter-spacing:2rem;color:#043e3d;box-sizing:border-box}
+.tbtn>*{transform:translateY(-4rem)}
+.tbtn img{width:44rem;height:44rem;flex:none;margin:-20rem 0}
+.tbtn:active:not(:disabled)>*{transform:translateY(1rem)}
+.tbtn.primary:active:not(:disabled){border-image-source:url('assets/ui/ui_title_btn_down.png')}
+.tbtn.wood{border-image-source:url('assets/ui/ui_title_btn_wood.png')}
+.tbtn.wood:active:not(:disabled){border-image-source:url('assets/ui/ui_title_btn_wood_down.png')}
+.tbtn.primary:disabled{border-image-source:url('assets/ui/ui_title_btn_off.png')}
+.tbtn.wood:disabled{border-image-source:url('assets/ui/ui_title_btn_wood_off.png')}
+.tbtn:disabled{color:#7c8475;cursor:default}
+.tbtn:disabled img{filter:grayscale(1);opacity:.6}
+/* 底栏左侧标语（只在标题画面显示） */
+#tagline{display:none}
+.titlemode #tagline{display:flex;position:absolute;left:23rem;top:0;height:122rem;align-items:center;gap:16rem;color:#f5e5bd}
+#tagline .stamp{width:52rem;height:52rem;display:grid;place-items:center;border:2rem solid #b4c8aa99;border-radius:50%;font-size:27rem;font-style:normal;color:#d5e6b7;box-sizing:border-box}
+#tagline span{font-size:18rem;letter-spacing:1rem;font-weight:600}
+#tagline small{display:block;margin-top:4rem;font-size:20rem;letter-spacing:1rem;font-weight:700;opacity:.9}
+.titlemode #btnR{display:flex;align-items:center;justify-content:center;gap:11rem}
+.titlemode #btnR::before{content:"";width:26rem;height:26rem;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23075c63' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h6l7-6v20l-7-6H5Z'/%3E%3Cpath d='M22 11.5a6 6 0 0 1 0 9'/%3E%3C/svg%3E") center/contain no-repeat}
+/* 长屏 / 短屏（与效果图一致） */
+@media (max-aspect-ratio:3/5){.tgroup{top:42rem}.tbtns{margin-top:38rem}}
+@media (min-aspect-ratio:1/2){.tgroup{top:18rem}.tlogo{width:500rem;height:200rem}.tbtns{margin-top:22rem;gap:18rem}.tbtn{height:80rem}}
 /* 输入框 */
 .inbox{display:grid;gap:16rem;padding:8rem 0}
 .inhint{font-size:30rem}
-.tin{height:76rem;font-size:34rem;padding:0 20rem;border:3rem solid var(--frame);border-radius:10rem;background:#fff;color:var(--ink);font-family:inherit;-webkit-user-select:text;user-select:text;outline:none;box-sizing:border-box;width:100%}
-.tin:focus{border-color:#E2701A}
+.tin{height:76rem;font-size:34rem;padding:0 10rem;border:10rem solid transparent;border-image:url('assets/ui/ui_input.png') 20 fill/10rem stretch;border-radius:0;background:none;color:var(--ink);font-family:inherit;-webkit-user-select:text;user-select:text;outline:none;box-sizing:border-box;width:100%}
+.tin:focus{border-image-source:url('assets/ui/ui_input_focus.png')}
 /* 纪录 */
 .hsec{font-size:26rem;font-weight:700;color:var(--frame-dark);padding:14rem 6rem 6rem;border-bottom:2rem solid var(--line)}
 .hsub{display:block;font-size:20rem;color:var(--ink-soft)}
@@ -418,6 +444,7 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
   <section id="info"><div class="in"><div id="ipage"></div><div id="scroll"><button type="button" id="pgUp" aria-label="上一页">▲</button><div class="track"><div class="thumb" id="thumb"></div></div><button type="button" id="pgDn" aria-label="下一页">▼</button></div></div></section>
   <footer id="bottombar">
     <button class="bb" id="btnL" type="button">保存</button>
+    <div id="tagline"></div>
     <button class="bb" id="btnR" type="button">菜单</button>
     <button id="tabUp" type="button" aria-label="收起或展开信息栏"></button>
   </footer>
@@ -912,7 +939,9 @@ function staminaWeek(){const dev=!!(S.project&&!S.project.awaiting)||!!S.contrac
 const cam={x:0,y:0,z:1,fit:true};let stageW=1,stageH=1;
 function fitCam(){const minX=iso(0,ROOM_H)[0]-6,maxX=iso(ROOM_W,0)[0]+6,minY=-190,maxY=iso(ROOM_W,ROOM_H)[1]+30;
   // 照效果图：房间左右角贴住屏幕两边（抽屉把手允许压在左角上），房间整体在场景区竖直略偏下
-  cam.z=clamp(Math.min(stageW/(maxX-minX),stageH/(maxY-minY)),.25,3);cam.x=stageW/2-(minX+maxX)/2*cam.z;cam.y=stageH*.52-(minY+maxY)/2*cam.z;}
+  cam.z=clamp(Math.min(stageW/(maxX-minX),stageH/(maxY-minY)),.25,3);cam.x=stageW/2-(minX+maxX)/2*cam.z;cam.y=stageH*.52-(minY+maxY)/2*cam.z;
+  // 标题画面：长屏（场景高宽比 > 1.9）放大 1.06，房间整体下移到 65%，给 Logo 和按钮让位（PR #34 确认参数）
+  if(UI.title){const f=stageH/stageW>1.9?1.06:1;const cx=(minX+maxX)/2,cy=(minY+maxY)/2;cam.z*=f;cam.x=stageW/2-cx*cam.z;cam.y=stageH*.65-cy*cam.z;}}
 const w2s=(x,y)=>[x*cam.z+cam.x,y*cam.z+cam.y];
 function resize(){const r=$('#scene').getBoundingClientRect();stageW=Math.max(1,r.width);stageH=Math.max(1,r.height);const d=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(stageW*d);canvas.height=Math.round(stageH*d);if(cam.fit)fitCam();}
 new ResizeObserver(resize).observe($('#scene'));
@@ -937,7 +966,7 @@ const JOBN={prog:'程序员',plan:'剧本作家',art:'设计师',sound:'音效�
 const UI={menu:false,dlg:null,page:0,collapsed:false};
 const blocking=()=>UI.menu||!!UI.dlg||!!UI.title;
 function setBottom(l,r){for(const [el,c] of [[$('#btnL'),l],[$('#btnR'),r]]){el.textContent=c?c.label:'';el.classList.toggle('empty',!c);el.onclick=c?c.fn:null;el.tabIndex=c?0:-1;}}
-const idleBottom=()=>UI.title?setBottom(null,{label:'声音',fn:soundDlg}):setBottom({label:'保存',fn:doSave},{label:'菜单',fn:openMenu});
+const idleBottom=()=>UI.title?setBottom(null,{label:TITLE_EN?'Sound':'声音',fn:soundDlg}):setBottom({label:'保存',fn:doSave},{label:'菜单',fn:openMenu});
 function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,1600);}
 
 // ---- 菜单（场景左侧竖排 + 右侧子菜单）
@@ -1284,14 +1313,20 @@ function nameGame(leaderId){inputDlg('作品名称','给这部新作起个名字
 
 // ================= 标题画面
 // 照原作：场景当背景，上方 Logo，中间竖排「新游戏 / 读取游戏 / 纪录」；顶栏、信息栏收起，时间暂停。
-// 底栏左空槽，右「声音」（原作是开罗合集的「返回地图」，我们不需要）。
+// 底栏左侧标语，右「声音」（原作是开罗合集的「返回地图」，我们不需要）。
 const hasSave=()=>{try{const s=JSON.parse(localStorage.getItem(KEY)||'null');return !!(s&&(s.v===2||s.v===3));}catch(e){return false;}};
 function showTitle(){UI.title=true;UI.menu=false;UI.dlg=null;$('#menu').hidden=true;$('#submenu').hidden=true;$('#dlg').hidden=true;
   $('#app').classList.add('titlemode');resize();renderTitle();idleBottom();}
-function renderTitle(){const has=hasSave(),b=(t,fn,dis)=>h('button',{type:'button',class:'tbtn',disabled:dis,onclick:fn},t);
+// 美术：assets/ui/ui_title_*（Codex PR #34，接入说明见 art/TITLE-ASSETS.md）。?lang=en 显示英文版标题画面（美版用）
+const TITLE_EN=/[?&]lang=en\b/.test(location.search);
+const TCOPY=TITLE_EN?{new:'New Game',load:'Load Game',rec:'Records',tag:'Small team. Big ideas.'}:{new:'新游戏',load:'读取游戏',rec:'纪录',tag:'从一个点子开始'};
+function renderTitle(){const has=hasSave();
+  const b=(t,ic,fn,dis,kind)=>h('button',{type:'button',class:'tbtn '+kind,disabled:dis,onclick:fn},h('img',{src:`assets/ui/ui_title_btn_icon_${ic}.png`,alt:''}),h('span',{},t));
   const el=$('#title');el.hidden=false;
-  el.replaceChildren(h('div',{class:'tlogo'},h('b',{},'开发物语'),h('small',{},'GAME STUDIO STORY')),
-    h('div',{class:'tbtns'},b('新游戏',titleNew),b('读取游戏',titleLoad,!has),b('纪录',hallDlg)));}
+  el.replaceChildren(h('div',{class:'tshade'}),
+    h('div',{class:'tgroup'},h('div',{class:'tlogo'},h('img',{src:`assets/ui/ui_title_logo${TITLE_EN?'_en':''}.png`,alt:TITLE_EN?'Little Launch Studio':'开发物语'})),
+      h('nav',{class:'tbtns'},b(TCOPY.new,'new',titleNew,false,'primary'),b(TCOPY.load,'load',titleLoad,!has,'wood'),b(TCOPY.rec,'record',hallDlg,false,'wood'))));
+  $('#tagline').replaceChildren(h('i',{class:'stamp'},'✦'),h('span',{},TCOPY.tag,h('small',{},'LITTLE LAUNCH STUDIO')));}
 function titleNew(){if(hasSave())picker('新游戏',[{v:1,label:'开始新游戏',sub:'现有存档会被覆盖'},{v:0,label:'算了'}],v=>{closeDlg();if(v)askCompany();},closeDlg);else askCompany();}
 function titleLoad(){if(load())enterGame(false);else{toast('存档读不出来');renderTitle();}}
 function askCompany(){inputDlg('公司名称','给你的游戏公司起个名字吧。',DEF_COMPANY,8,name=>{closeDlg();if(typeof away!=='undefined')away.clear();pending.length=0;newGame();S.company=name;save();enterGame(true);},closeDlg);}
@@ -1699,7 +1734,7 @@ canvas.addEventListener('dblclick',()=>{cam.fit=true;fitCam();});
 function tapAt(x,y){for(const s of S.staff){const ps=personState(s.id);if(ps.mode==='absent')continue;const [wx,wy]=ps.mode==='walk'?[ps.x,ps.y]:seatWorld(s.seat);const [sx,sy]=w2s(wx,wy);if(Math.abs(x-sx)<20*cam.z&&y>sy-100*cam.z&&y<sy+6*cam.z){staffDlg();return;}}}
 
 // ================= 渲染循环
-function draw(t){if(!gl)return;gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(.68,.71,.76,1);gl.clear(gl.COLOR_BUFFER_BIT);
+function draw(t){if(!gl)return;gl.viewport(0,0,canvas.width,canvas.height);UI.title?gl.clearColor(.96,.92,.82,1):gl.clearColor(.68,.71,.76,1);gl.clear(gl.COLOR_BUFFER_BIT);
   nq=0;const hasBG=!!bgTex.bg_city;if(hasBG)bgQuad();const q0=nq;for(const [k,x,y,fl] of staticFlat)if(!(hasBG&&k==='outside'))spr(k,x,y,fl);drawShadows();const items=[];
   for(const [k,x,y] of DECOR){const [sx,sy]=tc(x,y);items.push([x+y,k,sx,sy]);}
   for(const s of ACT()){const [x,y]=s.d;const [sx,sy]=tc(x,y);items.push([x+y,s.k==='a'?'desk':'desk_back',sx,sy]);}

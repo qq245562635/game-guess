@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Title art review</title>
+<style>
+@font-face{font-family:Noto;src:url('../../assets/fonts/NotoSansSC-wght.ttf');font-weight:100 900}
+*{box-sizing:border-box}html{font-size:min(calc(100vw / 720),calc(100vh / 1380))}html,body{margin:0;width:100%;height:100%;overflow:hidden}body{font-family:Noto,sans-serif;color:#043e3d;background:#10141f;display:flex;justify-content:center}
+.review-app{width:720rem;height:100%;position:relative;overflow:hidden;background:#075c63}
+#scene{position:absolute;inset:0 0 122rem;width:100%;height:calc(100% - 122rem);border:0;pointer-events:none}
+.sky{position:absolute;inset:0 0 auto;height:56%;background:#f6e8cc url('../title-v1-source/warm-sky.png') center top/cover no-repeat;mask-image:linear-gradient(#000 0%,#000 54%,transparent 100%);pointer-events:none}
+.atmosphere{position:absolute;inset:0 0 122rem;pointer-events:none;background:radial-gradient(ellipse at 43% 0%,#ffe4a944,transparent 60%),linear-gradient(90deg,#534b2522,transparent 15%,transparent 85%,#534b2522),linear-gradient(0deg,#034b4b22,transparent 23%)}
+.motes{position:absolute;inset:0;pointer-events:none}.motes i{position:absolute;width:6rem;height:6rem;border-radius:50%;background:#fff2b1;box-shadow:0 0 12rem 4rem #ffe9a355;opacity:.8}.motes i:nth-child(1){left:12%;top:20%}.motes i:nth-child(2){left:84%;top:17%;width:4rem;height:4rem}.motes i:nth-child(3){left:19%;top:42%;width:4rem;height:4rem}.motes i:nth-child(4){left:89%;top:57%}
+.title-group{position:absolute;top:30rem;left:0;right:0;display:flex;flex-direction:column;align-items:center}
+.logo{position:relative;width:560rem;height:224rem;filter:drop-shadow(0 8rem 3rem #043e3d24)}
+.logo img{width:100%;height:100%;object-fit:contain}
+.logo-type{position:absolute;left:8%;right:8%;top:40%;height:45%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.logo h1{margin:0;font-size:64rem;font-weight:900;letter-spacing:4rem;line-height:1.05;color:#075c63;-webkit-text-stroke:2rem #fffcdf;paint-order:stroke fill;text-shadow:0 3rem 0 #bca36c}
+.logo small{margin-top:5rem;font-size:24rem;line-height:1.1;letter-spacing:2rem;font-weight:800;color:#ac641f}
+html[lang=en] .logo h1{font-size:45rem;letter-spacing:1rem;line-height:1.03;text-align:center}
+html[lang=en] .logo small{font-size:24rem;letter-spacing:5rem;margin-top:5rem}
+.buttons{margin-top:30rem;display:flex;flex-direction:column;gap:20rem;position:relative;isolation:isolate}
+.buttons:before,.buttons:after{content:"";position:absolute;top:-14rem;bottom:25rem;width:4rem;background:repeating-linear-gradient(32deg,#b1905d 0 2rem,#dfbd7d 2rem 4rem);box-shadow:1rem 0 #fff4cf80;z-index:-1}
+.buttons:before{left:35rem}.buttons:after{right:35rem}
+.sign{position:relative;width:360rem;height:88rem;border:3rem solid #075c63;border-radius:13rem;background:linear-gradient(180deg,#f8d69b,#dfb575);box-shadow:0 6rem 0 #876c43,0 10rem 12rem #043e3d24,inset 0 2rem 0 #fff0cb;display:flex;align-items:center;justify-content:center;gap:17rem;font:700 34rem Noto,sans-serif;letter-spacing:2rem;color:#043e3d;padding:0}
+.sign:before{content:"";position:absolute;inset:5rem;border-radius:8rem;border:1rem solid #b88d52;background:repeating-linear-gradient(0deg,transparent 0 15rem,#9c76320b 16rem 17rem);pointer-events:none}
+.sign.primary{background:linear-gradient(#edf3cf,#d4e4a9);box-shadow:0 6rem 0 #667e4c,0 10rem 12rem #043e3d24,inset 0 2rem 0 #fffbe5}
+.sign.primary:before{border-color:#aebc81}
+.sign svg{width:44rem;height:44rem;fill:#f9df8c;stroke:#075c63;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3rem 0 #ad8e55) drop-shadow(0 1rem 2rem #043e3d33)}
+.sign svg .cutout{fill:#fdeed5;stroke-width:2.3}.sign:nth-child(2) svg{fill:#8db8a2}.sign:nth-child(3) svg{fill:#efc16d}
+.sign.pressed,.sign:active:not(:disabled){transform:translateY(5rem);background:linear-gradient(#d1e1a1,#bfce8b);box-shadow:0 1rem 0 #667e4c,inset 0 3rem 4rem #5c744433}
+.sign:not(.primary).pressed,.sign:not(.primary):active:not(:disabled){background:linear-gradient(#dab274,#c8a063);box-shadow:0 1rem 0 #876c43,inset 0 3rem 4rem #73562833}
+.sign:disabled{background:linear-gradient(#e1dfd2,#c9c9bd);color:#7c8475;border-color:#8b9585;box-shadow:0 6rem 0 #8b9080,0 10rem 12rem #043e3d16,inset 0 2rem 0 #eeeee3;cursor:default}
+.sign:disabled:before{border-color:#b1b5a1}.sign:disabled:after{background:#a2a48e;box-shadow:321rem 0 #a2a48e}.sign:disabled svg{fill:#bdc4b3;stroke:#7c8875;filter:drop-shadow(0 3rem 0 #a6ab97)}.sign:disabled svg .cutout{fill:#e7e9dd;stroke:#7c8875}
+.sign:after{content:"";position:absolute;left:14rem;top:14rem;width:5rem;height:5rem;border-radius:50%;background:#927340;box-shadow:321rem 0 #927340}
+.footer{position:absolute;bottom:0;height:122rem;width:100%;background:#075c63 url('../../assets/ui/ui_bottombar_bg.png') left top/720rem 186rem;display:flex;align-items:center;padding-left:23rem}
+.studio-note{display:flex;align-items:center;gap:16rem;color:#f5e5bd}
+.stamp{width:52rem;height:52rem;display:grid;place-items:center;border:2rem solid #b4c8aa99;border-radius:50%;font-size:27rem;color:#d5e6b7}
+.note-copy{font-size:18rem;letter-spacing:1rem;font-weight:600}.note-copy small{display:block;margin-top:4rem;font-size:20rem;letter-spacing:1rem;font-weight:700;opacity:.9}
+.sound{position:absolute;top:16rem;right:23rem;width:207rem;height:73rem;border:0;border-radius:0;background:url('../../assets/ui/ui_bb_btn.png') center/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;gap:11rem;font-size:32rem;font-weight:700}
+.sound svg{width:26rem;height:26rem;fill:none;stroke:#075c63;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+@media(max-aspect-ratio:3/5){.title-group{top:42rem}.buttons{margin-top:38rem}}
+@media(min-aspect-ratio:1/2){.title-group{top:18rem}.logo{width:500rem;height:200rem}.logo h1{font-size:64rem}html[lang=en] .logo h1{font-size:40rem}.buttons{margin-top:22rem;gap:18rem}.sign{height:80rem}}
+.from-assets .logo{filter:none}.from-assets .logo img{height:auto;object-fit:initial}.from-assets .logo-type{display:none}
+.from-assets .sign{border:0;box-shadow:none!important;background-position:center;background-size:100% 100%;background-repeat:no-repeat}
+.from-assets .sign:before,.from-assets .sign:after{display:none}.from-assets .sign.pressed{transform:none}
+.from-assets .sign>span,.from-assets .sign>img{transform:translateY(-4rem)}.from-assets .sign.pressed>span,.from-assets .sign.pressed>img{transform:translateY(1rem)}
+.from-assets .sign>img{width:44rem;height:44rem;object-fit:contain}.from-assets .sign:disabled>img{filter:grayscale(1);opacity:.6}
+.from-assets .sky{height:calc(100% - 122rem)!important;background-image:url('../../assets/ui/ui_title_shade.png');background-size:100% 100%;background-color:transparent;mask-image:none}.from-assets .atmosphere{display:none}
+</style>
+<div class="review-app">
+<iframe id="scene" title="Live game scene"></iframe>
+<div class="sky"></div>
+<div class="atmosphere"></div>
+<div class="motes"><i></i><i></i><i></i><i></i></div>
+<main class="title-group">
+  <div class="logo"><img src="../title-v1-source/logo-decoration.png" alt=""><div class="logo-type"><h1 id="name"></h1><small id="subtitle"></small></div></div>
+  <nav class="buttons" aria-label="Main menu">
+    <button class="sign primary"><svg viewBox="0 0 32 32"><path d="m16 3 3.8 8 8.7 1.3-6.2 6.2 1.4 8.7-7.7-4.1-7.7 4.1 1.4-8.7-6.2-6.2 8.7-1.3Z"/></svg><span data-copy="new"></span></button>
+    <button class="sign" disabled><svg viewBox="0 0 32 32"><path d="M5 5h19l3 4v18H5Z"/><path class="cutout" d="M10 5v9h12V5 M10 27v-9h12v9"/></svg><span data-copy="load"></span></button>
+    <button class="sign"><svg viewBox="0 0 32 32"><path d="M10 4h12v10a6 6 0 0 1-12 0Z M10 7H5v5q0 6 6 6 M22 7h5v5q0 6-6 6 M16 20v7 M10 28h12"/></svg><span data-copy="records"></span></button>
+  </nav>
+</main>
+<footer class="footer"><div class="studio-note"><div class="stamp">✦</div><div class="note-copy"><span data-copy="tagline"></span><small>LITTLE LAUNCH STUDIO</small></div></div><div class="sound"><svg viewBox="0 0 32 32"><path d="M5 12h6l7-6v20l-7-6H5Z M23 11q7 5 0 10"/></svg><span data-copy="sound"></span></div></footer>
+</div>
+<script>
+const params=new URLSearchParams(location.search);
+const useAssets=params.get('assets')==='1';
+const language=params.get('lang')==='en'?'en':'zh-CN';
+document.documentElement.lang=language;
+const english=language==='en';
+const copy=english?{new:'New Game',load:'Load Game',records:'Records',sound:'Sound',tagline:'Small team. Big ideas.'}:{new:'新游戏',load:'读取游戏',records:'纪录',sound:'声音',tagline:'从一个点子开始'};
+document.querySelector('#name').innerHTML=english?'LITTLE LAUNCH':'开发物语';
+document.querySelector('#subtitle').textContent=english?'STUDIO':'LITTLE LAUNCH STUDIO';
+document.querySelectorAll('[data-copy]').forEach(el=>el.textContent=copy[el.dataset.copy]);
+if(params.get('saved')==='1')document.querySelector('.sign:nth-child(2)').disabled=false;
+if(params.get('state')==='pressed')document.querySelector('.sign.primary').classList.add('pressed');
+window.syncAssetStates=()=>{
+  if(!useAssets)return;
+  document.body.classList.add('from-assets');
+  document.querySelector('.logo img').src=english?'../../assets/ui/ui_title_logo_en.png':'../../assets/ui/ui_title_logo.png';
+  document.querySelectorAll('.sign').forEach((button,i)=>{
+    const base=i===0?'ui_title_btn':'ui_title_btn_wood',suffix=button.disabled?'_off':button.classList.contains('pressed')?'_down':'';
+    button.style.backgroundImage=`url('../../assets/ui/${base+suffix}.png')`;
+    const svg=button.querySelector('svg');if(svg){const icon=new Image();icon.src='../../assets/ui/ui_title_btn_icon_'+['new','load','record'][i]+'.png';icon.alt='';svg.replaceWith(icon)}
+  });
+};
+window.syncAssetStates();
+// Review-only composition: reuse live game assets and rendering, not a painted room.
+window.ready=(async()=>{
+  const base=new URL('../../',location.href).href;
+  const [shell,audio,code]=await Promise.all(['src/game.src.html','src/audio.js','src/game.js'].map(p=>fetch(base+p).then(r=>{if(!r.ok)throw Error(p);return r.text()})));
+  const sceneCode=code.replace('tryLoadArt().then(()=>','window.titleArtReady=tryLoadArt().then(()=>').replace('gl.clearColor(.68,.71,.76,1)','gl.clearColor(.96,.92,.82,1)');
+  const sceneStyle='<style>html{font-size:calc(100vw / 720)!important}#app{width:100%!important}#topbar,#info,#badge,#sidetab,#tabUp,#bottombar,#title,#fx,#toast{display:none!important}#scene{width:100%;height:100%}</style>';
+  const hook=`
+    fitCam=function(){const minX=iso(0,ROOM_H)[0]-6,maxX=iso(ROOM_W,0)[0]+6,minY=-190,maxY=iso(ROOM_W,ROOM_H)[1]+30;
+      const factor=stageH/stageW>1.9?1.06:1.00;
+      cam.z=clamp(Math.min(stageW/(maxX-minX),stageH/(maxY-minY)),.25,3)*factor;
+      cam.x=stageW/2-(minX+maxX)/2*cam.z;cam.y=stageH*.65-(minY+maxY)/2*cam.z;};
+    window.titlePreviewReady=(async()=>{await window.titleArtReady;await loadBG([]);resize();draw(1);return true})();
+    window.faceBounds=()=>{const points=S.staff.map(s=>({id:s.id,p:seatWorld(s.seat)}));
+      points.push({id:'boss',p:deskSeat(BOSS.d,'b')},{id:'secretary',p:deskSeat(SEC_SPOT.d,'b')});
+      return points.map(({id,p:[x,y]})=>{const [sx,sy]=w2s(x,y);return {id,x:sx-27*cam.z,y:sy-106*cam.z,width:54*cam.z,height:65*cam.z}});};
+  `;
+  const frame=document.querySelector('#scene');
+  const loaded=new Promise(resolve=>frame.addEventListener('load',resolve,{once:true}));
+  frame.srcdoc='<!doctype html><html><head><base href="'+base+'"></head><body>'+shell.replace('/*GAME*/',()=>audio+'\n'+sceneCode+'\n'+hook)+sceneStyle+'</body></html>';
+  await loaded;await frame.contentWindow.titlePreviewReady;
+  // Fade the independent cloud layer completely before the first employee head.
+  if(!useAssets)document.querySelector('.sky').style.height=Math.min(...frame.contentWindow.faceBounds().map(f=>f.y))*.98+'px';
+  await document.fonts.ready;await Promise.all([...document.images].map(i=>i.decode()));
+  return true;
+})();
+window.reviewGeometry=()=>{
+  const bounds=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}};
+  return {language,viewport:{width:innerWidth,height:innerHeight},
+    controls:[...document.querySelectorAll('.logo,.sign,.sound')].map(el=>({label:el.textContent.trim(),...bounds(el)})),
+    faces:document.querySelector('#scene').contentWindow.faceBounds().map(f=>({...f,x:f.x+document.querySelector('#scene').getBoundingClientRect().x})),
+    app:bounds(document.querySelector('.review-app')),footer:bounds(document.querySelector('.footer')),sound:bounds(document.querySelector('.sound')),
+    designScale:parseFloat(getComputedStyle(document.documentElement).fontSize),loadDisabled:document.querySelector('.sign:nth-child(2)').disabled,pressed:document.querySelector('.sign.primary').classList.contains('pressed'),
+    usesExportedAssets:useAssets,footerEnglishFontPx:parseFloat(getComputedStyle(document.querySelector('.note-copy small')).fontSize),logoSubtitleEquivalentPx:24*parseFloat(getComputedStyle(document.documentElement).fontSize)*document.querySelector('.logo').getBoundingClientRect().width/(560*parseFloat(getComputedStyle(document.documentElement).fontSize)),
+    visibleCopy:document.body.innerText};
+};
+</script>
+</html>

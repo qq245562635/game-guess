@@ -27,5 +27,19 @@
   "ui_staff_2_a",
   "ui_staff_2_b",
   "ui_staff_3_a",
-  "ui_staff_3_b"
+  "ui_staff_3_b",
+  "ui_title_btn",
+  "ui_title_btn_down",
+  "ui_title_btn_off",
+  "ui_title_btn_wood",
+  "ui_title_btn_wood_down",
+  "ui_title_btn_wood_off",
+  "ui_title_btn_icon_new",
+  "ui_title_btn_icon_load",
+  "ui_title_btn_icon_record",
+  "ui_input",
+  "ui_input_focus",
+  "ui_title_logo",
+  "ui_title_logo_en",
+  "ui_title_shade"
 ]

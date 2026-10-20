@@ -1,0 +1,1332 @@
+[
+  {
+    "language": "zh-CN",
+    "viewport": {
+      "width": 720,
+      "height": 1600
+    },
+    "controls": [
+      {
+        "label": "开发物语LITTLE LAUNCH STUDIO",
+        "x": 80,
+        "y": 42,
+        "width": 560,
+        "height": 224
+      },
+      {
+        "label": "新游戏",
+        "x": 180,
+        "y": 304,
+        "width": 360,
+        "height": 88
+      },
+      {
+        "label": "读取游戏",
+        "x": 180,
+        "y": 412,
+        "width": 360,
+        "height": 88
+      },
+      {
+        "label": "纪录",
+        "x": 180,
+        "y": 520,
+        "width": 360,
+        "height": 88
+      },
+      {
+        "label": "声音",
+        "x": 490,
+        "y": 1494,
+        "width": 207,
+        "height": 73
+      }
+    ],
+    "faces": [
+      {
+        "id": "s0",
+        "x": 402.1387677725118,
+        "y": 903.9121327014218,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "s1",
+        "x": 460.0117535545024,
+        "y": 932.8486255924172,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "s2",
+        "x": 269.03090047393357,
+        "y": 970.4660663507109,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "s3",
+        "x": 326.90388625592414,
+        "y": 999.4025592417063,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "boss",
+        "x": 286.39279620853074,
+        "y": 846.0391469194313,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "secretary",
+        "x": 344.2657819905213,
+        "y": 1048.594597156398,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      }
+    ],
+    "app": {
+      "x": 0,
+      "y": 0,
+      "width": 720,
+      "height": 1600
+    },
+    "footer": {
+      "x": 0,
+      "y": 1478,
+      "width": 720,
+      "height": 122
+    },
+    "sound": {
+      "x": 490,
+      "y": 1494,
+      "width": 207,
+      "height": 73
+    },
+    "designScale": 1,
+    "loadDisabled": true,
+    "pressed": false,
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 20,
+    "logoSubtitleEquivalentPx": 24,
+    "visibleCopy": "新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
+    "nativeFooter": {
+      "footer": {
+        "x": 0,
+        "y": 1478,
+        "width": 720,
+        "height": 122
+      },
+      "sound": {
+        "x": 490,
+        "y": 1494,
+        "width": 207,
+        "height": 73
+      }
+    },
+    "image": "title-v1-zh.png",
+    "pixels": [
+      1440,
+      3200
+    ],
+    "status": "pass"
+  },
+  {
+    "language": "zh-CN",
+    "viewport": {
+      "width": 720,
+      "height": 1600
+    },
+    "controls": [
+      {
+        "label": "开发物语LITTLE LAUNCH STUDIO",
+        "x": 80,
+        "y": 42,
+        "width": 560,
+        "height": 224
+      },
+      {
+        "label": "新游戏",
+        "x": 180,
+        "y": 304,
+        "width": 360,
+        "height": 88
+      },
+      {
+        "label": "读取游戏",
+        "x": 180,
+        "y": 412,
+        "width": 360,
+        "height": 88
+      },
+      {
+        "label": "纪录",
+        "x": 180,
+        "y": 520,
+        "width": 360,
+        "height": 88
+      },
+      {
+        "label": "声音",
+        "x": 490,
+        "y": 1494,
+        "width": 207,
+        "height": 73
+      }
+    ],
+    "faces": [
+      {
+        "id": "s0",
+        "x": 402.1387677725118,
+        "y": 903.9121327014218,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "s1",
+        "x": 460.0117535545024,
+        "y": 932.8486255924172,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "s2",
+        "x": 269.03090047393357,
+        "y": 970.4660663507109,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "s3",
+        "x": 326.90388625592414,
+        "y": 999.4025592417063,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "boss",
+        "x": 286.39279620853074,
+        "y": 846.0391469194313,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "secretary",
+        "x": 344.2657819905213,
+        "y": 1048.594597156398,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      }
+    ],
+    "app": {
+      "x": 0,
+      "y": 0,
+      "width": 720,
+      "height": 1600
+    },
+    "footer": {
+      "x": 0,
+      "y": 1478,
+      "width": 720,
+      "height": 122
+    },
+    "sound": {
+      "x": 490,
+      "y": 1494,
+      "width": 207,
+      "height": 73
+    },
+    "designScale": 1,
+    "loadDisabled": true,
+    "pressed": true,
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 20,
+    "logoSubtitleEquivalentPx": 24,
+    "visibleCopy": "新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
+    "nativeFooter": {
+      "footer": {
+        "x": 0,
+        "y": 1478,
+        "width": 720,
+        "height": 122
+      },
+      "sound": {
+        "x": 490,
+        "y": 1494,
+        "width": 207,
+        "height": 73
+      }
+    },
+    "image": "title-v1-zh-pressed.png",
+    "pixels": [
+      1440,
+      3200
+    ],
+    "status": "pass"
+  },
+  {
+    "language": "en",
+    "viewport": {
+      "width": 720,
+      "height": 1600
+    },
+    "controls": [
+      {
+        "label": "LITTLE LAUNCHSTUDIO",
+        "x": 80,
+        "y": 42,
+        "width": 560,
+        "height": 224
+      },
+      {
+        "label": "New Game",
+        "x": 180,
+        "y": 304,
+        "width": 360,
+        "height": 88
+      },
+      {
+        "label": "Load Game",
+        "x": 180,
+        "y": 412,
+        "width": 360,
+        "height": 88
+      },
+      {
+        "label": "Records",
+        "x": 180,
+        "y": 520,
+        "width": 360,
+        "height": 88
+      },
+      {
+        "label": "Sound",
+        "x": 490,
+        "y": 1494,
+        "width": 207,
+        "height": 73
+      }
+    ],
+    "faces": [
+      {
+        "id": "s0",
+        "x": 402.1387677725118,
+        "y": 903.9121327014218,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "s1",
+        "x": 460.0117535545024,
+        "y": 932.8486255924172,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "s2",
+        "x": 269.03090047393357,
+        "y": 970.4660663507109,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "s3",
+        "x": 326.90388625592414,
+        "y": 999.4025592417063,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "boss",
+        "x": 286.39279620853074,
+        "y": 846.0391469194313,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "secretary",
+        "x": 344.2657819905213,
+        "y": 1048.594597156398,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      }
+    ],
+    "app": {
+      "x": 0,
+      "y": 0,
+      "width": 720,
+      "height": 1600
+    },
+    "footer": {
+      "x": 0,
+      "y": 1478,
+      "width": 720,
+      "height": 122
+    },
+    "sound": {
+      "x": 490,
+      "y": 1494,
+      "width": 207,
+      "height": 73
+    },
+    "designScale": 1,
+    "loadDisabled": true,
+    "pressed": false,
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 20,
+    "logoSubtitleEquivalentPx": 24,
+    "visibleCopy": "New Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
+    "nativeFooter": {
+      "footer": {
+        "x": 0,
+        "y": 1478,
+        "width": 720,
+        "height": 122
+      },
+      "sound": {
+        "x": 490,
+        "y": 1494,
+        "width": 207,
+        "height": 73
+      }
+    },
+    "image": "title-v1-en.png",
+    "pixels": [
+      1440,
+      3200
+    ],
+    "status": "pass"
+  },
+  {
+    "language": "en",
+    "viewport": {
+      "width": 720,
+      "height": 1600
+    },
+    "controls": [
+      {
+        "label": "LITTLE LAUNCHSTUDIO",
+        "x": 80,
+        "y": 42,
+        "width": 560,
+        "height": 224
+      },
+      {
+        "label": "New Game",
+        "x": 180,
+        "y": 304,
+        "width": 360,
+        "height": 88
+      },
+      {
+        "label": "Load Game",
+        "x": 180,
+        "y": 412,
+        "width": 360,
+        "height": 88
+      },
+      {
+        "label": "Records",
+        "x": 180,
+        "y": 520,
+        "width": 360,
+        "height": 88
+      },
+      {
+        "label": "Sound",
+        "x": 490,
+        "y": 1494,
+        "width": 207,
+        "height": 73
+      }
+    ],
+    "faces": [
+      {
+        "id": "s0",
+        "x": 402.1387677725118,
+        "y": 903.9121327014218,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "s1",
+        "x": 460.0117535545024,
+        "y": 932.8486255924172,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "s2",
+        "x": 269.03090047393357,
+        "y": 970.4660663507109,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "s3",
+        "x": 326.90388625592414,
+        "y": 999.4025592417063,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "boss",
+        "x": 286.39279620853074,
+        "y": 846.0391469194313,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      },
+      {
+        "id": "secretary",
+        "x": 344.2657819905213,
+        "y": 1048.594597156398,
+        "width": 48.83033175355451,
+        "height": 58.77725118483413
+      }
+    ],
+    "app": {
+      "x": 0,
+      "y": 0,
+      "width": 720,
+      "height": 1600
+    },
+    "footer": {
+      "x": 0,
+      "y": 1478,
+      "width": 720,
+      "height": 122
+    },
+    "sound": {
+      "x": 490,
+      "y": 1494,
+      "width": 207,
+      "height": 73
+    },
+    "designScale": 1,
+    "loadDisabled": true,
+    "pressed": true,
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 20,
+    "logoSubtitleEquivalentPx": 24,
+    "visibleCopy": "New Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
+    "nativeFooter": {
+      "footer": {
+        "x": 0,
+        "y": 1478,
+        "width": 720,
+        "height": 122
+      },
+      "sound": {
+        "x": 490,
+        "y": 1494,
+        "width": 207,
+        "height": 73
+      }
+    },
+    "image": "title-v1-en-pressed.png",
+    "pixels": [
+      1440,
+      3200
+    ],
+    "status": "pass"
+  },
+  {
+    "language": "zh-CN",
+    "viewport": {
+      "width": 360,
+      "height": 640
+    },
+    "controls": [
+      {
+        "label": "开发物语LITTLE LAUNCH STUDIO",
+        "x": 64.0625,
+        "y": 8.34375,
+        "width": 231.875,
+        "height": 92.75
+      },
+      {
+        "label": "新游戏",
+        "x": 96.515625,
+        "y": 111.28125,
+        "width": 166.953125,
+        "height": 37.09375
+      },
+      {
+        "label": "读取游戏",
+        "x": 96.515625,
+        "y": 156.71875,
+        "width": 166.953125,
+        "height": 37.09375
+      },
+      {
+        "label": "纪录",
+        "x": 96.515625,
+        "y": 202.15625,
+        "width": 166.953125,
+        "height": 37.09375
+      },
+      {
+        "label": "声音",
+        "x": 240.296875,
+        "y": 590.828125,
+        "width": 96,
+        "height": 33.84375
+      }
+    ],
+    "faces": [
+      {
+        "id": "s0",
+        "x": 198.48810722748814,
+        "y": 354.09786729857814,
+        "width": 21.369668246445496,
+        "height": 25.722748815165875
+      },
+      {
+        "id": "s1",
+        "x": 223.81512144549762,
+        "y": 366.7613744075829,
+        "width": 21.369668246445496,
+        "height": 25.722748815165875
+      },
+      {
+        "id": "s2",
+        "x": 140.23597452606634,
+        "y": 383.22393364928905,
+        "width": 21.369668246445496,
+        "height": 25.722748815165875
+      },
+      {
+        "id": "s3",
+        "x": 165.56298874407582,
+        "y": 395.8874407582938,
+        "width": 21.369668246445496,
+        "height": 25.722748815165875
+      },
+      {
+        "id": "boss",
+        "x": 147.8340787914692,
+        "y": 328.7708530805687,
+        "width": 21.369668246445496,
+        "height": 25.722748815165875
+      },
+      {
+        "id": "secretary",
+        "x": 173.1610930094787,
+        "y": 417.41540284360184,
+        "width": 21.369668246445496,
+        "height": 25.722748815165875
+      }
+    ],
+    "app": {
+      "x": 13.046875,
+      "y": 0,
+      "width": 333.90625,
+      "height": 640
+    },
+    "footer": {
+      "x": 13.046875,
+      "y": 583.421875,
+      "width": 333.90625,
+      "height": 56.578125
+    },
+    "sound": {
+      "x": 240.296875,
+      "y": 590.828125,
+      "width": 96,
+      "height": 33.84375
+    },
+    "designScale": 0.463768,
+    "loadDisabled": true,
+    "pressed": false,
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 9.27536,
+    "logoSubtitleEquivalentPx": 9.937500000000002,
+    "visibleCopy": "新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
+    "nativeFooter": {
+      "footer": {
+        "x": 13.046875,
+        "y": 583.421875,
+        "width": 333.90625,
+        "height": 56.578125
+      },
+      "sound": {
+        "x": 240.296875,
+        "y": 590.828125,
+        "width": 96,
+        "height": 33.84375
+      }
+    },
+    "image": "title-v1-zh-360x640.png",
+    "pixels": [
+      360,
+      640
+    ],
+    "status": "pass"
+  },
+  {
+    "language": "en",
+    "viewport": {
+      "width": 360,
+      "height": 640
+    },
+    "controls": [
+      {
+        "label": "LITTLE LAUNCHSTUDIO",
+        "x": 64.0625,
+        "y": 8.34375,
+        "width": 231.875,
+        "height": 92.75
+      },
+      {
+        "label": "New Game",
+        "x": 96.515625,
+        "y": 111.28125,
+        "width": 166.953125,
+        "height": 37.09375
+      },
+      {
+        "label": "Load Game",
+        "x": 96.515625,
+        "y": 156.71875,
+        "width": 166.953125,
+        "height": 37.09375
+      },
+      {
+        "label": "Records",
+        "x": 96.515625,
+        "y": 202.15625,
+        "width": 166.953125,
+        "height": 37.09375
+      },
+      {
+        "label": "Sound",
+        "x": 240.296875,
+        "y": 590.828125,
+        "width": 96,
+        "height": 33.84375
+      }
+    ],
+    "faces": [
+      {
+        "id": "s0",
+        "x": 198.48810722748814,
+        "y": 354.09786729857814,
+        "width": 21.369668246445496,
+        "height": 25.722748815165875
+      },
+      {
+        "id": "s1",
+        "x": 223.81512144549762,
+        "y": 366.7613744075829,
+        "width": 21.369668246445496,
+        "height": 25.722748815165875
+      },
+      {
+        "id": "s2",
+        "x": 140.23597452606634,
+        "y": 383.22393364928905,
+        "width": 21.369668246445496,
+        "height": 25.722748815165875
+      },
+      {
+        "id": "s3",
+        "x": 165.56298874407582,
+        "y": 395.8874407582938,
+        "width": 21.369668246445496,
+        "height": 25.722748815165875
+      },
+      {
+        "id": "boss",
+        "x": 147.8340787914692,
+        "y": 328.7708530805687,
+        "width": 21.369668246445496,
+        "height": 25.722748815165875
+      },
+      {
+        "id": "secretary",
+        "x": 173.1610930094787,
+        "y": 417.41540284360184,
+        "width": 21.369668246445496,
+        "height": 25.722748815165875
+      }
+    ],
+    "app": {
+      "x": 13.046875,
+      "y": 0,
+      "width": 333.90625,
+      "height": 640
+    },
+    "footer": {
+      "x": 13.046875,
+      "y": 583.421875,
+      "width": 333.90625,
+      "height": 56.578125
+    },
+    "sound": {
+      "x": 240.296875,
+      "y": 590.828125,
+      "width": 96,
+      "height": 33.84375
+    },
+    "designScale": 0.463768,
+    "loadDisabled": true,
+    "pressed": false,
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 9.27536,
+    "logoSubtitleEquivalentPx": 9.937500000000002,
+    "visibleCopy": "New Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
+    "nativeFooter": {
+      "footer": {
+        "x": 13.046875,
+        "y": 583.421875,
+        "width": 333.90625,
+        "height": 56.578125
+      },
+      "sound": {
+        "x": 240.296875,
+        "y": 590.828125,
+        "width": 96,
+        "height": 33.84375
+      }
+    },
+    "image": "title-v1-en-360x640.png",
+    "pixels": [
+      360,
+      640
+    ],
+    "status": "pass"
+  },
+  {
+    "language": "zh-CN",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "controls": [
+      {
+        "label": "开发物语LITTLE LAUNCH STUDIO",
+        "x": 43.328125,
+        "y": 22.75,
+        "width": 303.328125,
+        "height": 121.328125
+      },
+      {
+        "label": "新游戏",
+        "x": 97.5,
+        "y": 164.65625,
+        "width": 195,
+        "height": 47.65625
+      },
+      {
+        "label": "读取游戏",
+        "x": 97.5,
+        "y": 223.140625,
+        "width": 195,
+        "height": 47.65625
+      },
+      {
+        "label": "纪录",
+        "x": 97.5,
+        "y": 281.625,
+        "width": 195,
+        "height": 47.65625
+      },
+      {
+        "label": "声音",
+        "x": 265.421875,
+        "y": 786.578125,
+        "width": 112.125,
+        "height": 39.53125
+      }
+    ],
+    "faces": [
+      {
+        "id": "s0",
+        "x": 217.82516587677725,
+        "y": 474.93990521327015,
+        "width": 26.44976303317536,
+        "height": 31.837677725118485
+      },
+      {
+        "id": "s1",
+        "x": 249.17303317535544,
+        "y": 490.61383886255925,
+        "width": 26.44976303317536,
+        "height": 31.837677725118485
+      },
+      {
+        "id": "s2",
+        "x": 145.72507109004738,
+        "y": 510.9899526066351,
+        "width": 26.44976303317536,
+        "height": 31.837677725118485
+      },
+      {
+        "id": "s3",
+        "x": 177.07293838862557,
+        "y": 526.6638862559242,
+        "width": 26.44976303317536,
+        "height": 31.837677725118485
+      },
+      {
+        "id": "boss",
+        "x": 155.12943127962086,
+        "y": 443.59203791469196,
+        "width": 26.44976303317536,
+        "height": 31.837677725118485
+      },
+      {
+        "id": "secretary",
+        "x": 186.47729857819905,
+        "y": 553.3095734597157,
+        "width": 26.44976303317536,
+        "height": 31.837677725118485
+      }
+    ],
+    "app": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 844
+    },
+    "footer": {
+      "x": 0,
+      "y": 777.921875,
+      "width": 390,
+      "height": 66.078125
+    },
+    "sound": {
+      "x": 265.421875,
+      "y": 786.578125,
+      "width": 112.125,
+      "height": 39.53125
+    },
+    "designScale": 0.541667,
+    "loadDisabled": true,
+    "pressed": false,
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 10.8333,
+    "logoSubtitleEquivalentPx": 12.999776785714285,
+    "visibleCopy": "新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
+    "nativeFooter": {
+      "footer": {
+        "x": 0,
+        "y": 777.921875,
+        "width": 390,
+        "height": 66.078125
+      },
+      "sound": {
+        "x": 265.421875,
+        "y": 786.578125,
+        "width": 112.125,
+        "height": 39.53125
+      }
+    },
+    "image": "title-v1-zh-390x844.png",
+    "pixels": [
+      390,
+      844
+    ],
+    "status": "pass"
+  },
+  {
+    "language": "en",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "controls": [
+      {
+        "label": "LITTLE LAUNCHSTUDIO",
+        "x": 43.328125,
+        "y": 22.75,
+        "width": 303.328125,
+        "height": 121.328125
+      },
+      {
+        "label": "New Game",
+        "x": 97.5,
+        "y": 164.65625,
+        "width": 195,
+        "height": 47.65625
+      },
+      {
+        "label": "Load Game",
+        "x": 97.5,
+        "y": 223.140625,
+        "width": 195,
+        "height": 47.65625
+      },
+      {
+        "label": "Records",
+        "x": 97.5,
+        "y": 281.625,
+        "width": 195,
+        "height": 47.65625
+      },
+      {
+        "label": "Sound",
+        "x": 265.421875,
+        "y": 786.578125,
+        "width": 112.125,
+        "height": 39.53125
+      }
+    ],
+    "faces": [
+      {
+        "id": "s0",
+        "x": 217.82516587677725,
+        "y": 474.93990521327015,
+        "width": 26.44976303317536,
+        "height": 31.837677725118485
+      },
+      {
+        "id": "s1",
+        "x": 249.17303317535544,
+        "y": 490.61383886255925,
+        "width": 26.44976303317536,
+        "height": 31.837677725118485
+      },
+      {
+        "id": "s2",
+        "x": 145.72507109004738,
+        "y": 510.9899526066351,
+        "width": 26.44976303317536,
+        "height": 31.837677725118485
+      },
+      {
+        "id": "s3",
+        "x": 177.07293838862557,
+        "y": 526.6638862559242,
+        "width": 26.44976303317536,
+        "height": 31.837677725118485
+      },
+      {
+        "id": "boss",
+        "x": 155.12943127962086,
+        "y": 443.59203791469196,
+        "width": 26.44976303317536,
+        "height": 31.837677725118485
+      },
+      {
+        "id": "secretary",
+        "x": 186.47729857819905,
+        "y": 553.3095734597157,
+        "width": 26.44976303317536,
+        "height": 31.837677725118485
+      }
+    ],
+    "app": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 844
+    },
+    "footer": {
+      "x": 0,
+      "y": 777.921875,
+      "width": 390,
+      "height": 66.078125
+    },
+    "sound": {
+      "x": 265.421875,
+      "y": 786.578125,
+      "width": 112.125,
+      "height": 39.53125
+    },
+    "designScale": 0.541667,
+    "loadDisabled": true,
+    "pressed": false,
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 10.8333,
+    "logoSubtitleEquivalentPx": 12.999776785714285,
+    "visibleCopy": "New Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
+    "nativeFooter": {
+      "footer": {
+        "x": 0,
+        "y": 777.921875,
+        "width": 390,
+        "height": 66.078125
+      },
+      "sound": {
+        "x": 265.421875,
+        "y": 786.578125,
+        "width": 112.125,
+        "height": 39.53125
+      }
+    },
+    "image": "title-v1-en-390x844.png",
+    "pixels": [
+      390,
+      844
+    ],
+    "status": "pass"
+  },
+  {
+    "language": "zh-CN",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "controls": [
+      {
+        "label": "开发物语LITTLE LAUNCH STUDIO",
+        "x": 47.78125,
+        "y": 25.078125,
+        "width": 334.4375,
+        "height": 133.765625
+      },
+      {
+        "label": "新游戏",
+        "x": 107.5,
+        "y": 181.53125,
+        "width": 215,
+        "height": 52.546875
+      },
+      {
+        "label": "读取游戏",
+        "x": 107.5,
+        "y": 246.015625,
+        "width": 215,
+        "height": 52.546875
+      },
+      {
+        "label": "纪录",
+        "x": 107.5,
+        "y": 310.5,
+        "width": 215,
+        "height": 52.546875
+      },
+      {
+        "label": "声音",
+        "x": 292.640625,
+        "y": 868.6875,
+        "width": 123.625,
+        "height": 43.59375
+      }
+    ],
+    "faces": [
+      {
+        "id": "s0",
+        "x": 240.1662085308057,
+        "y": 524.4350236966825,
+        "width": 29.162559241706163,
+        "height": 35.10308056872038
+      },
+      {
+        "id": "s1",
+        "x": 274.72924170616113,
+        "y": 541.7165402843602,
+        "width": 29.162559241706163,
+        "height": 35.10308056872038
+      },
+      {
+        "id": "s2",
+        "x": 160.67123222748816,
+        "y": 564.1825118483413,
+        "width": 29.162559241706163,
+        "height": 35.10308056872038
+      },
+      {
+        "id": "s3",
+        "x": 195.23426540284362,
+        "y": 581.464028436019,
+        "width": 29.162559241706163,
+        "height": 35.10308056872038
+      },
+      {
+        "id": "boss",
+        "x": 171.0401421800948,
+        "y": 489.871990521327,
+        "width": 29.162559241706163,
+        "height": 35.10308056872038
+      },
+      {
+        "id": "secretary",
+        "x": 205.60317535545025,
+        "y": 610.8426066350711,
+        "width": 29.162559241706163,
+        "height": 35.10308056872038
+      }
+    ],
+    "app": {
+      "x": 0,
+      "y": 0,
+      "width": 430,
+      "height": 932
+    },
+    "footer": {
+      "x": 0,
+      "y": 859.140625,
+      "width": 430,
+      "height": 72.859375
+    },
+    "sound": {
+      "x": 292.640625,
+      "y": 868.6875,
+      "width": 123.625,
+      "height": 43.59375
+    },
+    "designScale": 0.597222,
+    "loadDisabled": true,
+    "pressed": false,
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 11.9444,
+    "logoSubtitleEquivalentPx": 14.333035714285716,
+    "visibleCopy": "新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
+    "nativeFooter": {
+      "footer": {
+        "x": 0,
+        "y": 859.140625,
+        "width": 430,
+        "height": 72.859375
+      },
+      "sound": {
+        "x": 292.640625,
+        "y": 868.6875,
+        "width": 123.625,
+        "height": 43.59375
+      }
+    },
+    "image": "title-v1-zh-430x932.png",
+    "pixels": [
+      430,
+      932
+    ],
+    "status": "pass"
+  },
+  {
+    "language": "en",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "controls": [
+      {
+        "label": "LITTLE LAUNCHSTUDIO",
+        "x": 47.78125,
+        "y": 25.078125,
+        "width": 334.4375,
+        "height": 133.765625
+      },
+      {
+        "label": "New Game",
+        "x": 107.5,
+        "y": 181.53125,
+        "width": 215,
+        "height": 52.546875
+      },
+      {
+        "label": "Load Game",
+        "x": 107.5,
+        "y": 246.015625,
+        "width": 215,
+        "height": 52.546875
+      },
+      {
+        "label": "Records",
+        "x": 107.5,
+        "y": 310.5,
+        "width": 215,
+        "height": 52.546875
+      },
+      {
+        "label": "Sound",
+        "x": 292.640625,
+        "y": 868.6875,
+        "width": 123.625,
+        "height": 43.59375
+      }
+    ],
+    "faces": [
+      {
+        "id": "s0",
+        "x": 240.1662085308057,
+        "y": 524.4350236966825,
+        "width": 29.162559241706163,
+        "height": 35.10308056872038
+      },
+      {
+        "id": "s1",
+        "x": 274.72924170616113,
+        "y": 541.7165402843602,
+        "width": 29.162559241706163,
+        "height": 35.10308056872038
+      },
+      {
+        "id": "s2",
+        "x": 160.67123222748816,
+        "y": 564.1825118483413,
+        "width": 29.162559241706163,
+        "height": 35.10308056872038
+      },
+      {
+        "id": "s3",
+        "x": 195.23426540284362,
+        "y": 581.464028436019,
+        "width": 29.162559241706163,
+        "height": 35.10308056872038
+      },
+      {
+        "id": "boss",
+        "x": 171.0401421800948,
+        "y": 489.871990521327,
+        "width": 29.162559241706163,
+        "height": 35.10308056872038
+      },
+      {
+        "id": "secretary",
+        "x": 205.60317535545025,
+        "y": 610.8426066350711,
+        "width": 29.162559241706163,
+        "height": 35.10308056872038
+      }
+    ],
+    "app": {
+      "x": 0,
+      "y": 0,
+      "width": 430,
+      "height": 932
+    },
+    "footer": {
+      "x": 0,
+      "y": 859.140625,
+      "width": 430,
+      "height": 72.859375
+    },
+    "sound": {
+      "x": 292.640625,
+      "y": 868.6875,
+      "width": 123.625,
+      "height": 43.59375
+    },
+    "designScale": 0.597222,
+    "loadDisabled": true,
+    "pressed": false,
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 11.9444,
+    "logoSubtitleEquivalentPx": 14.333035714285716,
+    "visibleCopy": "New Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
+    "nativeFooter": {
+      "footer": {
+        "x": 0,
+        "y": 859.140625,
+        "width": 430,
+        "height": 72.859375
+      },
+      "sound": {
+        "x": 292.640625,
+        "y": 868.6875,
+        "width": 123.625,
+        "height": 43.59375
+      }
+    },
+    "image": "title-v1-en-430x932.png",
+    "pixels": [
+      430,
+      932
+    ],
+    "status": "pass"
+  }
+]

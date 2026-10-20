@@ -313,7 +313,9 @@ function staminaWeek(){const dev=!!(S.project&&!S.project.awaiting)||!!S.contrac
 const cam={x:0,y:0,z:1,fit:true};let stageW=1,stageH=1;
 function fitCam(){const minX=iso(0,ROOM_H)[0]-6,maxX=iso(ROOM_W,0)[0]+6,minY=-190,maxY=iso(ROOM_W,ROOM_H)[1]+30;
   // 照效果图：房间左右角贴住屏幕两边（抽屉把手允许压在左角上），房间整体在场景区竖直略偏下
-  cam.z=clamp(Math.min(stageW/(maxX-minX),stageH/(maxY-minY)),.25,3);cam.x=stageW/2-(minX+maxX)/2*cam.z;cam.y=stageH*.52-(minY+maxY)/2*cam.z;}
+  cam.z=clamp(Math.min(stageW/(maxX-minX),stageH/(maxY-minY)),.25,3);cam.x=stageW/2-(minX+maxX)/2*cam.z;cam.y=stageH*.52-(minY+maxY)/2*cam.z;
+  // 标题画面：长屏（场景高宽比 > 1.9）放大 1.06，房间整体下移到 65%，给 Logo 和按钮让位（PR #34 确认参数）
+  if(UI.title){const f=stageH/stageW>1.9?1.06:1;const cx=(minX+maxX)/2,cy=(minY+maxY)/2;cam.z*=f;cam.x=stageW/2-cx*cam.z;cam.y=stageH*.65-cy*cam.z;}}
 const w2s=(x,y)=>[x*cam.z+cam.x,y*cam.z+cam.y];
 function resize(){const r=$('#scene').getBoundingClientRect();stageW=Math.max(1,r.width);stageH=Math.max(1,r.height);const d=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(stageW*d);canvas.height=Math.round(stageH*d);if(cam.fit)fitCam();}
 new ResizeObserver(resize).observe($('#scene'));
@@ -338,7 +340,7 @@ const JOBN={prog:'程序员',plan:'剧本作家',art:'设计师',sound:'音效�
 const UI={menu:false,dlg:null,page:0,collapsed:false};
 const blocking=()=>UI.menu||!!UI.dlg||!!UI.title;
 function setBottom(l,r){for(const [el,c] of [[$('#btnL'),l],[$('#btnR'),r]]){el.textContent=c?c.label:'';el.classList.toggle('empty',!c);el.onclick=c?c.fn:null;el.tabIndex=c?0:-1;}}
-const idleBottom=()=>UI.title?setBottom(null,{label:'声音',fn:soundDlg}):setBottom({label:'保存',fn:doSave},{label:'菜单',fn:openMenu});
+const idleBottom=()=>UI.title?setBottom(null,{label:TITLE_EN?'Sound':'声音',fn:soundDlg}):setBottom({label:'保存',fn:doSave},{label:'菜单',fn:openMenu});
 function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,1600);}
 
 // ---- 菜单（场景左侧竖排 + 右侧子菜单）
@@ -685,14 +687,20 @@ function nameGame(leaderId){inputDlg('作品名称','给这部新作起个名字
 
 // ================= 标题画面
 // 照原作：场景当背景，上方 Logo，中间竖排「新游戏 / 读取游戏 / 纪录」；顶栏、信息栏收起，时间暂停。
-// 底栏左空槽，右「声音」（原作是开罗合集的「返回地图」，我们不需要）。
+// 底栏左侧标语，右「声音」（原作是开罗合集的「返回地图」，我们不需要）。
 const hasSave=()=>{try{const s=JSON.parse(localStorage.getItem(KEY)||'null');return !!(s&&(s.v===2||s.v===3));}catch(e){return false;}};
 function showTitle(){UI.title=true;UI.menu=false;UI.dlg=null;$('#menu').hidden=true;$('#submenu').hidden=true;$('#dlg').hidden=true;
   $('#app').classList.add('titlemode');resize();renderTitle();idleBottom();}
-function renderTitle(){const has=hasSave(),b=(t,fn,dis)=>h('button',{type:'button',class:'tbtn',disabled:dis,onclick:fn},t);
+// 美术：assets/ui/ui_title_*（Codex PR #34，接入说明见 art/TITLE-ASSETS.md）。?lang=en 显示英文版标题画面（美版用）
+const TITLE_EN=/[?&]lang=en\b/.test(location.search);
+const TCOPY=TITLE_EN?{new:'New Game',load:'Load Game',rec:'Records',tag:'Small team. Big ideas.'}:{new:'新游戏',load:'读取游戏',rec:'纪录',tag:'从一个点子开始'};
+function renderTitle(){const has=hasSave();
+  const b=(t,ic,fn,dis,kind)=>h('button',{type:'button',class:'tbtn '+kind,disabled:dis,onclick:fn},h('img',{src:`assets/ui/ui_title_btn_icon_${ic}.png`,alt:''}),h('span',{},t));
   const el=$('#title');el.hidden=false;
-  el.replaceChildren(h('div',{class:'tlogo'},h('b',{},'开发物语'),h('small',{},'GAME STUDIO STORY')),
-    h('div',{class:'tbtns'},b('新游戏',titleNew),b('读取游戏',titleLoad,!has),b('纪录',hallDlg)));}
+  el.replaceChildren(h('div',{class:'tshade'}),
+    h('div',{class:'tgroup'},h('div',{class:'tlogo'},h('img',{src:`assets/ui/ui_title_logo${TITLE_EN?'_en':''}.png`,alt:TITLE_EN?'Little Launch Studio':'开发物语'})),
+      h('nav',{class:'tbtns'},b(TCOPY.new,'new',titleNew,false,'primary'),b(TCOPY.load,'load',titleLoad,!has,'wood'),b(TCOPY.rec,'record',hallDlg,false,'wood'))));
+  $('#tagline').replaceChildren(h('i',{class:'stamp'},'✦'),h('span',{},TCOPY.tag,h('small',{},'LITTLE LAUNCH STUDIO')));}
 function titleNew(){if(hasSave())picker('新游戏',[{v:1,label:'开始新游戏',sub:'现有存档会被覆盖'},{v:0,label:'算了'}],v=>{closeDlg();if(v)askCompany();},closeDlg);else askCompany();}
 function titleLoad(){if(load())enterGame(false);else{toast('存档读不出来');renderTitle();}}
 function askCompany(){inputDlg('公司名称','给你的游戏公司起个名字吧。',DEF_COMPANY,8,name=>{closeDlg();if(typeof away!=='undefined')away.clear();pending.length=0;newGame();S.company=name;save();enterGame(true);},closeDlg);}
@@ -1100,7 +1108,7 @@ canvas.addEventListener('dblclick',()=>{cam.fit=true;fitCam();});
 function tapAt(x,y){for(const s of S.staff){const ps=personState(s.id);if(ps.mode==='absent')continue;const [wx,wy]=ps.mode==='walk'?[ps.x,ps.y]:seatWorld(s.seat);const [sx,sy]=w2s(wx,wy);if(Math.abs(x-sx)<20*cam.z&&y>sy-100*cam.z&&y<sy+6*cam.z){staffDlg();return;}}}
 
 // ================= 渲染循环
-function draw(t){if(!gl)return;gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(.68,.71,.76,1);gl.clear(gl.COLOR_BUFFER_BIT);
+function draw(t){if(!gl)return;gl.viewport(0,0,canvas.width,canvas.height);UI.title?gl.clearColor(.96,.92,.82,1):gl.clearColor(.68,.71,.76,1);gl.clear(gl.COLOR_BUFFER_BIT);
   nq=0;const hasBG=!!bgTex.bg_city;if(hasBG)bgQuad();const q0=nq;for(const [k,x,y,fl] of staticFlat)if(!(hasBG&&k==='outside'))spr(k,x,y,fl);drawShadows();const items=[];
   for(const [k,x,y] of DECOR){const [sx,sy]=tc(x,y);items.push([x+y,k,sx,sy]);}
   for(const s of ACT()){const [x,y]=s.d;const [sx,sy]=tc(x,y);items.push([x+y,s.k==='a'?'desk':'desk_back',sx,sy]);}
