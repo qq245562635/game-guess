@@ -41,5 +41,8 @@
   "ui_input_focus",
   "ui_title_logo",
   "ui_title_logo_en",
-  "ui_title_shade"
+  "ui_title_shade",
+  "ui_ad_list",
+  "ui_ad_row",
+  "ui_work_box"
 ]

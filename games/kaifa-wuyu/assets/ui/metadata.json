@@ -1078,6 +1078,87 @@
       "textBaked": false,
       "cloudFadeEnd": 0.55,
       "source": "art/title-v1-source/export.html"
+    },
+    {
+      "key": "ui_ad_list",
+      "width": 604,
+      "height": 300,
+      "nineSlice": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "state": "normal",
+      "pixels": [
+        1208,
+        600
+      ],
+      "source": "art/source/ui-ad-work/ui_ad_list.svg",
+      "path": "assets/ui/ui_ad_list.png",
+      "safeNineSlice": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "batch": "ui-ad-work-v1",
+      "method": "editable SVG geometry; flat stretch region; no text",
+      "sourceRect": null
+    },
+    {
+      "key": "ui_ad_row",
+      "width": 580,
+      "height": 64,
+      "nineSlice": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "state": "selected",
+      "pixels": [
+        1160,
+        128
+      ],
+      "source": "art/source/ui-ad-work/ui_ad_row.svg",
+      "path": "assets/ui/ui_ad_row.png",
+      "safeNineSlice": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "batch": "ui-ad-work-v1",
+      "method": "editable SVG geometry; flat stretch region; no text",
+      "sourceRect": null
+    },
+    {
+      "key": "ui_work_box",
+      "width": 604,
+      "height": 250,
+      "nineSlice": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "state": "normal",
+      "pixels": [
+        1208,
+        500
+      ],
+      "source": "art/source/ui-ad-work/ui_work_box.svg",
+      "path": "assets/ui/ui_work_box.png",
+      "safeNineSlice": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "batch": "ui-ad-work-v1",
+      "method": "editable SVG geometry; flat stretch region; no text",
+      "sourceRect": null
     }
   ],
   "notes": [

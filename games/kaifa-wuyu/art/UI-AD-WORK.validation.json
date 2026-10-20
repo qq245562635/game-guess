@@ -1,0 +1,72 @@
+{
+  "scale": 2,
+  "nineSliceOrder": "top,right,bottom,left; logical px",
+  "assets": [
+    {
+      "key": "ui_ad_list",
+      "width": 604,
+      "height": 300,
+      "nineSlice": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "fill": "#FFF8E9",
+      "state": "normal",
+      "pixels": [
+        1208,
+        600
+      ],
+      "channels": 4,
+      "transparentCorner": true,
+      "uniformCenter": true,
+      "source": "art/source/ui-ad-work/ui_ad_list.svg",
+      "preview": "native size, narrower/wider nine-slice samples"
+    },
+    {
+      "key": "ui_ad_row",
+      "width": 580,
+      "height": 64,
+      "nineSlice": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "fill": "#DDEBB9",
+      "state": "selected",
+      "pixels": [
+        1160,
+        128
+      ],
+      "channels": 4,
+      "transparentCorner": true,
+      "uniformCenter": true,
+      "source": "art/source/ui-ad-work/ui_ad_row.svg",
+      "preview": "native size, narrower/wider nine-slice samples"
+    },
+    {
+      "key": "ui_work_box",
+      "width": 604,
+      "height": 250,
+      "nineSlice": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "fill": "#FFFFFF",
+      "state": "normal",
+      "pixels": [
+        1208,
+        500
+      ],
+      "channels": 4,
+      "transparentCorner": true,
+      "uniformCenter": true,
+      "source": "art/source/ui-ad-work/ui_work_box.svg",
+      "preview": "native size, narrower/wider nine-slice samples"
+    }
+  ]
+}

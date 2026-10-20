@@ -2,6 +2,8 @@
 
 标题正式素材已交付 **14 张**（Logo 中英、浅绿/木牌两套三态按钮、3 图标、暖云层、输入框两态）。见 [给 Claude 的接入说明](../../art/TITLE-ASSETS.md) 与 [素材总览](../../art/previews/title-v1-assets.png)。按钮无字，按下底图已含下沉；只下移文字/图标，不再次下移 PNG。
 
+新增宣传 / 工作画面 3 张：`ui_ad_list`、`ui_ad_row`（仅选中态）、`ui_work_box`。尺寸、九宫格和接入说明见 [UI-AD-WORK.md](../../art/UI-AD-WORK.md)，[缩放预览](../../art/previews/ui-ad-work-v1.png)。源 SVG 与重建脚本已附；中部纯色，外角透明。以下 21 张为原主界面批次说明。
+
 21 张 RGBA PNG，设计宽 720，交付为逻辑尺寸的 2 倍。来源：`../../art/reference/ui-main-v2.png`，尺寸 870×1808。文件清单、逻辑尺寸、源图裁切框、九宫格参数详见 metadata.json。
 
 ## 接入
