@@ -370,6 +370,180 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 </div>
 <script>
 "use strict";
+// ================= 声音：音乐和音效全部用 WebAudio 现场合成，不需要任何音频文件。
+// 想换成正式音频：把文件放进 assets/audio/<key>.mp3（或 .ogg / .wav），并在 assets/audio/index.json 写 key 数组，
+// 例如 ["bgm_office","sfx_coin"]。启动后自动加载，同名 key 优先用文件，缺的继续用合成版。key 一览见 AUDIO.md。
+// 浏览器要求用户先点一下页面才能出声：第一次触屏 / 点击时自动打开音频。
+const SND=(()=>{
+  const PK='kaifa_wuyu_audio',MUS_VOL=.42,SFX_VOL=.9;
+  const pref={mus:true,sfx:true};try{Object.assign(pref,JSON.parse(localStorage.getItem(PK)||'{}'));}catch(e){}
+  const savePref=()=>{try{localStorage.setItem(PK,JSON.stringify(pref));}catch(e){}};
+  let ctx=null,out,MUS,SFX,noiseBuf=null,cur=null,want='office';const FILES={},lastAt={};
+  const mtof=m=>440*Math.pow(2,(m-69)/12);
+  const r=(a,b)=>a+Math.random()*(b-a);
+  const NN={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+  const nn=s=>{const m=/^([A-G])(b|#)?(\d)$/.exec(s);return 12*(+m[3]+1)+NN[m[1]]+(m[2]==='b'?-1:m[2]==='#'?1:0);};
+
+  // ---- 初始化（第一次用户操作时）
+  function makeIR(sec,decay){const n=Math.floor(ctx.sampleRate*sec),b=ctx.createBuffer(2,n,ctx.sampleRate);
+    for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,decay);}return b;}
+  // 一条总线：干声 g + 混响送 rv（混响出来也回到 g，静音时一起静）
+  function mkBus(vol,dest,revAmt){const g=ctx.createGain();g.gain.value=vol;g.connect(dest);
+    const rv=ctx.createGain();rv.gain.value=1;const cv=ctx.createConvolver();cv.buffer=makeIR(1.8,3);const wet=ctx.createGain();wet.gain.value=revAmt;
+    rv.connect(cv);cv.connect(wet);wet.connect(g);return {g,rv};}
+  function init(){if(ctx)return true;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
+    try{ctx=new AC();}catch(e){return false;}
+    const comp=ctx.createDynamicsCompressor();comp.threshold.value=-16;comp.knee.value=12;comp.ratio.value=4;comp.attack.value=.004;comp.release.value=.2;comp.connect(ctx.destination);
+    out=ctx.createGain();out.gain.value=1;out.connect(comp);
+    MUS=mkBus(pref.mus?MUS_VOL:0,out,.5);SFX=mkBus(pref.sfx?SFX_VOL:0,out,.6);
+    noiseBuf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    loadFiles();setInterval(tickMusic,25);return true;}
+  function loadFiles(){fetch('assets/audio/index.json').then(x=>x.ok?x.json():[]).catch(()=>[]).then(keys=>{if(!Array.isArray(keys))return;
+    for(const k of keys){const tryExt=exts=>{if(!exts.length)return;fetch(`assets/audio/${k}.${exts[0]}`).then(x=>{if(!x.ok)throw 0;return x.arrayBuffer();})
+      .then(ab=>new Promise((ok,no)=>ctx.decodeAudioData(ab,ok,no))).then(buf=>{FILES[k]=buf;if(k.startsWith('bgm_')&&cur&&cur.name===k.slice(4))restartMusic();}).catch(()=>tryExt(exts.slice(1)));};
+      tryExt(['mp3','ogg','wav']);}});}
+  const unlock=()=>{if(!init())return;if(ctx.state!=='running')ctx.resume();};
+  for(const ev of ['pointerdown','touchend','keydown'])addEventListener(ev,unlock,true);
+  document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hidden)ctx.suspend();else ctx.resume();});
+  const live=()=>ctx&&ctx.state==='running';
+
+  // ---- 基础发声
+  function route(node,bus,rev,pan){let n=node;if(pan&&ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=pan;n.connect(p);n=p;}
+    n.connect(bus.g);if(rev){const s=ctx.createGain();s.gain.value=rev;n.connect(s);s.connect(bus.rv);}}
+  function env(g,t,a,vol,dur,rel=.05){g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+a);g.gain.setTargetAtTime(0,t+a+dur,rel);}
+  function tone(t,f,o={}){const {type='sine',dur=.12,vol=.2,a=.004,f1=0,bus=SFX,rev=0,pan=0}=o;
+    const os=ctx.createOscillator();os.type=type;os.frequency.setValueAtTime(f,t);if(f1)os.frequency.exponentialRampToValueAtTime(f1,t+dur);
+    const g=ctx.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+dur);
+    os.connect(g);route(g,bus,rev,pan);os.start(t);os.stop(t+a+dur+.05);}
+  function noise(t,o={}){const {dur=.08,vol=.15,type='bandpass',freq=2000,f1=0,q=1,a=.002,bus=SFX,rev=0,pan=0}=o;
+    const s=ctx.createBufferSource();s.buffer=noiseBuf;s.loop=true;const fl=ctx.createBiquadFilter();fl.type=type;fl.frequency.setValueAtTime(freq,t);if(f1)fl.frequency.exponentialRampToValueAtTime(f1,t+dur);fl.Q.value=q;
+    const g=ctx.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+dur);
+    s.connect(fl);fl.connect(g);route(g,bus,rev,pan);s.start(t,Math.random()*.5);s.stop(t+a+dur+.05);}
+  // 钟琴：正弦 + 高次泛音，敲击感
+  function bell(t,m,o={}){const {vol=.12,dur=.6,bus=SFX,rev=.35,pan=0}=o;const f=mtof(m);
+    tone(t,f,{vol,dur,bus,rev,pan,a:.002});tone(t,f*2.76,{vol:vol*.25,dur:dur*.35,bus,rev,pan,a:.001});tone(t,f*5.4,{vol:vol*.08,dur:dur*.15,bus,rev,pan,a:.001});}
+  // 铜管：锯齿波 + 低通开合
+  function brass(t,m,dur,vol,bus=SFX,rev=.3){const f=mtof(m);const g=ctx.createGain();env(g,t,.03,vol,dur,.08);
+    const fl=ctx.createBiquadFilter();fl.type='lowpass';fl.Q.value=1;fl.frequency.setValueAtTime(600,t);fl.frequency.linearRampToValueAtTime(2600,t+.05);fl.frequency.setTargetAtTime(1300,t+.08,.15);
+    for(const dt of [-6,6]){const o=ctx.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=dt;o.connect(fl);o.start(t);o.stop(t+dur+.6);}
+    fl.connect(g);route(g,bus,rev);}
+  // 电钢琴：FM（调制比 1，调制量快速衰减）+ 高八度亮音
+  function epiano(t,m,dur,vol,bus,pan=0){const f=mtof(m);
+    const c=ctx.createOscillator();c.frequency.value=f;const mo=ctx.createOscillator();mo.frequency.value=f;
+    const mg=ctx.createGain();mg.gain.setValueAtTime(f*1.4,t);mg.gain.exponentialRampToValueAtTime(f*.1,t+.5);mo.connect(mg);mg.connect(c.frequency);
+    const g=ctx.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.006);g.gain.exponentialRampToValueAtTime(vol*.4,t+.3);g.gain.setTargetAtTime(0,t+dur,.09);
+    c.connect(g);route(g,bus,.25,pan);c.start(t);mo.start(t);c.stop(t+dur+.6);mo.stop(t+dur+.6);
+    tone(t,f*2,{vol:vol*.18,dur:.25,bus,pan});}
+  function bass(t,m,dur,vol,bus){const f=mtof(m);const g=ctx.createGain();env(g,t,.008,vol,dur*.8,.06);
+    const fl=ctx.createBiquadFilter();fl.type='lowpass';fl.frequency.setValueAtTime(1400,t);fl.frequency.setTargetAtTime(500,t,.08);
+    const o1=ctx.createOscillator();o1.type='triangle';o1.frequency.value=f;const o2=ctx.createOscillator();o2.type='sawtooth';o2.frequency.value=f;
+    const g2=ctx.createGain();g2.gain.value=.25;o1.connect(fl);o2.connect(g2);g2.connect(fl);fl.connect(g);route(g,bus,0);
+    for(const o of [o1,o2]){o.start(t);o.stop(t+dur+.4);}}
+  // 旋律：颤音琴（正弦 + 弱三角泛音 + 轻微颤音）
+  function vibes(t,m,dur,vol,bus){const f=mtof(m);const g=ctx.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);
+    g.gain.exponentialRampToValueAtTime(vol*.5,t+.25);g.gain.setTargetAtTime(0,t+dur,.12);
+    const trem=ctx.createOscillator();trem.frequency.value=5.2;const tg=ctx.createGain();tg.gain.value=vol*.12;trem.connect(tg);tg.connect(g.gain);
+    const o1=ctx.createOscillator();o1.frequency.value=f;const o2=ctx.createOscillator();o2.type='triangle';o2.frequency.value=f*4;const g2=ctx.createGain();g2.gain.value=.04;
+    o1.connect(g);o2.connect(g2);g2.connect(g);route(g,bus,.4,.15);for(const o of [o1,o2,trem]){o.start(t);o.stop(t+dur+.8);}}
+  function kick(t,vol,bus){const o=ctx.createOscillator();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(45,t+.12);
+    const g=ctx.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+.3);o.connect(g);route(g,bus,0);o.start(t);o.stop(t+.35);}
+  const hat=(t,vol,bus,open)=>noise(t,{type:'highpass',freq:7000,dur:open?.18:.03,vol,bus,pan:.25});
+  const rim=(t,vol,bus)=>{noise(t,{freq:1900,q:3,dur:.04,vol,bus,rev:.2,pan:-.1});tone(t,820,{type:'triangle',dur:.03,vol:vol*.6,bus});};
+  const clap=(t,vol,bus)=>{for(const d of [0,.012,.024])noise(t+d,{freq:1300,q:1.2,dur:d===.024?.12:.015,vol,bus,rev:.25});};
+  const shaker=(t,vol,bus)=>noise(t,{freq:6000,q:1.5,dur:.05,vol,bus,a:.015,pan:-.3});
+
+  // ---- 音乐：8 小节循环，每小节 8 个八分音符。旋律记谱：音名 / -（延长）/ .（休止）
+  const mel=bars=>{const out=[];bars.forEach((bar,bi)=>{bar.split(' ').forEach((tk,si)=>{const st=bi*8+si;
+    if(tk==='-'){if(out.length&&out[out.length-1].end===st)out[out.length-1].end++;}else if(tk!=='.')out.push({st,m:nn(tk),end:st+1});});});
+    const m={};for(const n of out)m[n.st]=n;return m;};
+  const TRACKS={
+    // 平时：轻快的 bossa / lo-fi，F 大调
+    office:{bpm:94,swing:.16,
+      bass:['F2','A2','Bb2','C3','F2','D2','G2','C3'].map(nn),
+      chords:[[53,57,60,64],[57,60,64,67],[53,57,62],[55,58,64],[53,57,60,64],[57,60,62,65],[53,58,62],[52,58,62]],
+      mel:mel(['A4 . C5 . E5 - - .','D5 . C5 A4 - - G4 .','F4 . A4 . D5 - C5 .','Bb4 - A4 - G4 - - -',
+               'A4 . C5 . F5 - E5 .','D5 - C5 . A4 . F4 .','G4 . Bb4 . D5 - C5 Bb4','A4 - - - G4 - - .']),
+      step(t,i,bar,s,L,P){const B=P.bus,sd=P.sd;
+        if(s===0)kick(t,.5,B);if(s===5)kick(t,.28,B);if(s===2||s===6)rim(t,.13,B);
+        hat(t,s%2?.035:.05,B);if(s%2)shaker(t,.03,B);
+        const root=L.bass[bar];if(s===0)bass(t,root,sd*2.6,.32,B);if(s===3)bass(t,root+7,sd*.9,.24,B);if(s===4)bass(t,root,sd*2.6,.28,B);if(s===7)bass(t,root+7,sd*.8,.2,B);
+        if(s===0||s===3||s===6)for(const m of L.chords[bar])epiano(t+r(0,.012),m,sd*(s===0?2.6:1.6),s===0?.055:.04,B,r(-.3,.3));
+        P.lead(t,i,.075);}},
+    // 开发中：更有干劲的 pop，C 大调
+    dev:{bpm:118,swing:0,
+      bass:['C3','A2','F2','G2','C3','A2','F2','G2'].map(nn),
+      chords:[[52,55,60],[52,57,60],[53,57,60],[50,55,59],[52,55,60],[52,57,60],[53,57,60,64],[53,55,59,62]],
+      mel:mel(['E5 . G5 . E5 D5 C5 .','A4 . C5 . E5 - - .','F5 . E5 . D5 . C5 .','D5 - - . B4 . G4 .',
+               'E5 . G5 . A5 G5 E5 .','C5 . E5 . A5 - G5 .','F5 E5 D5 . C5 . A4 .','B4 - - . D5 - - .']),
+      step(t,i,bar,s,L,P){const B=P.bus,sd=P.sd;
+        if(s===0||s===4)kick(t,.55,B);if(bar%2&&s===7)kick(t,.3,B);if(s===2||s===6)clap(t,.11,B);
+        hat(t,s%2?.045:.03,B,s===7&&bar%4===3);
+        const root=L.bass[bar];bass(t,s===3||s===7?root+12:root,sd*.85,s%2?.2:.27,B);
+        if(s%2)for(const m of L.chords[bar])epiano(t+r(0,.008),m,sd*.6,.04,B,r(-.3,.3));
+        if(s===0)for(const m of L.chords[bar])epiano(t,m+12,sd*3,.018,B,r(-.4,.4));
+        P.lead(t,i,.07);}},
+  };
+  function startMusic(name){const L=TRACKS[name];if(!L)return null;const t0=ctx.currentTime+.08;
+    const g=ctx.createGain();g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(1,t0+.6);g.connect(MUS.g);
+    const P={name,L,bus:{g,rv:MUS.rv},sd:60/L.bpm/2,i:0,next:t0,g};
+    const buf=FILES['bgm_'+name];
+    if(buf){const s=ctx.createBufferSource();s.buffer=buf;s.loop=true;s.connect(g);s.start(t0);P.src=s;return P;}
+    // 旋律：前两遍唱，第三遍只留伴奏换口气
+    P.lead=(t,i,vol)=>{const loop=Math.floor(i/64)%3;if(loop===2)return;const n=L.mel[i%64];if(n)vibes(t,n.m,(n.end-n.st)*P.sd*.95,vol,P.bus);};
+    return P;}
+  function stopMusic(P){if(!P)return;const t=ctx.currentTime;P.g.gain.cancelScheduledValues(t);P.g.gain.setValueAtTime(P.g.gain.value,t);P.g.gain.linearRampToValueAtTime(0,t+.8);
+    P.dead=true;if(P.src)P.src.stop(t+.9);setTimeout(()=>P.g.disconnect(),1500);}
+  function restartMusic(){if(cur){stopMusic(cur);cur=null;}}
+  function tickMusic(){if(!live())return;
+    if(cur&&(cur.name!==want||!pref.mus)){stopMusic(cur);cur=null;}
+    if(!cur&&want&&pref.mus)cur=startMusic(want);
+    if(!cur||cur.src)return;
+    while(cur.next<ctx.currentTime+.15){const P=cur,i=P.i,s=i%8,bar=Math.floor(i/8)%8;const t=P.next+(s%2?P.L.swing*P.sd:0);
+      P.L.step(t,i,bar,s,P.L,P);P.i++;P.next+=P.sd;}}
+  // 播放大段音效时把音乐压低一会儿
+  function duck(sec){if(!MUS||!pref.mus)return;const t=ctx.currentTime,g=MUS.g.gain;g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);
+    g.linearRampToValueAtTime(MUS_VOL*.3,t+.05);g.setValueAtTime(MUS_VOL*.3,t+sec);g.linearRampToValueAtTime(MUS_VOL,t+sec+.6);}
+
+  // ---- 音效。key = 文件名去掉 sfx_ 前缀
+  const STAT_NOTE={fun:79,creat:83,gfx:86,snd:88};
+  const FX={
+    tap:t=>{tone(t,1050,{f1:700,dur:.04,vol:.09});noise(t,{type:'highpass',freq:5000,dur:.012,vol:.03});},
+    talk:t=>{const f=r(560,640);tone(t,f,{f1:f*1.5,dur:.06,vol:.1});tone(t+.05,f*1.25,{f1:f*1.6,dur:.05,vol:.06});},
+    pop:(t,k)=>{const m=STAT_NOTE[k]||84;tone(t,mtof(m),{f1:mtof(m)*1.3,dur:.07,vol:.07,rev:.2,pan:r(-.4,.4)});bell(t+.02,m+12,{vol:.03,dur:.2,rev:.3});},
+    bug:t=>{tone(t,330,{type:'triangle',f1:150,dur:.2,vol:.12});tone(t+.09,260,{type:'triangle',f1:110,dur:.22,vol:.09});},
+    tick:(t,n)=>tone(t,mtof(84+((n||0)%12)),{type:'triangle',dur:.03,vol:.05}),
+    type:t=>{noise(t,{freq:r(2400,4200),q:4,dur:.02,vol:.05,pan:r(-.2,.2)});tone(t,r(180,240),{dur:.02,vol:.03});},
+    coin:t=>{tone(t,1976,{type:'triangle',dur:.07,vol:.09});tone(t+.07,2637,{type:'triangle',dur:.4,vol:.09,rev:.3});bell(t+.07,100,{vol:.03,dur:.3});},
+    save:t=>{[84,88,91].forEach((m,j)=>bell(t+j*.07,m,{vol:.08,dur:.5}));},
+    deny:t=>{tone(t,233,{type:'triangle',dur:.16,vol:.14});tone(t,220,{type:'triangle',dur:.16,vol:.14});tone(t+.19,220,{type:'triangle',dur:.2,vol:.12});},
+    roll:t=>tone(t,r(1500,1800),{type:'triangle',dur:.022,vol:.035}),
+    land:(t,tier)=>{if(tier==='hi'){bell(t,88,{vol:.12});bell(t,95,{vol:.06});}else if(tier==='lo')tone(t,196,{type:'triangle',f1:150,dur:.25,vol:.15});else bell(t,84,{vol:.1,dur:.4});},
+    plus:t=>bell(t,88+Math.floor(r(0,5)),{vol:.06,dur:.3}),
+    good:t=>{duck(1);[76,79,84].forEach((m,j)=>bell(t+j*.1,m,{vol:.1,dur:.7}));},
+    bad:t=>{duck(1.6);[[62,.22],[61,.22],[60,.22],[59,.8]].reduce((tt,[m,d])=>{const g=ctx.createGain();env(g,tt,.02,.12,d,.1);
+      const o=ctx.createOscillator();o.type='triangle';o.frequency.value=mtof(m);const lf=ctx.createOscillator();lf.frequency.value=6;const lg=ctx.createGain();lg.gain.value=d>.5?6:0;
+      lf.connect(lg);lg.connect(o.frequency);o.connect(g);route(g,SFX,.2);o.start(tt);lf.start(tt);o.stop(tt+d+.5);lf.stop(tt+d+.5);return tt+d+.03;},t);},
+    levelup:t=>{duck(1);[72,76,79,84,88].forEach((m,j)=>bell(t+j*.065,m,{vol:.09,dur:.6}));},
+    unlock:t=>{duck(1);for(let j=0;j<6;j++)bell(t+j*.06+r(0,.02),pick([88,91,93,96,100]),{vol:.06,dur:.5,pan:r(-.5,.5)});},
+    start:t=>{duck(1.2);brass(t,67,.12,.07);brass(t+.14,72,.5,.08);brass(t+.14,76,.5,.05);},
+    complete:t=>{duck(1.6);brass(t,72,.1,.07);brass(t+.12,76,.1,.07);brass(t+.24,79,.7,.08);brass(t+.24,84,.7,.05);bell(t+.24,96,{vol:.05});},
+    fanfare:t=>{duck(2.6);const seq=[[67,0,.1],[72,.12,.1],[76,.24,.1],[79,.36,.22],[76,.6,.1],[79,.72,1.1]];
+      for(const [m,d,l] of seq)brass(t+d,m,l,.075);for(const m of [72,76,84])brass(t+.72,m,1.1,.04);
+      for(let j=0;j<5;j++)bell(t+.72+j*.08,pick([91,96,100]),{vol:.04,dur:.6,pan:r(-.5,.5)});noise(t+.7,{type:'highpass',freq:6000,dur:1.2,vol:.04,a:.05,rev:.4});},
+    promo:t=>{duck(1.2);noise(t,{freq:500,f1:4000,q:1.5,dur:.4,vol:.12,a:.15,rev:.3});[79,84,88].forEach((m,j)=>bell(t+.35+j*.06,m,{vol:.09}));},
+  };
+  const GAP={pop:.07,tick:.03,type:.05,roll:.02,coin:.1,talk:.05,tap:.03};
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  function sfx(k,arg){if(!pref.sfx||!live())return;const now=ctx.currentTime;if(GAP[k]&&now-(lastAt[k]||-9)<GAP[k])return;lastAt[k]=now;
+    const buf=FILES['sfx_'+k];if(buf){const s=ctx.createBufferSource();s.buffer=buf;s.connect(SFX.g);s.start(now);return;}
+    const f=FX[k];if(f)try{f(now+.005,arg);}catch(e){}}
+  function music(name){want=name;}
+  function set(k,on){pref[k]=on;savePref();if(!ctx)return;const bus=k==='mus'?MUS:SFX,v=on?(k==='mus'?MUS_VOL:SFX_VOL):0;
+    bus.g.gain.cancelScheduledValues(ctx.currentTime);bus.g.gain.setTargetAtTime(v,ctx.currentTime,.05);}
+  return {sfx,music,set,get:k=>pref[k]};
+})();
+
+"use strict";
 // ================= utils
 const $=s=>document.querySelector(s);
 const rnd=(a,b)=>a+Math.random()*(b-a);
@@ -717,7 +891,7 @@ const MENU=[
   {n:'职员',ic:'staff',c:'#E2701A',sub:[['职员一览',staffDlg],['招聘',todo],['培训',()=>trainPick(0)]]},
   {n:'行动',ic:'action',c:'#2A7BDB',sub:[['宣传',adDlg],['取得授权',todo]]},
   {n:'信息',ic:'info',c:'#E0383E',sub:[['作品记录',recordsDlg],['公司数据',todo]]},
-  {n:'系统',ic:'system',c:'#5C6478',sub:[['保存',()=>{closeMenu();doSave();}],['重新开始',restartAsk]]},
+  {n:'系统',ic:'system',c:'#5C6478',sub:[['保存',()=>{closeMenu();doSave();}],['声音',soundDlg],['重新开始',restartAsk]]},
 ];
 // menuSel：当前高亮项（打开菜单默认高亮第一项「开发」，照效果图）；subOpen：是否已展开该项的子菜单
 let menuSel=0,subOpen=false;
@@ -737,7 +911,7 @@ function openDlg(title,body,foot,bottom){UI.menu=false;$('#menu').hidden=true;$(
 function closeDlg(){UI.dlg=null;$('#dlg').hidden=true;idleBottom();renderInfo();}
 const okFoot=(label,fn)=>h('div',{class:'dlg-foot'},h('button',{type:'button',onclick:fn},label));
 // 秘书对话框：一组台词，点一下翻页，最后执行 done
-function talk(lines,done){let i=0;const show=()=>{const box=h('div',{},h('div',{class:'talkbox'},lines[i]),h('div',{class:'speaker'},h('span',{},SECRETARY),h('span',{class:'face'})));
+function talk(lines,done){let i=0;const show=()=>{SND.sfx('talk');const box=h('div',{},h('div',{class:'talkbox'},lines[i]),h('div',{class:'speaker'},h('span',{},SECRETARY),h('span',{class:'face'})));
     openDlg('对话框',box,null,null);setTimeout(()=>{$('#dlg').onclick=()=>{i++;$('#dlg').onclick=null;if(i<lines.length)show();else{closeDlg();done&&done();}};},0);};show();}
 // 选择列表
 function picker(title,rows,onPick,back){openDlg(title,h('div',{style:'display:grid'},...rows.map(r=>h('button',{type:'button',class:'prow'+(r.sel?' sel':''),disabled:!!r.disabled,onclick:e=>{e.stopPropagation();onPick(r.v);}},h('span',{class:'pl'},r.ico?ico(r.ico):null,r.label),r.sub?h('small',{},r.sub):null))),null,[null,back?{label:'返回',fn:back}:null]);$('#dlg').onclick=null;}
@@ -758,7 +932,7 @@ function planForm(){const cost=planCost(plan);
       row('内容',TN[plan.type].n,TN[plan.type],LVN[lvOf(plan.type)-1],()=>listPick('选择内容',TYPES,plan.type,t=>`${LVN[lvOf(t.id)-1]} · ${fmt(t.fee)}金`,v=>plan.type=v)),
       row('开发方针',DN[plan.dev].n,null,null,()=>listPick('开发方针',DEVPLANS,plan.dev,d=>`${d.d} · 费用×${d.fee}`,v=>plan.dev=v)),
       h('div',{class:'staffstrip'},...S.staff.map(s=>STAFF_ART[s.look%CHAR_N+'a']?h('img',{class:'smini',src:staffArtSrc(s,'a'),alt:''}):h('i',{style:`background:${SHIRTS[s.look%SHIRTS.length]}`})))));
-  openDlg('新企划书',body,okFoot('确定',()=>{if(S.money<planCost(plan)){talk(['资金不够开发费用了……'],planForm);return;}clampPolicy();policyDlg();}),[null,{label:'返回',fn:()=>{plan=null;closeDlg();}}]);$('#dlg').onclick=null;}
+  openDlg('新企划书',body,okFoot('确定',()=>{if(S.money<planCost(plan)){SND.sfx('deny');talk(['资金不够开发费用了……'],planForm);return;}clampPolicy();policyDlg();}),[null,{label:'返回',fn:()=>{plan=null;closeDlg();}}]);$('#dlg').onclick=null;}
 
 // ---- 此次游戏的方针（界面②）
 const policyBudget=()=>10+lvOf(plan.genre)+lvOf(plan.type);
@@ -818,7 +992,7 @@ function startProject(leaderId){const P=plan;const G=GN[P.genre],D=DN[P.dev];con
   const weeks=Math.round(G.wk*D.wk*(1+P.policy.detail*.02));
   const title=TN[P.type].n+pick(['大冒险','传说','物语','大作战','研究所','王国']);
   S.project={title,chan:P.chan,genre:P.genre,type:P.type,dev:P.dev,policy:P.policy,weeks,cost,progress:0,fun:0,creat:0,gfx:0,snd:0,bugs:0,hype:0,leaders:{plan:leaderId},awaiting:null,review:0};plan=null;
-  const s=S.staff.find(x=>x.id===leaderId);UI.pk='dev';renderAll();
+  const s=S.staff.find(x=>x.id===leaderId);UI.pk='dev';renderAll();SND.sfx('start');
   leaderWork('plan',s,ev=>{const lines=[`《${title}》开始开发了！预计 ${weeks} 周左右。`,...ev,'大家加油！'];renderAll();talk(lines);});}
 // ================= 负责人工作画面（照原作「正在整理企划」）
 // 选好负责人后弹出：左边负责人在工位上敲键盘，右边「第 N 次」逐次累加四项点数，最后说一句收尾台词。
@@ -834,7 +1008,7 @@ function deskScene(s){const W=220,H=200,ss=2,cv=h('canvas',{class:'wdesk',width:
   const src=k=>overrides[k]||(deskScene.c[k]||(deskScene.c[k]=paint(k)));const put=(k,x,y)=>{const m=M[k];g.drawImage(src(k),x-m.ox,y-m.oy,m.w,m.h);};
   const dx=130,dy=148,sx=dx-41.6,sy=dy+20.8;let f=0,alive=true;
   const draw=()=>{g.clearRect(0,0,W,H);put('desk',dx,dy);put('chair',sx,sy);put(`char_${s.look%CHAR_N}_back_${f?'b':'a'}`,sx,sy);};
-  draw();const iv=setInterval(()=>{if(!cv.isConnected||!alive){clearInterval(iv);return;}f^=1;draw();},220);
+  draw();const iv=setInterval(()=>{if(!cv.isConnected||!alive){clearInterval(iv);return;}f^=1;draw();if(Math.random()<.7)SND.sfx('type');},220);
   return {el:cv,stop:()=>{alive=false;f=0;draw();}};}
 deskScene.c={};
 function leaderWork(kind,s,done){const p=S.project,W=WORK[kind],G=GN[p.genre],T=TN[p.type];
@@ -860,21 +1034,21 @@ function leaderWork(kind,s,done){const p=S.project,W=WORK[kind],G=GN[p.genre],T=
   const body=h('div',{class:'wbody'},h('div',{class:'wsub'},W.t),h('div',{class:'wbox'},stage,h('div',{class:'wright'},round,stats)),say);
   openDlg(s.name,body,null,[null,null]);$('#dlg').onclick=null;
   const R=Math.max(WORK_ROUND_MIN,WORK_TOTAL_MS/n),tickMs=R*.7/WORK_TICKS;
-  const bump=k=>{nums[k].textContent=shown[k];nums[k].classList.remove('bump');void nums[k].offsetWidth;nums[k].classList.add('bump');};
-  const popIcon=k=>{const pi=icon(k,'wpop ico-s');pi.style.left=(28+Math.random()*24)+'%';stage.append(pi);pi.addEventListener('animationend',()=>pi.remove());};
+  const bump=k=>{SND.sfx('tick',shown.fun+shown.creat+shown.gfx+shown.snd);nums[k].textContent=shown[k];nums[k].classList.remove('bump');void nums[k].offsetWidth;nums[k].classList.add('bump');};
+  const popIcon=k=>{SND.sfx('pop',k);const pi=icon(k,'wpop ico-s');pi.style.left=(28+Math.random()*24)+'%';stage.append(pi);pi.addEventListener('animationend',()=>pi.remove());};
   let i=0;const next=()=>{if(!body.isConnected)return;if(i<steps.length){const st=steps[i++];round.textContent=`第${i}次`;
       // 本次的点数分 WORK_TICKS 下加完，每下冒一个刚涨的那项图标
       const part=STATK.map(k=>{const a=[];let l=st[k];for(let j=0;j<WORK_TICKS;j++){const d=j===WORK_TICKS-1?l:Math.min(l,Math.round(st[k]/WORK_TICKS*rnd(.5,1.5)));a.push(d);l-=d;}return a;});
       for(let j=0;j<WORK_TICKS;j++)setTimeout(()=>{if(!body.isConnected)return;const up=[];STATK.forEach((k,ki)=>{const d=part[ki][j];if(d>0){shown[k]+=d;bump(k);up.push(k);}});if(up.length)popIcon(pick(up));},250+j*tickMs);
       setTimeout(next,R);return;}
-    scene.stop();say.textContent=quote;for(const k of STATK)p[k]+=gain[k];renderInfo();
+    scene.stop();say.textContent=quote;SND.sfx(insp?'unlock':tired?'bad':'good');for(const k of STATK)p[k]+=gain[k];renderInfo();
     setTimeout(()=>{$('#dlg').onclick=()=>{$('#dlg').onclick=null;closeDlg();done(ev);};},0);};
   setTimeout(next,600);}
 function leaderAsk(kind){const p=S.project;
   talk([`《${p.title}》进入${kind==='gfx'?'画面':'声音'}制作阶段了。`,'要交给谁负责？'],()=>staffPick(kind,id=>{p.leaders[kind]=id;const s=S.staff.find(x=>x.id===id);
     leaderWork(kind,s,ev=>{p.awaiting=null;renderInfo();if(ev.length)talk(ev);});},null));}
 // 解锁提示
-function checkUnlocks(){const fresh=unlockedIds().filter(id=>!S.unl.includes(id));if(!fresh.length)return;S.unl.push(...fresh);
+function checkUnlocks(){const fresh=unlockedIds().filter(id=>!S.unl.includes(id));if(!fresh.length)return;S.unl.push(...fresh);SND.sfx('unlock');
   talk(fresh.map(id=>CN[id]?`${CN[id].n}邀请我们入驻了！以后可以在那里发售。`:GN[id]?`新的类型「${GN[id].n}」可以开发了。`:TN[id]?`新的内容「${TN[id].n}」可以开发了。`:`新的开发方针「${DN[id].n}」可以选了。`));}
 // ================= 模拟
 let simT=0,weekAcc=0;const pending=[];
@@ -904,7 +1078,7 @@ function projectWeek(){const p=S.project;const D=DN[p.dev],G=GN[p.genre];let pro
   if(!p.leaders.gfx&&p.progress>=40){p.progress=Math.max(before,40);p.awaiting='gfx';schedule(.5,()=>leaderAsk('gfx'));}
   else if(!p.leaders.snd&&p.progress>=75){p.progress=Math.max(before,75);p.awaiting='snd';schedule(.5,()=>leaderAsk('snd'));}
   else if(p.progress>=100){p.awaiting='done';const C=CN[p.chan];
-    schedule(.5,()=>talk([`《${p.title}》完成了！`,C.rev?`提交到${C.n}审核，大约要 ${C.rev} 周。`:'马上发售吧。'],()=>{if(C.rev){p.awaiting='review';p.review=C.rev;renderInfo();}else release();}));}}
+    schedule(.5,()=>SND.sfx('complete')||talk([`《${p.title}》完成了！`,C.rev?`提交到${C.n}审核，大约要 ${C.rev} 周。`:'马上发售吧。'],()=>{if(C.rev){p.awaiting='review';p.review=C.rev;renderInfo();}else release();}));}}
 function idleWeek(){for(const s of S.staff)if(Math.random()<.2){const [x,y]=seatWorld(s.seat);schedule(rnd(0,WEEK_SEC),()=>isSeated(s.id)&&popWorld(x,y-104,pick(IDLE_TALK),'',true));}}
 // 销量曲线（相对首周）：爆发段 .55×.75^w 几周内消退，长尾段 .45×.93^w 慢慢走低。
 // 和旧曲线 .85^w 比：首周相同，总销量约 1.3 倍，在售时间约长 60%。
@@ -914,7 +1088,7 @@ function salesWeek(){let units=0,money=0;for(const g of S.games){if(!g.onSale)co
     const u=Math.round(aud*Math.pow(g.total/40,2.2)*3*(g.bonus||1)*(1+(g.ad||0))*saleCurve(g.weeks)*rnd(.9,1.1));g.weeks++;if(g.ad){g.ad*=AD_DECAY;if(g.ad<.02)delete g.ad;}
     if(u<15||g.weeks>SALE_MAX_WEEKS){g.onSale=false;continue;}(g.hist||(g.hist=[])).push(u);const m=Math.round(u*PRICE*(g.cut??1));
     g.units+=u;g.rev=(g.rev||0)+m;units+=u;money+=m;S.fans+=Math.round(u*.06*(g.total/40)*(g.fanMul||1));}
-  if(units){addMoney(money);S.ys.units+=units;const [x,y]=tc(3,2.5);schedule(WEEK_SEC*.5,()=>popWorld(x,y-60,`销售 ${fmt(units)} +${fmt(money)}金`,'var(--gold)'));}}
+  if(units){addMoney(money);S.ys.units+=units;const [x,y]=tc(3,2.5);schedule(WEEK_SEC*.5,()=>{SND.sfx('coin');popWorld(x,y-60,`销售 ${fmt(units)} +${fmt(money)}金`,'var(--gold)');});}}
 function release(){const p=S.project;const G=GN[p.genre],T=TN[p.type],C=CN[p.chan];
   const E=180*(1+.14*(S.year-1));const r={fun:p.fun/E,creat:p.creat/E,gfx:p.gfx/E,snd:p.snd/E};
   const budget=10+lvOf(p.genre)+lvOf(p.type);
@@ -949,14 +1123,15 @@ function release(){const p=S.project;const G=GN[p.genre],T=TN[p.type],C=CN[p.cha
   // el 里的数字在 v 附近跳 dur 毫秒，间隔从 50ms 慢慢拉长到 ~260ms，最后落在 v
   const roll=(el,v,lo,hi,span,dur,onLand)=>{let t=0,prev=-1;el.classList.add('rolling');
     const step=()=>{const k=t/dur;if(k>=1){el.textContent=v;el.classList.remove('rolling');el.classList.add('land');onLand&&onLand();return;}
-      prev=near(v,lo,hi,span,prev);el.textContent=prev;const gap=50+210*k*k;t+=gap;later(step,gap);};step();};
+      prev=near(v,lo,hi,span,prev);el.textContent=prev;SND.sfx('roll');const gap=50+210*k*k;t+=gap;later(step,gap);};step();};
   const tier=s=>s>=8?'hi':s<=3?'lo':'';
-  const showRow=(el,i)=>{el.classList.add('on');roll(el.children[1],scores[i],1,10,2,1300,()=>{el.children[1].classList.add(tier(scores[i])||'mid');later(()=>el.classList.add('said'),200);});};
+  let said=false;const verdict=()=>{if(said)return;said=true;SND.sfx(total>=30?'fanfare':total<20?'bad':'good');};
+  const showRow=(el,i)=>{el.classList.add('on');roll(el.children[1],scores[i],1,10,2,1300,()=>{SND.sfx('land',tier(scores[i]));el.children[1].classList.add(tier(scores[i])||'mid');later(()=>el.classList.add('said'),200);});};
   later(()=>title.classList.add('on'),150);
   rows.forEach((el,i)=>later(()=>showRow(el,i),600+i*1900));
   const tStart=600+rows.length*1900+300;
-  later(()=>{tot.classList.add('on');roll(totN,total,0,40,4,1800,()=>{tot.classList.add('land',total>=30?'hi':total<20?'lo':'mid');done=true;foot.firstChild.textContent='确定';});},tStart);
-  function finish(){timers.forEach(clearTimeout);timers.length=0;done=true;title.classList.add('on');
+  later(()=>{tot.classList.add('on');roll(totN,total,0,40,4,1800,()=>{verdict();tot.classList.add('land',total>=30?'hi':total<20?'lo':'mid');done=true;foot.firstChild.textContent='确定';});},tStart);
+  function finish(){timers.forEach(clearTimeout);timers.length=0;done=true;verdict();title.classList.add('on');
     rows.forEach((el,i)=>{const b=el.children[1];b.textContent=scores[i];b.classList.remove('rolling');b.classList.add(tier(scores[i])||'mid');el.classList.add('on','said');});
     totN.textContent=total;totN.classList.remove('rolling');tot.classList.add('on','land',total>=30?'hi':total<20?'lo':'mid');foot.firstChild.textContent='确定';}
   foot.firstChild.textContent='跳过';}
@@ -1007,10 +1182,10 @@ function doTrain(i,c){const s=S.staff[i];addMoney(-c.fee);const gains=trainGains
   // 每项分几次往上跳，并在数字旁冒「+n」
   const steps=[];for(const k of keys){let left=gains[k];const n=Math.min(left,3);for(let j=0;j<n;j++){const d=j===n-1?left:Math.max(1,Math.round(gains[k]/n));left-=d;steps.push([k,d]);}}
   steps.sort(()=>Math.random()-.5).forEach(([k,d],j)=>setTimeout(()=>{const row=box.querySelector(`.cs[data-k="${k}"]`);if(!row)return;const b=row.querySelector('b');b.textContent=+b.textContent+d;
-    row.classList.add('up');const pl=h('em',{class:'tplus'},'+'+d);row.append(pl);pl.addEventListener('animationend',()=>pl.remove());},DUR*(j+1)/(steps.length+1)));
+    SND.sfx('plus');row.classList.add('up');const pl=h('em',{class:'tplus'},'+'+d);row.append(pl);pl.addEventListener('animationend',()=>pl.remove());},DUR*(j+1)/(steps.length+1)));
   const tick=now=>{const u=clamp((now-t0)/DUR,0,1);fill.style.width=(u*100)+'%';if(u<1)requestAnimationFrame(tick);else done();};requestAnimationFrame(tick);
   function done(){for(const k of STAFFK){const row=box.querySelector(`.cs[data-k="${k}"] b`);if(row)row.textContent=s[k];}
-    msg.textContent=keys.length?'培训完成！'+keys.map(k=>`${SKN[k][0]}+${gains[k]}`).join('  '):c.sta<0?'泡完温泉，体力回满了！':'培训完成！这次没什么收获…';
+    SND.sfx(keys.length||c.sta<0?'levelup':'bad');msg.textContent=keys.length?'培训完成！'+keys.map(k=>`${SKN[k][0]}+${gains[k]}`).join('  '):c.sta<0?'泡完温泉，体力回满了！':'培训完成！这次没什么收获…';
     const next=()=>trainPick(i);setBottom(null,{label:'确定',fn:next});setTimeout(()=>{$('#dlg').onclick=next;},0);}}
 // ---- 宣传：花钱涨粉丝，并让在售作品接下来几周销量上涨。只有游戏上线（在售）后才能宣传
 // fee=费用；fans=基础涨粉；boost=在售作品销量加成（每周衰减 AD_DECAY）；un=解锁条件
@@ -1039,14 +1214,18 @@ function doAd(a){if(S.money<a.fee)return;addMoney(-a.fee);const games=onSale();
   const fans=Math.round(a.fans*rnd(.8,1.2)*(.5+best/40));S.fans+=fans;
   // 同一部作品连续宣传，边际效果递减
   for(const g of games)g.ad=(g.ad||0)+a.boost/(1+(g.ad||0));
-  save();renderAll();const [x,y]=tc(3,2.5);popWorld(x,y-60,`粉丝 +${fmt(fans)}`,'var(--gold)');
+  save();renderAll();SND.sfx('promo');const [x,y]=tc(3,2.5);popWorld(x,y-60,`粉丝 +${fmt(fans)}`,'var(--gold)');
   const names=games.slice(0,2).map(g=>`《${g.title}》`).join('、')+(games.length>2?'等作品':'');
   talk([`${a.n}，粉丝增加了 ${fmt(fans)} 人！`,`${names}接下来几周的销量会上涨。`]);}
 function recordsDlg(){openDlg('作品记录',S.games.length?h('div',{},...S.games.map(g=>h('div',{class:'srow',style:'grid-template-columns:1fr 90rem 140rem'},h('span',{},`《${g.title}》`,h('small',{style:'color:var(--ink-soft);font-size:20rem;margin-left:8rem'},(CN[g.chan]||CN.web).n)),h('b',{class:'num'},`${g.total}分`),h('b',{class:'num'},fmt(g.units))))):h('div',{style:'font-size:30rem;text-align:center;padding:30rem'},'还没有发售过作品'),okFoot('确定',closeDlg),[null,{label:'返回',fn:closeDlg}]);$('#dlg').onclick=null;}
+// 声音设置：音乐 / 音效各自开关，记在本地
+function soundDlg(){const row=(k,n)=>({v:k,label:`${n}　${SND.get(k)?'开':'关'}`,sel:SND.get(k)});
+  picker('声音',[row('mus','音乐'),row('sfx','音效')],k=>{SND.set(k,!SND.get(k));soundDlg();},closeDlg);}
+document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('button,.ar');if(b&&!b.disabled)SND.sfx('tap');},true);
 function restartAsk(){picker('重新开始？',[{v:1,label:'清空进度，从 1 年 4 月开始'},{v:0,label:'算了'}],v=>{closeDlg();if(v)restartNow();},closeDlg);}
-function restartNow(){newGame();save();renderAll();toast('新的公司成立了');}
+function restartNow(){newGame();save();renderAll();SND.sfx('start');toast('新的公司成立了');}
 // 月底发完工资还是负数：秘书提醒，可以直接重开
-function brokeAsk(){talk(['社长，发完工资后资金变成负数了……','要不要从头再来？'],()=>picker('资金不足',[{v:1,label:'重新开始',sub:'清空进度，从 1 年 4 月开始'},{v:0,label:'继续经营',sub:'等新作卖钱'}],v=>{closeDlg();if(v)restartNow();},null));}
+function brokeAsk(){SND.sfx('bad');talk(['社长，发完工资后资金变成负数了……','要不要从头再来？'],()=>picker('资金不足',[{v:1,label:'重新开始',sub:'清空进度，从 1 年 4 月开始'},{v:0,label:'继续经营',sub:'等新作卖钱'}],v=>{closeDlg();if(v)restartNow();},null));}
 
 // ================= 信息栏
 // 信息栏分页：sale = 最新在售作品的每周销量柱状图；dev = 新作开发进度；year = 全年销售/收益
@@ -1072,12 +1251,12 @@ function renderInfo(){const pg=$('#ipage');const p=S.project;const pages=infoPag
 $('#pgUp').onclick=()=>{const ps=infoPages();UI.pk=ps[Math.max(0,ps.indexOf(UI.pk)-1)];renderInfo();};
 $('#pgDn').onclick=()=>{const ps=infoPages();UI.pk=ps[Math.min(ps.length-1,ps.indexOf(UI.pk)+1)];renderInfo();};
 function renderTop(){$('#date').firstChild.textContent=`${S.year}年 ${S.month}月 ${S.week}周 `;$('#tick').classList.toggle('blink',!blocking());$('#money').textContent=fmt(S.money)+'金';$('#money').style.color=S.money<0?'var(--neg)':'';$('#badgeNum').textContent=fmt(S.fans);}
-function renderAll(){renderTop();renderInfo();}
+function renderAll(){renderTop();renderInfo();SND.music(S.project?'dev':'office');}
 
 // ================= 杂项
-function popWorld(wx,wy,text,color,talkStyle,ik){const [x,y]=w2s(wx,wy);const el=h('div',{class:'pop'+(talkStyle?' talk':'')+(ik?' ipop':''),style:`left:${x}px;top:${y}px;--c:${color||'#3651C9'}`},ik?icon(ik,'pico','stat','transparent'):null,text);$('#fx').append(el);el.addEventListener('animationend',()=>el.remove());}
+function popWorld(wx,wy,text,color,talkStyle,ik){const [x,y]=w2s(wx,wy);const el=h('div',{class:'pop'+(talkStyle?' talk':'')+(ik?' ipop':''),style:`left:${x}px;top:${y}px;--c:${color||'#3651C9'}`},ik?icon(ik,'pico','stat','transparent'):null,text);$('#fx').append(el);el.addEventListener('animationend',()=>el.remove());if(ik)SND.sfx(ik==='bug'?'bug':'pop',ik);}
 const KEY='kaifa_wuyu_v2';
-function doSave(){try{localStorage.setItem(KEY,JSON.stringify(S));toast('已保存');}catch(e){toast('这个浏览器不能本地存档');}}
+function doSave(){try{localStorage.setItem(KEY,JSON.stringify(S));toast('已保存');SND.sfx('save');}catch(e){toast('这个浏览器不能本地存档');}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&(s.v===2||s.v===3)){S=migrate(s);if(!S.combos)S.combos=Object.fromEntries(S.games.map(g=>[g.genre+'|'+g.type,true]));return true;}}catch(e){}return false;}
 $('#sidetab').onclick=()=>{if(!blocking())talk(['这里以后放快捷列表（职员状态、在售作品）。']);};
@@ -1124,6 +1303,7 @@ function start(){if(gl)initGL();buildStatic();buildAtlas();if(!load())newGame();
   if(S.project&&S.project.awaiting==='done')setTimeout(release,300);
   resize();idleBottom();renderAll();requestAnimationFrame(frame);loadStaffArt();loadIconArt();tryLoadArt().then(()=>{if(Object.keys(overrides).length)buildAtlas();});}
 start();
+
 
 </script>
 
