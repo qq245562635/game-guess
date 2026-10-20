@@ -149,6 +149,23 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 .adrow{border-bottom:0;font-size:30rem}
 .adrow small{font-size:30rem;color:var(--ink)}
 .adrow:disabled small{font-size:22rem;color:#A0A7BA}
+/* 负责人工作画面（正在整理企划 / 绘制画面 / 制作音乐） */
+.wbody{display:grid;gap:14rem}
+.wsub{text-align:center;font-size:32rem;color:var(--label)}
+.wbox{display:grid;grid-template-columns:270rem 1fr;align-items:center;gap:8rem;background:var(--paper);border:2rem solid var(--panel-2);border-radius:10rem;padding:16rem 12rem;min-height:250rem}
+.wstage{position:relative;display:grid;place-items:center}
+.wdesk{width:250rem;height:auto;display:block}
+.wpop{position:absolute;left:38%;top:12%;animation:wpop .7s ease-out forwards}
+@keyframes wpop{0%{opacity:0;transform:translateY(10rem)}25%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-34rem)}}
+.wright{display:grid;gap:18rem;justify-items:center}
+.wround{font-size:30rem;color:var(--label);min-height:36rem}
+.wstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8rem;width:100%}
+.wst{display:grid;justify-items:center;gap:8rem}
+.wst .ico-s{margin:0}
+.wst b{font-size:34rem;color:var(--ink)}
+.wst b.bump{animation:wbump .35s ease-out}
+@keyframes wbump{40%{transform:scale(1.35)}}
+.wsay{text-align:center;font-size:30rem;min-height:40rem;color:var(--ink)}
 .pmk{font-style:normal;font-size:22rem;color:#E2A400;margin-left:6rem}.pmk.x{color:var(--neg)}
 .pfoot .tico{width:40rem;height:40rem;border-radius:6rem;display:grid;place-items:center;color:#fff;font-size:20rem;font-weight:700}
 /* 制作人卡片 */
@@ -592,7 +609,7 @@ let S=null;
 function mkStaff(job,i){const W={prog:{prog:1.6,scen:.6,gfx:.6,snd:.5},plan:{prog:.6,scen:1.6,gfx:.7,snd:.5},art:{prog:.5,scen:.7,gfx:1.6,snd:.6},sound:{prog:.5,scen:.6,gfx:.6,snd:1.6}}[job];
   const st={};for(const a in W)st[a]=Math.round(11*W[a]*rnd(.8,1.2));const NAMES=['李晨','王悦','陈默','周小雨'];
   return {id:'s'+i,name:NAMES[i],job,...st,salary:Math.round(20+(st.prog+st.scen+st.gfx+st.snd)*.9),seat:i,look:i,fav:pick(INIT_G),sta:100,lv:1};}
-function freshState(){return {v:3,year:1,month:4,week:1,money:5000,fans:0,staff:['prog','plan','art','sound'].map(mkStaff),project:null,games:[],ys:{units:0,profit:0},cnt:{},known:{},unl:null};}
+function freshState(){return {v:3,year:1,month:4,week:1,money:5000,fans:0,staff:['prog','plan','art','sound'].map(mkStaff),project:null,games:[],ys:{units:0,profit:0},cnt:{},known:{},combos:{},unl:null};}
 function newGame(){S=freshState();S.unl=unlockedIds();if(typeof away!=='undefined')away.clear();if(typeof pending!=='undefined')pending.length=0;if(typeof plan!=='undefined')plan=null;}
 // 旧存档（v2）补字段
 function migrate(s){if(s.v===3)return s;s.v=3;s.cnt=s.cnt||{};s.known=s.known||{};s.unl=null;
@@ -717,12 +734,58 @@ function startProject(leaderId){const P=plan;const G=GN[P.genre],D=DN[P.dev];con
   const weeks=Math.round(G.wk*D.wk*(1+P.policy.detail*.02));
   const title=TN[P.type].n+pick(['大冒险','传说','物语','大作战','研究所','王国']);
   S.project={title,chan:P.chan,genre:P.genre,type:P.type,dev:P.dev,policy:P.policy,weeks,cost,progress:0,fun:0,creat:0,gfx:0,snd:0,bugs:0,hype:0,leaders:{plan:leaderId},awaiting:null,review:0};plan=null;
-  const s=S.staff.find(x=>x.id===leaderId);const tired=s.sta<30;s.sta=Math.max(0,s.sta-30);applyLeader('plan',s);UI.page=0;renderAll();
-  const lines=[`《${title}》开始开发了！预计 ${weeks} 周左右。`];if(s.fav===P.genre)lines.push(`${G.n}正是${s.name}擅长的类型！`);if(tired)lines.push(`${s.name}有点累了，效率会下降……`);lines.push('大家加油！');talk(lines);}
-function applyLeader(kind,s){const p=S.project;const [x,y]=seatWorld(s.seat);const add=kind==='plan'?[['fun',s.scen*2],['creat',s.scen*1.5]]:kind==='gfx'?[['gfx',s.gfx*3]]:[['snd',s.snd*3]];
-  add.forEach(([k,v],i)=>{p[k]+=v;setTimeout(()=>popWorld(x,y-110,`${STATN[k]}+${Math.round(v)}`,STATC[k]),400+i*450);});}
+  const s=S.staff.find(x=>x.id===leaderId);UI.page=0;renderAll();
+  leaderWork('plan',s,ev=>{const lines=[`《${title}》开始开发了！预计 ${weeks} 周左右。`,...ev,'大家加油！'];renderAll();talk(lines);});}
+// ================= 负责人工作画面（照原作「正在整理企划」）
+// 选好负责人后弹出：左边负责人在工位上敲键盘，右边「第 N 次」逐次累加四项点数，最后说一句收尾台词。
+// 点一下结束 → 结算可能触发的事件（组合很新鲜、擅长类型、灵感爆发、太累了）→ 回到场景，负责人坐回工位继续开发。
+const WORK={plan:{t:'正在整理企划',sk:'scen',sta:30},gfx:{t:'正在绘制画面',sk:'gfx',sta:20},snd:{t:'正在制作音乐',sk:'snd',sta:20}};
+const WORK_ROUND_MS=750;
+function leaderGain(kind,s){const r=()=>rnd(.85,1.15);
+  if(kind==='plan')return {fun:s.scen*2*r(),creat:s.scen*1.5*r(),gfx:0,snd:0};
+  if(kind==='gfx')return {fun:0,creat:s.scen*.2*r(),gfx:s.gfx*3*r(),snd:0};
+  return {fun:0,creat:s.scen*.2*r(),gfx:0,snd:s.snd*3*r()};}
+// 工位小场景：桌子 + 椅子 + 背对镜头敲键盘的员工（用场景里同一套图，没交付就用占位图）
+function deskScene(s){const W=220,H=200,ss=2,cv=h('canvas',{class:'wdesk',width:W*ss,height:H*ss});const g=cv.getContext('2d');g.scale(ss,ss);
+  const src=k=>overrides[k]||(deskScene.c[k]||(deskScene.c[k]=paint(k)));const put=(k,x,y)=>{const m=M[k];g.drawImage(src(k),x-m.ox,y-m.oy,m.w,m.h);};
+  const dx=130,dy=148,sx=dx-41.6,sy=dy+20.8;let f=0,alive=true;
+  const draw=()=>{g.clearRect(0,0,W,H);put('desk',dx,dy);put('chair',sx,sy);put(`char_${s.look%CHAR_N}_back_${f?'b':'a'}`,sx,sy);};
+  draw();const iv=setInterval(()=>{if(!cv.isConnected||!alive){clearInterval(iv);return;}f^=1;draw();},220);
+  return {el:cv,stop:()=>{alive=false;f=0;draw();}};}
+deskScene.c={};
+function leaderWork(kind,s,done){const p=S.project,W=WORK[kind],G=GN[p.genre],T=TN[p.type];
+  const gain=leaderGain(kind,s);const ev=[];let mul=1,quote='嗯，就这样了吧。';
+  const tired=s.sta<30;s.sta=Math.max(0,s.sta-W.sta);
+  if(kind==='plan'&&s.fav===p.genre){mul*=1.15;ev.push(`${G.n}正是${s.name}擅长的类型！`);}
+  const insp=Math.random()<.12;if(insp){mul*=1.5;quote='灵感爆发了！';ev.push(`${s.name}灵感爆发，发挥超常！`);}
+  else if(tired){mul*=.8;quote='好累……先这样吧。';ev.push(`${s.name}有点累了，发挥打了折扣……`);}
+  else if(s[W.sk]>=40)quote='感觉很不错！';
+  // 组合很新鲜：类型 × 内容第一次做，而且搭得上 → 创新加成、期待度上升
+  if(kind==='plan'){const key=p.genre+'|'+p.type,cp=compat(p.genre,p.type);
+    if(!S.combos[key]&&cp>=2){gain.creat+=s.scen*.8;p.hype+=5;ev.push(`「${G.n}」配「${T.n}」，这个组合很新鲜！`,'创新提高了，玩家也很期待。');}
+    else if(!S.combos[key]&&cp===0)ev.push(`「${G.n}」配「${T.n}」……没人这么做过，不知道玩家会不会买账。`);}
+  for(const k of STATK)gain[k]=Math.round(gain[k]*mul);
+  const n=clamp(2+Math.floor(s[W.sk]/15),2,5);
+  // 拆成 n 次，每次大致平均、最后一次补齐
+  const steps=[];const left={...gain};for(let i=0;i<n;i++){const st={};for(const k of STATK){st[k]=i===n-1?left[k]:Math.min(left[k],Math.round(gain[k]/n*rnd(.6,1.4)));left[k]-=st[k];}steps.push(st);}
+  const shown={fun:0,creat:0,gfx:0,snd:0};
+  const scene=deskScene(s),stage=h('div',{class:'wstage'},scene.el);
+  const round=h('div',{class:'wround'},'');const nums={};
+  const stats=h('div',{class:'wstats'},...STATK.map(k=>h('div',{class:'wst'},h('span',{class:'ico-s',style:`background:${STATC[k]}`},STATG[k]),nums[k]=h('b',{class:'num'},'0'))));
+  const say=h('div',{class:'wsay'},'');
+  const body=h('div',{class:'wbody'},h('div',{class:'wsub'},W.t),h('div',{class:'wbox'},stage,h('div',{class:'wright'},round,stats)),say);
+  openDlg(s.name,body,null,[null,null]);$('#dlg').onclick=null;
+  let i=0;const next=()=>{if(!body.isConnected)return;if(i<steps.length){const st=steps[i++];round.textContent=`第${i}次`;
+      const top=STATK.filter(k=>st[k]>0).sort((a,b)=>st[b]-st[a])[0];
+      for(const k of STATK){if(!st[k])continue;shown[k]+=st[k];nums[k].textContent=shown[k];nums[k].classList.remove('bump');void nums[k].offsetWidth;nums[k].classList.add('bump');}
+      if(top){const pi=h('span',{class:'wpop ico-s',style:`background:${STATC[top]}`},STATG[top]);stage.append(pi);pi.addEventListener('animationend',()=>pi.remove());}
+      setTimeout(next,WORK_ROUND_MS);return;}
+    scene.stop();say.textContent=quote;for(const k of STATK)p[k]+=gain[k];renderInfo();
+    setTimeout(()=>{$('#dlg').onclick=()=>{$('#dlg').onclick=null;closeDlg();done(ev);};},0);};
+  setTimeout(next,450);}
 function leaderAsk(kind){const p=S.project;
-  talk([`《${p.title}》进入${kind==='gfx'?'画面':'声音'}制作阶段了。`,'要交给谁负责？'],()=>staffPick(kind,id=>{closeDlg();p.leaders[kind]=id;p.awaiting=null;const s=S.staff.find(x=>x.id===id);s.sta=Math.max(0,s.sta-20);applyLeader(kind,s);renderInfo();},null));}
+  talk([`《${p.title}》进入${kind==='gfx'?'画面':'声音'}制作阶段了。`,'要交给谁负责？'],()=>staffPick(kind,id=>{p.leaders[kind]=id;const s=S.staff.find(x=>x.id===id);
+    leaderWork(kind,s,ev=>{p.awaiting=null;renderInfo();if(ev.length)talk(ev);});},null));}
 // 解锁提示
 function checkUnlocks(){const fresh=unlockedIds().filter(id=>!S.unl.includes(id));if(!fresh.length)return;S.unl.push(...fresh);
   talk(fresh.map(id=>CN[id]?`${CN[id].n}邀请我们入驻了！以后可以在那里发售。`:GN[id]?`新的类型「${GN[id].n}」可以开发了。`:TN[id]?`新的内容「${TN[id].n}」可以开发了。`:`新的开发方针「${DN[id].n}」可以选了。`));}
@@ -774,7 +837,7 @@ function release(){const p=S.project;const G=GN[p.genre],T=TN[p.type],C=CN[p.cha
   const g={title:p.title,genre:p.genre,type:p.type,chan:p.chan,dev:p.dev,policy:p.policy,cut:C.cut,scores,total,creatScore:scores[2],compat:cp,feat:feat?feat[0]:null,producer:prod?prod.name:'',weeks:0,units:0,rev:0,onSale:true,year:S.year,month:S.month};
   g.bonus=C.bonus(g)*(C.mass?1+.02*(p.policy.friendly||0):1);g.fanMul=1+.02*(p.policy.hardcore||0);
   const lvBefore=[lvOf(p.genre),lvOf(p.type)];S.cnt[p.genre]=(S.cnt[p.genre]||0)+1;S.cnt[p.type]=(S.cnt[p.type]||0)+1;const lvAfter=[lvOf(p.genre),lvOf(p.type)];
-  S.known[p.genre]=true;S.known[p.type]=true;
+  S.known[p.genre]=true;S.known[p.type]=true;S.combos[p.genre+'|'+p.type]=true;
   S.games.unshift(g);S.project=null;save(true);
   const lines=[total>=30?'评价非常好，一定会大卖！':total>=20?'评价还不错。':'评价不太理想……下次再加油。'];
   if(cp===3)lines.push(`「${G.n}」配「${T.n}」，搭配得天衣无缝！`);else if(cp===2)lines.push(`「${G.n}」和「${T.n}」挺搭的。`);else if(cp===0)lines.push(`「${G.n}」和「${T.n}」这个组合好像不太搭……`);
@@ -892,7 +955,7 @@ function popWorld(wx,wy,text,color,talkStyle){const [x,y]=w2s(wx,wy);const el=h(
 const KEY='kaifa_wuyu_v2';
 function doSave(){try{localStorage.setItem(KEY,JSON.stringify(S));toast('已保存');}catch(e){toast('这个浏览器不能本地存档');}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&(s.v===2||s.v===3)){S=migrate(s);return true;}}catch(e){}return false;}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&(s.v===2||s.v===3)){S=migrate(s);if(!S.combos)S.combos=Object.fromEntries(S.games.map(g=>[g.genre+'|'+g.type,true]));return true;}}catch(e){}return false;}
 $('#sidetab').onclick=()=>{if(!blocking())talk(['这里以后放快捷列表（职员状态、在售作品）。']);};
 $('#tabUp').onclick=()=>{UI.collapsed=!UI.collapsed;$('#info').hidden=UI.collapsed;$('#tabUp').classList.toggle('down',UI.collapsed);};
 

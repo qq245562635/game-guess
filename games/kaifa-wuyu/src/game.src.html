@@ -142,6 +142,23 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 .adrow{border-bottom:0;font-size:30rem}
 .adrow small{font-size:30rem;color:var(--ink)}
 .adrow:disabled small{font-size:22rem;color:#A0A7BA}
+/* 负责人工作画面（正在整理企划 / 绘制画面 / 制作音乐） */
+.wbody{display:grid;gap:14rem}
+.wsub{text-align:center;font-size:32rem;color:var(--label)}
+.wbox{display:grid;grid-template-columns:270rem 1fr;align-items:center;gap:8rem;background:var(--paper);border:2rem solid var(--panel-2);border-radius:10rem;padding:16rem 12rem;min-height:250rem}
+.wstage{position:relative;display:grid;place-items:center}
+.wdesk{width:250rem;height:auto;display:block}
+.wpop{position:absolute;left:38%;top:12%;animation:wpop .7s ease-out forwards}
+@keyframes wpop{0%{opacity:0;transform:translateY(10rem)}25%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-34rem)}}
+.wright{display:grid;gap:18rem;justify-items:center}
+.wround{font-size:30rem;color:var(--label);min-height:36rem}
+.wstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8rem;width:100%}
+.wst{display:grid;justify-items:center;gap:8rem}
+.wst .ico-s{margin:0}
+.wst b{font-size:34rem;color:var(--ink)}
+.wst b.bump{animation:wbump .35s ease-out}
+@keyframes wbump{40%{transform:scale(1.35)}}
+.wsay{text-align:center;font-size:30rem;min-height:40rem;color:var(--ink)}
 .pmk{font-style:normal;font-size:22rem;color:#E2A400;margin-left:6rem}.pmk.x{color:var(--neg)}
 .pfoot .tico{width:40rem;height:40rem;border-radius:6rem;display:grid;place-items:center;color:#fff;font-size:20rem;font-weight:700}
 /* 制作人卡片 */
