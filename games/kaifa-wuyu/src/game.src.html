@@ -375,6 +375,18 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 .srow.sbtn:active{background:var(--panel-2)}
 /* 信息栏委托页 */
 .ipd .jn{flex:1;text-align:center;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10rem}
+/* ===== P1：经验条、年度大赏、公司数据 ===== */
+.csta.cexp{color:#C77A12}
+.cexp .bar i{background:linear-gradient(#FFD45A,#F0A21A)}
+.aw{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12rem;background:var(--paper);border:2rem solid var(--panel-2);border-radius:10rem;padding:14rem 18rem;opacity:0;transform:translateX(-24rem);transition:opacity .35s,transform .35s ease-out}
+.aw.on{opacity:1;transform:none}
+.aw .an{font-size:26rem;color:var(--ink-soft)}
+.aw .ag{font-size:30rem;color:#D9A400;text-align:right}
+.aw .ag.none{color:var(--ink-soft);font-weight:500}
+.kv{display:flex;justify-content:space-between;align-items:baseline;font-size:26rem;padding:6rem 6rem;border-bottom:2rem solid var(--panel-2)}
+.kv span{color:var(--ink-soft)}
+.kv b{font-size:26rem;text-align:right}
+.srow.yrow{grid-template-columns:1fr 150rem 150rem}
 </style>
 
 <div id="app">
