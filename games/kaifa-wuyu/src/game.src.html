@@ -280,6 +280,21 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
   box-shadow:inset 0 2rem 0 #DCE9AE,inset 0 -3rem 0 #A9C46A}
 .dlg-foot button:disabled,.pfoot button:disabled,.cok:disabled{background:#E2E3DC;border-color:#9AA5A3;color:#8E9894;
   box-shadow:inset 0 2rem 0 #F4F4EE,inset 0 -3rem 0 #CCCFC6;opacity:1;cursor:default}
+/* ===== 信息栏销量页：左侧作品名/本周/累计，右侧每周销量柱状图（新一周的柱子长出来，累计数字滚动） ===== */
+.isale{display:grid;grid-template-columns:250rem 2rem 1fr;align-items:center;height:100%;padding:0 0 0 22rem;box-sizing:border-box}
+.isale .div{height:76%;width:2rem;background:url('assets/ui/ui_info_divider.png') center/100% 100% no-repeat}
+.isale .sl{display:grid;gap:2rem;padding-right:16rem;font-weight:700;color:var(--ink)}
+.isale .st{font-size:24rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.isale .sr{display:flex;justify-content:space-between;align-items:baseline;font-size:22rem}
+.isale .sr b{font-size:24rem;color:#1C9660}
+.isale .sr .off{color:var(--ink-soft)}
+.isale .chart{height:78rem;margin:0 12rem 0 16rem;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:2rem;align-items:end;
+  border-bottom:2rem solid var(--line);background:repeating-linear-gradient(to top,transparent 0 25%,rgba(199,170,130,.25) 25% calc(25% + 1rem))}
+.isale .chart i{display:block;height:0;border-radius:2rem 2rem 0 0;background:linear-gradient(#7FA6F0,#3C6FD8)}
+.isale .chart i.cur{background:linear-gradient(#FFD45A,#F0A21A)}
+.isale .chart i.grow{animation:bgrow .9s cubic-bezier(.2,1.3,.4,1) both;transform-origin:50% 100%}
+@keyframes bgrow{0%{transform:scaleY(0)}100%{transform:scaleY(1)}}
+@media (prefers-reduced-motion:reduce){.isale .chart i.grow{animation:none}}
 /* ===== 媒体评分：开奖式揭晓（逐条出现 + 分数来回跳后落定） ===== */
 .rtitle{text-align:center;font-size:30rem;opacity:0;transform:translateY(8rem);transition:opacity .4s,transform .4s}
 .rtitle.on{opacity:1;transform:none}
