@@ -1,0 +1,9 @@
+{
+  "tool": "built-in image_gen",
+  "reference": "art/reference/dlg-btn-ref.png",
+  "prompts": {
+    "normal": "Use case: ui-mockup. Production game UI raster asset, one blank confirm button. Reference image is style reference only; redraw cleanly, remove all lettering and cream background. Transparent RGBA canvas EXACTLY 400x128 pixels (logical 200x64 at 2x). Straight-on orthographic rounded rectangle; radius 20-24 source pixels. Button spans x=4..395. Face top y=4, face bottom y=102, dark teal thickness down to y=112, subtle shadow fades fully before y=125. Dark teal #075C63 outline 6 source pixels; pale yellow green paper vertical gradient #F4F8E4 to #D2E4A6. Thin white highlight inside top, darker green inner bottom lip, 8-10 source pixel dark teal extrusion under outline, soft low opacity shadow. Very faint paper grain, exceptionally clean flat center with no spot highlight. Middle horizontal span must be perfectly seamless and nearly uniform across x: safe for nine slice borders top32 right32 bottom40 left32 source pixels, horizontal stretching from400 to600 wide. All corner curves contained within32px side caps. No text, labels, icons, decorations, watermark or perspective. Tight transparent padding; do not crop shadow. Deliver only this single button.",
+    "down": "Edit normal: preserve transparent canvas, outline and bottom baseline; thinner 1 logical px extrusion, darker face, top inner shadow, almost no drop shadow; runtime handles 4px motion.",
+    "off": "Edit normal: same outline and baseline, desaturated light gray-green face and border, preserve extrusion, no drop shadow."
+  }
+}

@@ -623,6 +623,90 @@
         248
       ],
       "frameDurationMs": 500
+    },
+    {
+      "key": "ui_dlg_btn",
+      "path": "assets/ui/ui_dlg_btn.png",
+      "width": 200,
+      "height": 64,
+      "pixels": [
+        400,
+        128
+      ],
+      "nineSlice": [
+        16,
+        16,
+        20,
+        16
+      ],
+      "safeNineSlice": [
+        16,
+        16,
+        20,
+        16
+      ],
+      "batch": "ui-dlg-btn-dcfecb0",
+      "scale": 2,
+      "sourceRect": null,
+      "method": "image_gen redraw from dlg-btn-ref; aligned opaque extents; high-quality resampling",
+      "state": "normal",
+      "runtimeOffsetY": 0
+    },
+    {
+      "key": "ui_dlg_btn_down",
+      "path": "assets/ui/ui_dlg_btn_down.png",
+      "width": 200,
+      "height": 64,
+      "pixels": [
+        400,
+        128
+      ],
+      "nineSlice": [
+        16,
+        16,
+        20,
+        16
+      ],
+      "safeNineSlice": [
+        16,
+        16,
+        20,
+        16
+      ],
+      "batch": "ui-dlg-btn-dcfecb0",
+      "scale": 2,
+      "sourceRect": null,
+      "method": "image_gen redraw from dlg-btn-ref; aligned opaque extents; high-quality resampling",
+      "state": "pressed",
+      "runtimeOffsetY": 4
+    },
+    {
+      "key": "ui_dlg_btn_off",
+      "path": "assets/ui/ui_dlg_btn_off.png",
+      "width": 200,
+      "height": 64,
+      "pixels": [
+        400,
+        128
+      ],
+      "nineSlice": [
+        16,
+        16,
+        20,
+        16
+      ],
+      "safeNineSlice": [
+        16,
+        16,
+        20,
+        16
+      ],
+      "batch": "ui-dlg-btn-dcfecb0",
+      "scale": 2,
+      "sourceRect": null,
+      "method": "image_gen redraw from dlg-btn-ref; aligned opaque extents; high-quality resampling",
+      "state": "disabled",
+      "runtimeOffsetY": 0
     }
   ],
   "notes": [

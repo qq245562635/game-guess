@@ -1,0 +1,55 @@
+{
+  "nineSliceOrder": "top,right,bottom,left",
+  "logicalSize": [
+    200,
+    64
+  ],
+  "stretchLogicalWidth": 300,
+  "assets": [
+    {
+      "key": "ui_dlg_btn",
+      "width": 400,
+      "height": 128,
+      "channels": 4,
+      "hasAlpha": true,
+      "borderMaxAlpha": 0,
+      "nineSliceIdentityMaxPremultipliedError": 0.9843137254901961,
+      "sourceOpaqueBounds": [
+        77,
+        103,
+        2025,
+        607
+      ]
+    },
+    {
+      "key": "ui_dlg_btn_down",
+      "width": 400,
+      "height": 128,
+      "channels": 4,
+      "hasAlpha": true,
+      "borderMaxAlpha": 0,
+      "nineSliceIdentityMaxPremultipliedError": 0.9725490196078397,
+      "sourceOpaqueBounds": [
+        76,
+        103,
+        2026,
+        600
+      ]
+    },
+    {
+      "key": "ui_dlg_btn_off",
+      "width": 400,
+      "height": 128,
+      "channels": 4,
+      "hasAlpha": true,
+      "borderMaxAlpha": 0,
+      "nineSliceIdentityMaxPremultipliedError": 0.8941176470588204,
+      "sourceOpaqueBounds": [
+        75,
+        100,
+        2029,
+        632
+      ]
+    }
+  ]
+}

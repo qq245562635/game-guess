@@ -47,3 +47,13 @@
 ## 用到的地方
 
 新企划书「确定」、方针页「确定」、职员卡片「确定」、媒体评分「确定」、作品记录 / 职员一览「确定」，全部共用这一套。
+
+## 交付说明（2026-10-19）
+
+- 已交付 `assets/ui/ui_dlg_btn.png`、`ui_dlg_btn_down.png`、`ui_dlg_btn_off.png`：均为无字 400×128 RGBA，逻辑尺寸 200×64。
+- 已在 `assets/ui/metadata.json` 追加三项，`nineSlice` 和 `safeNineSlice` 均为 `[16,16,20,16]`，顺序为上、右、下、左；源 PNG 切片为 `[32,32,40,32]`。
+- 总览为 `art/previews/ui-dlg-btn-contact.png`，米白 `#FDEED5` 底，三态并排，并含三态分别横向九宫格拉伸到 300×64 的样例。
+- 常态有白色内高光、绿色唇边、深青厚度与柔和投影；按下态变暗、内阴影、厚度收薄；不可点态灰化且无外投影。三图统一不透明主体范围和底边，图内未增加按下位移；接入时程序负责 `translateY(4px)`。
+- 使用内置 `image_gen` 按参考重新生成，未直接使用参考裁图。提示词记录在 `art/ui-dlg-btn-prompts.json`，导出和预览脚本为 `tools/package-dlg-btn.cjs`。
+- 已检查尺寸、RGBA、四周边缘 alpha 为 0（投影无裁断），并验证九宫格原尺寸重建的预乘色误差小于 1/255；目视检查 300 宽样例无明显接缝。报告为 `art/ui-dlg-btn-validation.json`。
+- 本次只交付素材，弹窗 CSS 到贴图的替换留给接入方；文字继续由程序渲染。
