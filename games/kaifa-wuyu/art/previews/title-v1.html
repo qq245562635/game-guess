@@ -15,10 +15,10 @@
 .logo{position:relative;width:560rem;height:224rem;filter:drop-shadow(0 8rem 3rem #043e3d24)}
 .logo img{width:100%;height:100%;object-fit:contain}
 .logo-type{position:absolute;left:8%;right:8%;top:40%;height:45%;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.logo h1{margin:0;font-size:70rem;font-weight:900;letter-spacing:4rem;line-height:1.15;color:#075c63;-webkit-text-stroke:2rem #fffcdf;paint-order:stroke fill;text-shadow:0 3rem 0 #bca36c}
-.logo small{margin-top:7rem;font-size:14rem;letter-spacing:2rem;font-weight:800;color:#ac641f}
+.logo h1{margin:0;font-size:64rem;font-weight:900;letter-spacing:4rem;line-height:1.05;color:#075c63;-webkit-text-stroke:2rem #fffcdf;paint-order:stroke fill;text-shadow:0 3rem 0 #bca36c}
+.logo small{margin-top:5rem;font-size:24rem;line-height:1.1;letter-spacing:2rem;font-weight:800;color:#ac641f}
 html[lang=en] .logo h1{font-size:45rem;letter-spacing:1rem;line-height:1.03;text-align:center}
-html[lang=en] .logo small{font-size:16rem;letter-spacing:5rem;margin-top:5rem}
+html[lang=en] .logo small{font-size:24rem;letter-spacing:5rem;margin-top:5rem}
 .buttons{margin-top:30rem;display:flex;flex-direction:column;gap:20rem;position:relative;isolation:isolate}
 .buttons:before,.buttons:after{content:"";position:absolute;top:-14rem;bottom:25rem;width:4rem;background:repeating-linear-gradient(32deg,#b1905d 0 2rem,#dfbd7d 2rem 4rem);box-shadow:1rem 0 #fff4cf80;z-index:-1}
 .buttons:before{left:35rem}.buttons:after{right:35rem}
@@ -36,11 +36,17 @@ html[lang=en] .logo small{font-size:16rem;letter-spacing:5rem;margin-top:5rem}
 .footer{position:absolute;bottom:0;height:122rem;width:100%;background:#075c63 url('../../assets/ui/ui_bottombar_bg.png') left top/720rem 186rem;display:flex;align-items:center;padding-left:23rem}
 .studio-note{display:flex;align-items:center;gap:16rem;color:#f5e5bd}
 .stamp{width:52rem;height:52rem;display:grid;place-items:center;border:2rem solid #b4c8aa99;border-radius:50%;font-size:27rem;color:#d5e6b7}
-.note-copy{font-size:18rem;letter-spacing:1rem;font-weight:600}.note-copy small{display:block;margin-top:4rem;font-size:11rem;letter-spacing:2rem;opacity:.65}
+.note-copy{font-size:18rem;letter-spacing:1rem;font-weight:600}.note-copy small{display:block;margin-top:4rem;font-size:20rem;letter-spacing:1rem;font-weight:700;opacity:.9}
 .sound{position:absolute;top:16rem;right:23rem;width:207rem;height:73rem;border:0;border-radius:0;background:url('../../assets/ui/ui_bb_btn.png') center/100% 100% no-repeat;display:flex;align-items:center;justify-content:center;gap:11rem;font-size:32rem;font-weight:700}
 .sound svg{width:26rem;height:26rem;fill:none;stroke:#075c63;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 @media(max-aspect-ratio:3/5){.title-group{top:42rem}.buttons{margin-top:38rem}}
-@media(min-aspect-ratio:1/2){.title-group{top:18rem}.logo{width:500rem;height:200rem}.logo h1{font-size:64rem}.logo small{font-size:12rem}html[lang=en] .logo h1{font-size:40rem}.buttons{margin-top:22rem;gap:18rem}.sign{height:80rem}}
+@media(min-aspect-ratio:1/2){.title-group{top:18rem}.logo{width:500rem;height:200rem}.logo h1{font-size:64rem}html[lang=en] .logo h1{font-size:40rem}.buttons{margin-top:22rem;gap:18rem}.sign{height:80rem}}
+.from-assets .logo{filter:none}.from-assets .logo img{height:auto;object-fit:initial}.from-assets .logo-type{display:none}
+.from-assets .sign{border:0;box-shadow:none!important;background-position:center;background-size:100% 100%;background-repeat:no-repeat}
+.from-assets .sign:before,.from-assets .sign:after{display:none}.from-assets .sign.pressed{transform:none}
+.from-assets .sign>span,.from-assets .sign>img{transform:translateY(-4rem)}.from-assets .sign.pressed>span,.from-assets .sign.pressed>img{transform:translateY(1rem)}
+.from-assets .sign>img{width:44rem;height:44rem;object-fit:contain}.from-assets .sign:disabled>img{filter:grayscale(1);opacity:.6}
+.from-assets .sky{height:calc(100% - 122rem)!important;background-image:url('../../assets/ui/ui_title_shade.png');background-size:100% 100%;background-color:transparent;mask-image:none}.from-assets .atmosphere{display:none}
 </style>
 <div class="review-app">
 <iframe id="scene" title="Live game scene"></iframe>
@@ -59,6 +65,7 @@ html[lang=en] .logo small{font-size:16rem;letter-spacing:5rem;margin-top:5rem}
 </div>
 <script>
 const params=new URLSearchParams(location.search);
+const useAssets=params.get('assets')==='1';
 const language=params.get('lang')==='en'?'en':'zh-CN';
 document.documentElement.lang=language;
 const english=language==='en';
@@ -68,6 +75,17 @@ document.querySelector('#subtitle').textContent=english?'STUDIO':'LITTLE LAUNCH 
 document.querySelectorAll('[data-copy]').forEach(el=>el.textContent=copy[el.dataset.copy]);
 if(params.get('saved')==='1')document.querySelector('.sign:nth-child(2)').disabled=false;
 if(params.get('state')==='pressed')document.querySelector('.sign.primary').classList.add('pressed');
+window.syncAssetStates=()=>{
+  if(!useAssets)return;
+  document.body.classList.add('from-assets');
+  document.querySelector('.logo img').src=english?'../../assets/ui/ui_title_logo_en.png':'../../assets/ui/ui_title_logo.png';
+  document.querySelectorAll('.sign').forEach((button,i)=>{
+    const base=i===0?'ui_title_btn':'ui_title_btn_wood',suffix=button.disabled?'_off':button.classList.contains('pressed')?'_down':'';
+    button.style.backgroundImage=`url('../../assets/ui/${base+suffix}.png')`;
+    const svg=button.querySelector('svg');if(svg){const icon=new Image();icon.src='../../assets/ui/ui_title_btn_icon_'+['new','load','record'][i]+'.png';icon.alt='';svg.replaceWith(icon)}
+  });
+};
+window.syncAssetStates();
 // Review-only composition: reuse live game assets and rendering, not a painted room.
 window.ready=(async()=>{
   const base=new URL('../../',location.href).href;
@@ -89,7 +107,7 @@ window.ready=(async()=>{
   frame.srcdoc='<!doctype html><html><head><base href="'+base+'"></head><body>'+shell.replace('/*GAME*/',()=>audio+'\n'+sceneCode+'\n'+hook)+sceneStyle+'</body></html>';
   await loaded;await frame.contentWindow.titlePreviewReady;
   // Fade the independent cloud layer completely before the first employee head.
-  document.querySelector('.sky').style.height=Math.min(...frame.contentWindow.faceBounds().map(f=>f.y))*.98+'px';
+  if(!useAssets)document.querySelector('.sky').style.height=Math.min(...frame.contentWindow.faceBounds().map(f=>f.y))*.98+'px';
   await document.fonts.ready;await Promise.all([...document.images].map(i=>i.decode()));
   return true;
 })();
@@ -100,6 +118,7 @@ window.reviewGeometry=()=>{
     faces:document.querySelector('#scene').contentWindow.faceBounds().map(f=>({...f,x:f.x+document.querySelector('#scene').getBoundingClientRect().x})),
     app:bounds(document.querySelector('.review-app')),footer:bounds(document.querySelector('.footer')),sound:bounds(document.querySelector('.sound')),
     designScale:parseFloat(getComputedStyle(document.documentElement).fontSize),loadDisabled:document.querySelector('.sign:nth-child(2)').disabled,pressed:document.querySelector('.sign.primary').classList.contains('pressed'),
+    usesExportedAssets:useAssets,footerEnglishFontPx:parseFloat(getComputedStyle(document.querySelector('.note-copy small')).fontSize),logoSubtitleEquivalentPx:24*parseFloat(getComputedStyle(document.documentElement).fontSize)*document.querySelector('.logo').getBoundingClientRect().width/(560*parseFloat(getComputedStyle(document.documentElement).fontSize)),
     visibleCopy:document.body.innerText};
 };
 </script>

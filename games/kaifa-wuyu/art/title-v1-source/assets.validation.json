@@ -1,0 +1,173 @@
+{
+  "scale": 2,
+  "assets": [
+    {
+      "key": "ui_title_btn",
+      "pixels": [
+        720,
+        176
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_title_btn_down",
+      "pixels": [
+        720,
+        176
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_title_btn_off",
+      "pixels": [
+        720,
+        176
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_title_btn_wood",
+      "pixels": [
+        720,
+        176
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_title_btn_wood_down",
+      "pixels": [
+        720,
+        176
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_title_btn_wood_off",
+      "pixels": [
+        720,
+        176
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_title_btn_icon_new",
+      "pixels": [
+        88,
+        88
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_title_btn_icon_load",
+      "pixels": [
+        88,
+        88
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_title_btn_icon_record",
+      "pixels": [
+        88,
+        88
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_input",
+      "pixels": [
+        1208,
+        152
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_input_focus",
+      "pixels": [
+        1208,
+        152
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_title_logo",
+      "pixels": [
+        1120,
+        480
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_title_logo_en",
+      "pixels": [
+        1120,
+        480
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "ui_title_shade",
+      "pixels": [
+        1440,
+        2560
+      ],
+      "channels": 4,
+      "alphaRange": [
+        0,
+        255
+      ]
+    }
+  ]
+}

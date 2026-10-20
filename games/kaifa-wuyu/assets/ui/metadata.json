@@ -707,6 +707,377 @@
       "method": "image_gen redraw from dlg-btn-ref; aligned opaque extents; high-quality resampling",
       "state": "disabled",
       "runtimeOffsetY": 0
+    },
+    {
+      "key": "ui_title_btn",
+      "path": "assets/ui/ui_title_btn.png",
+      "width": 360,
+      "height": 88,
+      "pixels": [
+        720,
+        176
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "material": "sage",
+      "state": "normal",
+      "nineSlice": [
+        16,
+        16,
+        20,
+        16
+      ],
+      "safeNineSlice": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "runtimeOffsetY": 0,
+      "labelOffsetY": 0,
+      "labelCenter": [
+        180,
+        40
+      ],
+      "textBaked": false,
+      "source": "art/title-v1-source/sprites/ui_title_btn.svg"
+    },
+    {
+      "key": "ui_title_btn_down",
+      "path": "assets/ui/ui_title_btn_down.png",
+      "width": 360,
+      "height": 88,
+      "pixels": [
+        720,
+        176
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "material": "sage",
+      "state": "pressed",
+      "nineSlice": [
+        16,
+        16,
+        20,
+        16
+      ],
+      "safeNineSlice": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "runtimeOffsetY": 0,
+      "labelOffsetY": 5,
+      "labelCenter": [
+        180,
+        45
+      ],
+      "textBaked": false,
+      "source": "art/title-v1-source/sprites/ui_title_btn_down.svg"
+    },
+    {
+      "key": "ui_title_btn_off",
+      "path": "assets/ui/ui_title_btn_off.png",
+      "width": 360,
+      "height": 88,
+      "pixels": [
+        720,
+        176
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "material": "sage",
+      "state": "disabled",
+      "nineSlice": [
+        16,
+        16,
+        20,
+        16
+      ],
+      "safeNineSlice": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "runtimeOffsetY": 0,
+      "labelOffsetY": 0,
+      "labelCenter": [
+        180,
+        40
+      ],
+      "textBaked": false,
+      "source": "art/title-v1-source/sprites/ui_title_btn_off.svg"
+    },
+    {
+      "key": "ui_title_btn_wood",
+      "path": "assets/ui/ui_title_btn_wood.png",
+      "width": 360,
+      "height": 88,
+      "pixels": [
+        720,
+        176
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "material": "wood",
+      "state": "normal",
+      "nineSlice": [
+        16,
+        16,
+        20,
+        16
+      ],
+      "safeNineSlice": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "runtimeOffsetY": 0,
+      "labelOffsetY": 0,
+      "labelCenter": [
+        180,
+        40
+      ],
+      "textBaked": false,
+      "source": "art/title-v1-source/sprites/ui_title_btn_wood.svg"
+    },
+    {
+      "key": "ui_title_btn_wood_down",
+      "path": "assets/ui/ui_title_btn_wood_down.png",
+      "width": 360,
+      "height": 88,
+      "pixels": [
+        720,
+        176
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "material": "wood",
+      "state": "pressed",
+      "nineSlice": [
+        16,
+        16,
+        20,
+        16
+      ],
+      "safeNineSlice": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "runtimeOffsetY": 0,
+      "labelOffsetY": 5,
+      "labelCenter": [
+        180,
+        45
+      ],
+      "textBaked": false,
+      "source": "art/title-v1-source/sprites/ui_title_btn_wood_down.svg"
+    },
+    {
+      "key": "ui_title_btn_wood_off",
+      "path": "assets/ui/ui_title_btn_wood_off.png",
+      "width": 360,
+      "height": 88,
+      "pixels": [
+        720,
+        176
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "material": "wood",
+      "state": "disabled",
+      "nineSlice": [
+        16,
+        16,
+        20,
+        16
+      ],
+      "safeNineSlice": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "runtimeOffsetY": 0,
+      "labelOffsetY": 0,
+      "labelCenter": [
+        180,
+        40
+      ],
+      "textBaked": false,
+      "source": "art/title-v1-source/sprites/ui_title_btn_wood_off.svg"
+    },
+    {
+      "key": "ui_title_btn_icon_new",
+      "path": "assets/ui/ui_title_btn_icon_new.png",
+      "width": 44,
+      "height": 44,
+      "pixels": [
+        88,
+        88
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "textBaked": false,
+      "source": "art/title-v1-source/sprites/ui_title_btn_icon_new.svg"
+    },
+    {
+      "key": "ui_title_btn_icon_load",
+      "path": "assets/ui/ui_title_btn_icon_load.png",
+      "width": 44,
+      "height": 44,
+      "pixels": [
+        88,
+        88
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "textBaked": false,
+      "source": "art/title-v1-source/sprites/ui_title_btn_icon_load.svg"
+    },
+    {
+      "key": "ui_title_btn_icon_record",
+      "path": "assets/ui/ui_title_btn_icon_record.png",
+      "width": 44,
+      "height": 44,
+      "pixels": [
+        88,
+        88
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "textBaked": false,
+      "source": "art/title-v1-source/sprites/ui_title_btn_icon_record.svg"
+    },
+    {
+      "key": "ui_input",
+      "path": "assets/ui/ui_input.png",
+      "width": 604,
+      "height": 76,
+      "pixels": [
+        1208,
+        152
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "state": "normal",
+      "nineSlice": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "safeNineSlice": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "contentInsets": [
+        10,
+        20,
+        10,
+        20
+      ],
+      "textBaked": false,
+      "source": "art/title-v1-source/sprites/ui_input.svg"
+    },
+    {
+      "key": "ui_input_focus",
+      "path": "assets/ui/ui_input_focus.png",
+      "width": 604,
+      "height": 76,
+      "pixels": [
+        1208,
+        152
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "state": "focused",
+      "nineSlice": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "safeNineSlice": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "contentInsets": [
+        10,
+        20,
+        10,
+        20
+      ],
+      "textBaked": false,
+      "source": "art/title-v1-source/sprites/ui_input_focus.svg"
+    },
+    {
+      "key": "ui_title_logo",
+      "path": "assets/ui/ui_title_logo.png",
+      "width": 560,
+      "height": 240,
+      "pixels": [
+        1120,
+        480
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "language": "zh",
+      "textBaked": true,
+      "contentSize": [
+        560,
+        224
+      ],
+      "shadowPaddingBottom": 16,
+      "fontFamily": "Noto Sans SC",
+      "subtitleFontSize": 24,
+      "source": "art/title-v1-source/export.html"
+    },
+    {
+      "key": "ui_title_logo_en",
+      "path": "assets/ui/ui_title_logo_en.png",
+      "width": 560,
+      "height": 240,
+      "pixels": [
+        1120,
+        480
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "language": "en",
+      "textBaked": true,
+      "contentSize": [
+        560,
+        224
+      ],
+      "shadowPaddingBottom": 16,
+      "fontFamily": "Noto Sans SC",
+      "subtitleFontSize": 24,
+      "source": "art/title-v1-source/export.html"
+    },
+    {
+      "key": "ui_title_shade",
+      "path": "assets/ui/ui_title_shade.png",
+      "width": 720,
+      "height": 1280,
+      "pixels": [
+        1440,
+        2560
+      ],
+      "scale": 2,
+      "batch": "title-v1-approved",
+      "textBaked": false,
+      "cloudFadeEnd": 0.55,
+      "source": "art/title-v1-source/export.html"
     }
   ],
   "notes": [

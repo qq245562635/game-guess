@@ -28,7 +28,7 @@ const overlap=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.h
       for(const lang of ['zh','en']){
         const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:scale});
         const errors=[];page.on('pageerror',e=>errors.push(e.message));
-        await page.goto(`http://127.0.0.1:${server.address().port}/games/kaifa-wuyu/art/previews/title-v1.html?lang=${lang}`);
+        await page.goto(`http://127.0.0.1:${server.address().port}/games/kaifa-wuyu/art/previews/title-v1.html?lang=${lang}&assets=1`);
         await page.evaluate(()=>window.ready);
         if(errors.length)throw Error(errors.join('\n'));
         await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
@@ -40,6 +40,7 @@ const overlap=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.h
           if(Math.abs(value-expected)>.15)throw Error('Footer design dimensions mismatch');
         }
         if(!geometry.loadDisabled)throw Error('First launch must disable Load Game');
+        if(geometry.footerEnglishFontPx<9||geometry.logoSubtitleEquivalentPx<9)throw Error('Small English copy too small');
         for(const c of geometry.controls){
           if(c.x<0||c.y<0||c.x+c.width>width+.1||c.y+c.height>height+.1)throw Error(`${label}/${lang}: clipped ${c.label}`);
           if(geometry.faces.some(f=>overlap(c,f)))throw Error(`${label}/${lang}: face overlap ${c.label}`);
@@ -51,14 +52,16 @@ const overlap=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.h
         checks.push({...geometry,nativeFooter,image:name,pixels:[width*scale,height*scale],status:'pass'});
         console.log(`PASS ${name}: controls in bounds; six face regions clear; ${lang==='en'?'English-only copy':'Chinese copy'}`);
         if(label==='master'){
-          await page.evaluate(()=>document.querySelector('.sign.primary').classList.add('pressed'));
+          const labelY=await page.locator('.sign.primary span').evaluate(el=>el.getBoundingClientRect().y);
+          await page.evaluate(()=>{document.querySelector('.sign.primary').classList.add('pressed');window.syncAssetStates()});
           const pressed=await page.evaluate(()=>window.reviewGeometry());
-          if(!pressed.pressed||Math.abs(pressed.controls[1].y-geometry.controls[1].y-5*geometry.designScale)>.15)throw Error('Pressed button must sink 5 design px');
+          const pressedLabelY=await page.locator('.sign.primary span').evaluate(el=>el.getBoundingClientRect().y);
+          if(!pressed.pressed||Math.abs(pressedLabelY-labelY-5*geometry.designScale)>.15)throw Error('Pressed label must sink 5 design px');
           for(const c of pressed.controls)if(c.y+c.height>height+.1||pressed.faces.some(f=>overlap(c,f)))throw Error(`${lang}: pressed controls clipped or overlapping a face`);
           const pressedName=`title-v1-${lang}-pressed.png`;
           await page.screenshot({path:path.join(game,'art/previews',pressedName)});
           checks.push({...pressed,nativeFooter,image:pressedName,pixels:[width*scale,height*scale],status:'pass'});
-          await page.evaluate(()=>{document.querySelector('.sign.primary').classList.remove('pressed');document.querySelector('.sign:nth-child(2)').disabled=false});
+          await page.evaluate(()=>{document.querySelector('.sign.primary').classList.remove('pressed');document.querySelector('.sign:nth-child(2)').disabled=false;window.syncAssetStates()});
           if((await page.evaluate(()=>window.reviewGeometry())).loadDisabled)throw Error('Saved launch must enable Load Game');
         }
         await page.close();
@@ -66,7 +69,7 @@ const overlap=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.h
     }
     const sheet=await browser.newPage({viewport:{width:1240,height:540},deviceScaleFactor:1});
     const base=`http://127.0.0.1:${server.address().port}/games/kaifa-wuyu/art/previews/`;
-    await sheet.goto(base+'title-v1.html?lang=en');await sheet.evaluate(()=>window.ready);
+    await sheet.goto(base+'title-v1.html?lang=en&assets=1');await sheet.evaluate(()=>window.ready);
     await sheet.evaluate(()=>{
       const templates=[...document.querySelectorAll('.sign')].slice(0,2).map(el=>el.cloneNode(true));
       document.querySelector('.review-app').remove();
@@ -77,6 +80,7 @@ const overlap=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.h
         const sample=document.createElement('section');sample.className='sample';
         const label=document.createElement('p');label.className='label';label.textContent=(row?'Wood / 木牌':'Sage / 主按钮')+' · '+state;
         const button=template.cloneNode(true);button.disabled=state==='disabled';button.classList.toggle('pressed',state==='pressed');
+        button.style.backgroundImage="url('../../assets/ui/"+(row?'ui_title_btn_wood':'ui_title_btn')+({normal:'',pressed:'_down',disabled:'_off'}[state])+".png')";
         sample.append(label,button);grid.append(sample);
       }document.body.append(grid);
     });

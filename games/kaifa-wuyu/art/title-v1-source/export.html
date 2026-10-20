@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8"><base href="../previews/"><title>Title asset exporter</title></head><body>
+<script>
+window.ready=(async()=>{
+ const text=await fetch('title-v1.html').then(r=>r.text());
+ const source=new DOMParser().parseFromString(text,'text/html');
+ document.head.append(source.querySelector('style').cloneNode(true));
+ const override=document.createElement('style');override.textContent=`
+ html{font-size:1px!important}html,body{background:transparent!important;width:100%;height:100%;overflow:hidden;margin:0;display:block}
+ #stage{position:relative;overflow:hidden}.logo{position:absolute;left:0;top:0;width:560px!important;height:224px!important}
+ .logo h1{font-size:64px!important}.logo small{font-size:24px!important}html[lang=en] .logo h1{font-size:45px!important}
+ .cloud{position:absolute;inset:0 0 auto;height:704px;background:#f6e8cc url('../title-v1-source/warm-sky.png') center top/cover no-repeat;mask-image:linear-gradient(#000 0%,#000 54%,transparent 100%)}
+ .light{position:absolute;inset:0;background:radial-gradient(ellipse at 43% 0%,#ffe4a944,transparent 60%),linear-gradient(90deg,#534b2522,transparent 15%,transparent 85%,#534b2522),linear-gradient(0deg,#034b4b22,transparent 23%)}
+ `;document.head.append(override);
+ const stage=document.createElement('div');stage.id='stage';document.body.append(stage);
+ window.showAsset=async(kind,lang='zh')=>{
+   stage.replaceChildren();document.documentElement.lang=lang==='en'?'en':'zh-CN';
+   if(kind==='logo'){
+     stage.style.cssText='width:560px;height:240px';const logo=source.querySelector('.logo').cloneNode(true);
+     logo.querySelector('h1').textContent=lang==='en'?'LITTLE LAUNCH':'开发物语';
+     logo.querySelector('small').textContent=lang==='en'?'STUDIO':'LITTLE LAUNCH STUDIO';stage.append(logo);
+     await Promise.all([...stage.querySelectorAll('img')].map(i=>i.decode()));
+   }else if(kind==='shade'){
+     stage.style.cssText='width:720px;height:1280px';
+     stage.innerHTML='<div class="cloud"></div><div class="light"></div>';
+     await new Promise((resolve,reject)=>{const image=new Image();image.onload=resolve;image.onerror=reject;image.src='../title-v1-source/warm-sky.png'});
+   }
+   await document.fonts.ready;await document.fonts.load('800 24px Noto');await document.fonts.load('900 70px Noto');
+   await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+ };
+ return true;
+})();
+</script></body></html>

@@ -1,6 +1,6 @@
 # 标题画面 V1 · 中英文整屏提案
 
-对应 [Issue #30](https://github.com/qq245562635/game-guess/issues/30)，需求来自已合并 PR #29 / #35。已 rebase 到 main `1a8f975`，并落实 [PR #34 的五项评审意见](https://github.com/qq245562635/game-guess/pull/34#issuecomment-6289203595)。本次是**待负责人确认的修订效果图**，正式 `ui_title_*` / `ui_input` 切图在修订图确认后交付。
+对应 [Issue #30](https://github.com/qq245562635/game-guess/issues/30)，需求来自已合并 PR #29 / #35。基线 main `1a8f975`，已落实 [PR #34 的五项评审意见](https://github.com/qq245562635/game-guess/pull/34#issuecomment-6289203595)。**负责人已确认修订图，14 张正式素材已切图到 assets/ui/**。接入清单、尺寸和状态约定见 [TITLE-ASSETS.md](TITLE-ASSETS.md)，由 Claude 接入游戏。本页效果图已改用真实交付 PNG 复核。
 
 ## 看图
 
@@ -8,7 +8,7 @@
 - [英文版 · 1440×3200](previews/title-v1-en.png)
 - [中文按下态 · 1440×3200](previews/title-v1-zh-pressed.png) / [英文按下态](previews/title-v1-en-pressed.png)
 - [按钮三态对照](previews/title-v1-button-states.png)：浅绿主按钮与木色按钮，各含常态 / 按下 / 不可用。
-- [可调整排版预览](previews/title-v1.html)：通过本机 HTTP 服务打开；加 `?lang=en` 切英文，`&state=pressed` 展示主按钮按下态，`&saved=1` 模拟已有存档。默认所有整屏图均为首次打开、读取游戏不可用。
+- [可调整排版预览](previews/title-v1.html)：通过本机 HTTP 服务打开；`?assets=1` 使用交付 PNG，`&lang=en` 切英文，`&state=pressed` 展示主按钮按下态，`&saved=1` 模拟已有存档。默认所有整屏图均为首次打开、读取游戏不可用。
 
 | 手机尺寸 | 中文版 | 英文版 |
 |---|---|---|
@@ -32,7 +32,7 @@
 - 内置 **image_gen** 生成无字 Logo 装饰概念层 `title-v1-source/logo-decoration.png` 和无场景的暖天空 `title-v1-source/warm-sky.png`。完整提示词分别见 `prompt.txt` 与 `warm-sky.prompt.txt`，均未使用 CLI/API 替代。
 - 木牌、麻绳、彩色厚描边小图标与光影以 HTML/CSS/SVG 独立绘制，文字独立覆盖。它们是本轮排版提案源，不是提前交付的正式切图。
 - `previews/title-v1.html` 读取当前 `src/audio.js`、`src/game.js`、`src/game.src.html`，在预览 iframe 内替换标题布局和镜头；不修改这些运行时源文件，也不写游戏存档。
-- 场景图层、天空/氛围层、Logo 装饰、Logo 文字、三态按钮底、按钮文字、底栏各自独立。修订图确认后再出正式 Logo 中英、按钮三态、三个贴片图标、氛围层和输入框常态/聚焦 PNG。
+- 场景图层、天空/氛围层、Logo 装饰、Logo 文字、三态按钮底、按钮文字、底栏各自独立。正式素材已导出，Logo 副标增至 24、底栏英文小字增至 20 设计像素；Logo 字区重新收紧行高，副标完整留在纸板内。更改文字后仍可从源文件重建中英 Logo。
 
 ## 布局参数
 
@@ -62,4 +62,4 @@ node design/kaifa-wuyu-ui/tools/render-title-v1.cjs
 - 每个视口都打开最新 `index.html` 作为真实运行时基准，对比底栏与右键的 x/y/宽/高，误差 ≤ 0.15 屏幕像素；同时校验 122 / 207×73 / 顶 16 / 右 23 的设计尺寸。
 - 英文可见文案无汉字，无页面脚本错误。数据见 `title-v1-source/validation.json`。
 
-已目视检查中文 430×932、英文 360×640 和三态对照图：天空为暖色云层、员工可见、读取按钮明确禁用、图标与按钮有厚度。此验证是修订提案预览验证，正式切图及游戏接入后仍需复核。
+已目视检查实际 PNG 的小屏、素材总览和九宫格拉伸样例。小字增大后仍完整留在 Logo 内，底栏不和右键重叠。游戏实际接入由 Claude 完成后复核。

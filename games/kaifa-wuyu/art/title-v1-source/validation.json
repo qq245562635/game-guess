@@ -107,7 +107,10 @@
     "designScale": 1,
     "loadDisabled": true,
     "pressed": false,
-    "visibleCopy": "开发物语\nLITTLE LAUNCH STUDIO\n新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 20,
+    "logoSubtitleEquivalentPx": 24,
+    "visibleCopy": "新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
     "nativeFooter": {
       "footer": {
         "x": 0,
@@ -146,7 +149,7 @@
       {
         "label": "新游戏",
         "x": 180,
-        "y": 309,
+        "y": 304,
         "width": 360,
         "height": 88
       },
@@ -237,7 +240,10 @@
     "designScale": 1,
     "loadDisabled": true,
     "pressed": true,
-    "visibleCopy": "开发物语\nLITTLE LAUNCH STUDIO\n新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 20,
+    "logoSubtitleEquivalentPx": 24,
+    "visibleCopy": "新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
     "nativeFooter": {
       "footer": {
         "x": 0,
@@ -367,7 +373,10 @@
     "designScale": 1,
     "loadDisabled": true,
     "pressed": false,
-    "visibleCopy": "LITTLE LAUNCH\nSTUDIO\nNew Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 20,
+    "logoSubtitleEquivalentPx": 24,
+    "visibleCopy": "New Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
     "nativeFooter": {
       "footer": {
         "x": 0,
@@ -406,7 +415,7 @@
       {
         "label": "New Game",
         "x": 180,
-        "y": 309,
+        "y": 304,
         "width": 360,
         "height": 88
       },
@@ -497,7 +506,10 @@
     "designScale": 1,
     "loadDisabled": true,
     "pressed": true,
-    "visibleCopy": "LITTLE LAUNCH\nSTUDIO\nNew Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 20,
+    "logoSubtitleEquivalentPx": 24,
+    "visibleCopy": "New Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
     "nativeFooter": {
       "footer": {
         "x": 0,
@@ -627,7 +639,10 @@
     "designScale": 0.463768,
     "loadDisabled": true,
     "pressed": false,
-    "visibleCopy": "开发物语\nLITTLE LAUNCH STUDIO\n新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 9.27536,
+    "logoSubtitleEquivalentPx": 9.937500000000002,
+    "visibleCopy": "新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
     "nativeFooter": {
       "footer": {
         "x": 13.046875,
@@ -757,7 +772,10 @@
     "designScale": 0.463768,
     "loadDisabled": true,
     "pressed": false,
-    "visibleCopy": "LITTLE LAUNCH\nSTUDIO\nNew Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 9.27536,
+    "logoSubtitleEquivalentPx": 9.937500000000002,
+    "visibleCopy": "New Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
     "nativeFooter": {
       "footer": {
         "x": 13.046875,
@@ -887,7 +905,10 @@
     "designScale": 0.541667,
     "loadDisabled": true,
     "pressed": false,
-    "visibleCopy": "开发物语\nLITTLE LAUNCH STUDIO\n新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 10.8333,
+    "logoSubtitleEquivalentPx": 12.999776785714285,
+    "visibleCopy": "新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
     "nativeFooter": {
       "footer": {
         "x": 0,
@@ -1017,7 +1038,10 @@
     "designScale": 0.541667,
     "loadDisabled": true,
     "pressed": false,
-    "visibleCopy": "LITTLE LAUNCH\nSTUDIO\nNew Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 10.8333,
+    "logoSubtitleEquivalentPx": 12.999776785714285,
+    "visibleCopy": "New Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
     "nativeFooter": {
       "footer": {
         "x": 0,
@@ -1147,7 +1171,10 @@
     "designScale": 0.597222,
     "loadDisabled": true,
     "pressed": false,
-    "visibleCopy": "开发物语\nLITTLE LAUNCH STUDIO\n新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 11.9444,
+    "logoSubtitleEquivalentPx": 14.333035714285716,
+    "visibleCopy": "新游戏\n读取游戏\n纪录\n✦\n从一个点子开始\nLITTLE LAUNCH STUDIO\n声音",
     "nativeFooter": {
       "footer": {
         "x": 0,
@@ -1277,7 +1304,10 @@
     "designScale": 0.597222,
     "loadDisabled": true,
     "pressed": false,
-    "visibleCopy": "LITTLE LAUNCH\nSTUDIO\nNew Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
+    "usesExportedAssets": true,
+    "footerEnglishFontPx": 11.9444,
+    "logoSubtitleEquivalentPx": 14.333035714285716,
+    "visibleCopy": "New Game\nLoad Game\nRecords\n✦\nSmall team. Big ideas.\nLITTLE LAUNCH STUDIO\nSound",
     "nativeFooter": {
       "footer": {
         "x": 0,
