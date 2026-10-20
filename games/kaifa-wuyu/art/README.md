@@ -1,5 +1,7 @@
 # 开发物语美术
 
+- [Issue #16：菜单与新企划书统一字体交付](UI-MENU-PROJECT-V2.md)：新版效果图、Noto Sans SC 可商用字体、许可证与可重现排版源文件。
+
 - [Claude 接入交接说明](CLAUDE_HANDOFF.md)：按现有自动加载器替换首批占位图。
 - [锁定风格母版](reference/style-locked.png)：用户明确确认的毛毡 / 纸感 / 手作风。
 - [六席办公室概念稿](previews/six-seat-concept.png)：老板桌、秘书前台和 4 人岛式工位，美术方向参考。

@@ -1,5 +1,7 @@
 # 开发物语 UI · 主界面切图与待确认效果稿
 
+Issue #16 字体修复交付：[统一字体新版效果图](../../games/kaifa-wuyu/art/previews/ui-menu-project-v2.png)、[制作/验证说明](../../games/kaifa-wuyu/art/UI-MENU-PROJECT-V2.md)、[可商用字体与许可证](../../games/kaifa-wuyu/assets/fonts/README.md)。以下 v1 记录保留作历史参考，菜单与企划书的字体以 v2 为准。
+
 依据从远端 main 获取的 `games/kaifa-wuyu/UI需求.md`（Git blob 7db0228f038897e38688ca38b3b2d5f7362c69cd），使用已通过母版 `games/kaifa-wuyu/art/reference/ui-main-v2.png`。
 
 ## 本次交付

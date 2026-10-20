@@ -1,0 +1,357 @@
+{
+  "family": "Noto Sans SC",
+  "labels": [
+    {
+      "value": "1年 4月 1周 ·",
+      "x": 38,
+      "y": 54,
+      "size": 30,
+      "weight": 700,
+      "align": "left",
+      "color": "#043E3D",
+      "width": 193.5299835205078
+    },
+    {
+      "value": "5,000金",
+      "x": 597,
+      "y": 54,
+      "size": 30,
+      "weight": 700,
+      "align": "right",
+      "color": "#043E3D",
+      "width": 110.54998779296875
+    },
+    {
+      "value": "0",
+      "x": 109,
+      "y": 132,
+      "size": 36,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 21.239990234375
+    },
+    {
+      "value": "全年销售",
+      "x": 32,
+      "y": 1074,
+      "size": 24,
+      "weight": 700,
+      "align": "left",
+      "color": "#043E3D",
+      "width": 96
+    },
+    {
+      "value": "全年收益",
+      "x": 32,
+      "y": 1113,
+      "size": 24,
+      "weight": 700,
+      "align": "left",
+      "color": "#043E3D",
+      "width": 96
+    },
+    {
+      "value": "0",
+      "x": 278,
+      "y": 1074,
+      "size": 26,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 15.339996337890625
+    },
+    {
+      "value": "0金",
+      "x": 270,
+      "y": 1113,
+      "size": 26,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 41.339996337890625
+    },
+    {
+      "value": "无新作开发",
+      "x": 457,
+      "y": 1095,
+      "size": 26,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 130
+    },
+    {
+      "value": "返回",
+      "x": 516,
+      "y": 1187,
+      "size": 26,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 52
+    },
+    {
+      "value": "1年 4月 1周 ·",
+      "x": 675,
+      "y": 54,
+      "size": 30,
+      "weight": 700,
+      "align": "left",
+      "color": "#043E3D",
+      "width": 193.5299835205078
+    },
+    {
+      "value": "5,000金",
+      "x": 1234,
+      "y": 54,
+      "size": 30,
+      "weight": 700,
+      "align": "right",
+      "color": "#043E3D",
+      "width": 110.54998779296875
+    },
+    {
+      "value": "0",
+      "x": 746,
+      "y": 132,
+      "size": 36,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 21.239990234375
+    },
+    {
+      "value": "全年销售",
+      "x": 669,
+      "y": 1074,
+      "size": 24,
+      "weight": 700,
+      "align": "left",
+      "color": "#043E3D",
+      "width": 96
+    },
+    {
+      "value": "全年收益",
+      "x": 669,
+      "y": 1113,
+      "size": 24,
+      "weight": 700,
+      "align": "left",
+      "color": "#043E3D",
+      "width": 96
+    },
+    {
+      "value": "0",
+      "x": 915,
+      "y": 1074,
+      "size": 26,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 15.339996337890625
+    },
+    {
+      "value": "0金",
+      "x": 907,
+      "y": 1113,
+      "size": 26,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 41.339996337890625
+    },
+    {
+      "value": "无新作开发",
+      "x": 1094,
+      "y": 1095,
+      "size": 26,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 130
+    },
+    {
+      "value": "返回",
+      "x": 1153,
+      "y": 1187,
+      "size": 26,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 52
+    },
+    {
+      "value": "开发",
+      "x": 168,
+      "y": 397,
+      "size": 32,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 64
+    },
+    {
+      "value": "职员",
+      "x": 168,
+      "y": 478,
+      "size": 32,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 64
+    },
+    {
+      "value": "行动",
+      "x": 168,
+      "y": 559,
+      "size": 32,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 64
+    },
+    {
+      "value": "信息",
+      "x": 168,
+      "y": 640,
+      "size": 32,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 64
+    },
+    {
+      "value": "系统",
+      "x": 168,
+      "y": 721,
+      "size": 32,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 64
+    },
+    {
+      "value": "新企划书",
+      "x": 947,
+      "y": 321,
+      "size": 32,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 128
+    },
+    {
+      "value": "开发费用",
+      "x": 1008,
+      "y": 388,
+      "size": 26,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 104
+    },
+    {
+      "value": "500金",
+      "x": 1177,
+      "y": 388,
+      "size": 26,
+      "weight": 700,
+      "align": "right",
+      "color": "#043E3D",
+      "width": 72.01998901367188
+    },
+    {
+      "value": "渠道",
+      "x": 768,
+      "y": 449,
+      "size": 26,
+      "weight": 600,
+      "align": "center",
+      "color": "#FFFFFF",
+      "width": 52
+    },
+    {
+      "value": "类型",
+      "x": 768,
+      "y": 511.5,
+      "size": 26,
+      "weight": 600,
+      "align": "center",
+      "color": "#FFFFFF",
+      "width": 52
+    },
+    {
+      "value": "内容",
+      "x": 768,
+      "y": 574,
+      "size": 26,
+      "weight": 600,
+      "align": "center",
+      "color": "#FFFFFF",
+      "width": 52
+    },
+    {
+      "value": "方针",
+      "x": 768,
+      "y": 636.5,
+      "size": 26,
+      "weight": 600,
+      "align": "center",
+      "color": "#FFFFFF",
+      "width": 52
+    },
+    {
+      "value": "电脑",
+      "x": 1026,
+      "y": 449,
+      "size": 27,
+      "weight": 600,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 54
+    },
+    {
+      "value": "桌上游戏",
+      "x": 1030,
+      "y": 511.5,
+      "size": 27,
+      "weight": 600,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 108
+    },
+    {
+      "value": "寻宝",
+      "x": 1006,
+      "y": 574,
+      "size": 27,
+      "weight": 600,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 54
+    },
+    {
+      "value": "普通开发",
+      "x": 1018,
+      "y": 636.5,
+      "size": 27,
+      "weight": 600,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 108
+    },
+    {
+      "value": "确定",
+      "x": 947,
+      "y": 864,
+      "size": 30,
+      "weight": 700,
+      "align": "center",
+      "color": "#043E3D",
+      "width": 60
+    }
+  ],
+  "width": 1263,
+  "height": 1245
+}

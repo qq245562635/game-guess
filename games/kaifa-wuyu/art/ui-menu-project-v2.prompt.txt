@@ -1,0 +1,6 @@
+Tool: built-in image_gen (not CLI/API fallback)
+Edit target: games/kaifa-wuyu/art/previews/ui-menu-project-v1.png
+Output: games/kaifa-wuyu/art/previews/ui-menu-project-v2-background.png
+Final typography: previews/ui-menu-project-v2.html, using the delivered Noto Sans SC font file.
+
+Edit target: the supplied two-screen Chinese game UI review board. Remove ALL text and ALL numeric glyphs from BOTH screens, leaving clean blank paper/colored surfaces where text was. This is a textless background plate for deterministic font typesetting later. Remove top dates and money, badge numbers, five menu item labels, dialog title, development cost label/value, all four row labels and values, confirm label, all bottom info labels/numbers and back button labels. Preserve every icon (coin, fan badge, menu pictures, dice, treasure, arrows), all characters, scene artwork, paper textures, borders, panel and button geometry, positions, sizes and COLORS exactly. Preserve the current pale-green wide centered flat confirm button; channel value cell pale green, type and content cells ivory, policy value cell white. Do NOT add a separate dialog title strip. Keep original full image dimensions and side-by-side composition, no crop or redesign. Only erase typography. No replacement text, no new details.
