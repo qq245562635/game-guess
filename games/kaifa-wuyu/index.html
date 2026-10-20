@@ -16,9 +16,10 @@
   --c-fun:#E2701A; --c-creat:#D9A400; --c-gfx:#2A7BDB; --c-snd:#1C9660; --c-bug:#6B4FB8;
   color-scheme:light;
 }
+@font-face{font-family:"Noto Sans SC";src:url('assets/fonts/NotoSansSC-wght.ttf') format('truetype');font-weight:100 900;font-style:normal;font-display:swap}
 html{font-size:min(calc(100vw / 720), calc(100vh / 1380))}
 html,body{height:100%;margin:0}
-body{background:#10141F;color:var(--ink);font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;display:flex;justify-content:center;overflow:hidden;-webkit-user-select:none;user-select:none}
+body{background:#10141F;color:var(--ink);font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;display:flex;justify-content:center;overflow:hidden;-webkit-user-select:none;user-select:none}
 button{font:inherit;color:inherit;cursor:pointer}
 [hidden]{display:none!important}
 .num{font-variant-numeric:tabular-nums}
@@ -36,7 +37,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 #scene{flex:1;position:relative;overflow:hidden;background:#AEB6C2;touch-action:none;min-height:0}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block}
 #fx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.pop{position:absolute;transform:translate(-50%,-100%);font:700 22rem/1 system-ui,sans-serif;color:#fff;background:var(--c);padding:6rem 10rem;border-radius:14rem;white-space:nowrap;animation:rise 1.4s ease-out forwards}
+.pop{position:absolute;transform:translate(-50%,-100%);font-weight:700;font-size:22rem;line-height:1;color:#fff;background:var(--c);padding:6rem 10rem;border-radius:14rem;white-space:nowrap;animation:rise 1.4s ease-out forwards}
 .pop.talk{background:var(--paper);color:var(--ink);font-weight:500;border:2rem solid var(--frame)}
 @keyframes rise{0%{opacity:0;margin-top:8rem}12%{opacity:1;margin-top:0}75%{opacity:1}100%{opacity:0;margin-top:-50rem}}
 #badge{position:absolute;left:12rem;top:12rem;display:flex;align-items:center;gap:10rem;pointer-events:none}
@@ -193,7 +194,7 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 @keyframes tnod{50%{transform:translateX(-50%) scale(.8) rotate(-3deg)}}
 .cs{position:relative}
 .cs.up b{color:#E0383E}
-.tplus{position:absolute;right:-8rem;top:-6rem;font:700 24rem/1 system-ui,sans-serif;font-style:normal;color:#E0383E;animation:tplus .9s ease-out forwards;pointer-events:none}
+.tplus{position:absolute;right:-8rem;top:-6rem;font-weight:700;font-size:24rem;line-height:1;font-style:normal;color:#E0383E;animation:tplus .9s ease-out forwards;pointer-events:none}
 @keyframes tplus{0%{opacity:0;transform:translateY(8rem)}20%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-26rem)}}
 @media (prefers-reduced-motion:reduce){.tfig,.tplus{animation-duration:.01s;animation-iteration-count:1}}
 
@@ -241,13 +242,20 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 .tfig.cfig.art .fa{animation:fa 0.5s steps(1) infinite}.tfig.cfig.art .fb{animation:fb 0.5s steps(1) infinite}
 @keyframes fa{50%{opacity:0}}@keyframes fb{0%{opacity:0}50%{opacity:1}}
 .staffstrip .smini{height:70rem;width:44rem;object-fit:contain;object-position:center bottom}
-/* 弹窗确定键：Codex 三态贴图（assets/ui/ui_dlg_btn*.png），九宫格 16,16,20,16；程序负责按下下沉 */
+/* 弹窗确定键：按 #16 新版效果图 art/previews/ui-menu-project-v2.png 取样的扁平浅绿圆角按钮（纯 CSS）。
+   原 ui_dlg_btn*.png 三态贴图已弃用，文件保留在 assets/ui/ 但不再引用。
+   取样（效果图 626px 屏宽 → 720 设计宽，×1.15）：262×74，圆角 12，描边 3 深青 #03424B，
+   底色 #E4EEBE，顶部 2px 高光 #FFFFE8，底部 3px 浅绿厚度 #BED680。按下=底色加深，禁用=灰化。 */
 .dlg-foot{height:auto;padding:18rem 0 22rem;margin:0 24rem;border-top:2rem solid var(--line)}
-.dlg-foot button,.pfoot button,.cok{min-width:200rem;height:64rem;padding:0 40rem 6rem;box-sizing:border-box;border-radius:0;box-shadow:none;
-  border-style:solid;border-width:16rem 16rem 20rem 16rem;border-image:url('assets/ui/ui_dlg_btn.png') 32 32 40 32 fill / 16rem 16rem 20rem 16rem stretch;
-  background:none;color:var(--ink);font-size:34rem;font-weight:700;letter-spacing:4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;transition:transform .06s}
-.dlg-foot button:active,.dlg-foot button.sel,.pfoot button:active,.cok:active{transform:translateY(4rem);background:none;border-image-source:url('assets/ui/ui_dlg_btn_down.png')}
-.cok:disabled{transform:none;opacity:1;color:#8E9894;background:none;border-image-source:url('assets/ui/ui_dlg_btn_off.png')}
+.dlg-foot button,.pfoot button,.cok{width:262rem;height:74rem;padding:0;box-sizing:border-box;
+  border:3rem solid #03424B;border-radius:12rem;background:#E4EEBE;
+  box-shadow:inset 0 2rem 0 #FFFFE8,inset 0 -3rem 0 #BED680;
+  color:#043E3D;font-size:34rem;font-weight:700;letter-spacing:4rem;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;transform:none;opacity:1;transition:background-color .06s}
+.dlg-foot button:active,.dlg-foot button.sel,.pfoot button:active,.pfoot button.sel,.cok:active{background:#C9DD8E;
+  box-shadow:inset 0 2rem 0 #DCE9AE,inset 0 -3rem 0 #A9C46A}
+.dlg-foot button:disabled,.pfoot button:disabled,.cok:disabled{background:#E2E3DC;border-color:#9AA5A3;color:#8E9894;
+  box-shadow:inset 0 2rem 0 #F4F4EE,inset 0 -3rem 0 #CCCFC6;opacity:1;cursor:default}
 </style>
 
 <div id="app">

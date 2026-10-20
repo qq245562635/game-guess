@@ -1,5 +1,7 @@
 # UI 补图：弹窗「确定」立体按钮（给 Codex）
 
+> **已弃用（#16）**：按新版效果图 `previews/ui-menu-project-v2.png`，「确定」改为纯 CSS 扁平浅绿圆角按钮（见 `src/game.src.html`）。`assets/ui/ui_dlg_btn*.png` 三张图保留在库中，程序不再引用。
+
 第一批 UI（UI-BATCH-01）只切了底栏按钮，弹窗里的「确定」没有单图。现在游戏里先用 CSS 仿出了效果，请补正式素材，到货后同名放进 `assets/ui/`，Claude 换成贴图。
 
 ## 依据
