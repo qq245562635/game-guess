@@ -16,7 +16,23 @@ const WALK_SPEED=2.2, STA_LOW=25, REST_SEC=[1.5,3], MAX_AWAY=2;
 const STATK=['fun','creat','gfx','snd'];
 const STATN={fun:'趣味',creat:'创新',gfx:'画面',snd:'声音'};
 const STATC={fun:'var(--c-fun)',creat:'var(--c-creat)',gfx:'var(--c-gfx)',snd:'var(--c-snd)',bug:'var(--c-bug)'};
-const STATG={fun:'趣',creat:'创',gfx:'画',snd:'声',bug:'虫'};
+// 点数 / 能力图标：不用汉字，方便以后出海。Codex 交付 assets/ui/ui_stat_<k>.png、ui_skill_<k>.png 后自动换成正式图，缺图时用下面的 SVG 占位
+// SVG 画在 40×30 的格子里，白色图形，挖空部分用 currentColor（= 底色）
+const ICON_SVG={
+  fun:'<path d="M10 9h20a6.5 6.5 0 0 1 6.2 8.5l-1.8 5.3a3 3 0 0 1-5.1 1L26.8 20H13.2l-2.5 3.8a3 3 0 0 1-5.1-1l-1.8-5.3A6.5 6.5 0 0 1 10 9z" fill="#fff"/><path d="M10.6 12.6h2.2v2.2H15V17h-2.2v2.2h-2.2V17H8.4v-2.2h2.2z" fill="currentColor"/><circle cx="27.5" cy="13.6" r="1.6" fill="currentColor"/><circle cx="30.8" cy="16.9" r="1.6" fill="currentColor"/>',
+  creat:'<circle cx="20" cy="12.5" r="7.2" fill="#fff"/><rect x="16.6" y="18" width="6.8" height="4.2" rx="1" fill="#fff"/><rect x="17.6" y="23.2" width="4.8" height="2.4" rx="1.2" fill="#fff"/><path d="M17 10.5a3.6 3.6 0 0 1 3-2.6" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><g stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M7.5 12.5h2M30.5 12.5h2M10.6 4.2l1.5 1.5M29.4 4.2l-1.5 1.5"/></g>',
+  gfx:'<path d="M20 4C11.3 4 5 9.4 5 15.6 5 21.4 10 26 15.8 26c2.2 0 2.8-1.4 2.4-2.8-.4-1.6.7-3.1 2.5-3.1H25c5.2 0 10-2.5 10-7.3C35 7.9 28.4 4 20 4z" fill="#fff"/><circle cx="11.6" cy="15" r="2.3" fill="#E35D6A"/><circle cx="15.4" cy="9.4" r="2.3" fill="#F2A93B"/><circle cx="22.4" cy="8.4" r="2.3" fill="#3FAF7A"/><circle cx="28.6" cy="11.8" r="2.3" fill="#4A6FE3"/>',
+  snd:'<path d="M25 11.2l9.6-6.4v20.4L25 18.8z" fill="#fff"/><rect x="7" y="12.2" width="19" height="5.6" rx="1.6" fill="#fff"/><rect x="4" y="10.8" width="3.6" height="8.4" rx="1.2" fill="#fff"/><g fill="#fff"><rect x="11.2" y="7.4" width="2.4" height="4.2" rx=".8"/><rect x="15.2" y="7.4" width="2.4" height="4.2" rx=".8"/><rect x="19.2" y="7.4" width="2.4" height="4.2" rx=".8"/></g>',
+  bug:'<g stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M15 11l-3.5-6M25 11l3.5-6M10.5 20l-4 2.5M29.5 20l4 2.5"/></g><circle cx="11.2" cy="4.6" r="1.8" fill="#fff"/><circle cx="28.8" cy="4.6" r="1.8" fill="#fff"/><ellipse cx="20" cy="17.5" rx="10.5" ry="8.5" fill="#fff"/><circle cx="16.4" cy="16.4" r="2.1" fill="currentColor"/><circle cx="23.6" cy="16.4" r="2.1" fill="currentColor"/><path d="M16.5 21.6l1.6 1.5 1.9-1.5 1.9 1.5 1.6-1.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linejoin="round"/>',
+  prog:'<rect x="8" y="4" width="24" height="16" rx="2" fill="#fff"/><rect x="10.6" y="6.6" width="18.8" height="10.8" rx=".8" fill="currentColor"/><path d="M14 10l-2 2 2 2M26 10l2 2-2 2M21.4 9l-2.8 6" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="17.6" y="20" width="4.8" height="3.4" fill="#fff"/><rect x="12" y="23.4" width="16" height="2.6" rx="1.3" fill="#fff"/>',
+  scen:'<path d="M5 8.5c4-1.8 8.4-1.8 13.6.6V26c-5.2-2.4-9.6-2.4-13.6-.6z" fill="#fff"/><path d="M20.6 9.1c2-1 4-1.5 6-1.6l-2 4.4V24c-1.4.3-2.7.9-4 1.9z" fill="#fff"/><path d="M29.5 4l4.5 2.2-7.4 15.6-3.5 2.3-.9-4.2z" fill="#fff"/><path d="M8 13c2.7-.8 5.2-.6 7.8.4M8 17c2.7-.8 5.2-.6 7.8.4" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/>'};
+const ICON_ART={};
+function loadIconArt(){for(const k of ['fun','creat','gfx','snd','bug'])loadIcon('stat',k);for(const k of ['prog','scen','gfx','snd'])loadIcon('skill',k);}
+function loadIcon(pre,k){const img=new Image();img.onload=()=>{ICON_ART[pre+'_'+k]=img.src;if(S)renderAll();};img.src=`assets/ui/ui_${pre}_${k}.png`;}
+// k：fun/creat/gfx/snd/bug（点数）或 prog/scen/gfx/snd（能力，pre='skill'）；cls 额外 class
+function icon(k,cls='ico-s',pre='stat',color){const c=color||(pre==='skill'?SKC[k]:STATC[k]);const art=ICON_ART[pre+'_'+k];
+  const el=h('span',{class:cls+' sicon'+(art?' art':''),style:art?`background:url(${art}) center/contain no-repeat`:`background:${c};color:${c}`,'aria-label':pre==='skill'?SKN[k][0]:STATN[k]||'Bug'});
+  if(!art)el.innerHTML=`<svg viewBox="0 0 40 30" aria-hidden="true">${ICON_SVG[k]}</svg>`;return el;}
 const PROG_BASE=35, CH_BASE=4000;
 const LVN=['初','中','高','极','神'],LV_AT=[0,1,3,6,10];
 const POLICY=[['cute','可爱度'],['real','真实性'],['friendly','亲和度'],['hardcore','资深度'],['control','操作性'],['novel','新颖度'],['world','世界观'],['detail','精细度']];
@@ -403,7 +419,7 @@ const STAFF_ART={};function loadStaffArt(){for(let i=0;i<CHAR_N;i++)for(const f 
 const staffArtSrc=(s,f)=>`assets/ui/ui_staff_${s.look%CHAR_N}_${f}.png`;
 const staffFig=s=>{const L=s.look%CHAR_N;if(STAFF_ART[L+'a'])return h('div',{class:'cfig art'},h('img',{class:'fa',src:staffArtSrc(s,'a'),alt:''}),STAFF_ART[L+'b']?h('img',{class:'fb',src:staffArtSrc(s,'b'),alt:''}):null);
   return h('div',{class:'cfig'},h('i',{class:'head',style:`border-top-color:${HAIRS[s.look%HAIRS.length]}`}),h('i',{class:'body',style:`background:${SHIRTS[s.look%SHIRTS.length]}`}));};
-const statRow=(s,k,hiKey)=>h('div',{class:'cs'+(k===hiKey?' hi':''),'data-k':k},h('span',{class:'csi',style:`background:${SKC[k]}`},SKN[k][1]),h('span',{},SKN[k][0]),h('b',{class:'num'},s[k]));
+const statRow=(s,k,hiKey)=>h('div',{class:'cs'+(k===hiKey?' hi':''),'data-k':k},icon(k,'csi','skill'),h('span',{},SKN[k][0]),h('b',{class:'num'},s[k]));
 function staffBox(s,hiKey,left){return h('div',{class:'cbox'},
   left||h('div',{class:'cleft'},h('div',{class:'cjob'},h('span',{},JOBN[s.job]),h('span',{class:'clv'},'等级',h('b',{},s.lv||1))),staffFig(s),
     h('div',{class:'csta'},h('span',{},'体力'),h('span',{class:'bar'+(s.sta<30?' low':'')},h('i',{style:`width:${Math.round(s.sta)}%`})))),
@@ -436,7 +452,7 @@ function startProject(leaderId){const P=plan;const G=GN[P.genre],D=DN[P.dev];con
 // 选好负责人后弹出：左边负责人在工位上敲键盘，右边「第 N 次」逐次累加四项点数，最后说一句收尾台词。
 // 点一下结束 → 结算可能触发的事件（组合很新鲜、擅长类型、灵感爆发、太累了）→ 回到场景，负责人坐回工位继续开发。
 const WORK={plan:{t:'正在整理企划',sk:'scen',sta:30},gfx:{t:'正在绘制画面',sk:'gfx',sta:20},snd:{t:'正在制作音乐',sk:'snd',sta:20}};
-const WORK_ROUND_MS=750;
+const WORK_TOTAL_MS=8500,WORK_ROUND_MIN=1800,WORK_TICKS=6;  // 原作整段约 8 秒以上
 function leaderGain(kind,s){const r=()=>rnd(.85,1.15);
   if(kind==='plan')return {fun:s.scen*2*r(),creat:s.scen*1.5*r(),gfx:0,snd:0};
   if(kind==='gfx')return {fun:0,creat:s.scen*.2*r(),gfx:s.gfx*3*r(),snd:0};
@@ -467,18 +483,21 @@ function leaderWork(kind,s,done){const p=S.project,W=WORK[kind],G=GN[p.genre],T=
   const shown={fun:0,creat:0,gfx:0,snd:0};
   const scene=deskScene(s),stage=h('div',{class:'wstage'},scene.el);
   const round=h('div',{class:'wround'},'');const nums={};
-  const stats=h('div',{class:'wstats'},...STATK.map(k=>h('div',{class:'wst'},h('span',{class:'ico-s',style:`background:${STATC[k]}`},STATG[k]),nums[k]=h('b',{class:'num'},'0'))));
+  const stats=h('div',{class:'wstats'},...STATK.map(k=>h('div',{class:'wst'},icon(k),nums[k]=h('b',{class:'num'},'0'))));
   const say=h('div',{class:'wsay'},'');
   const body=h('div',{class:'wbody'},h('div',{class:'wsub'},W.t),h('div',{class:'wbox'},stage,h('div',{class:'wright'},round,stats)),say);
   openDlg(s.name,body,null,[null,null]);$('#dlg').onclick=null;
+  const R=Math.max(WORK_ROUND_MIN,WORK_TOTAL_MS/n),tickMs=R*.7/WORK_TICKS;
+  const bump=k=>{nums[k].textContent=shown[k];nums[k].classList.remove('bump');void nums[k].offsetWidth;nums[k].classList.add('bump');};
+  const popIcon=k=>{const pi=icon(k,'wpop ico-s');pi.style.left=(28+Math.random()*24)+'%';stage.append(pi);pi.addEventListener('animationend',()=>pi.remove());};
   let i=0;const next=()=>{if(!body.isConnected)return;if(i<steps.length){const st=steps[i++];round.textContent=`第${i}次`;
-      const top=STATK.filter(k=>st[k]>0).sort((a,b)=>st[b]-st[a])[0];
-      for(const k of STATK){if(!st[k])continue;shown[k]+=st[k];nums[k].textContent=shown[k];nums[k].classList.remove('bump');void nums[k].offsetWidth;nums[k].classList.add('bump');}
-      if(top){const pi=h('span',{class:'wpop ico-s',style:`background:${STATC[top]}`},STATG[top]);stage.append(pi);pi.addEventListener('animationend',()=>pi.remove());}
-      setTimeout(next,WORK_ROUND_MS);return;}
+      // 本次的点数分 WORK_TICKS 下加完，每下冒一个刚涨的那项图标
+      const part=STATK.map(k=>{const a=[];let l=st[k];for(let j=0;j<WORK_TICKS;j++){const d=j===WORK_TICKS-1?l:Math.min(l,Math.round(st[k]/WORK_TICKS*rnd(.5,1.5)));a.push(d);l-=d;}return a;});
+      for(let j=0;j<WORK_TICKS;j++)setTimeout(()=>{if(!body.isConnected)return;const up=[];STATK.forEach((k,ki)=>{const d=part[ki][j];if(d>0){shown[k]+=d;bump(k);up.push(k);}});if(up.length)popIcon(pick(up));},250+j*tickMs);
+      setTimeout(next,R);return;}
     scene.stop();say.textContent=quote;for(const k of STATK)p[k]+=gain[k];renderInfo();
     setTimeout(()=>{$('#dlg').onclick=()=>{$('#dlg').onclick=null;closeDlg();done(ev);};},0);};
-  setTimeout(next,450);}
+  setTimeout(next,600);}
 function leaderAsk(kind){const p=S.project;
   talk([`《${p.title}》进入${kind==='gfx'?'画面':'声音'}制作阶段了。`,'要交给谁负责？'],()=>staffPick(kind,id=>{p.leaders[kind]=id;const s=S.staff.find(x=>x.id===id);
     leaderWork(kind,s,ev=>{p.awaiting=null;renderInfo();if(ev.length)talk(ev);});},null));}
@@ -506,8 +525,8 @@ function projectWeek(){const p=S.project;const D=DN[p.dev],G=GN[p.genre];let pro
     const pts={fun:(s.scen*.5+s.prog*.1)*.4*r()*m*dir.fun,creat:(s.scen*.3+s.gfx*.2+s.snd*.1)*.36*r()*m*dir.creat,gfx:s.gfx*.26*r()*m*dir.gfx,snd:s.snd*.26*r()*m*dir.snd};
     for(const k of STATK)p[k]+=pts[k];prog+=s.prog;const bug=Math.max(0,(30-s.prog)/30)*.35*rnd(0,2)*bugMul;p.bugs+=bug;
     const [x,y]=seatWorld(s.seat);const top=STATK.map(k=>[k,pts[k]]).sort((a,b)=>b[1]-a[1])[0];
-    schedule(rnd(0,WEEK_SEC*.6),()=>isSeated(s.id)&&popWorld(x,y-104,`${STATN[top[0]]}+${Math.max(1,Math.round(top[1]))}`,STATC[top[0]]));
-    if(bug>.5)schedule(rnd(0,WEEK_SEC*.9),()=>isSeated(s.id)&&popWorld(x,y-104,'Bug',STATC.bug));}
+    schedule(rnd(0,WEEK_SEC*.6),()=>isSeated(s.id)&&popWorld(x,y-104,`+${Math.max(1,Math.round(top[1]))}`,STATC[top[0]],false,top[0]));
+    if(bug>.5)schedule(rnd(0,WEEK_SEC*.9),()=>isSeated(s.id)&&popWorld(x,y-104,'',STATC.bug,false,'bug'));}
   p.hype+=(p.fun+p.creat)/400;
   const before=p.progress;p.progress=Math.min(100,p.progress+100/p.weeks*prog/PROG_BASE);
   if(!p.leaders.gfx&&p.progress>=40){p.progress=Math.max(before,40);p.awaiting='gfx';schedule(.5,()=>leaderAsk('gfx'));}
@@ -635,7 +654,7 @@ function brokeAsk(){talk(['社长，发完工资后资金变成负数了……',
 
 // ================= 信息栏
 function renderInfo(){const pg=$('#ipage');const p=S.project;const pages=p?2:1;if(UI.page>=pages)UI.page=0;
-  if(p&&UI.page===0){const ic=k=>h('span',{},h('span',{class:'ico-s',style:`background:${STATC[k]}`},STATG[k]),h('span',{class:'cnt num'+(k==='bug'?' bug':'')},Math.round(k==='bug'?p.bugs:p[k])));
+  if(p&&UI.page===0){const ic=k=>h('span',{},icon(k),h('span',{class:'cnt num'+(k==='bug'?' bug':'')},Math.round(k==='bug'?p.bugs:p[k])));
     pg.className='ipd';pg.replaceChildren(h('div',{class:'r'},h('span',{class:'lab',style:'width:110rem;color:var(--ink)'},'新作'),ic('fun'),ic('creat'),ic('gfx'),ic('snd')),
       h('div',{class:'r'},h('span',{class:'pct num'},Math.floor(p.progress)+'%'),h('span',{class:'lab'},'期待度 ',h('b',{class:'num',style:'color:var(--ink)'},Math.round(p.hype))),h('span',{class:'lab'},'知名度 ',h('b',{class:'num',style:'color:var(--ink)'},fmt(S.fans))),ic('bug')));}
   else{pg.className='ip';pg.replaceChildren(h('div',{class:'ys'},h('div',{},h('span',{},'全年销售'),h('b',{class:'num'},fmt(S.ys.units))),h('div',{},h('span',{},'全年收益'),h('b',{class:'num',style:S.ys.profit<0?'color:var(--neg)':''},fmt(S.ys.profit)+'金'))),
@@ -647,7 +666,7 @@ function renderTop(){$('#date').firstChild.textContent=`${S.year}年 ${S.month}�
 function renderAll(){renderTop();renderInfo();}
 
 // ================= 杂项
-function popWorld(wx,wy,text,color,talkStyle){const [x,y]=w2s(wx,wy);const el=h('div',{class:'pop'+(talkStyle?' talk':''),style:`left:${x}px;top:${y}px;--c:${color||'#3651C9'}`},text);$('#fx').append(el);el.addEventListener('animationend',()=>el.remove());}
+function popWorld(wx,wy,text,color,talkStyle,ik){const [x,y]=w2s(wx,wy);const el=h('div',{class:'pop'+(talkStyle?' talk':'')+(ik?' ipop':''),style:`left:${x}px;top:${y}px;--c:${color||'#3651C9'}`},ik?icon(ik,'pico','stat','transparent'):null,text);$('#fx').append(el);el.addEventListener('animationend',()=>el.remove());}
 const KEY='kaifa_wuyu_v2';
 function doSave(){try{localStorage.setItem(KEY,JSON.stringify(S));toast('已保存');}catch(e){toast('这个浏览器不能本地存档');}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
@@ -694,5 +713,5 @@ function tryLoadArt(){return fetch('assets/index.json').then(r=>r.ok?r.json():[]
 function start(){if(gl)initGL();buildStatic();buildAtlas();if(!load())newGame();if(!S.unl)S.unl=unlockedIds();
   if(S.project&&S.project.awaiting==='gfx'||S.project&&S.project.awaiting==='snd')setTimeout(()=>leaderAsk(S.project.awaiting),300);
   if(S.project&&S.project.awaiting==='done')setTimeout(release,300);
-  resize();idleBottom();renderAll();requestAnimationFrame(frame);loadStaffArt();tryLoadArt().then(()=>{if(Object.keys(overrides).length)buildAtlas();});}
+  resize();idleBottom();renderAll();requestAnimationFrame(frame);loadStaffArt();loadIconArt();tryLoadArt().then(()=>{if(Object.keys(overrides).length)buildAtlas();});}
 start();

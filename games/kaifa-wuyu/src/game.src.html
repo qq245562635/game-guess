@@ -159,6 +159,13 @@ button:focus-visible{outline:3rem solid #F07A1A;outline-offset:2rem}
 .wst b.bump{animation:wbump .35s ease-out}
 @keyframes wbump{40%{transform:scale(1.35)}}
 .wsay{text-align:center;font-size:30rem;min-height:40rem;color:var(--ink)}
+/* 点数 / 能力图标（SVG 占位，交付 ui_stat_* / ui_skill_* 后换成贴图） */
+.sicon{padding:0;overflow:hidden}
+.sicon svg{width:100%;height:100%;display:block}
+.sicon.art{border-radius:0;box-shadow:none}
+.wst .ico-s{width:56rem;height:42rem;border-radius:10rem}
+.pop.ipop{display:flex;align-items:center;gap:4rem;padding:4rem 10rem 4rem 6rem}
+.pop .pico{width:34rem;height:26rem;display:inline-block;border-radius:0}
 .pmk{font-style:normal;font-size:22rem;color:#E2A400;margin-left:6rem}.pmk.x{color:var(--neg)}
 .pfoot .tico{width:40rem;height:40rem;border-radius:6rem;display:grid;place-items:center;color:#fff;font-size:20rem;font-weight:700}
 /* 制作人卡片 */
