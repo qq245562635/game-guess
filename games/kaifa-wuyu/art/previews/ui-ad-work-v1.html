@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>宣传 / 负责人工作 · UI 素材验收</title>
+<style>
+@font-face{font-family:Noto;src:url('../../assets/fonts/NotoSansSC-wght.ttf');font-weight:100 900}
+*{box-sizing:border-box}body{margin:0;padding:28px;background:#edf0e9;color:#043e3d;font:16px Noto,sans-serif}h1{font-size:26px;margin:0 0 8px}h2{font-size:20px;margin:0 0 12px}p{margin:8px 0 16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}.card{padding:14px;background:#fff;border-radius:12px;overflow:hidden}.checker{background:repeating-conic-gradient(#ece9e2 0% 25%,#f9f7f1 0% 50%) 0/16px 16px}.ad{width:604px;height:348px;border:10px solid transparent;border-image:url('../../assets/ui/ui_ad_list.png') 20 fill stretch;position:relative}.row{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:24px}.selected{border:6px solid transparent;border-image:url('../../assets/ui/ui_ad_row.png') 12 fill stretch;padding:0 14px}.ad .row{margin:0 2px}.ad .head{height:46px;font-size:20px;color:#075c63}.disabled{color:#92988c}.work{width:604px;height:250px;border:10px solid transparent;border-image:url('../../assets/ui/ui_work_box.png') 20 fill stretch;display:flex;align-items:center;padding:20px;gap:20px}.work .note{font-size:20px;line-height:1.8}.work .note b{font-size:26px}.stage{position:relative;width:205px;height:150px;flex-shrink:0}.stage img{position:absolute;object-fit:contain}.stage .desk{width:108.8px;height:149.6px;left:56.1px;top:3.4px}.stage .chair{width:108.8px;height:81.6px;left:20.7px;top:89.1px}.stage .char{width:61.2px;height:95.2px;left:44.5px;top:56.8px}.badge{display:inline-block;background:#fdeed5;padding:5px 12px;border-radius:8px}.small-ad{width:302px;height:220px}.small-ad .row{font-size:13px;height:36px;padding:0 8px}.small-row{width:290px;height:40px}.wide-work{width:604px;height:160px}.narrow-work{width:302px;height:180px}.samples{display:flex;align-items:flex-start;gap:20px}.frame{border:10px solid transparent;border-image:url('../../assets/ui/ui_work_box.png') 20 fill stretch}.caption{font-size:13px;line-height:1.6;color:#52665e}.raw-row{display:block;width:580px;height:64px}footer{padding:16px 0;font-size:14px}
+</style>
+<h1>宣传方式 / 负责人工作 · 必需素材 3 张</h1>
+<p>2× RGBA PNG · 无字源图 · 同套暖纸色 / 浅绿选中 · Noto Sans SC 仅用于本预览文案</p>
+<div class="grid">
+<section class="card"><h2>宣传列表 · 604 × 348，纵向九宫格拉伸</h2>
+<div class="ad"><div class="row head"><span>宣传方式</span><span>费用</span></div><div class="row"><span>在游戏媒体发软文</span><span>300金</span></div><div class="row selected"><span>投放信息流广告</span><span>500金</span></div><div class="row"><span>找主播短视频推荐</span><span>800金</span></div><div class="row disabled"><span>发布试玩版</span><span>待解锁</span></div></div>
+<p class="caption">示例文字由 HTML 绘制；PNG 不含表头、费用或分隔线。选中态复用同一张 ui_ad_row。</p></section>
+<section class="card"><h2>工作白框 · 604 × 250，原生逻辑尺寸</h2>
+<div class="work"><div class="stage"><img class="desk" src="../../assets/desk.png"><img class="chair" src="../../assets/chair.png"><img class="char" src="../../assets/char_1_back_a.png"></div><div class="note">复用场景工位 / 员工<br><b>负责人工作区域</b><br>右侧预留共享点数图标</div></div>
+<p class="caption">此处复用场景图演示白框承托。点数图标仍待第 4 项交付；本批不提供替代图标。</p>
+<span class="badge">ui_work_box：纯白中部，浅色圆角描边</span></section>
+<section class="card"><h2>原生选中行 · 580 × 64</h2><div class="checker"><img class="raw-row" src="../../assets/ui/ui_ad_row.png"></div><h2 style="margin-top:20px">缩窄与加高 · 302 × 220</h2><div class="ad small-ad"><div class="row head"><span>宣传方式</span><span>费用</span></div><div class="row"><span>在游戏媒体发软文</span><span>300金</span></div><div class="row selected"><span>投放信息流广告</span><span>500金</span></div><div class="row"><span>找主播短视频推荐</span><span>800金</span></div></div></section>
+<section class="card"><h2>白框九宫格 · 改变宽高后圆角与线宽固定</h2><div class="checker frame wide-work"></div><p class="caption">604 × 160</p><div class="checker frame narrow-work"></div><p class="caption">302 × 180 · 四角外部透明，中部仍是白底</p></section>
+</div>
+<footer>截图 11 / 12 用于布局参照。本图是资产与九宫格验证页，不是已接入游戏的运行截图。</footer>
+</html>
