@@ -159,7 +159,10 @@
   function modal(title, body, buttons, comic, html) {
     $('m-title').textContent = title; $('m-body').textContent = body;
     $('m-comic').style.display = comic || html ? 'block' : 'none';
-    if (comic) $('m-comic').innerHTML = comicSVG(comic);
+    if (comic) { // 正式漫画（assets/comics/comic_XX.webp）到位就用图，否则 SVG 占位
+      const id = 'comic_' + String(comic.split('.')[1]).padStart(2, '0'), src = Art.src(id);
+      $('m-comic').innerHTML = src ? `<img src="${src}" alt="" style="width:100%;height:auto;display:block;border-radius:10px;border:3px solid #3a2416">` : comicSVG(comic);
+    }
     else if (html) $('m-comic').innerHTML = html;
     const box = $('m-btns'); box.textContent = '';
     for (const b of buttons) {
@@ -481,7 +484,7 @@
     if (!r.ok) { if (r.reason === 'stars') toast(L.t('ui.needStars', { n: r.need })); return; }
     markDirty(); save(); hudCache = ''; updateHud(); bump('pill-stars');
     layerPop.set(r.node.layer, clock());
-    const G = sceneGeom(LY.cafeScene), a = DECO_LAYERS[r.node.layer].anchor(G);
+    const a = layerAnchor(r.node.layer);
     burst(a[0], a[1], '#f5c03a', 24); burst(a[0], a[1], '#ef7965', 12);
     decoKey = ''; updateDeco();
     const after = () => { if (r.actDone) toast(r.allDone ? L.t('ui.allDone') : L.t('ui.actDone', { act: L.t(C.cfg.deco.acts[r.node.act].name) })); };
@@ -535,8 +538,60 @@
     if (LY.portrait) GL.rect(R.x, bottom - 2, R.w, 6, 0, [0.35, 0.2, 0.08, 0.18], { soft: 6 });
     return true;
   }
+  /* ---------- 装修场景（正式美术，#49 A 批） ----------
+     母画布 2400×1600，整张"填满再居中裁切"到场景区；图层按 assets/scene/layers.json 的左上角坐标、原图尺寸画在母画布上。
+     替换关系：counter 隐藏 shabby_stall、tables 隐藏 shabby_table、deck 隐藏 shabby_litter（旧层停画，不靠新层盖）。
+     某个已解锁节点的正式图还没交（B 批）时，用旧的程序占位画在修好的小摊附近，对齐到 counter 的位置。 */
+  const MOTHER = [2400, 1600];
+  const ART_ORDER = ['deck', 'shabby_litter', 'parasol', 'photo', 'terrace', 'STALL', 'sign', 'lightbox', 'flowers', 'menu', 'speakers', 'neon', 'bar', 'tower', 'TABLE', 'lights'];
+  function artScene(R, t) {
+    const base = Art.img('scene_base'); if (!base) return false;
+    const sc = Math.max(R.w / MOTHER[0], R.h / MOTHER[1]), ox = R.x + (R.w - MOTHER[0] * sc) / 2, oy = R.y + (R.h - MOTHER[1] * sc) / 2;
+    const vx = (R.x - ox) / sc, vy = (R.y - oy) / sc, vw = R.w / sc, vh = R.h / sc;
+    GL.bigImg('scene_base', R.x, R.y, R.w, R.h, (g, pw, ph) => { g.imageSmoothingQuality = 'high'; g.drawImage(base, vx, vy, vw, vh, 0, 0, pw, ph); });
+    const POS = CONFIG.art.layerPos || {}, sx = (mx) => ox + mx * sc, sy = (my) => oy + my * sc;
+    // 程序占位要用的几何：对齐到正式小摊（counter）的位置
+    const cp = POS.counter || [700, 687], u = 493 * sc / 50;
+    const G = { x: R.x, y: R.y, w: R.w, h: R.h, u, t, sx: sx(cp[0] + 30), sw: 640 * sc, wallTop: sy(cp[1] + 140), gy: sy(cp[1] + 493),
+      horizon: sy(1000), bot: R.y + R.h, rx0: sx(cp[0] + 720), rw: R.x + R.w * 0.97 - sx(cp[0] + 720) };
+    const draw = (id) => {
+      const im = Art.img(id), p = POS[id]; if (!im || !p) return false;
+      const x = sx(p[0]), y = sy(p[1]), w = im.width * sc, h = im.height * sc, pop = layerPop.get(id);
+      const k = pop !== undefined ? popScale((t - pop) * 0.6) : 1; if (pop !== undefined && t - pop > 1) layerPop.delete(id);
+      GL.save(); GL.scaleAt(x + w / 2, y + h, k); GL.img(Art.layer(id, w, h), x + w / 2, y + h / 2, w, h);
+      if (id === 'sign') { // 招牌左侧留白：程序写本地化店名
+        const fs = h * 0.3, maxW = w * 0.66; let size = fs; while (size > 6 && GL.measure(L.t('game.title'), { size, weight: 1000 }) > maxW) size -= 1;
+        GL.text(L.t('game.title'), x + w * 0.4, y + h * 0.43, { size, weight: 1000, fill: '#fff4db', outline: '#6b3f1d' });
+      }
+      GL.restore(); return true;
+    };
+    for (const k of ART_ORDER) {
+      if (k === 'STALL') { if (!has('counter')) draw('shabby_stall'); else if (!draw('counter')) draw('shabby_stall'); continue; }
+      if (k === 'TABLE') { if (!has('tables')) draw('shabby_table'); else if (!draw('tables')) drawLayer('tables', G, t); continue; }
+      if (k === 'shabby_litter') { if (!has('deck')) draw('shabby_litter'); continue; }
+      if (!has(k)) continue;
+      if (k === 'deck' && !Art.img('deck')) { // deck 正式图未到：在小摊和桌椅下面铺一块木栈台（程序占位），不铺满整片沙滩
+        const tp = POS.tables || [1385, 968], x0 = sx(cp[0] - 40), x1 = sx(tp[0] + 380), y0 = sy(cp[1] + 470), y1 = sy(tp[1] + 270);
+        GL.rect(x0 + 3, y0 + 6, x1 - x0, y1 - y0, 6 * sc, [0.35, 0.2, 0.08, 0.25], { soft: 8 * sc });
+        GL.rect(x0, y0, x1 - x0, y1 - y0, 6 * sc, hex('#c8955a'));
+        for (let yy = y0 + 22 * sc; yy < y1 - 4; yy += 22 * sc) GL.rect(x0, yy, x1 - x0, Math.max(1, 2.5 * sc), 0, [0.45, 0.28, 0.12, 0.35]);
+        GL.rect(x0, y1 - 8 * sc, x1 - x0, 8 * sc, 3 * sc, hex('#9c6a3c'));
+        continue;
+      }
+      if (!draw(k)) drawLayer(k, G, t); // B 批还没到的图层：程序占位
+    }
+    LY.artScene = { sc, ox, oy };
+    return true;
+  }
+  /* 装修弹跳 / 粒子的锚点：有正式图时用图层底边中点，没有时用占位几何 */
+  function layerAnchor(id) {
+    const A = LY.artScene, p = (CONFIG.art.layerPos || {})[id], im = Art.img(id);
+    if (A && p && im) return [A.ox + (p[0] + im.width / 2) * A.sc, A.oy + (p[1] + im.height) * A.sc];
+    return DECO_LAYERS[id].anchor(sceneGeom(LY.cafeScene));
+  }
   function drawScene(R, t, showLogo) {
     if (showLogo && drawHeader(R)) return;
+    if (!showLogo && artScene(R, t)) return;
     const G = sceneGeom(R), { x, y, w, h, u, horizon, gy, bot, rx0, rw } = G;
     // 天空 / 云 / 海 / 小岛
     GL.rect(x, y, w, horizon - y + 2, 0, COL.sky);
@@ -939,6 +994,9 @@
   }
   function start() {
     layout();
+    // 装修场景和漫画不挡首帧：开画后再后台加载（玩家进 Café 页前一般早就到了；没到时先画程序占位）
+    Art.load(CONFIG.art.cafe || [], 'assets/scene/', () => {}, 'webp');
+    Art.load(CONFIG.art.comics || [], 'assets/comics/', () => {}, 'webp');
     if (welcomeGain > 0) setTimeout(() => toast(L.t('ui.welcomeBack', { n: welcomeGain })), 300);
     updateHud(); updateTutorial();
     requestAnimationFrame(frame);

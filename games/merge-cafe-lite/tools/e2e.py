@@ -216,7 +216,7 @@ with sync_playwright() as p:
     pg.evaluate('MCL.S.stars=6'); pg.wait_for_timeout(400)
     scene_png(pg, out / 'deco-before.png'); pg.screenshot(path=str(out / 'cafe-act1-start.png'))
     pg.click('#deco-btn'); pg.wait_for_timeout(1300)
-    check('第 1 节点：扣 1 星，弹一格漫画', S(pg, 'deco') == 1 and S(pg, 'stars') == 5 and pg.is_visible('#modal.show') and pg.is_visible('#m-comic svg'), pg.inner_text('#m-body'))
+    check('第 1 节点：扣 1 星，弹一格漫画（正式图 comic_01）', S(pg, 'deco') == 1 and S(pg, 'stars') == 5 and pg.is_visible('#modal.show') and pg.is_visible('#m-comic img') and 'comic_01' in (pg.get_attribute('#m-comic img', 'src') or ''), pg.inner_text('#m-body'))
     pg.screenshot(path=str(out / 'comic-1.png'))
     pg.click('#m-btns .btn'); pg.wait_for_timeout(1200)
     scene_png(pg, out / 'deco-after1.png')
