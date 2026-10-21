@@ -840,10 +840,13 @@
     if (welcomeGain > 0) setTimeout(() => toast(L.t('ui.welcomeBack', { n: welcomeGain })), 300);
     updateHud(); updateTutorial();
     requestAnimationFrame(frame);
-    Art.load(CONFIG.art.items, 'assets/items/', () => {});
-    Art.load(CONFIG.art.avatars || [], 'assets/avatars/', () => {});
-    Art.load(CONFIG.art.ui || [], 'assets/ui/', swapDomIcon);
   }
+  /* 正式图和字体一起预加载：都到了（或 2.5 秒超时）才开画，避免占位图闪一下再换。没到的图之后到了照样自动替换 */
+  const artReady = Promise.all([
+    Art.load(CONFIG.art.items, 'assets/items/', () => {}),
+    Art.load(CONFIG.art.avatars || [], 'assets/avatars/', () => {}),
+    Art.load(CONFIG.art.ui || [], 'assets/ui/', swapDomIcon),
+  ]);
   /* 顶栏和底栏的图标是 DOM 里的 SVG 占位：正式图到了换成 <img> */
   const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg' };
   function swapDomIcon(id) {
@@ -851,12 +854,13 @@
     const img = document.createElement('img'); img.src = Art.src(id); img.alt = ''; img.className = 'ico'; img.dataset.art = id;
     old.replaceWith(img); layout();
   }
-  // 等内联的 Nunito 解码完再开画（图集里的字形和图标名字要用它），最多等 1.5 秒
+  // 等内联的 Nunito 解码完（最多 1.5 秒）、正式图加载完（最多 2.5 秒）再开画
   const fontReady = document.fonts && document.fonts.load ? Promise.race([
     Promise.all([document.fonts.load('900 20px Nunito'), document.fonts.load('800 20px Nunito')]),
     new Promise((r) => setTimeout(r, 1500)),
   ]) : Promise.resolve();
-  fontReady.then(() => { GL.reset(); start(); }, start);
+  const timeout = (ms) => new Promise((r) => setTimeout(r, ms));
+  Promise.all([fontReady, Promise.race([artReady, timeout(2500)])]).then(() => { GL.reset(); start(); }, start);
 
   /* ---------- 调试面板（?debug=1，给 QA 用，文案不进本地化表） ---------- */
   function debugStats() {

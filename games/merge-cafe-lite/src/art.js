@@ -4,13 +4,14 @@
    正式图：assets/items/<id>.png 到位并登记进 config/art.json 后，自动换掉同 id 的占位，逻辑代码不用改。 */
 const Art = (() => {
   const loaded = {};           // id -> HTMLImageElement（正式图）
+  /* 加载登记过的正式图；返回 Promise，全部加载完（或失败）时 resolve，失败的继续用占位 */
   function load(list, base, onReady) {
-    for (const id of list) {
+    return Promise.all(list.map((id) => new Promise((done) => {
       const im = new Image();
-      im.onload = () => { loaded[id] = im; GL.forget('I|' + id + '|'); if (onReady) onReady(id); };
-      im.onerror = () => console.warn('[art] missing', id);
+      im.onload = () => { loaded[id] = im; GL.forget('I|' + id + '|'); if (onReady) onReady(id); done(); };
+      im.onerror = () => { console.warn('[art] missing', id); done(); };
       im.src = base + id + '.png';
-    }
+    })));
   }
   const FONT = 'Nunito, "Avenir Next", "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
 
