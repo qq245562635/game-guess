@@ -14,7 +14,7 @@ const Art = (() => {
       im.src = base + id + '.png';
     }
   }
-  const FONT = '"Avenir Next", "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
+  const FONT = 'Nunito, "Avenir Next", "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
 
   function rr(g, x, y, w, h, r) {
     g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
@@ -85,11 +85,6 @@ const Art = (() => {
       } else { // 食材箱：木箱横条
         for (let k = 0; k < 3; k++) { rr(g, w * 0.22, w * (0.2 + k * 0.16), w * 0.56, w * 0.12, w * 0.03); g.fill(); g.stroke(); }
       }
-      const name = L.t(def.name);
-      g.textAlign = 'center'; g.textBaseline = 'middle';
-      const px = fitText(g, name, s * 0.92, w * 0.13, 800);
-      g.lineJoin = 'round'; g.lineWidth = px * 0.3; g.strokeStyle = 'rgba(30,18,10,0.6)';
-      g.strokeText(name, w / 2, w * 0.82); g.fillStyle = '#fff8ec'; g.fillText(name, w / 2, w * 0.82);
     });
   }
 
@@ -108,5 +103,55 @@ const Art = (() => {
       g.fillStyle = '#ffe28a'; g.beginPath(); g.arc(w / 2, w / 2, w * 0.22, 0, Math.PI * 2); g.fill();
     });
   }
-  return { load, item, gen, lock, coin, FONT };
+
+  /* 顾客头像占位：圆底 + 肩膀 + 脸 + 发型（id 与正式图 avatar_customer_XX 一致，到图自动替换） */
+  function avatar(C, k, size) {
+    const cu = C.O.customers[k % C.O.customers.length];
+    return GL.sprite('I|' + cu.id + '|', size, size, (g, w) => {
+      if (loaded[cu.id]) { g.drawImage(loaded[cu.id], 0, 0, w, w); return; }
+      rr(g, 0, 0, w, w, w * 0.18); g.fillStyle = '#cfe9e6'; g.fill(); g.save(); g.clip();
+      g.fillStyle = cu.color; g.beginPath(); g.ellipse(w / 2, w * 1.02, w * 0.42, w * 0.3, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#e9b98f'; g.fillRect(w * 0.44, w * 0.6, w * 0.12, w * 0.14);
+      g.fillStyle = cu.hair; g.beginPath(); g.ellipse(w / 2, w * 0.43, w * 0.25, w * 0.27, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#f1c9a0'; g.beginPath(); g.ellipse(w / 2, w * 0.48, w * 0.19, w * 0.22, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = cu.hair; g.beginPath(); g.ellipse(w / 2, w * 0.3, w * 0.22, w * 0.1, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#3a2416'; for (const dx of [-0.07, 0.07]) { g.beginPath(); g.arc(w * (0.5 + dx), w * 0.47, w * 0.018, 0, Math.PI * 2); g.fill(); }
+      g.strokeStyle = '#a8553f'; g.lineWidth = w * 0.02; g.beginPath(); g.arc(w / 2, w * 0.53, w * 0.06, 0.2, Math.PI - 0.2); g.stroke();
+      g.restore();
+    });
+  }
+  function star(size) {
+    return GL.sprite('star', size, size, (g, w) => {
+      g.beginPath();
+      for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = (k % 2 ? 0.2 : 0.46) * w; g.lineTo(w / 2 + Math.cos(a) * r, w * 0.53 + Math.sin(a) * r); }
+      g.closePath(); g.fillStyle = '#f5c03a'; g.fill(); g.lineJoin = 'round'; g.lineWidth = w * 0.07; g.strokeStyle = '#c4851a'; g.stroke();
+    });
+  }
+  function clock(size) {
+    return GL.sprite('clock', size, size, (g, w) => {
+      g.strokeStyle = '#3a2416'; g.lineWidth = w * 0.12; g.beginPath(); g.arc(w / 2, w / 2, w * 0.38, 0, Math.PI * 2); g.stroke();
+      g.lineCap = 'round'; g.beginPath(); g.moveTo(w / 2, w / 2); g.lineTo(w / 2, w * 0.28); g.moveTo(w / 2, w / 2); g.lineTo(w * 0.66, w * 0.58); g.stroke();
+    });
+  }
+  function check(size) {
+    return GL.sprite('check', size, size, (g, w) => {
+      g.fillStyle = '#3bb36a'; g.beginPath(); g.arc(w / 2, w / 2, w * 0.46, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#fff'; g.lineWidth = w * 0.14; g.lineCap = 'round'; g.lineJoin = 'round';
+      g.beginPath(); g.moveTo(w * 0.28, w * 0.52); g.lineTo(w * 0.44, w * 0.68); g.lineTo(w * 0.72, w * 0.36); g.stroke();
+    });
+  }
+  function bolt(size) {
+    return GL.sprite('bolt', size, size, (g, w) => {
+      g.beginPath(); g.moveTo(w * 0.58, w * 0.06); g.lineTo(w * 0.2, w * 0.56); g.lineTo(w * 0.46, w * 0.56); g.lineTo(w * 0.38, w * 0.94); g.lineTo(w * 0.8, w * 0.4); g.lineTo(w * 0.53, w * 0.4); g.closePath();
+      g.fillStyle = '#f5c03a'; g.fill(); g.lineJoin = 'round'; g.lineWidth = w * 0.07; g.strokeStyle = '#c4851a'; g.stroke();
+    });
+  }
+  function hand(size) {
+    return GL.sprite('hand', size, size, (g, w) => {
+      g.fillStyle = '#fff'; g.strokeStyle = '#3a2416'; g.lineWidth = w * 0.06; g.lineJoin = 'round';
+      g.beginPath(); rr(g, w * 0.36, w * 0.08, w * 0.16, w * 0.5, w * 0.08); g.fill(); g.stroke();
+      g.beginPath(); rr(g, w * 0.3, w * 0.42, w * 0.46, w * 0.46, w * 0.16); g.fill(); g.stroke();
+    });
+  }
+  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, FONT };
 })();
