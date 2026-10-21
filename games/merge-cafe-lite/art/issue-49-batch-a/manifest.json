@@ -1,0 +1,270 @@
+[
+  {
+    "id": "header_merge_p",
+    "path": "assets/scene/header_merge_p.webp",
+    "width": 1500,
+    "height": 1060,
+    "bytes": 154606,
+    "sha256": "8a358bb2be689f3fb86baaa6920bc97a20b92057dfcd3165457d0f2ccf080fa8",
+    "srgb": true,
+    "alphaExtrema": [
+      255,
+      255
+    ],
+    "alphaBounds": [
+      0,
+      0,
+      1500,
+      1060
+    ]
+  },
+  {
+    "id": "header_merge_l",
+    "path": "assets/scene/header_merge_l.webp",
+    "width": 1000,
+    "height": 1600,
+    "bytes": 141946,
+    "sha256": "6c1ffc951bf46c75c420b12eeefa54b2f7e209ed6a820c8b73c32b71f84f6207",
+    "srgb": true,
+    "alphaExtrema": [
+      255,
+      255
+    ],
+    "alphaBounds": [
+      0,
+      0,
+      1000,
+      1600
+    ]
+  },
+  {
+    "id": "scene_base",
+    "path": "assets/scene/scene_base.webp",
+    "width": 2400,
+    "height": 1600,
+    "bytes": 141754,
+    "sha256": "82e7b56b6ababc8584c7df2ea6351d5fd7742f428d2f41f4e9ba6df6441c3012",
+    "srgb": true,
+    "alphaExtrema": [
+      255,
+      255
+    ],
+    "alphaBounds": [
+      0,
+      0,
+      2400,
+      1600
+    ]
+  },
+  {
+    "id": "counter",
+    "path": "assets/scene/counter.webp",
+    "width": 700,
+    "height": 493,
+    "bytes": 40574,
+    "sha256": "d128c0f6351c468def4caae9fb5543b912ba9b39bbffe49cf3f5dd1e149b21d4",
+    "srgb": true,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "alphaBounds": [
+      2,
+      2,
+      698,
+      487
+    ],
+    "position": [
+      700,
+      687
+    ],
+    "safePass": true
+  },
+  {
+    "id": "shabby_stall",
+    "path": "assets/scene/shabby_stall.webp",
+    "width": 700,
+    "height": 495,
+    "bytes": 74500,
+    "sha256": "b9035f03f666f53bd016878ff8fefc75a0cc0bb8cd3636a852468e362e3ad1fd",
+    "srgb": true,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "alphaBounds": [
+      7,
+      2,
+      697,
+      493
+    ],
+    "position": [
+      700,
+      685
+    ],
+    "safePass": true
+  },
+  {
+    "id": "tables",
+    "path": "assets/scene/tables.webp",
+    "width": 340,
+    "height": 230,
+    "bytes": 21226,
+    "sha256": "bc04c5cfeb49cf9860a4d5b9bf7ec365c31888fb2316bc1d69abbfff90f577ca",
+    "srgb": true,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "alphaBounds": [
+      6,
+      16,
+      332,
+      221
+    ],
+    "position": [
+      1385,
+      968
+    ],
+    "safePass": true
+  },
+  {
+    "id": "shabby_table",
+    "path": "assets/scene/shabby_table.webp",
+    "width": 301,
+    "height": 200,
+    "bytes": 15094,
+    "sha256": "6d8c014d90308b3ab4dff0e28ea8a50451acb5ec7e9d87412a635f55719a8d1a",
+    "srgb": true,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "alphaBounds": [
+      3,
+      8,
+      299,
+      195
+    ],
+    "position": [
+      1404,
+      998
+    ],
+    "safePass": true
+  },
+  {
+    "id": "parasol",
+    "path": "assets/scene/parasol.webp",
+    "width": 410,
+    "height": 399,
+    "bytes": 16196,
+    "sha256": "2a36f377823a48539c3184d8c2a354f5e3a10d75dd125a2d5011ef417fc39809",
+    "srgb": true,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "alphaBounds": [
+      3,
+      3,
+      403,
+      396
+    ],
+    "position": [
+      1350,
+      799
+    ],
+    "safePass": true
+  },
+  {
+    "id": "sign",
+    "path": "assets/scene/sign.webp",
+    "width": 322,
+    "height": 110,
+    "bytes": 7018,
+    "sha256": "5f93d109d66bf9204b1242e1dfa7b3212f892064e6750949853304791d9dad50",
+    "srgb": true,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "alphaBounds": [
+      3,
+      14,
+      320,
+      104
+    ],
+    "position": [
+      889,
+      643
+    ],
+    "safePass": true
+  },
+  {
+    "id": "lightbox",
+    "path": "assets/scene/lightbox.webp",
+    "width": 117,
+    "height": 95,
+    "bytes": 3962,
+    "sha256": "857a685cc00cfd07f39d07e1376e1c2aee15a26a4e55db00435528e0f7ba8b3a",
+    "srgb": true,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "alphaBounds": [
+      11,
+      4,
+      107,
+      86
+    ],
+    "position": [
+      716,
+      812
+    ],
+    "safePass": true
+  },
+  {
+    "id": "shabby_litter",
+    "path": "assets/scene/shabby_litter.webp",
+    "width": 256,
+    "height": 90,
+    "bytes": 7188,
+    "sha256": "fb799f75083ca75e1353b036eb99dcc2d35e49a9b0b50b152e26e8a689c58c09",
+    "srgb": true,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "alphaBounds": [
+      13,
+      8,
+      243,
+      86
+    ],
+    "position": [
+      1430,
+      1090
+    ],
+    "safePass": true
+  },
+  {
+    "id": "comic_01",
+    "path": "assets/comics/comic_01.webp",
+    "width": 1200,
+    "height": 600,
+    "bytes": 110352,
+    "sha256": "22a2b6e3662dc623e9f4f7a7245bbc926c57ef1a215871e256294b2d81918921",
+    "srgb": true,
+    "alphaExtrema": [
+      255,
+      255
+    ],
+    "alphaBounds": [
+      0,
+      0,
+      1200,
+      600
+    ]
+  }
+]
