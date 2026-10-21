@@ -152,10 +152,11 @@
     el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1800);
   }
   let modalOnClose = null, energyModalTick = null;
-  function modal(title, body, buttons, comic) {
+  function modal(title, body, buttons, comic, html) {
     $('m-title').textContent = title; $('m-body').textContent = body;
-    $('m-comic').style.display = comic ? 'block' : 'none';
+    $('m-comic').style.display = comic || html ? 'block' : 'none';
     if (comic) $('m-comic').innerHTML = comicSVG(comic);
+    else if (html) $('m-comic').innerHTML = html;
     const box = $('m-btns'); box.textContent = '';
     for (const b of buttons) {
       const el = document.createElement('button'); el.className = 'btn' + (b.alt ? ' alt' : ''); el.textContent = b.label;
@@ -224,6 +225,27 @@
     else if (r.reason === 'cooldown') showRefill(id);
     else if (r.reason === 'energy') showNoEnergy();
   }
+  /* 合成路线：点订单卡上的物品，弹出这条链从 1 级到目标等级、目标高亮、棋盘上各级现有几个 */
+  function needAt(k, px) {
+    const o = S.orders[k], R = LY.orders[k]; if (!o) return -1;
+    const pad = Math.max(5, R.h * 0.06), topH = R.h - R.h * 0.28 - pad * 2, av = Math.min(topH, R.w * 0.38);
+    const areaX = R.x + pad * 1.5 + av, areaW = R.w - (areaX - R.x) - pad;
+    return Math.max(0, Math.min(o.needs.length - 1, Math.floor((px - areaX) / areaW * o.needs.length)));
+  }
+  function showChain(chain, lvl) {
+    const items = C.chains[chain].items, target = L.t(items[lvl - 1].name);
+    const have = new Array(items.length + 1).fill(0);
+    for (const c of S.cells) if (c && c.chain === chain) have[c.lvl]++;
+    const esc2 = (t) => String(t).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+    const steps = items.slice(0, lvl).map((it, i) => {
+      const n = i + 1, src = Art.src(it.id);
+      const pic = src ? `<img src="${esc2(src)}" alt="">` : `<i style="background:${it.color}">${n}</i>`;
+      return `<div class="st${n === lvl ? ' goal' : ''}">${pic}<b>${esc2(L.t(it.name))}</b><span>${esc2(L.t('ui.level', { n }))}</span>` +
+        (have[n] ? `<em>${esc2(L.t('ui.onBoard', { n: have[n] }))}</em>` : '') + `</div>`;
+    }).join('<s>›</s>');
+    modal(L.t('ui.howToMake', { item: target }), L.t('ui.chainTip'), [{ label: L.t('ui.ok') }], null, `<div class="chain">${steps}</div>`);
+  }
+
   /* 激励视频：offer 计展示、click 计点击（策划案 §11 主动点击率 ≥40% 的数据口径） */
   async function watchAd(kind, grant) {
     Core.adClick(S, kind); markDirty();
@@ -360,7 +382,11 @@
       return;
     }
     if (cancelled) return;
-    // 点击
+    // 点击订单卡 → 合成路线
+    const ok = orderAt(e.clientX, e.clientY);
+    if (ok >= 0 && orderAt(d.x, d.y) === ok && !Core.tutStep(C, S) && S.orders[ok]) {
+      const nd = S.orders[ok].needs[needAt(ok, e.clientX)]; showChain(nd.chain, nd.lvl); return;
+    }
     const gid = genAt(e.clientX, e.clientY);
     if (gid && gid === d.gen) { tapGenerator(gid); return; }
     const i = cellAt(e.clientX, e.clientY);
@@ -884,7 +910,7 @@
   }
   // 自动化测试 / 调试入口
   window.MCL = {
-    C, get S() { return S; }, cellXY, cellAt, layout: LY, save, now, genRect, orderRect: (k) => LY.orders[k], get mode() { return mode; },
+    C, get S() { return S; }, cellXY, cellAt, layout: LY, save, now, genRect, orderRect: (k) => LY.orders[k], get mode() { return mode; }, needAt,
     get fps() { return fps; }, get renderMs() { return renderMs; }, get pending() { return pendingCoins + pendingStars; },
   };
 })();
