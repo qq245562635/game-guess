@@ -282,18 +282,18 @@
   }
 
   /* 激励视频：offer 计展示、click 计点击（策划案 §11 主动点击率 ≥40% 的数据口径） */
-  async function watchAd(kind, grant) {
-    Core.adClick(S, kind); markDirty();
+  async function watchAd(kind, grant, noStat) {
+    if (!noStat) { Core.adClick(S, kind); markDirty(); } // 没计展示的入口也不计点击，点击率分子分母同口径
     const ok = await Ads.rewarded(kind);
     if (ok) { grant(); markDirty(); save(); hudCache = ''; updateHud(); }
   }
-  function showNoEnergy() { // 激励视频点位 1：+30 体力；金币买体力（每天限次涨价）作兜底，广告永远免费、放在最上面
+  function showNoEnergy(fromPill) { // 激励视频点位 1：+30 体力；金币买体力（每天限次涨价）作兜底，广告永远免费、放在最上面
     const body = () => L.t('ui.noEnergyBody', { t: mmss(Core.energyNextIn(C, S, now())) });
-    Core.adOffer(S, 'energy'); markDirty();
+    if (!fromPill) { Core.adOffer(S, 'energy'); markDirty(); } // 点顶栏体力主动打开的不计展示（§11 点击率口径只算体力见底弹窗）
     const price = Core.energyPrice(C, S, now()), btns = [
       { label: '▶ ' + L.t('ad.energy', { n: C.ads.rewarded.energy.amount }), ad: true, on: () => watchAd('energy', () => {
         const n = Core.grantEnergy(C, S, now()); bump('pill-energy'); toast('+' + n + ' ⚡');
-      }) },
+      }, fromPill) },
     ];
     if (price !== null) btns.push({ label: L.t('ad.energy', { n: C.eco.coinEnergy.amount }), price, on: () => {
       const r = Core.buyEnergy(C, S, now());
@@ -499,7 +499,7 @@
   $('pill-energy').onclick = () => { // 点体力：没满就弹体力窗（广告 / 金币补体力）
     if (modalOpen() || Ads.busy || Core.tutStep(C, S)) return;
     Core.settleEnergy(C, S, now());
-    if (S.energy >= C.eco.energy.max) toast(L.t('ui.energyFull')); else showNoEnergy();
+    if (S.energy >= C.eco.energy.max) toast(L.t('ui.energyFull')); else showNoEnergy(true);
   };
   /* ---------- Café（装修）/ Merge 切换 ---------- */
   function setMode(m) {
@@ -944,7 +944,9 @@
       GL.rect(b.x - lw / 2 + 1, by - lh / 2 + 3, lw, lh, lh / 2, COL.shadow, { soft: 3 });
       GL.rect(b.x - lw / 2, by - lh / 2, lw, lh, lh / 2, can ? hex('#3bb36a') : cost === null ? COL.gold : hex('#fff9ec'));
       GL.rect(b.x - lw / 2, by - lh / 2, lw, lh, lh / 2, can ? hex('#23824a') : COL.goldD, { stroke: 2.5 });
-      GL.text((can ? '+' : '') + L.t('ui.level', { n: g.lv || 1 }), b.x, by, { size: lh * 0.58, weight: 900, fill: can ? '#fff' : '#5a3a12' });
+      const arrow = can && Art.opt('icon_upgrade', Math.round(lh * 1.1)); // D 批升级箭头：钱够时画在等级字左边，没到用"+"
+      if (arrow) { GL.img(arrow, b.x - lw / 2 + lh * 0.3, by - lh * 0.08, lh * 1.1, lh * 1.1); GL.text(L.t('ui.level', { n: g.lv || 1 }), b.x + lh * 0.3, by, { size: lh * 0.58, weight: 900, fill: '#fff' }); }
+      else GL.text((can ? '+' : '') + L.t('ui.level', { n: g.lv || 1 }), b.x, by, { size: lh * 0.58, weight: 900, fill: can ? '#fff' : '#5a3a12' });
     }
     GL.restore();
   }
@@ -1009,9 +1011,13 @@
   function drawBubble(it, x, y, cs, t) {
     const left = Math.max(0, it.until - now()) / 1000, fy = y + Math.sin(t * 2.4 + x) * cs * 0.03, R = cs * 0.44;
     drawItem({ k: 'item', chain: it.chain, lvl: it.lvl }, x, fy, cs * 0.66, 0.85);
-    GL.circle(x, fy, R, [0.75, 0.92, 0.98, 0.28]);
-    GL.arc(x, fy, R, Math.max(2, cs * 0.045), Math.PI * 2, [1, 1, 1, 0.9]);
-    GL.circle(x - R * 0.42, fy - R * 0.45, R * 0.14, [1, 1, 1, 0.85]);
+    const shell = Art.opt('fx_bubble', Math.round(R * 2.2)); // D 批正式泡泡外壳（盖在物品上）；没到用程序画的
+    if (shell) GL.img(shell, x, fy, R * 2.2, R * 2.2);
+    else {
+      GL.circle(x, fy, R, [0.75, 0.92, 0.98, 0.28]);
+      GL.arc(x, fy, R, Math.max(2, cs * 0.045), Math.PI * 2, [1, 1, 1, 0.9]);
+      GL.circle(x - R * 0.42, fy - R * 0.45, R * 0.14, [1, 1, 1, 0.85]);
+    }
     const urgent = left < 10, fs = Math.max(9, cs * 0.2);
     if (!urgent || Math.sin(t * 10) > -0.3) GL.text(Math.ceil(left) + 's', x, y + cs * 0.36, { size: fs, weight: 900, fill: urgent ? '#ffdfd8' : '#fff', outline: urgent ? 'rgba(196,85,60,0.95)' : 'rgba(30,18,10,0.75)' });
   }
