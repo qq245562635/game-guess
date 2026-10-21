@@ -1,0 +1,244 @@
+{
+  "issue": 49,
+  "spec": "ASSETS.md §5.4 / main 686007d",
+  "masterCanvas": [
+    2400,
+    1600
+  ],
+  "delivery": "art-only; registration and integration by Claude",
+  "assets": [
+    {
+      "id": "deck",
+      "file": "assets/scene/deck.webp",
+      "w": 1120,
+      "h": 260,
+      "quality": 85,
+      "position": [
+        640,
+        1080
+      ],
+      "embeddedICC": true,
+      "bytes": 28162,
+      "sha256": "12dbf08a8829684fedfb5d5e0bc0ec5f162d7deb7b2087767feb8299d0ff0d36",
+      "colorSpace": "sRGB",
+      "encoder": "Pillow/libwebp method=6",
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "id": "flowers",
+      "file": "assets/scene/flowers.webp",
+      "w": 570,
+      "h": 335,
+      "quality": 85,
+      "position": [
+        720,
+        850
+      ],
+      "embeddedICC": true,
+      "bytes": 34760,
+      "sha256": "0098c65ed82682193f231a379ca819d483e993cbb2498eca78101dd8248d3f5e",
+      "colorSpace": "sRGB",
+      "encoder": "Pillow/libwebp method=6",
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "id": "bar",
+      "file": "assets/scene/bar.webp",
+      "w": 240,
+      "h": 115,
+      "quality": 85,
+      "position": [
+        770,
+        890
+      ],
+      "embeddedICC": true,
+      "bytes": 13992,
+      "sha256": "d940d626fb43df73776ef0de28fc1d9e36b4f34569559a379e5f7b44cfdb7f99",
+      "colorSpace": "sRGB",
+      "encoder": "Pillow/libwebp method=6",
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "id": "menu",
+      "file": "assets/scene/menu.webp",
+      "w": 120,
+      "h": 185,
+      "quality": 85,
+      "position": [
+        1270,
+        1040
+      ],
+      "embeddedICC": true,
+      "bytes": 9172,
+      "sha256": "49c644208b871d4504be8038dbd751c4e59d30a7fa9b297aa4bee54e46702a76",
+      "colorSpace": "sRGB",
+      "encoder": "Pillow/libwebp method=6",
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "id": "speakers",
+      "file": "assets/scene/speakers.webp",
+      "w": 660,
+      "h": 95,
+      "quality": 85,
+      "position": [
+        720,
+        690
+      ],
+      "embeddedICC": true,
+      "bytes": 7870,
+      "sha256": "fcf1c8a7aafb65056b73180978198f1a7cdda5dda7606b0f5c60b024a3a111ce",
+      "colorSpace": "sRGB",
+      "encoder": "Pillow/libwebp method=6",
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "id": "neon",
+      "file": "assets/scene/neon.webp",
+      "w": 120,
+      "h": 112,
+      "quality": 85,
+      "position": [
+        1040,
+        878
+      ],
+      "embeddedICC": true,
+      "bytes": 9736,
+      "sha256": "683e23e6eb05e9b68b1fbac58da2536686efe4a171810d6313260a5cb5dd059f",
+      "colorSpace": "sRGB",
+      "encoder": "Pillow/libwebp method=6",
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "id": "terrace",
+      "file": "assets/scene/terrace.webp",
+      "w": 1080,
+      "h": 130,
+      "quality": 85,
+      "position": [
+        660,
+        1290
+      ],
+      "embeddedICC": true,
+      "bytes": 32680,
+      "sha256": "68b9fcb23581fcbc54e7b9a3fc92d9368a2da12e80bf735c362eccfd7cbec237",
+      "colorSpace": "sRGB",
+      "encoder": "Pillow/libwebp method=6",
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "id": "tower",
+      "file": "assets/scene/tower.webp",
+      "w": 110,
+      "h": 125,
+      "quality": 85,
+      "position": [
+        1140,
+        880
+      ],
+      "embeddedICC": true,
+      "bytes": 8520,
+      "sha256": "0fbd16aa5aedb78bafc770ee16704bf990be257c6f1d07f1f8f5c69f3e55bea3",
+      "colorSpace": "sRGB",
+      "encoder": "Pillow/libwebp method=6",
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "id": "photo",
+      "file": "assets/scene/photo.webp",
+      "w": 190,
+      "h": 240,
+      "quality": 85,
+      "position": [
+        670,
+        1110
+      ],
+      "embeddedICC": true,
+      "bytes": 13648,
+      "sha256": "d9228c8f4a7a8e8c5a9c19051bc6e291fa654d87e5406707589b323a496ec7fe",
+      "colorSpace": "sRGB",
+      "encoder": "Pillow/libwebp method=6",
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "id": "lights",
+      "file": "assets/scene/lights.webp",
+      "w": 1045,
+      "h": 225,
+      "quality": 85,
+      "position": [
+        700,
+        635
+      ],
+      "embeddedICC": true,
+      "bytes": 37422,
+      "sha256": "233e841ac422ceca91514eaa61455d83be9f8bbe78a56f4a7905cd50a8326de8",
+      "colorSpace": "sRGB",
+      "encoder": "Pillow/libwebp method=6",
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "id": "comic_08",
+      "file": "assets/comics/comic_08.webp",
+      "w": 1200,
+      "h": 600,
+      "quality": 75,
+      "position": null,
+      "embeddedICC": true,
+      "bytes": 65772,
+      "sha256": "b7eedd1d7687ac3959c0a73bff99d1dc63fc4006d4a154479d73e8a41c04fd21",
+      "colorSpace": "sRGB",
+      "encoder": "Pillow/libwebp method=6",
+      "alphaRange": null
+    },
+    {
+      "id": "comic_15",
+      "file": "assets/comics/comic_15.webp",
+      "w": 1200,
+      "h": 600,
+      "quality": 75,
+      "position": null,
+      "embeddedICC": false,
+      "bytes": 69722,
+      "sha256": "e079ccb2a93230781c4ab9285d0042e138f940da260fc0bc215ad2335f3e1605",
+      "colorSpace": "sRGB",
+      "encoder": "Pillow/libwebp method=6",
+      "alphaRange": null
+    }
+  ],
+  "sceneBytes": 195962,
+  "comicBytes": 135494,
+  "newRuntimeBytes": 331456,
+  "priorComic01Bytes": 110352,
+  "allComicBytes": 245846
+}
