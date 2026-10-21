@@ -1,0 +1,341 @@
+{
+  "spec": "ASSETS.md §7 / main e330644",
+  "assets": [
+    {
+      "id": "item_coffee_03",
+      "file": "assets/items/item_coffee_03.png",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 26198,
+      "referenceBudget": 50000,
+      "withinReferenceBudget": true,
+      "mode": "RGBA",
+      "encoding": "PNG 32-bit RGBA",
+      "rgbaColorQuantization": null,
+      "contentBoundsAlpha16": [
+        57,
+        75,
+        198,
+        180
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "6c45b04020a2fbeb9c8adcb5ae6d861e18784cafa2c3977fb198c92076c53357"
+    },
+    {
+      "id": "deco_plant_pot",
+      "file": "assets/ui/deco_plant_pot.png",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 41166,
+      "referenceBudget": 50000,
+      "withinReferenceBudget": true,
+      "mode": "RGBA",
+      "encoding": "PNG 32-bit RGBA",
+      "rgbaColorQuantization": 256,
+      "contentBoundsAlpha16": [
+        8,
+        12,
+        248,
+        252
+      ],
+      "alphaRange": [
+        0,
+        254
+      ],
+      "sRGB": true,
+      "sha256": "67e893229ca839f6bd69ec76b3e93921d833f71625738a794311f455a8fb5559"
+    },
+    {
+      "id": "deco_plant_fern",
+      "file": "assets/ui/deco_plant_fern.png",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 47633,
+      "referenceBudget": 50000,
+      "withinReferenceBudget": true,
+      "mode": "RGBA",
+      "encoding": "PNG 32-bit RGBA",
+      "rgbaColorQuantization": 256,
+      "contentBoundsAlpha16": [
+        8,
+        40,
+        248,
+        252
+      ],
+      "alphaRange": [
+        0,
+        254
+      ],
+      "sRGB": true,
+      "sha256": "8478c1ffafaae4428c9873305c6faf4cbdfb45608937695b07b77cf668259ea0"
+    },
+    {
+      "id": "deco_plant_bush",
+      "file": "assets/ui/deco_plant_bush.png",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 46793,
+      "referenceBudget": 50000,
+      "withinReferenceBudget": true,
+      "mode": "RGBA",
+      "encoding": "PNG 32-bit RGBA",
+      "rgbaColorQuantization": 256,
+      "contentBoundsAlpha16": [
+        8,
+        54,
+        248,
+        252
+      ],
+      "alphaRange": [
+        0,
+        254
+      ],
+      "sRGB": true,
+      "sha256": "d08f5063b596cee2cdc8b1523d327d568b598631f0b99a0c44f06a91c6290dd6"
+    },
+    {
+      "id": "nav_cafe",
+      "file": "assets/ui/nav_cafe.png",
+      "dimensions": [
+        96,
+        96
+      ],
+      "bytes": 11510,
+      "referenceBudget": 15000,
+      "withinReferenceBudget": true,
+      "mode": "RGBA",
+      "encoding": "PNG 32-bit RGBA",
+      "rgbaColorQuantization": null,
+      "contentBoundsAlpha16": [
+        7,
+        11,
+        88,
+        85
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "97122e8d6dc2bc0c52c099d0a0482853a6bff0029e2a173e88f01343ac9fd341"
+    },
+    {
+      "id": "nav_merge",
+      "file": "assets/ui/nav_merge.png",
+      "dimensions": [
+        96,
+        96
+      ],
+      "bytes": 9899,
+      "referenceBudget": 15000,
+      "withinReferenceBudget": true,
+      "mode": "RGBA",
+      "encoding": "PNG 32-bit RGBA",
+      "rgbaColorQuantization": null,
+      "contentBoundsAlpha16": [
+        7,
+        23,
+        88,
+        73
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "100156b5330f9de73445e4bdbe8bf4ed139d2235d2699764fe3c3105766bf960"
+    },
+    {
+      "id": "nav_tasks",
+      "file": "assets/ui/nav_tasks.png",
+      "dimensions": [
+        96,
+        96
+      ],
+      "bytes": 10934,
+      "referenceBudget": 15000,
+      "withinReferenceBudget": true,
+      "mode": "RGBA",
+      "encoding": "PNG 32-bit RGBA",
+      "rgbaColorQuantization": null,
+      "contentBoundsAlpha16": [
+        16,
+        7,
+        80,
+        88
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "e294bf32892b94ae29f0629b941260e02b4267df4b80694f3d472349111b5f40"
+    },
+    {
+      "id": "icon_lock",
+      "file": "assets/ui/icon_lock.png",
+      "dimensions": [
+        96,
+        96
+      ],
+      "bytes": 9214,
+      "referenceBudget": 15000,
+      "withinReferenceBudget": true,
+      "mode": "RGBA",
+      "encoding": "PNG 32-bit RGBA",
+      "rgbaColorQuantization": null,
+      "contentBoundsAlpha16": [
+        19,
+        7,
+        77,
+        88
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "d3060bd985208f68076be732d010f4535c95fb862d09eaf1de27303f3bb9a8d5"
+    },
+    {
+      "id": "icon_check",
+      "file": "assets/ui/icon_check.png",
+      "dimensions": [
+        96,
+        96
+      ],
+      "bytes": 14652,
+      "referenceBudget": 15000,
+      "withinReferenceBudget": true,
+      "mode": "RGBA",
+      "encoding": "PNG 32-bit RGBA",
+      "rgbaColorQuantization": null,
+      "contentBoundsAlpha16": [
+        7,
+        7,
+        88,
+        88
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "39b56da94c11095dc815930c8e497d021540361d01315a492e7f3cdf46d0aab0"
+    },
+    {
+      "id": "icon_clock",
+      "file": "assets/ui/icon_clock.png",
+      "dimensions": [
+        96,
+        96
+      ],
+      "bytes": 12975,
+      "referenceBudget": 15000,
+      "withinReferenceBudget": true,
+      "mode": "RGBA",
+      "encoding": "PNG 32-bit RGBA",
+      "rgbaColorQuantization": null,
+      "contentBoundsAlpha16": [
+        7,
+        8,
+        88,
+        88
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "d9b3d448d5897c580cb4b80745eb526d2c71c4d1916d676be8f980b3bb1aea77"
+    },
+    {
+      "id": "icon_hand",
+      "file": "assets/ui/icon_hand.png",
+      "dimensions": [
+        128,
+        128
+      ],
+      "bytes": 13857,
+      "referenceBudget": 15000,
+      "withinReferenceBudget": true,
+      "mode": "RGBA",
+      "encoding": "PNG 32-bit RGBA",
+      "rgbaColorQuantization": null,
+      "contentBoundsAlpha16": [
+        22,
+        8,
+        106,
+        126
+      ],
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "5a3f2c6ed3853c9f46f9cbee9ef493989f47e0b7f16b7f6bdaec63541773d123"
+    },
+    {
+      "id": "bg_wood_tile",
+      "file": "assets/scene/bg_wood_tile.webp",
+      "dimensions": [
+        512,
+        512
+      ],
+      "bytes": 3522,
+      "referenceBudget": 60000,
+      "withinReferenceBudget": true,
+      "mode": "RGB",
+      "encoding": "WebP quality80 method6",
+      "rgbaColorQuantization": null,
+      "contentBoundsAlpha16": null,
+      "alphaRange": null,
+      "sRGB": true,
+      "sha256": "d8013d76f965590bbb69b5014791e6979348c4db726d5d3d7cff5dfee3bafb02"
+    }
+  ],
+  "woodTileQA": {
+    "leftRightMeanAbsRGB": 1.212890625,
+    "topBottomMeanAbsRGB": 19.546875,
+    "averageRGB": [
+      227.47,
+      188.77,
+      132.87
+    ],
+    "horizontalBoardSeamRows": [
+      0,
+      63,
+      127,
+      191,
+      255,
+      320,
+      384,
+      448
+    ]
+  },
+  "handAnchorPx": {
+    "expected": [
+      51.2,
+      7.68
+    ],
+    "measuredAlpha32": [
+      50.5,
+      8
+    ]
+  },
+  "pending": [],
+  "batchBytes": 248353,
+  "allImageBytes": 3107701
+}
