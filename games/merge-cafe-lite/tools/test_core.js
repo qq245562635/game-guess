@@ -72,9 +72,9 @@ test('生成器只出 1–2 级，权重 80/20（2 万次抽样 ±2%）', () => 
   assert(Math.abs(n1 / N - 0.8) < 0.02 && Math.abs(n2 / N - 0.2) < 0.02, `${n1 / N} / ${n2 / N}`);
 });
 test('点一次生成器：耗 1 体力 + 1 储量，产物落在离生成器最近的空格（底行一侧）', () => {
-  const s = fresh(); clearBoard(s);
+  const s = fresh(); clearBoard(s); const e0 = s.energy;
   const r = Core.tapGen(CN, s, GC, T0, seq(0.1));
-  assert(r.ok); assert.strictEqual(s.energy, 99); assert.strictEqual(s.gens[GC].charges, 9);
+  assert(r.ok); assert.strictEqual(s.energy, e0 - 1); assert.strictEqual(s.gens[GC].charges, 9);
   assert.deepStrictEqual(r.item, { k: 'item', chain: 'coffee', lvl: 1 });
   assert.deepStrictEqual(Core.rc(CN, r.to), [3, 1]);
   const r2 = Core.tapGen(CN, s, GB, T0, seq(0.1));
@@ -118,6 +118,16 @@ test('体力上限 100，1 点/2 分钟；离线按时间戳结算、余数保�
   assert.strictEqual(Core.energyNextIn(CN, s, T0 + 5 * 120000 + 30000), 90000, '余下 30 秒不丢');
   Core.settleEnergy(CN, s, T0 + 24 * 3600 * 1000);
   assert.strictEqual(s.energy, 100);
+});
+test('开局体力可超上限：超出部分先用掉，期间不自然恢复；降到上限以下那一刻开始计 2 分钟', () => {
+  const s = fresh();
+  assert.strictEqual(s.energy, CN.eco.energy.start); assert(CN.eco.energy.start > CN.eco.energy.max, '开局体力应大于上限');
+  s.energy = 101;
+  Core.tapGen(CN, s, GC, T0 + 1000, seq(0.1));                 // 101 → 100
+  assert.strictEqual(Core.settleEnergy(CN, s, T0 + 3600e3), 0, '还在上限上，不恢复');
+  Core.tapGen(CN, s, GC, T0 + 3600e3, seq(0.1));               // 100 → 99，计时从此刻开始
+  assert.strictEqual(Core.energyNextIn(CN, s, T0 + 3600e3), 120000);
+  assert.strictEqual(Core.settleEnergy(CN, s, T0 + 3600e3 + 120000), 1); assert.strictEqual(s.energy, 100);
 });
 test('系统时间往回调：不倒扣体力', () => {
   const s = fresh(); s.energy = 50; s.energyTs = T0;
