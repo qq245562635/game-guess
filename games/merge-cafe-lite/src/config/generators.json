@@ -1,0 +1,27 @@
+{
+  "_doc": "生成器（策划案 §4 / Issue M1）：只出 1–2 级，权重 80/20；储量 10 次，点一次耗 1 体力 + 1 储量，储量耗尽冷却 60 秒。at=[行,列] 初始位置，生成器可在棋盘上拖动换位。",
+  "generators": [
+    {
+      "id": "gen_coffee_machine",
+      "name": "gen.coffee",
+      "chain": "coffee",
+      "charges": 10,
+      "cooldownSec": 60,
+      "energyCost": 1,
+      "levelWeights": { "1": 80, "2": 20 },
+      "at": [6, 1],
+      "color": "#2f7f8a"
+    },
+    {
+      "id": "gen_ingredient_box",
+      "name": "gen.bake",
+      "chain": "bake",
+      "charges": 10,
+      "cooldownSec": 60,
+      "energyCost": 1,
+      "levelWeights": { "1": 80, "2": 20 },
+      "at": [6, 5],
+      "color": "#e8735a"
+    }
+  ]
+}

@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+</head>
+<body>
+<title>Merge Café Lite</title>
+<style>
+:root {
+  --teal: #2f9ea3; --teal-d: #1d6f73; --cream: #fff6e6; --coral: #ee7a5f; --coral-d: #c4553c;
+  --wood: #b07a4c; --wood-d: #7c5130; --ink: #3a2416; --gold: #f2b632;
+  --font: "Avenir Next", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+body { background: #bfe9ee; color: var(--ink); font-family: var(--font); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+#cv { position: fixed; inset: 0; display: block; touch-action: none; }
+
+/* 顶栏：体力 / 金币 / 星星 */
+#hud { position: fixed; left: 0; right: 0; top: 0; display: flex; gap: 8px; justify-content: center; padding: max(8px, env(safe-area-inset-top)) 10px 8px; pointer-events: none; z-index: 2; }
+.pill { pointer-events: auto; display: flex; align-items: center; gap: 6px; min-width: 76px; height: 36px; padding: 0 12px 0 4px;
+  background: var(--cream); border: 3px solid var(--wood-d); border-radius: 20px; box-shadow: 0 3px 0 rgba(60,35,20,.35);
+  font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; box-sizing: border-box; }
+.pill svg { width: 28px; height: 28px; flex: none; }
+.pill .sub { font-size: 11px; font-weight: 700; opacity: .7; margin-left: 2px; }
+#energy-timer:empty { display: none; }
+
+/* 底部信息栏 */
+#info { position: fixed; z-index: 2; display: flex; align-items: center; justify-content: center; text-align: center;
+  background: rgba(255,246,230,.94); border: 3px solid var(--wood-d); border-radius: 14px; box-shadow: 0 3px 0 rgba(60,35,20,.3);
+  font-weight: 700; font-size: 15px; padding: 0 12px; box-sizing: border-box; pointer-events: none; }
+#info b { font-weight: 900; margin-right: 6px; }
+
+/* 提示 */
+#toast { position: fixed; z-index: 5; left: 50%; transform: translate(-50%, -8px); opacity: 0; transition: opacity .2s, transform .2s;
+  max-width: min(86vw, 420px); padding: 10px 16px; border-radius: 14px; background: rgba(58,36,22,.92); color: #fff8ec;
+  font-weight: 700; font-size: 15px; text-align: center; pointer-events: none; }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* 弹窗 */
+#modal { position: fixed; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center; background: rgba(20,40,45,.45); }
+#modal.show { display: flex; }
+.card { width: min(86vw, 340px); background: var(--cream); border: 4px solid var(--wood-d); border-radius: 22px; box-shadow: 0 6px 0 rgba(60,35,20,.4);
+  padding: 18px 18px 16px; text-align: center; animation: pop .22s cubic-bezier(.2,1.6,.4,1); }
+@keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.card h2 { margin: 0 0 8px; font-size: 22px; font-weight: 900; color: var(--teal-d); }
+.card p { margin: 0 0 16px; font-size: 16px; font-weight: 600; line-height: 1.35; }
+.btns { display: flex; gap: 10px; justify-content: center; }
+.btn { appearance: none; border: 3px solid var(--coral-d); background: var(--coral); color: #fff; font: 900 17px var(--font);
+  border-radius: 16px; padding: 10px 18px; min-width: 110px; box-shadow: 0 4px 0 var(--coral-d); cursor: pointer; }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--coral-d); }
+.btn.alt { background: #fff; color: var(--ink); border-color: var(--wood-d); box-shadow: 0 4px 0 var(--wood-d); }
+
+#err { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; font-weight: 800; padding: 24px; text-align: center; }
+
+/* 调试面板（?debug=1） */
+#dbg { position: fixed; right: 6px; bottom: 6px; z-index: 20; display: none; flex-wrap: wrap; gap: 4px; max-width: 220px; justify-content: flex-end;
+  font: 600 11px ui-monospace, monospace; }
+#dbg.show { display: flex; }
+#dbg button { font: inherit; padding: 4px 6px; border-radius: 6px; border: 1px solid #333; background: #fff; }
+#dbg span { width: 100%; text-align: right; background: rgba(0,0,0,.6); color: #fff; padding: 2px 6px; border-radius: 4px; }
+</style>
+<canvas id="cv"></canvas>
+<div id="hud">
+  <div class="pill" id="pill-energy" title="Energy">
+    <svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#2f9ea3"/><path d="M15.5 4.5 8 15.5h5l-1.5 8 7.5-11h-5z" fill="#fff8ec"/></svg>
+    <span id="energy">100</span><span class="sub" id="energy-timer"></span>
+  </div>
+  <div class="pill" title="Coins">
+    <svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="#f2b632" stroke="#b97a12" stroke-width="2.4"/><circle cx="14" cy="14" r="6" fill="#ffe28a"/></svg>
+    <span id="coins">0</span>
+  </div>
+  <div class="pill" title="Stars">
+    <svg viewBox="0 0 28 28"><path d="M14 2.5l3.4 7.2 7.9.9-5.9 5.4 1.6 7.8L14 19.9l-7 3.9 1.6-7.8-5.9-5.4 7.9-.9z" fill="#ee7a5f" stroke="#c4553c" stroke-width="2" stroke-linejoin="round"/></svg>
+    <span id="stars">0</span>
+  </div>
+</div>
+<div id="info"></div>
+<div id="toast"></div>
+<div id="modal"><div class="card"><h2 id="m-title"></h2><p id="m-body"></p><div class="btns" id="m-btns"></div></div></div>
+<div id="err"></div>
+<div id="dbg"><span id="dbg-fps"></span></div>
+<script>
+const CONFIG = {"chains":{"_doc":"合成链。id 与正式图标命名一致（item_<chain>_<两位等级>），到图后放 assets/items/<id>.png 并在 art.json 登记即可替换占位。name 是本地化键。color 只给占位图用。","maxLevel":8,"chains":{"coffee":{"name":"chain.coffee","shape":"round","items":[{"id":"item_coffee_01","name":"item.coffee.1","color":"#7a4a2a"},{"id":"item_coffee_02","name":"item.coffee.2","color":"#5a3016"},{"id":"item_coffee_03","name":"item.coffee.3","color":"#3b2214"},{"id":"item_coffee_04","name":"item.coffee.4","color":"#a0623a"},{"id":"item_coffee_05","name":"item.coffee.5","color":"#c98f5e"},{"id":"item_coffee_06","name":"item.coffee.6","color":"#e0b07e"},{"id":"item_coffee_07","name":"item.coffee.7","color":"#2f7f8a"},{"id":"item_coffee_08","name":"item.coffee.8","color":"#e8735a"}]},"bake":{"name":"chain.bake","shape":"square","items":[{"id":"item_bake_01","name":"item.bake.1","color":"#d9cbb0"},{"id":"item_bake_02","name":"item.bake.2","color":"#e8c98f"},{"id":"item_bake_03","name":"item.bake.3","color":"#d9a75e"},{"id":"item_bake_04","name":"item.bake.4","color":"#c2803e"},{"id":"item_bake_05","name":"item.bake.5","color":"#7fae5a"},{"id":"item_bake_06","name":"item.bake.6","color":"#e06a7a"},{"id":"item_bake_07","name":"item.bake.7","color":"#f2d6e0"},{"id":"item_bake_08","name":"item.bake.8","color":"#f0b43c"}]}}},"board":{"_doc":"棋盘。mask：x=初始解锁，.=锁定（策划案：7×7=49 格，初始 28 格）。unlockPrice：每格开格金币，0=初始已开。requireAdjacent：只能开与已开格相邻的格。startItems / generators 的 at=[行,列]。","cols":7,"rows":7,"mask":[".......",".......",".......","xxxxxxx","xxxxxxx","xxxxxxx","xxxxxxx"],"unlockPrice":[[120,110,100,100,100,110,120],[70,60,50,50,50,60,70],[30,25,20,20,20,25,30],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]],"requireAdjacent":true,"startItems":[{"chain":"coffee","level":1,"at":[4,2]},{"chain":"coffee","level":1,"at":[4,4]}]},"generators":{"_doc":"生成器（策划案 §4 / Issue M1）：只出 1–2 级，权重 80/20；储量 10 次，点一次耗 1 体力 + 1 储量，储量耗尽冷却 60 秒。at=[行,列] 初始位置，生成器可在棋盘上拖动换位。","generators":[{"id":"gen_coffee_machine","name":"gen.coffee","chain":"coffee","charges":10,"cooldownSec":60,"energyCost":1,"levelWeights":{"1":80,"2":20},"at":[6,1],"color":"#2f7f8a"},{"id":"gen_ingredient_box","name":"gen.bake","chain":"bake","charges":10,"cooldownSec":60,"energyCost":1,"levelWeights":{"1":80,"2":20},"at":[6,5],"color":"#e8735a"}]},"economy":{"_doc":"经济。体力：上限 100，自然恢复 1 点/120 秒，按存档时间戳离线结算（策划案 §5）。gems 为手游版钻石预留字段，本期不开放。startCoins 策划案未给，暂定值待 lijie 确认。","energy":{"max":100,"start":100,"regenSec":120},"startCoins":100,"startStars":0,"startGems":0},"art":{"_doc":"已到位的正式图。把文件放进 assets/items/<id>.png 后，把 id 加进 items 数组；没登记的一律用占位色块，不发多余请求。","items":[]}};
+const LOCALE = {"game.title":"Merge Café","chain.coffee":"Coffee","chain.bake":"Bakery","item.coffee.1":"Coffee Beans","item.coffee.2":"Roasted Beans","item.coffee.3":"Espresso","item.coffee.4":"Americano","item.coffee.5":"Latte","item.coffee.6":"Latte Art","item.coffee.7":"Cold Brew","item.coffee.8":"Sea Salt Coffee","item.bake.1":"Flour","item.bake.2":"Dough","item.bake.3":"Raw Loaf","item.bake.4":"Toast","item.bake.5":"Sandwich","item.bake.6":"Fruit Tart","item.bake.7":"Cream Cake","item.bake.8":"Party Cake","gen.coffee":"Coffee Machine","gen.bake":"Pantry Crate","ui.level":"Lv {n}","ui.maxLevel":"Max level","ui.charges":"{n}/{max} left","ui.recharging":"Recharging {t}","ui.tapToMake":"Tap to make {chain} items","ui.mergeHint":"Drag two matching items together to merge","ui.full":"Board is full! Merge items to free up space.","ui.noEnergyTitle":"Out of Energy","ui.noEnergyBody":"+1 energy every 2 minutes. Next in {t}.","ui.energyFull":"Energy full","ui.ok":"OK","ui.cancel":"Cancel","ui.unlockTitle":"Expand the Board","ui.unlockBody":"Open this tile for {n} coins?","ui.unlock":"Unlock","ui.notAdjacent":"Unlock a tile next to the board first.","ui.noCoins":"Not enough coins.","ui.cantMerge":"These don't match.","ui.maxMerge":"Already at max level!","ui.locked":"Locked","ui.welcomeBack":"Welcome back! +{n} energy","ui.webglError":"Your browser doesn't support WebGL."};
+/* 本地化：所有玩家可见文案只从 locale/en.json 取（构建时内联为 LOCALE）。
+   DOM 里写 data-l10n="key"，启动时 L.apply() 统一填。 */
+const L = (() => {
+  const table = LOCALE;
+  const missing = new Set();
+  function t(key, vars) {
+    let s = table[key];
+    if (s === undefined) { if (!missing.has(key)) { missing.add(key); console.warn('[l10n] missing', key); } s = key; }
+    if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
+    return s;
+  }
+  function apply(root) { for (const el of (root || document).querySelectorAll('[data-l10n]')) el.textContent = t(el.dataset.l10n); }
+  return { t, apply, missing };
+})();
+
+/* Merge Café Lite · 核心逻辑（纯数据，不碰 DOM / WebGL）
+   浏览器里挂到全局 Core，Node 里 require 后做单测（tools/test_core.js）。
+   所有数值来自 CONFIG（src/config/*.json），这里不写死任何数。
+   时间一律用毫秒时间戳 now 传入，方便离线结算和测试。 */
+const Core = (() => {
+  const SAVE_VERSION = 1;
+
+  /* ---------- 配置索引 ---------- */
+  function index(cfg) {
+    const b = cfg.board, gens = {};
+    for (const g of cfg.generators.generators) gens[g.id] = g;
+    return {
+      cfg, cols: b.cols, rows: b.rows, n: b.cols * b.rows,
+      maxLevel: cfg.chains.maxLevel, chains: cfg.chains.chains, gens,
+      eco: cfg.economy,
+    };
+  }
+  const idx = (C, r, c) => r * C.cols + c;
+  const rc = (C, i) => [Math.floor(i / C.cols), i % C.cols];
+
+  /* ---------- 新档 ---------- */
+  function newState(C, now) {
+    const b = C.cfg.board;
+    const s = {
+      v: SAVE_VERSION,
+      coins: C.eco.startCoins, stars: C.eco.startStars, gems: C.eco.startGems,
+      energy: C.eco.energy.start, energyTs: now,
+      cells: new Array(C.n).fill(null),
+      unlocked: new Array(C.n).fill(false),
+      stats: { merges: 0, spawns: 0, firstMergeAt: 0, createdAt: now },
+    };
+    for (let r = 0; r < C.rows; r++) for (let c = 0; c < C.cols; c++) s.unlocked[idx(C, r, c)] = b.mask[r][c] === 'x';
+    for (const g of C.cfg.generators.generators)
+      s.cells[idx(C, g.at[0], g.at[1])] = { k: 'gen', id: g.id, charges: g.charges, cdEnd: 0 };
+    for (const it of b.startItems)
+      s.cells[idx(C, it.at[0], it.at[1])] = { k: 'item', chain: it.chain, lvl: it.level };
+    return s;
+  }
+
+  /* ---------- 体力：按时间戳结算，返回本次恢复了多少 ---------- */
+  function settleEnergy(C, s, now) {
+    const E = C.eco.energy, ms = E.regenSec * 1000;
+    if (s.energy >= E.max) { s.energyTs = now; return 0; }
+    if (now < s.energyTs) { s.energyTs = now; return 0; } // 系统时间被往回调：不倒扣，从现在重新计
+    const gain = Math.floor((now - s.energyTs) / ms);
+    if (gain <= 0) return 0;
+    const before = s.energy;
+    s.energy = Math.min(E.max, s.energy + gain);
+    s.energyTs = s.energy >= E.max ? now : s.energyTs + gain * ms;
+    return s.energy - before;
+  }
+  /* 距下一点体力的毫秒数；满了返回 0 */
+  function energyNextIn(C, s, now) {
+    if (s.energy >= C.eco.energy.max) return 0;
+    const ms = C.eco.energy.regenSec * 1000;
+    return Math.max(0, ms - (now - s.energyTs));
+  }
+  function spendEnergy(C, s, n, now) {
+    settleEnergy(C, s, now);
+    const wasFull = s.energy >= C.eco.energy.max;
+    s.energy -= n;
+    if (wasFull) s.energyTs = now; // 从满格开始掉时，恢复计时从这一刻起算
+  }
+
+  /* ---------- 生成器 ---------- */
+  function settleGen(C, g, now) {
+    if (g.charges <= 0 && g.cdEnd && now >= g.cdEnd) { g.charges = C.gens[g.id].charges; g.cdEnd = 0; }
+  }
+  function settleAll(C, s, now) {
+    const gained = settleEnergy(C, s, now);
+    for (const c of s.cells) if (c && c.k === 'gen') settleGen(C, c, now);
+    return gained;
+  }
+  function rollLevel(weights, rng) {
+    const ent = Object.entries(weights).map(([l, w]) => [+l, w]);
+    let tot = 0; for (const [, w] of ent) tot += w;
+    let x = rng() * tot;
+    for (const [l, w] of ent) { if ((x -= w) < 0) return l; }
+    return ent[ent.length - 1][0];
+  }
+  /* 离 from 最近的空的已解锁格（曼哈顿距离，同距离按行列序），没有返回 -1 */
+  function nearestEmpty(C, s, from) {
+    const [fr, fc] = rc(C, from);
+    let best = -1, bd = 1e9;
+    for (let i = 0; i < C.n; i++) {
+      if (!s.unlocked[i] || s.cells[i]) continue;
+      const [r, c] = rc(C, i), d = Math.abs(r - fr) + Math.abs(c - fc);
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+  function emptyCount(C, s) { let n = 0; for (let i = 0; i < C.n; i++) if (s.unlocked[i] && !s.cells[i]) n++; return n; }
+
+  /* 点生成器。返回 {ok:true, to, item} 或 {ok:false, reason:'cooldown'|'full'|'energy', ...}
+     检查顺序：冷却 → 满格 → 体力，失败时什么都不扣。 */
+  function tapGen(C, s, at, now, rng) {
+    const g = s.cells[at];
+    if (!g || g.k !== 'gen') return { ok: false, reason: 'notGen' };
+    settleAll(C, s, now);
+    const def = C.gens[g.id];
+    if (g.charges <= 0) return { ok: false, reason: 'cooldown', left: g.cdEnd - now };
+    const to = nearestEmpty(C, s, at);
+    if (to < 0) return { ok: false, reason: 'full' };
+    if (s.energy < def.energyCost) return { ok: false, reason: 'energy', next: energyNextIn(C, s, now) };
+    spendEnergy(C, s, def.energyCost, now);
+    g.charges--;
+    if (g.charges <= 0) g.cdEnd = now + def.cooldownSec * 1000;
+    const item = { k: 'item', chain: def.chain, lvl: rollLevel(def.levelWeights, rng || Math.random) };
+    s.cells[to] = item;
+    s.stats.spawns++;
+    return { ok: true, to, item };
+  }
+  /* 生成器立即回满（给 M3 的激励广告点位用） */
+  function refillGen(C, s, at) {
+    const g = s.cells[at]; if (!g || g.k !== 'gen') return false;
+    g.charges = C.gens[g.id].charges; g.cdEnd = 0; return true;
+  }
+
+  /* ---------- 拖放 ----------
+     返回 type：
+       'merge'  同链同级（未满级）→ 目标格升 1 级，源格清空
+       'move'   拖到空的已解锁格
+       'bounce' 其他一切（异级 / 异链 / 满级 / 锁格 / 生成器压物品…），棋盘不变
+       'none'   放回原格 */
+  function canMerge(C, a, b) {
+    return !!(a && b && a.k === 'item' && b.k === 'item' && a.chain === b.chain && a.lvl === b.lvl && a.lvl < C.maxLevel);
+  }
+  function drop(C, s, from, to, now) {
+    const a = s.cells[from];
+    if (!a) return { type: 'none' };
+    if (to < 0 || to >= C.n || to === from) return { type: 'none' };
+    if (!s.unlocked[to]) return { type: 'bounce', reason: 'locked' };
+    const b = s.cells[to];
+    if (!b) { s.cells[to] = a; s.cells[from] = null; return { type: 'move' }; }
+    if (canMerge(C, a, b)) {
+      s.cells[to] = { k: 'item', chain: a.chain, lvl: a.lvl + 1 };
+      s.cells[from] = null;
+      s.stats.merges++;
+      if (!s.stats.firstMergeAt) s.stats.firstMergeAt = now || 0;
+      return { type: 'merge', lvl: a.lvl + 1 };
+    }
+    let reason = 'mismatch';
+    if (a.k === 'item' && b.k === 'item' && a.chain === b.chain && a.lvl === b.lvl) reason = 'max';
+    return { type: 'bounce', reason };
+  }
+
+  /* ---------- 开格 ---------- */
+  function unlockPrice(C, i) { const [r, c] = rc(C, i); return C.cfg.board.unlockPrice[r][c]; }
+  function canUnlockHere(C, s, i) {
+    if (!C.cfg.board.requireAdjacent) return true;
+    const [r, c] = rc(C, i);
+    for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const rr = r + dr, cc = c + dc;
+      if (rr >= 0 && rr < C.rows && cc >= 0 && cc < C.cols && s.unlocked[idx(C, rr, cc)]) return true;
+    }
+    return false;
+  }
+  function unlock(C, s, i) {
+    if (s.unlocked[i]) return { ok: false, reason: 'already' };
+    if (!canUnlockHere(C, s, i)) return { ok: false, reason: 'notAdjacent' };
+    const p = unlockPrice(C, i);
+    if (s.coins < p) return { ok: false, reason: 'coins', price: p };
+    s.coins -= p; s.unlocked[i] = true;
+    return { ok: true, price: p };
+  }
+
+  /* ---------- 存档 ---------- */
+  function serialize(s, now) { return JSON.stringify(Object.assign({}, s, { savedAt: now })); }
+  /* 读档：版本不认识或数据坏了返回 null（调用方新开档）。以后加字段在这里做迁移。 */
+  function deserialize(C, text) {
+    let o; try { o = JSON.parse(text); } catch (e) { return null; }
+    if (!o || typeof o !== 'object' || typeof o.v !== 'number') return null;
+    if (o.v > SAVE_VERSION) return null;
+    if (!Array.isArray(o.cells) || o.cells.length !== C.n || !Array.isArray(o.unlocked) || o.unlocked.length !== C.n) return null;
+    // v1 是第一版，暂无迁移
+    o.v = SAVE_VERSION;
+    o.stats = Object.assign({ merges: 0, spawns: 0, firstMergeAt: 0, createdAt: o.savedAt || 0 }, o.stats || {});
+    if (typeof o.gems !== 'number') o.gems = 0;
+    // 配置改动后可能有已删除的生成器 / 越界等级：清理掉而不是崩
+    for (let i = 0; i < C.n; i++) {
+      const c = o.cells[i]; if (!c) continue;
+      if (c.k === 'gen' && !C.gens[c.id]) o.cells[i] = null;
+      else if (c.k === 'item' && (!C.chains[c.chain] || c.lvl < 1 || c.lvl > C.maxLevel)) o.cells[i] = null;
+    }
+    delete o.savedAt;
+    return o;
+  }
+
+  function itemDef(C, it) { return C.chains[it.chain].items[it.lvl - 1]; }
+
+  return {
+    SAVE_VERSION, index, idx, rc, newState, settleEnergy, energyNextIn, settleAll, settleGen,
+    tapGen, refillGen, rollLevel, nearestEmpty, emptyCount, canMerge, drop,
+    unlockPrice, canUnlockHere, unlock, serialize, deserialize, itemDef,
+  };
+})();
+if (typeof module !== 'undefined') module.exports = Core;
+
+/* Merge Café Lite · 原生 WebGL 渲染器（WebGL1，无任何引擎/框架）
+   一个着色器、一个顶点缓冲，按"四边形批次"画：
+     kind 0  圆角矩形（可描边、可柔边——柔边大时就是软阴影）
+     kind 1  圆环 / 圆弧（生成器冷却进度）
+     kind 2  贴图（图集里的图标、文字）
+   坐标单位是 CSS 像素，左上角原点。贴图用离屏 2D 画布画好后塞进一张图集纹理（只是位图生成手段，显示全在 WebGL）。 */
+const GL = (() => {
+  const VS = `attribute vec2 a_pos;attribute vec2 a_loc;attribute vec4 a_p;attribute vec4 a_q;attribute vec4 a_c;
+uniform vec2 u_res;varying vec2 v_loc;varying vec4 v_p;varying vec4 v_q;varying vec4 v_c;
+void main(){vec2 p=a_pos/u_res*2.0-1.0;gl_Position=vec4(p.x,-p.y,0.0,1.0);v_loc=a_loc;v_p=a_p;v_q=a_q;v_c=a_c;}`;
+  const FS = `precision mediump float;
+uniform sampler2D u_tex;varying vec2 v_loc;varying vec4 v_p;varying vec4 v_q;varying vec4 v_c;
+void main(){
+  float k=v_q.x;
+  if(k>1.5){gl_FragColor=texture2D(u_tex,v_loc)*v_c;return;}
+  float d;
+  if(k<0.5){
+    vec2 q=abs(v_loc)-v_p.xy+v_p.z;
+    d=length(max(q,0.0))+min(max(q.x,q.y),0.0)-v_p.z;
+    if(v_p.w>0.0)d=abs(d+v_p.w)-v_p.w;
+  }else{
+    float r=length(v_loc);d=abs(r-v_p.x)-v_p.y;
+    if(v_q.z<6.28){
+      float a=atan(v_loc.x,-v_loc.y);if(a<0.0)a+=6.28318;
+      if(a-v_q.y>v_q.z||a<v_q.y)d=max(d,1.0);
+    }
+  }
+  float al=clamp(0.5-d/v_q.w,0.0,1.0);
+  gl_FragColor=v_c*al;
+}`;
+  const FL = 16, MAXQ = 6000;
+  let gl = null, canvas, prog, vbo, uRes, tex;
+  const buf = new Float32Array(MAXQ * 4 * FL);
+  let nq = 0, W = 1, H = 1, dpr = 1, draws = 0;
+  const atlas = { size: 2048, x: 0, y: 0, row: 0, map: new Map(), scratch: null };
+  let M = [1, 0, 0, 1, 0, 0]; const stack = [];
+  const api = { alpha: 1 };
+
+  function shader(type, src) {
+    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  }
+  api.init = function (cv) {
+    canvas = cv;
+    gl = cv.getContext('webgl', { alpha: false, antialias: false, premultipliedAlpha: true, depth: false, stencil: false, powerPreference: 'high-performance' })
+      || cv.getContext('experimental-webgl');
+    if (!gl) return false;
+    prog = gl.createProgram();
+    gl.attachShader(prog, shader(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+    gl.useProgram(prog);
+    uRes = gl.getUniformLocation(prog, 'u_res');
+    gl.uniform1i(gl.getUniformLocation(prog, 'u_tex'), 0);
+    vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbo); gl.bufferData(gl.ARRAY_BUFFER, buf.byteLength, gl.DYNAMIC_DRAW);
+    const ix = new Uint16Array(MAXQ * 6);
+    for (let i = 0; i < MAXQ; i++) { const v = i * 4, o = i * 6; ix[o] = v; ix[o + 1] = v + 1; ix[o + 2] = v + 2; ix[o + 3] = v; ix[o + 4] = v + 2; ix[o + 5] = v + 3; }
+    const ibo = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, ix, gl.STATIC_DRAW);
+    const at = (n, sz, off) => { const l = gl.getAttribLocation(prog, n); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, sz, gl.FLOAT, false, FL * 4, off * 4); };
+    at('a_pos', 2, 0); at('a_loc', 2, 2); at('a_p', 4, 4); at('a_q', 4, 8); at('a_c', 4, 12);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    tex = gl.createTexture(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, atlas.size, atlas.size, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    atlas.scratch = document.createElement('canvas');
+    return true;
+  };
+  api.resize = function (w, h, d) {
+    W = w; H = h; dpr = d;
+    canvas.width = Math.round(w * d); canvas.height = Math.round(h * d);
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  };
+  api.dpr = () => dpr;
+  api.begin = function (rgb) {
+    gl.clearColor(rgb[0], rgb[1], rgb[2], 1); gl.clear(gl.COLOR_BUFFER_BIT);
+    nq = 0; draws = 0; api.alpha = 1; M = [1, 0, 0, 1, 0, 0]; stack.length = 0;
+  };
+  function flush() {
+    if (!nq) return;
+    gl.uniform2f(uRes, W, H); gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, buf.subarray(0, nq * 4 * FL));
+    gl.drawElements(gl.TRIANGLES, nq * 6, gl.UNSIGNED_SHORT, 0);
+    nq = 0; draws++;
+  }
+  api.end = () => { flush(); return draws; };
+
+  /* 变换（弹跳缩放用） */
+  api.save = () => stack.push(M.slice());
+  api.restore = () => { M = stack.pop() || [1, 0, 0, 1, 0, 0]; };
+  api.scaleAt = function (cx, cy, s) {
+    const [a, b, c, d, e, f] = M;
+    M = [a * s, b * s, c * s, d * s, a * cx * (1 - s) + c * cy * (1 - s) + e, b * cx * (1 - s) + d * cy * (1 - s) + f];
+  };
+
+  /* 轴对齐四边形：中心 (cx,cy)，半尺寸 hw/hh；loc 四角 = (l0,t0)…(l1,t1) */
+  function quad(cx, cy, hw, hh, l0, t0, l1, t1, p0, p1, p2, p3, kind, q1, q2, soft, col) {
+    if (nq >= MAXQ) flush();
+    const a = col[3] * api.alpha; if (a <= 0.003) return;
+    const r = col[0] * a, g = col[1] * a, b = col[2] * a;
+    const [m0, m1, m2, m3, m4, m5] = M;
+    let o = nq * 4 * FL;
+    for (let k = 0; k < 4; k++) {
+      const sx = (k === 0 || k === 3) ? -1 : 1, sy = k < 2 ? -1 : 1;
+      const x = cx + hw * sx, y = cy + hh * sy;
+      buf[o] = m0 * x + m2 * y + m4; buf[o + 1] = m1 * x + m3 * y + m5;
+      buf[o + 2] = sx < 0 ? l0 : l1; buf[o + 3] = sy < 0 ? t0 : t1;
+      buf[o + 4] = p0; buf[o + 5] = p1; buf[o + 6] = p2; buf[o + 7] = p3;
+      buf[o + 8] = kind; buf[o + 9] = q1; buf[o + 10] = q2; buf[o + 11] = soft;
+      buf[o + 12] = r; buf[o + 13] = g; buf[o + 14] = b; buf[o + 15] = a;
+      o += FL;
+    }
+    nq++;
+  }
+  const aa = () => 1 / dpr;
+  /* 圆角矩形（左上角 x,y）。o.stroke 描边宽，o.soft 柔边宽（做阴影） */
+  api.rect = function (x, y, w, h, r, col, o) {
+    const st = o && o.stroke ? o.stroke / 2 : 0, soft = (o && o.soft) || aa();
+    const hw = w / 2, hh = h / 2, m = soft + 1;
+    r = Math.min(r || 0, hw, hh);
+    quad(x + hw, y + hh, hw + m, hh + m, -(hw + m), -(hh + m), hw + m, hh + m, hw, hh, r, st, 0, 0, 0, soft, col);
+  };
+  api.circle = (cx, cy, rad, col, soft) => api.rect(cx - rad, cy - rad, rad * 2, rad * 2, rad, col, soft ? { soft } : null);
+  /* 圆环 / 圆弧：从 12 点方向顺时针 sweep 弧度（≥2π 为整圈） */
+  api.arc = function (cx, cy, rad, w, sweep, col) {
+    const hw = w / 2, m = rad + hw + 2;
+    quad(cx, cy, m, m, -m, -m, m, m, rad, hw, 0, 0, 1, 0, Math.min(sweep, 6.3), aa(), col);
+  };
+
+  /* ---------- 图集 ---------- */
+  function alloc(key, w, h, draw) {
+    let e = atlas.map.get(key); if (e) return e;
+    w = Math.max(1, Math.ceil(w)); h = Math.max(1, Math.ceil(h));
+    if (atlas.x + w + 2 > atlas.size) { atlas.x = 0; atlas.y += atlas.row + 2; atlas.row = 0; }
+    if (atlas.y + h + 2 > atlas.size) { // 满了：清空重来（图标会按需重画）
+      flush(); atlas.x = atlas.y = atlas.row = 0; atlas.map.clear();
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, atlas.size, atlas.size, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    }
+    const c = atlas.scratch; c.width = w; c.height = h;
+    const ctx = c.getContext('2d'); ctx.clearRect(0, 0, w, h); ctx.save(); draw(ctx, w, h); ctx.restore();
+    flush();
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, atlas.x, atlas.y, gl.RGBA, gl.UNSIGNED_BYTE, c);
+    e = { u0: atlas.x / atlas.size, v0: atlas.y / atlas.size, u1: (atlas.x + w) / atlas.size, v1: (atlas.y + h) / atlas.size, w, h };
+    atlas.map.set(key, e); atlas.x += w + 2; atlas.row = Math.max(atlas.row, h);
+    return e;
+  }
+  /* 图标精灵：在 w×h CSS 像素（按 dpr 放大）的格子里画；size 取 4 的倍数避免缩放时反复生成 */
+  api.sprite = function (key, w, h, draw) {
+    const pw = Math.max(4, Math.round(w * dpr / 4) * 4), ph = Math.max(4, Math.round(h * dpr / 4) * 4);
+    return alloc(key + '|' + pw + 'x' + ph, pw, ph, (ctx) => draw(ctx, pw, ph));
+  };
+  api.forget = function (prefix) { for (const k of [...atlas.map.keys()]) if (k.startsWith(prefix)) atlas.map.delete(k); };
+  api.img = function (e, cx, cy, w, h, col) {
+    quad(cx, cy, w / 2, h / 2, e.u0, e.v0, e.u1, e.v1, 0, 0, 0, 0, 2, 0, 0, 1, col || WHITE);
+  };
+  const WHITE = [1, 1, 1, 1];
+  /* 单行文字（整串做一张贴图，适合不常变的短标签）。y 为中线 */
+  api.text = function (str, x, y, o) {
+    const size = o.size, wt = o.weight || 700, font = o.font || 'system-ui, sans-serif';
+    const fill = o.fill || '#fff';
+    const key = 'T|' + wt + '|' + size + '|' + fill + '|' + (o.outline ? o.outline : '') + '|' + str;
+    const sc = atlas.scratch.getContext('2d');
+    sc.font = `${wt} ${size * dpr}px ${font}`;
+    const ow = o.outline ? Math.ceil(size * 0.18 * dpr) : 0;
+    const tw = sc.measureText(str).width + ow * 2 + 4, th = size * 1.4 * dpr + ow * 2;
+    const e = alloc(key + '|' + dpr, tw, th, (g, w, h) => {
+      g.font = `${wt} ${size * dpr}px ${font}`; g.textBaseline = 'middle'; g.textAlign = 'center';
+      if (ow) { g.lineJoin = 'round'; g.lineWidth = ow * 2; g.strokeStyle = o.outline; g.strokeText(str, w / 2, h / 2); }
+      g.fillStyle = fill; g.fillText(str, w / 2, h / 2);
+    });
+    const w = e.w / dpr, h = e.h / dpr;
+    const cx = o.align === 'left' ? x + w / 2 : o.align === 'right' ? x - w / 2 : x;
+    api.img(e, cx, y, w, h, WHITE);
+    return w;
+  };
+  return api;
+})();
+
+/* Merge Café Lite · 图标（占位 + 正式图替换）
+   占位规则（Codex 终稿前）：咖啡链圆形、烘焙链圆角方形；每级换底色 + 中间大号等级数字 + 顶部等级小点 + 底部名字，
+   48px 下靠"形状 + 数字 + 点数"三重区分，不只靠颜色。
+   正式图：assets/items/<id>.png 到位并登记进 config/art.json 后，自动换掉同 id 的占位，逻辑代码不用改。 */
+const Art = (() => {
+  const loaded = {};           // id -> HTMLImageElement（正式图）
+  let onReady = null;
+  function load(list, base, cb) {
+    onReady = cb;
+    for (const id of list) {
+      const im = new Image();
+      im.onload = () => { loaded[id] = im; GL.forget('I|' + id + '|'); if (onReady) onReady(id); };
+      im.onerror = () => console.warn('[art] missing', id);
+      im.src = base + id + '.png';
+    }
+  }
+  const FONT = '"Avenir Next", "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
+
+  function rr(g, x, y, w, h, r) {
+    g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  }
+  function shade(hex, k) { // k<0 变暗，k>0 变亮
+    const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    const f = (c) => Math.round(k < 0 ? c * (1 + k) : c + (255 - c) * k);
+    return `rgb(${f(r)},${f(g)},${f(b)})`;
+  }
+  function lum(hex) { const n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; }
+  function fitText(g, str, maxW, px, wt) {
+    let p = px; g.font = `${wt} ${p}px ${FONT}`;
+    while (p > 6 && g.measureText(str).width > maxW) { p -= 1; g.font = `${wt} ${p}px ${FONT}`; }
+    return p;
+  }
+
+  /* 物品图标精灵 */
+  function item(C, it, size) {
+    const def = Core.itemDef(C, it), shape = C.chains[it.chain].shape;
+    return GL.sprite('I|' + def.id + '|', size, size, (g, w) => {
+      if (loaded[def.id]) { g.drawImage(loaded[def.id], 0, 0, w, w); return; }
+      const pad = w * 0.08, s = w - pad * 2, col = def.color;
+      // 主体
+      g.fillStyle = col; g.strokeStyle = shade(col, -0.45); g.lineWidth = w * 0.045;
+      if (shape === 'round') { g.beginPath(); g.arc(w / 2, w / 2, s / 2, 0, Math.PI * 2); }
+      else rr(g, pad, pad, s, s, s * 0.22);
+      g.fill(); g.stroke();
+      // 高光
+      g.save(); g.clip();
+      g.fillStyle = 'rgba(255,255,255,0.22)'; g.beginPath(); g.ellipse(w * 0.38, w * 0.3, s * 0.36, s * 0.2, -0.5, 0, Math.PI * 2); g.fill();
+      g.restore();
+      // 等级小点（每级多一个可见元素）
+      const dots = it.lvl, dr = w * 0.035, gap = dr * 2.6, y = pad + w * 0.13;
+      for (let k = 0; k < dots; k++) {
+        const x = w / 2 + (k - (dots - 1) / 2) * gap;
+        g.fillStyle = lum(col) > 0.6 ? 'rgba(60,35,20,0.8)' : 'rgba(255,248,235,0.95)';
+        g.beginPath(); g.arc(x, y, dr, 0, Math.PI * 2); g.fill();
+      }
+      // 等级数字
+      const light = lum(col) > 0.6;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = `900 ${w * 0.42}px ${FONT}`;
+      g.lineJoin = 'round'; g.lineWidth = w * 0.06; g.strokeStyle = light ? 'rgba(255,255,255,0.9)' : 'rgba(30,18,10,0.55)';
+      g.strokeText(String(it.lvl), w / 2, w * 0.5); g.fillStyle = light ? '#3a2416' : '#fff8ec'; g.fillText(String(it.lvl), w / 2, w * 0.5);
+      // 名字
+      const name = L.t(def.name);
+      const px = fitText(g, name, s * 0.92, w * 0.13, 800);
+      g.lineWidth = px * 0.3; g.strokeStyle = light ? 'rgba(255,255,255,0.9)' : 'rgba(30,18,10,0.6)';
+      g.strokeText(name, w / 2, w * 0.78); g.fillStyle = light ? '#3a2416' : '#fff8ec'; g.fillText(name, w / 2, w * 0.78);
+    });
+  }
+
+  /* 生成器图标精灵 */
+  function gen(C, id, size) {
+    const def = C.gens[id];
+    return GL.sprite('I|' + id + '|', size, size, (g, w) => {
+      if (loaded[id]) { g.drawImage(loaded[id], 0, 0, w, w); return; }
+      const pad = w * 0.06, s = w - pad * 2, col = def.color;
+      rr(g, pad, pad, s, s, s * 0.2);
+      const grd = g.createLinearGradient(0, pad, 0, pad + s); grd.addColorStop(0, shade(col, 0.15)); grd.addColorStop(1, shade(col, -0.2));
+      g.fillStyle = grd; g.fill(); g.lineWidth = w * 0.05; g.strokeStyle = shade(col, -0.5); g.stroke();
+      g.fillStyle = '#fff8ec'; g.strokeStyle = shade(col, -0.5); g.lineWidth = w * 0.03;
+      if (def.chain === 'coffee') { // 咖啡机：机身 + 出水口 + 杯子
+        rr(g, w * 0.26, w * 0.18, w * 0.48, w * 0.2, w * 0.05); g.fill(); g.stroke();
+        g.fillRect(w * 0.45, w * 0.38, w * 0.1, w * 0.08);
+        g.beginPath(); g.moveTo(w * 0.36, w * 0.5); g.lineTo(w * 0.64, w * 0.5); g.lineTo(w * 0.6, w * 0.68); g.lineTo(w * 0.4, w * 0.68); g.closePath(); g.fill(); g.stroke();
+      } else { // 食材箱：木箱横条
+        for (let k = 0; k < 3; k++) { rr(g, w * 0.22, w * (0.2 + k * 0.16), w * 0.56, w * 0.12, w * 0.03); g.fill(); g.stroke(); }
+      }
+      const name = L.t(def.name);
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      const px = fitText(g, name, s * 0.92, w * 0.13, 800);
+      g.lineJoin = 'round'; g.lineWidth = px * 0.3; g.strokeStyle = 'rgba(30,18,10,0.6)';
+      g.strokeText(name, w / 2, w * 0.82); g.fillStyle = '#fff8ec'; g.fillText(name, w / 2, w * 0.82);
+    });
+  }
+
+  /* 锁 */
+  function lock(size) {
+    return GL.sprite('lock', size, size, (g, w) => {
+      g.fillStyle = 'rgba(255,255,255,0.9)'; g.strokeStyle = 'rgba(255,255,255,0.9)';
+      g.lineWidth = w * 0.11; g.beginPath(); g.arc(w / 2, w * 0.42, w * 0.2, Math.PI, 0); g.stroke();
+      rr(g, w * 0.24, w * 0.42, w * 0.52, w * 0.4, w * 0.08); g.fill();
+    });
+  }
+  function coin(size) {
+    return GL.sprite('coin', size, size, (g, w) => {
+      g.fillStyle = '#f2b632'; g.beginPath(); g.arc(w / 2, w / 2, w * 0.46, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#b97a12'; g.lineWidth = w * 0.08; g.stroke();
+      g.fillStyle = '#ffe28a'; g.beginPath(); g.arc(w / 2, w / 2, w * 0.22, 0, Math.PI * 2); g.fill();
+    });
+  }
+  return { load, item, gen, lock, coin, FONT };
+})();
+
+/* Merge Café Lite · 主循环：布局、绘制、输入、HUD、存档
+   棋盘和物品全部用 GL（原生 WebGL）画；顶栏 / 信息栏 / 弹窗 / 提示是 DOM。 */
+(() => {
+  'use strict';
+  const C = Core.index(CONFIG);
+  const $ = (id) => document.getElementById(id);
+  const SAVE_KEY = 'merge-cafe-lite.save';
+  const params = new URLSearchParams(location.search);
+  const DEBUG = params.has('debug');
+
+  /* ---------- 时间（调试面板可快进，用来测离线恢复 / 冷却） ---------- */
+  let timeOffset = 0;
+  try { timeOffset = +sessionStorage.getItem('mcl.timeOffset') || 0; } catch (e) {}
+  const now = () => Date.now() + timeOffset;
+
+  /* ---------- 存档 ---------- */
+  function store() { try { return window.localStorage; } catch (e) { return null; } }
+  if (params.has('reset')) { // 清档后把 ?reset 从地址栏去掉，免得 QA 刷新时又清一次
+    const ls = store(); if (ls) ls.removeItem(SAVE_KEY);
+    params.delete('reset'); const q = params.toString();
+    try { history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + location.hash); } catch (e) {}
+  }
+  let S = null, welcomeGain = 0;
+  { const ls = store(), raw = ls && ls.getItem(SAVE_KEY); if (raw) S = Core.deserialize(C, raw); }
+  if (S) welcomeGain = Core.settleAll(C, S, now());
+  else S = Core.newState(C, now());
+  let dirty = true, saveTimer = 0;
+  function save() { const ls = store(); if (!ls) return; try { ls.setItem(SAVE_KEY, Core.serialize(S, now())); dirty = false; } catch (e) {} }
+  function markDirty() { dirty = true; }
+  addEventListener('pagehide', save);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); else { const g = Core.settleAll(C, S, now()); if (g > 0) toast(L.t('ui.welcomeBack', { n: g })); } });
+
+  /* ---------- WebGL ---------- */
+  const cv = $('cv');
+  L.apply();
+  if (!GL.init(cv)) { $('err').textContent = L.t('ui.webglError'); $('err').style.display = 'flex'; return; }
+  document.title = L.t('game.title');
+
+  /* ---------- 布局 ---------- */
+  const LY = { W: 0, H: 0, bx: 0, by: 0, bs: 0, cs: 0, pad: 0, portrait: true, orders: null };
+  function layout() {
+    const W = innerWidth, H = innerHeight, dpr = Math.min(2, devicePixelRatio || 1)  // 手机 3x 屏也按 2x 画，省填充率;
+    GL.resize(W, H, dpr);
+    LY.W = W; LY.H = H;
+    const hudH = 56 + (parseFloat(getComputedStyle($('hud')).paddingTop) - 8 || 0), infoH = 44, gap = 10;
+    LY.portrait = H >= W * 1.05;
+    if (LY.portrait) {
+      // 竖屏：顶栏 → 订单栏（M2 用，这里先留位）→ 棋盘 → 信息栏
+      const ordersH = Math.round(Math.min(150, Math.max(86, H * 0.16)));
+      const top = hudH + ordersH + gap, bottom = H - infoH - gap * 2;
+      const bs = Math.floor(Math.min(W - 16, bottom - top, 560));
+      LY.bs = bs; LY.bx = Math.round((W - bs) / 2); LY.by = Math.round(top + (bottom - top - bs) / 2);
+      LY.orders = { x: LY.bx, y: hudH + 4, w: bs, h: ordersH };
+      placeInfo(LY.bx, LY.by + bs + gap, bs, infoH);
+    } else {
+      // 横屏：左侧棋盘，右侧订单栏（M2）
+      // 信息栏放到右栏底部，棋盘吃满整个高度（矮屏横屏手机棋盘更大）
+      const side = Math.round(Math.min(340, W * 0.32));
+      const top = hudH + 4, bottom = H - gap;
+      const bs = Math.floor(Math.min(bottom - top, W - side - gap * 3, 640));
+      const left = Math.max(gap, Math.round((W - side - gap * 2 - bs) / 2));
+      LY.bs = bs; LY.bx = left; LY.by = Math.round(top + (bottom - top - bs) / 2);
+      const ox = left + bs + gap * 2, ow = Math.min(side, W - ox - gap);
+      LY.orders = { x: ox, y: LY.by, w: ow, h: bs - infoH - gap };
+      placeInfo(ox, LY.by + bs - infoH, ow, infoH);
+    }
+    LY.pad = Math.round(LY.bs * 0.025);
+    LY.cs = (LY.bs - LY.pad * 2) / C.cols;
+  }
+  function placeInfo(x, y, w, h) { const s = $('info').style; s.left = x + 'px'; s.top = y + 'px'; s.width = w + 'px'; s.height = h + 'px'; }
+  addEventListener('resize', layout);
+  layout();
+
+  const cellXY = (i) => { const [r, c] = Core.rc(C, i); return [LY.bx + LY.pad + (c + 0.5) * LY.cs, LY.by + LY.pad + (r + 0.5) * LY.cs]; };
+  function cellAt(x, y) {
+    const c = Math.floor((x - LY.bx - LY.pad) / LY.cs), r = Math.floor((y - LY.by - LY.pad) / LY.cs);
+    return r >= 0 && r < C.rows && c >= 0 && c < C.cols ? Core.idx(C, r, c) : -1;
+  }
+
+  /* ---------- 动画 ---------- */
+  const pops = new Map();      // cell -> 开始时间（合成 / 生成弹跳）
+  const flies = [];            // {cell, item, x0,y0, t0, dur}：飞向格子（生成、回弹），落地前格子里不画
+  const parts = [];            // 粒子
+  const shakes = new Map();    // cell -> 开始时间（拒绝时抖一下）
+  const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+  function popScale(t) { // 0→1 秒：1.35 → 1 的弹性回落
+    if (t >= 0.42) return 1;
+    const k = t / 0.42; return 1 + 0.35 * Math.exp(-5 * k) * Math.cos(k * Math.PI * 2.2) * (1 - k);
+  }
+  function burst(x, y, color, n) {
+    const rgb = hex(color);
+    for (let k = 0; k < n; k++) {
+      const a = Math.random() * Math.PI * 2, v = LY.cs * (1.6 + Math.random() * 2.2);
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - LY.cs, life: 0, max: 0.45 + Math.random() * 0.3, r: LY.cs * (0.05 + Math.random() * 0.06),
+        col: Math.random() < 0.4 ? [1, 0.95, 0.8, 1] : rgb });
+    }
+  }
+  function hex(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255, 1]; }
+  const flyingTo = (i) => flies.some((f) => f.cell === i);
+
+  /* ---------- 提示 / 弹窗 / 信息栏 ---------- */
+  let toastT = 0;
+  function toast(msg) {
+    const el = $('toast'); el.textContent = msg; el.style.top = Math.max(60, LY.by - 52) + 'px';
+    el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1800);
+  }
+  let modalOnClose = null;
+  function modal(title, body, buttons) {
+    $('m-title').textContent = title; $('m-body').textContent = body;
+    const box = $('m-btns'); box.textContent = '';
+    for (const b of buttons) {
+      const el = document.createElement('button'); el.className = 'btn' + (b.alt ? ' alt' : ''); el.textContent = b.label;
+      el.onclick = () => { closeModal(); if (b.on) b.on(); }; box.appendChild(el);
+    }
+    $('modal').classList.add('show');
+  }
+  function closeModal() { $('modal').classList.remove('show'); if (modalOnClose) { const f = modalOnClose; modalOnClose = null; f(); } }
+  const modalOpen = () => $('modal').classList.contains('show');
+  let energyModalTick = null;
+
+  let sel = -1;
+  function infoText() {
+    const c = sel >= 0 ? S.cells[sel] : null;
+    if (c && c.k === 'item') {
+      const def = Core.itemDef(C, c);
+      return ['<b>' + esc(L.t(def.name)) + '</b>', esc(L.t('ui.level', { n: c.lvl })) + (c.lvl >= C.maxLevel ? ' · ' + esc(L.t('ui.maxLevel')) : '')];
+    }
+    if (c && c.k === 'gen') {
+      const def = C.gens[c.id];
+      const st = c.charges > 0 ? L.t('ui.charges', { n: c.charges, max: def.charges }) : L.t('ui.recharging', { t: mmss(c.cdEnd - now()) });
+      return ['<b>' + esc(L.t(def.name)) + '</b>', esc(st)];
+    }
+    return ['', esc(L.t('ui.mergeHint'))];
+  }
+  let lastInfo = '';
+  function updateInfo() { const [a, b] = infoText(), h = a + b; if (h !== lastInfo) { $('info').innerHTML = h; lastInfo = h; } }
+  const esc = (s) => String(s).replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+  const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+
+  let hudCache = '';
+  function updateHud() {
+    Core.settleEnergy(C, S, now());
+    const E = C.eco.energy, nx = Core.energyNextIn(C, S, now());
+    const key = S.energy + '|' + S.coins + '|' + S.stars + '|' + (S.energy < E.max ? mmss(nx) : '');
+    if (key === hudCache) return; hudCache = key;
+    $('energy').textContent = S.energy; $('coins').textContent = S.coins; $('stars').textContent = S.stars;
+    $('energy-timer').textContent = S.energy < E.max ? mmss(nx) : '';
+    if (energyModalTick) energyModalTick();
+  }
+
+  /* ---------- 玩法动作 ---------- */
+  function tapGenerator(i) {
+    const r = Core.tapGen(C, S, i, now());
+    pops.set(i, performance.now() / 1000);
+    if (r.ok) {
+      const [x0, y0] = cellXY(i);
+      flies.push({ cell: r.to, item: r.item, x0, y0, t0: performance.now() / 1000, dur: 0.28, spawn: true });
+      markDirty();
+      return;
+    }
+    shakes.set(i, performance.now() / 1000);
+    if (r.reason === 'full') toast(L.t('ui.full'));
+    else if (r.reason === 'cooldown') toast(L.t('ui.recharging', { t: mmss(r.left) }));
+    else if (r.reason === 'energy') showNoEnergy();
+  }
+  function showNoEnergy() {
+    const body = () => L.t('ui.noEnergyBody', { t: mmss(Core.energyNextIn(C, S, now())) });
+    modal(L.t('ui.noEnergyTitle'), body(), [{ label: L.t('ui.ok') }]);
+    // TODO(M3)：这里加"看广告 +30 体力"按钮（激励视频点位 1）
+    energyModalTick = () => { $('m-body').textContent = body(); };
+    modalOnClose = () => { energyModalTick = null; };
+  }
+  function tapLocked(i) {
+    if (!Core.canUnlockHere(C, S, i)) { shakes.set(i, performance.now() / 1000); toast(L.t('ui.notAdjacent')); return; }
+    const p = Core.unlockPrice(C, i);
+    modal(L.t('ui.unlockTitle'), L.t('ui.unlockBody', { n: p }), [
+      { label: L.t('ui.cancel'), alt: true },
+      { label: L.t('ui.unlock'), on: () => {
+        const r = Core.unlock(C, S, i);
+        if (r.ok) { pops.set(i, performance.now() / 1000); const [x, y] = cellXY(i); burst(x, y, '#f2b632', 14); markDirty(); }
+        else if (r.reason === 'coins') { shakes.set(i, performance.now() / 1000); toast(L.t('ui.noCoins')); }
+      } },
+    ]);
+  }
+
+  /* ---------- 输入：按下→（移动超过阈值）拖拽 / 抬起=点击 ---------- */
+  let down = null, drag = null;
+  const DRAG_PX = 8;
+  cv.addEventListener('pointerdown', (e) => {
+    if (modalOpen() || down) return;
+    cv.setPointerCapture(e.pointerId);
+    const i = cellAt(e.clientX, e.clientY);
+    down = { id: e.pointerId, x: e.clientX, y: e.clientY, cell: i };
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!down || e.pointerId !== down.id) return;
+    if (!drag) {
+      const i = down.cell;
+      if (i < 0 || !S.unlocked[i] || !S.cells[i] || flyingTo(i)) return;
+      if (Math.hypot(e.clientX - down.x, e.clientY - down.y) < DRAG_PX) return;
+      const [cx, cy] = cellXY(i);
+      drag = { from: i, ox: down.x - cx, oy: down.y - cy, x: e.clientX, y: e.clientY };
+      sel = i;
+    }
+    drag.x = e.clientX; drag.y = e.clientY;
+  });
+  function release(e, cancelled) {
+    if (!down || e.pointerId !== down.id) return;
+    const d = down; down = null;
+    if (drag) {
+      const g = drag; drag = null;
+      const px = g.x - g.ox, py = g.y - g.oy;
+      const to = cancelled ? -1 : cellAt(px, py);
+      const moving = S.cells[g.from];
+      for (let k = flies.length - 1; k >= 0; k--) if (flies[k].cell === to) flies.splice(k, 1); // 目标格还在飞：直接落地
+      const r = Core.drop(C, S, g.from, to, now());
+      if (r.type === 'merge') {
+        pops.set(to, performance.now() / 1000); sel = to;
+        const [x, y] = cellXY(to); burst(x, y, Core.itemDef(C, S.cells[to]).color, 18);
+        markDirty();
+      } else if (r.type === 'move') { sel = to; markDirty(); }
+      else {
+        // 回弹：从松手位置飞回原格，不吞物品
+        flies.push({ cell: g.from, item: moving, x0: px, y0: py, t0: performance.now() / 1000, dur: 0.22 });
+        if (r.type === 'bounce') {
+          shakes.set(to, performance.now() / 1000);
+          if (r.reason === 'max') toast(L.t('ui.maxMerge'));
+        }
+      }
+      return;
+    }
+    if (cancelled) return;
+    // 点击
+    const i = cellAt(e.clientX, e.clientY);
+    if (i < 0 || i !== d.cell) return;
+    if (!S.unlocked[i]) { tapLocked(i); return; }
+    const c = S.cells[i];
+    if (c && c.k === 'gen') { sel = i; tapGenerator(i); return; }
+    sel = c ? i : -1;
+    if (c) pops.set(i, performance.now() / 1000 - 0.18);
+  }
+  cv.addEventListener('pointerup', (e) => release(e, false));
+  cv.addEventListener('pointercancel', (e) => release(e, true));
+  $('modal').addEventListener('pointerdown', (e) => { if (e.target === $('modal')) closeModal(); });
+
+  /* ---------- 绘制 ---------- */
+  const COL = {
+    sky: [0.75, 0.91, 0.93], sea: hex('#53bcc0'), seaD: hex('#3aa3a8'), sand: hex('#f1dcb2'), sandD: hex('#e6c995'),
+    frame: hex('#b07a4c'), frameD: hex('#7c5130'), cellA: hex('#fbf1df'), cellB: hex('#f3e2c3'),
+    lockA: hex('#9cc3c1'), lockB: hex('#8ab5b3'), lockNext: hex('#b9dcd6'), shadow: [0.2, 0.12, 0.05, 0.28],
+    good: [0.36, 0.8, 0.48, 0.55], sel: hex('#ee7a5f'), white: [1, 1, 1, 1], badge: hex('#ee7a5f'), ink: hex('#3a2416'),
+    cd: [0.15, 0.15, 0.2, 0.45], cdRing: hex('#ffd36b'),
+  };
+  function drawBackground(W, H) {
+    const horizon = LY.portrait ? LY.orders.y + LY.orders.h * 0.55 : H * 0.34;
+    GL.rect(0, horizon - 2, W, H, 0, COL.sea);
+    for (let k = 0; k < 4; k++) GL.rect(-20, horizon + 8 + k * 14 + Math.sin(T * 0.8 + k) * 3, W + 40, 4, 2, [1, 1, 1, 0.18]);
+    const sandY = horizon + Math.max(70, H * 0.1);
+    GL.rect(-40, sandY, W + 80, H, 60, COL.sand);
+    GL.rect(-40, sandY + 18, W + 80, H, 60, COL.sandD, { soft: 40 });
+  }
+  function drawOrdersSlot() {
+    // M2 订单栏的位置：先画一块空木板占位（无文字），保证布局到 M2 不用再改
+    const o = LY.orders; if (!o || o.w < 40) return;
+    GL.rect(o.x + 2, o.y + 6, o.w, o.h, 18, COL.shadow, { soft: 8 });
+    GL.rect(o.x, o.y, o.w, o.h, 18, [1, 0.97, 0.9, 0.55]);
+    GL.rect(o.x, o.y, o.w, o.h, 18, [0.49, 0.32, 0.19, 0.35], { stroke: 3 });
+  }
+  function drawItem(it, x, y, size, alpha) {
+    if (alpha !== undefined) GL.alpha = alpha;
+    GL.rect(x - size * 0.36, y + size * 0.3, size * 0.72, size * 0.16, size * 0.08, COL.shadow, { soft: size * 0.06 });
+    const sp = it.k === 'gen' ? Art.gen(C, it.id, size) : Art.item(C, it, size);
+    GL.img(sp, x, y, size, size);
+    GL.alpha = 1;
+  }
+  function drawGenOverlay(g, x, y, size) {
+    const def = C.gens[g.id];
+    if (g.charges <= 0) {
+      const left = Math.max(0, g.cdEnd - now()), frac = 1 - left / (def.cooldownSec * 1000);
+      GL.rect(x - size / 2 + size * 0.06, y - size / 2 + size * 0.06, size * 0.88, size * 0.88, size * 0.18, COL.cd);
+      GL.arc(x, y, size * 0.3, size * 0.07, Math.PI * 2, [1, 1, 1, 0.35]);
+      GL.arc(x, y, size * 0.3, size * 0.07, frac * Math.PI * 2, COL.cdRing);
+      GL.text(mmss(left), x, y, { size: Math.max(10, size * 0.2), weight: 900, outline: 'rgba(30,18,10,0.8)' });
+    } else {
+      const br = Math.max(9, size * 0.17), bx = x + size * 0.5 - br * 0.8, by = y - size * 0.5 + br * 0.8;
+      GL.circle(bx, by, br, COL.badge); GL.rect(bx - br, by - br, br * 2, br * 2, br, COL.white, { stroke: Math.max(1.5, br * 0.18) });
+      GL.text(String(g.charges), bx, by + 0.5, { size: Math.round(br * 1.05), weight: 900 });
+    }
+  }
+  let T = 0;
+  function render() {
+    const W = LY.W, H = LY.H, t = performance.now() / 1000, cs = LY.cs, isz = cs * 0.9;
+    GL.begin(COL.sky);
+    drawBackground(W, H);
+    drawOrdersSlot();
+    // 木框
+    GL.rect(LY.bx + 3, LY.by + 8, LY.bs, LY.bs, 22, COL.shadow, { soft: 12 });
+    GL.rect(LY.bx, LY.by, LY.bs, LY.bs, 22, COL.frame);
+    GL.rect(LY.bx, LY.by, LY.bs, LY.bs, 22, COL.frameD, { stroke: 4 });
+    // 格子
+    const target = drag ? cellAt(drag.x - drag.ox, drag.y - drag.oy) : -1;
+    for (let i = 0; i < C.n; i++) {
+      const [r, c] = Core.rc(C, i), [x, y] = cellXY(i), h = cs / 2 - 1.5;
+      const sh = shakes.get(i), sx = sh !== undefined && t - sh < 0.3 ? Math.sin((t - sh) * 60) * cs * 0.05 * (1 - (t - sh) / 0.3) : 0;
+      if (S.unlocked[i]) {
+        GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, (r + c) % 2 ? COL.cellB : COL.cellA);
+      } else {
+        const next = Core.canUnlockHere(C, S, i);
+        GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, next ? COL.lockNext : (r + c) % 2 ? COL.lockB : COL.lockA);
+        GL.img(Art.lock(cs * 0.36), x + sx, y - cs * (next ? 0.1 : 0), cs * 0.36, cs * 0.36, [1, 1, 1, next ? 0.95 : 0.6]);
+        if (next) {
+          const p = String(Core.unlockPrice(C, i)), fs = Math.max(9, cs * 0.2);
+          GL.img(Art.coin(fs), x - cs * 0.12 + sx, y + cs * 0.24, fs, fs);
+          GL.text(p, x - cs * 0.02 + sx, y + cs * 0.24, { size: fs, weight: 900, align: 'left', fill: '#2a4b4a' });
+        }
+      }
+      if (i === target && drag && i !== drag.from) {
+        const ok = Core.canMerge(C, S.cells[drag.from], S.cells[i]);
+        if (ok) GL.rect(x - h, y - h, h * 2, h * 2, cs * 0.14, COL.good);
+        GL.rect(x - h, y - h, h * 2, h * 2, cs * 0.14, ok ? hex('#3bb36a') : [0.4, 0.3, 0.2, 0.35], { stroke: 3 });
+      }
+      if (i === sel && !drag) GL.rect(x - h - 1, y - h - 1, h * 2 + 2, h * 2 + 2, cs * 0.16, COL.sel, { stroke: 3 });
+    }
+    // 物品
+    for (let i = 0; i < C.n; i++) {
+      const it = S.cells[i]; if (!it || (drag && drag.from === i) || flyingTo(i)) continue;
+      const [x, y] = cellXY(i);
+      const p = pops.get(i), s = p !== undefined ? popScale(t - p) : 1;
+      if (p !== undefined && t - p > 0.5) pops.delete(i);
+      const sh = shakes.get(i), sx = sh !== undefined && t - sh < 0.3 ? Math.sin((t - sh) * 60) * cs * 0.05 * (1 - (t - sh) / 0.3) : 0;
+      if (sh !== undefined && t - sh > 0.3) shakes.delete(i);
+      GL.save(); GL.scaleAt(x, y, s);
+      drawItem(it, x + sx, y, isz);
+      if (it.k === 'gen') drawGenOverlay(it, x + sx, y, isz);
+      GL.restore();
+    }
+    // 飞行中的（生成 / 回弹）
+    for (let k = flies.length - 1; k >= 0; k--) {
+      const f = flies[k], u = Math.min(1, (t - f.t0) / f.dur), e = easeOut(u), [tx, ty] = cellXY(f.cell);
+      const x = f.x0 + (tx - f.x0) * e, y = f.y0 + (ty - f.y0) * e - (f.spawn ? Math.sin(u * Math.PI) * cs * 0.6 : 0);
+      drawItem(f.item, x, y, isz * (f.spawn ? 0.6 + 0.4 * e : 1));
+      if (u >= 1) { flies.splice(k, 1); pops.set(f.cell, t); }
+    }
+    // 粒子
+    const dt = Math.min(0.05, t - T);
+    for (let k = parts.length - 1; k >= 0; k--) {
+      const p = parts[k]; p.life += dt; if (p.life >= p.max) { parts.splice(k, 1); continue; }
+      p.vy += cs * 9 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      const a = 1 - p.life / p.max; GL.circle(p.x, p.y, p.r * (0.5 + a * 0.5), [p.col[0], p.col[1], p.col[2], a]);
+    }
+    // 拖拽中的物品（最上层，放大一点跟手）
+    if (drag) { const it = S.cells[drag.from]; if (it) drawItem(it, drag.x - drag.ox, drag.y - drag.oy - 4, isz * 1.12); }
+    T = t;
+    return GL.end();
+  }
+
+  /* ---------- 主循环 ---------- */
+  let fpsN = 0, fpsT = performance.now(), fps = 0, lastSettle = 0, renderMs = 0;
+  function frame() {
+    const tn = performance.now();
+    if (tn - lastSettle > 250) { // 冷却到点 / 体力恢复：每 0.25 秒结算一次
+      lastSettle = tn;
+      for (const c of S.cells) if (c && c.k === 'gen') { const had = c.charges; Core.settleGen(C, c, now()); if (had !== c.charges) markDirty(); }
+      updateHud(); updateInfo();
+      if (dirty) { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); }
+    }
+    const r0 = performance.now(); render(); renderMs = renderMs * 0.9 + (performance.now() - r0) * 0.1;
+    fpsN++; if (tn - fpsT >= 1000) { fps = Math.round(fpsN * 1000 / (tn - fpsT)); fpsN = 0; fpsT = tn; if (DEBUG) $('dbg-fps').textContent = fps + ' fps'; }
+    requestAnimationFrame(frame);
+  }
+  if (welcomeGain > 0) setTimeout(() => toast(L.t('ui.welcomeBack', { n: welcomeGain })), 300);
+  updateHud(); updateInfo();
+  requestAnimationFrame(frame);
+
+  /* ---------- 正式图替换 ---------- */
+  Art.load(CONFIG.art.items, 'assets/items/', () => {});
+
+  /* ---------- 调试面板（?debug=1，给 QA 用，文案不进本地化表） ---------- */
+  if (DEBUG) {
+    const box = $('dbg'); box.classList.add('show');
+    const btn = (label, fn) => { const b = document.createElement('button'); b.textContent = label; b.onclick = () => { fn(); markDirty(); save(); hudCache = ''; }; box.appendChild(b); };
+    const skip = (ms) => { timeOffset += ms; try { sessionStorage.setItem('mcl.timeOffset', timeOffset); } catch (e) {} const g = Core.settleAll(C, S, now()); toast('+' + Math.round(ms / 60000) + ' min, energy +' + g); };
+    btn('+1m', () => skip(60e3)); btn('+10m', () => skip(600e3)); btn('+1h', () => skip(3600e3));
+    btn('energy 0', () => { S.energy = 0; S.energyTs = now(); });
+    btn('energy 3', () => { S.energy = 3; S.energyTs = now(); });
+    btn('+100 coins', () => { S.coins += 100; });
+    btn('fill board', () => { for (let i = 0; i < C.n; i++) if (S.unlocked[i] && !S.cells[i]) S.cells[i] = { k: 'item', chain: i % 2 ? 'coffee' : 'bake', lvl: 1 + (i % 7) }; });
+    btn('reset', () => { const ls = store(); if (ls) ls.removeItem(SAVE_KEY); try { sessionStorage.removeItem('mcl.timeOffset'); } catch (e) {} timeOffset = 0; S = Core.newState(C, now()); sel = -1; });
+  }
+  // 自动化测试 / 调试入口
+  window.MCL = { C, get S() { return S; }, cellXY, cellAt, layout: LY, save, get fps() { return fps; }, get renderMs() { return renderMs; }, now };
+})();
+
+</script>
+
+</body>
+</html>
