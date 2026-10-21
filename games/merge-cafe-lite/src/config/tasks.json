@@ -1,0 +1,24 @@
+{
+  "_doc": "任务（底栏 Tasks，首测反馈新增，策划案 / #39 原本没有）。同时显示 active 个，按 list 顺序补位；做完点 Claim 领奖励后补下一个，全部领完显示完成。type：merges 合成次数、orders 完成订单、spawns 点生成器次数、unlocks 开格数、renovate 装修节点数、coins 累计赚金币、level 做出过的最高等级物品。除 level 外都从接到任务那一刻起算。奖励以金币、体力为主，星星只给少量（共 6 颗），避免冲掉装修节奏。",
+  "active": 3,
+  "list": [
+    { "id": "t01", "type": "merges",   "n": 5,   "reward": { "coins": 20 } },
+    { "id": "t02", "type": "orders",   "n": 2,   "reward": { "energy": 10 } },
+    { "id": "t03", "type": "spawns",   "n": 10,  "reward": { "coins": 20 } },
+    { "id": "t04", "type": "level",    "n": 4,   "reward": { "coins": 30 } },
+    { "id": "t05", "type": "unlocks",  "n": 1,   "reward": { "energy": 15 } },
+    { "id": "t06", "type": "orders",   "n": 5,   "reward": { "stars": 1 } },
+    { "id": "t07", "type": "merges",   "n": 20,  "reward": { "coins": 40 } },
+    { "id": "t08", "type": "renovate", "n": 2,   "reward": { "energy": 20 } },
+    { "id": "t09", "type": "level",    "n": 5,   "reward": { "coins": 50 } },
+    { "id": "t10", "type": "coins",    "n": 300, "reward": { "stars": 1 } },
+    { "id": "t11", "type": "orders",   "n": 10,  "reward": { "energy": 20 } },
+    { "id": "t12", "type": "unlocks",  "n": 3,   "reward": { "coins": 60 } },
+    { "id": "t13", "type": "level",    "n": 6,   "reward": { "stars": 1 } },
+    { "id": "t14", "type": "merges",   "n": 50,  "reward": { "energy": 30 } },
+    { "id": "t15", "type": "renovate", "n": 5,   "reward": { "coins": 80 } },
+    { "id": "t16", "type": "orders",   "n": 20,  "reward": { "stars": 2 } },
+    { "id": "t17", "type": "level",    "n": 7,   "reward": { "coins": 100 } },
+    { "id": "t18", "type": "spawns",   "n": 100, "reward": { "stars": 1, "energy": 30 } }
+  ]
+}

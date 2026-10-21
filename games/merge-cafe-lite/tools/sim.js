@@ -1,6 +1,6 @@
 /* 数值模拟：node tools/sim.js [局数]
    用真实的 core.js + src/config 跑一个"还算会玩"的机器人，估算首个会话能拿多少星、能不能解锁第一幕。
-   机器人策略（贪心，偏保守，真人通常更好）：
+   机器人策略（贪心，偏保守，真人通常更好；做完的任务会去领）：
      1. 有能直接交的物品就交（优先交齐快完成的单）
      2. 否则合成：只合"订单链上、等级低于订单所需"的同级对；没有就合任意同级对
      3. 否则点生成器：优先订单缺得多的那条链；满格且无可合时开格（有钱）或卡住
@@ -10,7 +10,7 @@ const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 const Core = require(path.join(root, 'src/core.js'));
 const cfg = {};
-for (const n of ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'art'])
+for (const n of ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art'])
   cfg[n] = JSON.parse(fs.readFileSync(path.join(root, 'src/config', n + '.json'), 'utf8'));
 const C = Core.index(cfg);
 const T = { tap: 1.0, merge: 1.6, deliver: 1.8 };
@@ -32,6 +32,8 @@ function play(seed, sessionSec, adEnergy) {
   const countStars = (before) => { starsTotal += Math.max(0, s.stars - before); };
   while (t < sessionSec) {
     Core.settleAll(C, s, now(), rng);
+    // 0. 有做完的任务就领（Tasks 页）
+    for (let k = s.tasks.active.length - 1; k >= 0; k--) { const b = s.stars; if (Core.claimTask(C, s, k, now()).ok) { t += 2; countStars(b); } }
     // 1. 交单
     let did = false;
     for (let k = 0; k < s.orders.length && !did; k++) {

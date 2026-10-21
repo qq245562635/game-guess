@@ -3,7 +3,7 @@
 const fs = require('fs'), path = require('path'), assert = require('assert');
 const root = path.join(__dirname, '..');
 const Core = require(path.join(root, 'src/core.js'));
-const CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'art'];
+const CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art'];
 const loadCfg = () => { const cfg = {}; for (const n of CONFIG_FILES) cfg[n] = JSON.parse(fs.readFileSync(path.join(root, 'src/config', n + '.json'), 'utf8')); return cfg; };
 const cfg = loadCfg();
 const C = Core.index(cfg);
@@ -80,8 +80,8 @@ test('点一次生成器：耗 1 体力 + 1 储量，产物落在离生成器最
   const r2 = Core.tapGen(CN, s, GB, T0, seq(0.1));
   assert.deepStrictEqual(Core.rc(CN, r2.to), [3, 5]);
 });
-test('储量 10 次耗尽后进 60 秒冷却；59 秒点不出，60 秒自动回满', () => {
-  const s = fresh(); clearBoard(s);
+test('储量 10 次耗尽后进 60 秒冷却（过了前期）；59 秒点不出，60 秒自动回满', () => {
+  const s = fresh(); clearBoard(s); s.stats.ordersDone = 20;
   for (let k = 0; k < 10; k++) assert(Core.tapGen(CN, s, GB, T0, seq(0.5)).ok, 'tap ' + k);
   assert.strictEqual(s.gens[GB].charges, 0); assert.strictEqual(s.gens[GB].cdEnd, T0 + 60000);
   const e = s.energy;
@@ -89,6 +89,13 @@ test('储量 10 次耗尽后进 60 秒冷却；59 秒点不出，60 秒自动回
   assert(!r.ok && r.reason === 'cooldown'); assert.strictEqual(s.energy, e, '冷却中不扣体力');
   assert(Core.tapGen(CN, s, GB, T0 + 60000, seq(0.5)).ok);
   assert.strictEqual(s.gens[GB].charges, 9);
+});
+test('前期冷却缩短：第 8 单前 15 秒、第 20 单前 30 秒、之后 60 秒', () => {
+  for (const [done, sec] of [[0, 15], [7, 15], [8, 30], [19, 30], [20, 60], [50, 60]]) {
+    const s = fresh(); clearBoard(s); s.stats.ordersDone = done;
+    for (let k = 0; k < 10; k++) Core.tapGen(CN, s, GB, T0, seq(0.5));
+    assert.strictEqual(s.gens[GB].cdEnd, T0 + sec * 1000, `done=${done}`); assert.strictEqual(s.gens[GB].cdLen, sec);
+  }
 });
 test('生成器立即回满（M3 广告点位用）', () => {
   const s = fresh(); clearBoard(s);
@@ -292,13 +299,27 @@ test('每完成 3 个订单奖 1 星（与稀有单的星叠加）', () => {
   }
   assert.deepStrictEqual(bonus, [0, 0, 1, 0, 0, 1]); assert.strictEqual(s.stars, 2);
 });
-test('插屏：每完成 5 单标记一次', () => {
-  const s = fresh(); clearBoard(s); const flags = [];
-  for (let k = 1; k <= 10; k++) {
-    s.orders[0] = { uid: 600 + k, tid: 'n_b2', needs: [{ chain: 'bake', lvl: 2, done: false }], coins: 20, stars: 0, rare: false, cust: 0, start: T0, expiresAt: T0 + 1e6 };
-    flags.push(Core.deliver(CN, s, put(s, 0, 0, 'bake', 2), 0, T0, lcg(k)).interstitial);
+test('插屏降频：每 10 单 1 次、第 20 单之前不出、两次至少隔 4 分钟', () => {
+  const run = (gapSec) => {
+    const s = fresh(); clearBoard(s); const flags = []; let t = T0;
+    for (let k = 1; k <= 40; k++) {
+      t += gapSec * 1000;
+      s.orders[0] = { uid: 600 + k, tid: 'n_b2', needs: [{ chain: 'bake', lvl: 2, done: false }], coins: 20, stars: 0, rare: false, cust: 0, start: t, expiresAt: t + 1e6 };
+      const r = Core.deliver(CN, s, put(s, 0, 0, 'bake', 2), 0, t, lcg(k));
+      if (r.interstitial) { flags.push(k); Core.markInterstitial(s, t); }
+    }
+    return flags;
+  };
+  assert.deepStrictEqual(run(60), [20, 30, 40]);           // 每单 1 分钟：10 单 = 10 分钟 > 4 分钟
+  assert.deepStrictEqual(run(20), [20, 40]);               // 每单 20 秒：第 30 单离上次才 200 秒，跳过
+});
+test('翻倍按钮每 3 单出一次', () => {
+  const s = fresh(); clearBoard(s); const offers = [];
+  for (let k = 1; k <= 9; k++) {
+    s.orders[0] = { uid: 700 + k, tid: 'n_b2', needs: [{ chain: 'bake', lvl: 2, done: false }], coins: 20, stars: 0, rare: false, cust: 0, start: T0, expiresAt: T0 + 1e6 };
+    if (Core.deliver(CN, s, put(s, 0, 0, 'bake', 2), 0, T0, lcg(k)).offerDouble) offers.push(k);
   }
-  assert.deepStrictEqual(flags.map((f, i) => f ? i + 1 : 0).filter(Boolean), [5, 10]);
+  assert.deepStrictEqual(offers, [3, 6, 9]);
 });
 test('激励视频发奖：+30 体力（可超上限）、生成器回满、订单金币翻倍；展示 / 点击计数', () => {
   const s = fresh(); s.energy = 0; s.energyTs = T0;
@@ -313,21 +334,58 @@ test('新手引导期间不能装修', () => {
   assert.strictEqual(Core.renovate(C, s).reason, 'tutorial'); assert.strictEqual(s.stars, 5);
 });
 
+/* ---------- 任务 ---------- */
+test('任务表：每条类型合法、目标 > 0、有奖励；星星奖励合计不超过 6', () => {
+  const types = ['merges', 'orders', 'spawns', 'unlocks', 'renovate', 'coins', 'level'];
+  let stars = 0;
+  for (const t of cfg.tasks.list) { assert(types.includes(t.type), t.id); assert(t.n > 0); assert(Object.keys(t.reward).length); stars += t.reward.stars || 0; }
+  assert(stars <= 6, 'stars ' + stars);
+});
+test('任务：新档 3 个；从接到时起算进度；做完才能领；领完按顺序补下一个', () => {
+  const s = fresh(); clearBoard(s);
+  assert.deepStrictEqual(s.tasks.active.map((a) => a.id), ['t01', 't02', 't03']);
+  s.stats.merges = 3; assert.deepStrictEqual([Core.taskProgress(CN, s, 0).cur, Core.taskProgress(CN, s, 0).done], [3, false]);
+  assert.strictEqual(Core.claimTask(CN, s, 0, T0).reason, 'notDone');
+  s.stats.merges = 9; const c0 = s.coins;
+  const r = Core.claimTask(CN, s, 0, T0);
+  assert(r.ok); assert.strictEqual(s.coins, c0 + 20);
+  assert.deepStrictEqual(s.tasks.active.map((a) => a.id), ['t02', 't03', 't04']);
+  assert(Core.tasksClaimable(CN, s) === false);
+});
+test('任务：体力奖励可超上限；星星奖励到账；level 类型看做出过的最高等级', () => {
+  const s = fresh(); clearBoard(s);
+  s.energy = 95; s.stats.ordersDone += 2; const e = Core.claimTask(CN, s, 1, T0); assert(e.ok); assert.strictEqual(s.energy, 105);
+  // 合成出 4 级 → t04 完成
+  const k4 = s.tasks.active.findIndex((a) => a.id === 't04'); assert(k4 >= 0);
+  put(s, 1, 1, 'coffee', 3); put(s, 1, 2, 'coffee', 3); Core.drop(CN, s, 8, 9, T0);
+  assert(Core.taskProgress(CN, s, k4).done);
+});
+test('任务：全部领完后不再补，也不报错', () => {
+  const s = fresh(); s.stats.merges = s.stats.ordersDone = s.stats.spawns = s.stats.unlocks = s.stats.coinsEarned = 1e6; s.deco = 15; s.stats.maxLvl = 8;
+  for (let k = 0; k < 30 && s.tasks.active.length; k++) {
+    // 每次补位后 base 会是新的统计值，再推高一次
+    s.stats.merges += 1e3; s.stats.ordersDone += 1e3; s.stats.spawns += 1e3; s.stats.unlocks += 1e3; s.stats.coinsEarned += 1e6; s.deco += 100;
+    assert(Core.claimTask(CN, s, 0, T0).ok);
+  }
+  assert.strictEqual(s.tasks.active.length, 0); assert.strictEqual(s.tasks.next, cfg.tasks.list.length);
+});
+
 /* ---------- 存档 ---------- */
-test('存档往返：版本字段 v=3、棋盘/生成器/订单/装修/广告统计/体力/金币/星星一致', () => {
+test('存档往返：版本字段 v=4、棋盘/生成器/订单/装修/广告统计/体力/金币/星星一致', () => {
   const s = fresh(); Core.tapGen(CN, s, GC, T0, seq(0.9)); s.deco = 4; Core.adOffer(s, 'energy');
   const txt = Core.serialize(s, T0 + 5);
-  assert.strictEqual(JSON.parse(txt).v, 3);
+  assert.strictEqual(JSON.parse(txt).v, 4);
   const back = Core.deserialize(CN, txt, T0 + 5, lcg(1));
   for (const k of ['coins', 'stars', 'gems', 'energy', 'energyTs', 'tut']) assert.strictEqual(back[k], s[k], k);
-  for (const k of ['cells', 'unlocked', 'gens', 'orders', 'ads']) assert.deepStrictEqual(back[k], s[k], k);
+  for (const k of ['cells', 'unlocked', 'gens', 'orders', 'ads', 'tasks']) assert.deepStrictEqual(back[k], s[k], k);
   assert.strictEqual(back.deco, 4);
 });
-test('v2 存档（M2）迁移到 v3：棋盘 / 订单 / 金币原样保留，补 deco=0 和广告统计', () => {
+test('v2 存档（M2）连续迁移到 v4：棋盘 / 订单 / 金币原样保留，补 deco=0、广告统计、任务', () => {
   const s = fresh(); Core.tapGen(CN, s, GC, T0, seq(0.9)); s.coins = 321; s.stars = 4;
-  const v2 = JSON.parse(Core.serialize(s, T0)); v2.v = 2; delete v2.deco; delete v2.ads;
+  const v2 = JSON.parse(Core.serialize(s, T0)); v2.v = 2; delete v2.deco; delete v2.ads; delete v2.tasks; delete v2.stats.unlocks; delete v2.stats.maxLvl;
   const back = Core.deserialize(CN, JSON.stringify(v2), T0, lcg(1));
-  assert(back); assert.strictEqual(back.v, 3); assert.strictEqual(back.deco, 0); assert.deepStrictEqual(back.ads.clicks, { energy: 0, refill: 0, double: 0 });
+  assert(back); assert.strictEqual(back.v, 4); assert.strictEqual(back.tasks.active.length, 3);
+  assert.strictEqual(back.stats.maxLvl, Math.max(...back.cells.filter(Boolean).map((c) => c.lvl)), 'maxLvl 从棋盘补'); assert.strictEqual(back.deco, 0); assert.deepStrictEqual(back.ads.clicks, { energy: 0, refill: 0, double: 0 });
   assert.deepStrictEqual(back.cells, s.cells); assert.deepStrictEqual(back.orders, s.orders);
   assert.strictEqual(back.coins, 321); assert.strictEqual(back.stars, 4);
 });
@@ -338,7 +396,7 @@ test('坏档 / v1 旧档 / 未来版本：返回 null（新开档，不崩）', 
 });
 test('配置驱动：改 JSON 即改数值（生成器 / 订单）', () => {
   const c2 = loadCfg(); c2.tutorial.enabled = false;
-  c2.generators.generators[0].charges = 3; c2.generators.generators[0].cooldownSec = 5; c2.generators.generators[0].levelWeights = { 2: 1 };
+  c2.generators.cooldownRamp = []; c2.generators.generators[0].charges = 3; c2.generators.generators[0].cooldownSec = 5; c2.generators.generators[0].levelWeights = { 2: 1 };
   c2.orders.slots = 2; c2.orders.templates = [{ id: 'x', needs: [['bake', 1]], coins: [42, 42], timeSec: [10, 10], weight: 1, minDone: 0 }];
   const X = Core.index(c2), s = Core.newState(X, T0, lcg(1));
   assert.strictEqual(s.gens[GC].charges, 3); assert.strictEqual(s.orders.length, 2); assert.strictEqual(s.orders[0].coins, 42);
