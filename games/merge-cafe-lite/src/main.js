@@ -89,13 +89,23 @@
     }
     LY.pad = Math.round(LY.bs * 0.022);
     LY.cs = (LY.bs - LY.pad * 2) / C.cols;
-    if (mode !== 'merge') { // 装修 / 任务：场景铺满，下面是面板 + 底栏
-      const cw = Math.min(W - 16, 620), cx = (W - cw) / 2, panel = $(mode === 'cafe' ? 'deco' : 'tasks');
-      placeNav(cx, H - navH - safeB - 4, cw, navH);
-      placeHud(0, safeT + 8, W);
-      const ds = panel.style; ds.left = cx + 'px'; ds.width = cw + 'px'; ds.bottom = (navH + safeB + 4 + gap * 1.5) + 'px';
-      const ph = panel.getBoundingClientRect().height || 200;
-      LY.cafeScene = { x: 0, y: 0, w: W, h: Math.max(160, H - navH - safeB - ph - gap * 3) };
+    if (mode !== 'merge') { // 装修 / 任务
+      const panel = $(mode === 'cafe' ? 'deco' : 'tasks'), ds = panel.style;
+      ds.maxHeight = '';
+      if (LY.portrait) { // 竖屏：场景在上，面板 + 底栏在下
+        const cw = Math.min(W - 16, 620), cx = (W - cw) / 2;
+        placeNav(cx, H - navH - safeB - 4, cw, navH);
+        placeHud(0, safeT + 8, W);
+        ds.left = cx + 'px'; ds.width = cw + 'px'; ds.bottom = (navH + safeB + 4 + gap * 1.5) + 'px';
+        const ph = panel.getBoundingClientRect().height || 200;
+        LY.cafeScene = { x: 0, y: 0, w: W, h: Math.max(160, H - navH - safeB - ph - gap * 3) };
+      } else { // 横屏：面板 + 底栏放右栏，场景占满左边整个高度（原来面板压在场景上，横屏手机只剩 160px 高的一条）
+        const pw = Math.round(Math.min(420, Math.max(300, W * 0.34))), px = W - pw - gap;
+        placeNav(px, H - navH - gap - safeB, pw, navH);
+        ds.left = px + 'px'; ds.width = pw + 'px'; ds.bottom = (navH + safeB + gap * 2) + 'px'; ds.maxHeight = (H - navH - safeB - gap * 4) + 'px';
+        LY.cafeScene = { x: 0, y: 0, w: px - gap, h: H };
+        placeHud(0, safeT + 8, px - gap);
+      }
     }
     LY.hudBottom = Math.max(...[...document.querySelectorAll('.pill')].map((e) => e.getBoundingClientRect().bottom)) + 4; LY.navH = navH;
     const pc = $('pill-coins').getBoundingClientRect(), ps = $('pill-stars').getBoundingClientRect();
@@ -543,7 +553,8 @@
      替换关系：counter 隐藏 shabby_stall、tables 隐藏 shabby_table、deck 隐藏 shabby_litter（旧层停画，不靠新层盖）。
      某个已解锁节点的正式图还没交（B 批）时，用旧的程序占位画在修好的小摊附近，对齐到 counter 的位置。 */
   const MOTHER = [2400, 1600];
-  const ART_ORDER = ['deck', 'shabby_litter', 'parasol', 'photo', 'terrace', 'STALL', 'sign', 'lightbox', 'flowers', 'menu', 'speakers', 'neon', 'bar', 'tower', 'TABLE', 'lights'];
+  // 从后到前（ASSETS.md §5.4 B 批叠放顺序）：栈台在最底；霓虹 / 吧台 / 饮品塔 / 菜单板压在小摊上；拍照框、栏杆在前景；灯串最前
+  const ART_ORDER = ['deck', 'shabby_litter', 'parasol', 'STALL', 'sign', 'lightbox', 'flowers', 'speakers', 'neon', 'bar', 'tower', 'menu', 'TABLE', 'photo', 'terrace', 'lights'];
   function artScene(R, t) {
     const base = Art.img('scene_base'); if (!base) return false;
     const sc = Math.max(R.w / MOTHER[0], R.h / MOTHER[1]), ox = R.x + (R.w - MOTHER[0] * sc) / 2, oy = R.y + (R.h - MOTHER[1] * sc) / 2;
