@@ -3,7 +3,7 @@
 const fs = require('fs'), path = require('path'), assert = require('assert');
 const root = path.join(__dirname, '..');
 const Core = require(path.join(root, 'src/core.js'));
-const CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'art'];
+const CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'art'];
 const loadCfg = () => { const cfg = {}; for (const n of CONFIG_FILES) cfg[n] = JSON.parse(fs.readFileSync(path.join(root, 'src/config', n + '.json'), 'utf8')); return cfg; };
 const cfg = loadCfg();
 const C = Core.index(cfg);
@@ -246,14 +246,80 @@ test('引导中刷新：存档能续上；棋盘不满足条件则自动结束�
   assert.strictEqual(back2.tut, Core.TUT_DONE);
 });
 
+/* ---------- M3 装修 / 星星 / 广告 ---------- */
+test('装修表：3 幕 15 节点，每节点 1–3 星，总 34 星，漫画在第 1/8/15 节点', () => {
+  assert.strictEqual(CN.deco.length, 15);
+  assert.deepStrictEqual([0, 1, 2].map((a) => CN.deco.filter((d) => d.act === a).length), [5, 5, 5]);
+  assert(CN.deco.every((d) => d.cost >= 1 && d.cost <= 3));
+  assert.strictEqual(CN.deco.reduce((a, d) => a + d.cost, 0), 34);
+  assert.deepStrictEqual(CN.deco.map((d, i) => cfg.deco.comics[d.id] ? i + 1 : 0).filter(Boolean), [1, 8, 15]);
+});
+test('装修：按顺序解锁、扣星正确；星不够不扣；全部完成后不能再装', () => {
+  const s = fresh(); s.stars = 0;
+  assert.strictEqual(Core.renovate(CN, s).reason, 'stars');
+  let spent = 0;
+  for (let i = 0; i < 15; i++) {
+    const nd = Core.decoNext(CN, s); s.stars = nd.cost + 1;
+    const r = Core.renovate(CN, s);
+    assert(r.ok, 'node ' + i); assert.strictEqual(r.node.id, CN.deco[i].id); assert.strictEqual(s.stars, 1); assert.strictEqual(s.deco, i + 1);
+    assert.strictEqual(!!r.comic, [0, 7, 14].includes(i)); assert.strictEqual(r.actDone, [4, 9, 14].includes(i));
+    spent += nd.cost;
+  }
+  assert.strictEqual(spent, 34);
+  assert.strictEqual(Core.renovate(CN, s).reason, 'done');
+});
+test('装修图层：只有已解锁节点的图层生效', () => {
+  const s = fresh(); s.deco = 2;
+  assert(Core.decoDone(CN, s, 'tables') && Core.decoDone(CN, s, 'parasol') && !Core.decoDone(CN, s, 'sign') && !Core.decoDone(CN, s, 'nonexistent'));
+});
+test('每完成 3 个订单奖 1 星（与稀有单的星叠加）', () => {
+  const s = fresh(); clearBoard(s); s.stars = 0;
+  const bonus = [];
+  for (let k = 1; k <= 6; k++) {
+    s.orders[0] = { uid: 500 + k, tid: 'n_c2', needs: [{ chain: 'coffee', lvl: 2, done: false }], coins: 20, stars: 0, rare: false, cust: 0, start: T0, expiresAt: T0 + 1e6 };
+    const a = put(s, 0, 0, 'coffee', 2);
+    bonus.push(Core.deliver(CN, s, a, 0, T0, lcg(k)).bonusStar);
+  }
+  assert.deepStrictEqual(bonus, [0, 0, 1, 0, 0, 1]); assert.strictEqual(s.stars, 2);
+});
+test('插屏：每完成 5 单标记一次', () => {
+  const s = fresh(); clearBoard(s); const flags = [];
+  for (let k = 1; k <= 10; k++) {
+    s.orders[0] = { uid: 600 + k, tid: 'n_b2', needs: [{ chain: 'bake', lvl: 2, done: false }], coins: 20, stars: 0, rare: false, cust: 0, start: T0, expiresAt: T0 + 1e6 };
+    flags.push(Core.deliver(CN, s, put(s, 0, 0, 'bake', 2), 0, T0, lcg(k)).interstitial);
+  }
+  assert.deepStrictEqual(flags.map((f, i) => f ? i + 1 : 0).filter(Boolean), [5, 10]);
+});
+test('激励视频发奖：+30 体力（可超上限）、生成器回满、订单金币翻倍；展示 / 点击计数', () => {
+  const s = fresh(); s.energy = 0; s.energyTs = T0;
+  assert.strictEqual(Core.grantEnergy(CN, s, T0), 30); assert.strictEqual(s.energy, 30);
+  s.energy = 90; Core.grantEnergy(CN, s, T0); assert.strictEqual(s.energy, 120);
+  const c0 = s.coins; Core.grantDouble(s, 55); assert.strictEqual(s.coins, c0 + 55);
+  Core.adOffer(s, 'refill'); Core.adOffer(s, 'refill'); Core.adClick(s, 'refill');
+  assert.deepStrictEqual([s.ads.offers.refill, s.ads.clicks.refill, s.ads.rewards], [2, 1, 3]);
+});
+test('新手引导期间不能装修', () => {
+  const s = Core.newState(C, T0, lcg(1)); s.stars = 5;
+  assert.strictEqual(Core.renovate(C, s).reason, 'tutorial'); assert.strictEqual(s.stars, 5);
+});
+
 /* ---------- 存档 ---------- */
-test('存档往返：版本字段 v=2、棋盘/生成器/订单/体力/金币/星星一致', () => {
-  const s = fresh(); Core.tapGen(CN, s, GC, T0, seq(0.9));
+test('存档往返：版本字段 v=3、棋盘/生成器/订单/装修/广告统计/体力/金币/星星一致', () => {
+  const s = fresh(); Core.tapGen(CN, s, GC, T0, seq(0.9)); s.deco = 4; Core.adOffer(s, 'energy');
   const txt = Core.serialize(s, T0 + 5);
-  assert.strictEqual(JSON.parse(txt).v, 2);
+  assert.strictEqual(JSON.parse(txt).v, 3);
   const back = Core.deserialize(CN, txt, T0 + 5, lcg(1));
   for (const k of ['coins', 'stars', 'gems', 'energy', 'energyTs', 'tut']) assert.strictEqual(back[k], s[k], k);
-  for (const k of ['cells', 'unlocked', 'gens', 'orders']) assert.deepStrictEqual(back[k], s[k], k);
+  for (const k of ['cells', 'unlocked', 'gens', 'orders', 'ads']) assert.deepStrictEqual(back[k], s[k], k);
+  assert.strictEqual(back.deco, 4);
+});
+test('v2 存档（M2）迁移到 v3：棋盘 / 订单 / 金币原样保留，补 deco=0 和广告统计', () => {
+  const s = fresh(); Core.tapGen(CN, s, GC, T0, seq(0.9)); s.coins = 321; s.stars = 4;
+  const v2 = JSON.parse(Core.serialize(s, T0)); v2.v = 2; delete v2.deco; delete v2.ads;
+  const back = Core.deserialize(CN, JSON.stringify(v2), T0, lcg(1));
+  assert(back); assert.strictEqual(back.v, 3); assert.strictEqual(back.deco, 0); assert.deepStrictEqual(back.ads.clicks, { energy: 0, refill: 0, double: 0 });
+  assert.deepStrictEqual(back.cells, s.cells); assert.deepStrictEqual(back.orders, s.orders);
+  assert.strictEqual(back.coins, 321); assert.strictEqual(back.stars, 4);
 });
 test('坏档 / v1 旧档 / 未来版本：返回 null（新开档，不崩）', () => {
   assert.strictEqual(Core.deserialize(CN, '{oops'), null);

@@ -7,8 +7,8 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
 src = root / 'src'
-CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'art']
-JS = ['l10n.js', 'core.js', 'gl.js', 'art.js', 'main.js']
+CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'art']
+JS = ['l10n.js', 'core.js', 'gl.js', 'art.js', 'ads.js', 'main.js']
 MAX_STRINGS = 120
 
 config = {name: json.loads((src / 'config' / f'{name}.json').read_text(encoding='utf-8')) for name in CONFIG_FILES}
@@ -38,6 +38,19 @@ for t in O['templates']:
     assert lo <= t['coins'][0] <= t['coins'][1] <= hi, f'订单 {t["id"]} 奖励 {t["coins"]} 超出{"稀有" if rare else "普通"}档 [{lo},{hi}]'
     for ch, l in t['needs']:
         assert ch in config['chains']['chains'] and 1 <= l <= config['chains']['maxLevel'], f'订单 {t["id"]} 需求不合法'
+D = config['deco']
+nodes = [n for a in D['acts'] for n in a['nodes']]
+assert len(D['acts']) == 3 and len(nodes) == 15, '装修应为 3 幕 15 节点'
+assert all(1 <= n['cost'] <= 3 for n in nodes), '每节点 1–3 星'
+assert sum(n['cost'] for n in nodes) == 34, f'装修总星数 {sum(n["cost"] for n in nodes)}，应为 34'
+for a in D['acts']:
+    assert a['name'] in locale, f'缺本地化：{a["name"]}'
+for n in nodes:
+    assert n['name'] in locale, f'缺本地化：{n["name"]}'
+comic_idx = [i + 1 for i, n in enumerate(nodes) if n['id'] in D['comics']]
+assert comic_idx == [1, 8, 15], f'漫画节点应为第 1/8/15，现在 {comic_idx}'
+for k in D['comics'].values():
+    assert k in locale, f'缺本地化：{k}'
 for k in config['tutorial']['steps']:
     assert f'tut.{k}' in locale, f'缺本地化：tut.{k}'
 

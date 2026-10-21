@@ -58,6 +58,41 @@ body.tut #nav { opacity: .45; pointer-events: none; }
 .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--coral-d); }
 .btn.alt { background: #fff; color: var(--ink); border-color: var(--wood-d); box-shadow: 0 4px 0 var(--wood-d); }
 
+/* 装修面板（Café 模式） */
+#deco { position: fixed; z-index: 3; display: none; box-sizing: border-box; padding: 12px 14px 14px; background: var(--cream);
+  border: 3px solid #e9d2a6; border-radius: 20px; box-shadow: 0 5px 0 rgba(120,80,40,.35); }
+body.cafe #deco { display: block; }
+.deco-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+#deco-act { font-size: 19px; font-weight: 900; color: var(--teal-d); }
+#deco-prog { font-weight: 900; opacity: .6; }
+#deco-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin-bottom: 10px; }
+.chip { display: flex; justify-content: space-between; align-items: center; gap: 4px; padding: 6px 8px; border-radius: 10px; background: #f6e7c6;
+  font-size: 13px; font-weight: 800; }
+.chip b { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip span { flex: none; color: #c4851a; font-weight: 900; }
+.chip.done { background: #d9f1e2; } .chip.done span { color: #2e9a5a; }
+.chip.next { background: #fff; outline: 3px solid var(--gold); }
+.chip.todo { opacity: .55; }
+#deco-btn { width: 100%; }
+#deco-btn.dim { filter: grayscale(.6); opacity: .7; }
+.navb { position: relative; }
+.navb.dot::after { content: ""; position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; border-radius: 50%; background: #e2433a; border: 3px solid #fff; }
+
+/* 激励视频：订单翻倍按钮（不打断操作，几秒后消失） */
+#x2 { position: fixed; z-index: 3; display: none; transform: translateX(-50%); border: 3px solid #fff; border-radius: 16px; padding: 6px 12px;
+  background: linear-gradient(#5fc8be, #2f9d97); color: #fff; font: 900 15px var(--font); box-shadow: 0 3px 0 #1d6f6a; cursor: pointer; white-space: nowrap; }
+#x2.show { display: block; animation: x2 .35s cubic-bezier(.2,1.6,.4,1); }
+@keyframes x2 { from { transform: translateX(-50%) scale(.5); opacity: 0; } }
+.btn.ad { background: linear-gradient(#5fc8be, #2f9d97); border-color: #1d6f6a; box-shadow: 0 4px 0 #1d6f6a; }
+#m-comic { display: none; margin: 0 0 12px; } #m-comic svg { width: 100%; height: auto; display: block; }
+#m-body:empty { display: none; }
+
+/* 广告 Mock 遮罩 */
+#ad { position: fixed; inset: 0; z-index: 30; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  background: #1b1b22; color: #fff; font: 800 18px var(--font); }
+#ad.show { display: flex; }
+#ad-label { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; opacity: .6; }
+
 #err { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; font-weight: 800; padding: 24px; text-align: center; }
 
 /* 调试面板（?debug=1） */
@@ -88,7 +123,10 @@ body.tut #nav { opacity: .45; pointer-events: none; }
 </div>
 <div id="tip"></div>
 <div id="toast"></div>
-<div id="modal"><div class="card"><h2 id="m-title"></h2><p id="m-body"></p><div class="btns" id="m-btns"></div></div></div>
+<div id="deco"><div class="deco-head"><span id="deco-act"></span><span id="deco-prog"></span></div><div id="deco-list"></div><button class="btn" id="deco-btn"></button></div>
+<button id="x2">▶ <span></span></button>
+<div id="ad"><div id="ad-label"></div><div id="ad-count"></div></div>
+<div id="modal"><div class="card"><h2 id="m-title"></h2><div id="m-comic"></div><p id="m-body"></p><div class="btns" id="m-btns"></div></div></div>
 <div id="err"></div>
 <div id="dbg"><span id="dbg-fps"></span></div>
 <script>
