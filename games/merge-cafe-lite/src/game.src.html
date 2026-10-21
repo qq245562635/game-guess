@@ -18,7 +18,7 @@ body { background: #e6c48f; color: var(--ink); font-family: var(--font); -webkit
   background: var(--cream); border: 3px solid #e9d2a6; border-radius: 22px; box-shadow: 0 3px 0 rgba(120,80,40,.35);
   font-weight: 900; font-size: 18px; font-variant-numeric: tabular-nums; box-sizing: border-box; transition: transform .12s; }
 .pill.bump { transform: scale(1.12); }
-.pill svg { width: 30px; height: 30px; flex: none; margin-left: -10px; filter: drop-shadow(0 2px 0 rgba(120,80,40,.3)); }
+.pill svg, .pill img.ico { width: 30px; height: 30px; flex: none; margin-left: -10px; filter: drop-shadow(0 2px 0 rgba(120,80,40,.3)); object-fit: contain; }
 .pill .sub { font-size: 12px; font-weight: 800; opacity: .65; }
 #energy-timer:empty { display: none; }
 
@@ -26,7 +26,7 @@ body { background: #e6c48f; color: var(--ink); font-family: var(--font); -webkit
 #nav { position: fixed; z-index: 2; display: flex; gap: 10px; }
 .navb { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; border: 3px solid #e9d2a6; border-radius: 18px;
   background: var(--cream); color: var(--teal-d); font: 900 20px var(--font); box-shadow: 0 4px 0 rgba(120,80,40,.35); cursor: pointer; padding: 0 10px; }
-.navb svg { width: 34px; height: 34px; flex: none; }
+.navb svg, .navb img.ico { width: 34px; height: 34px; flex: none; object-fit: contain; }
 .navb.on { background: var(--coral); border-color: #f6a08f; color: #fff; box-shadow: 0 4px 0 var(--coral-d); }
 .navb:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(120,80,40,.35); }
 body.tut #nav { opacity: .45; pointer-events: none; }

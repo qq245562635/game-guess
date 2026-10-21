@@ -33,7 +33,7 @@ docs/selftest/           各里程碑自测截图
 ## 换正式美术
 
 逐项规格（尺寸、内容、命名、优先级、包体额度）见 **`ASSETS.md`**。
-物品 / 生成器图放 `assets/items/<id>.png`，顾客头像放 `assets/avatars/<id>.png`，把 id 登记进 `src/config/art.json` 再构建即可替换占位，逻辑不用改。场景图层、漫画、UI 图标到图后由程序接入。
+物品 / 生成器图放 `assets/items/<id>.png`，顾客头像放 `assets/avatars/<id>.png`，货币图标 / Logo / 小图标 / 底栏图标放 `assets/ui/<id>.png`，把 id 登记进 `src/config/art.json` 对应的 `items` / `avatars` / `ui` 再构建即可替换占位，逻辑不用改（P0 全部 28 张都是这样）。场景图层和漫画到图后由程序接入。
 
 ## 规则
 

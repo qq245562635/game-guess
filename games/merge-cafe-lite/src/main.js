@@ -477,6 +477,8 @@
     }
     if (showLogo && h > 110) {
       const lw = Math.min(w * 0.5, 260), lh = lw * 0.36, lx = x + w / 2 - lw / 2, ly = y + (LY.portrait ? Math.max(58, h * 0.2) : 70);
+      const lg = Art.logo(lw, lw * 384 / 1024);
+      if (lg) { GL.img(lg, lx + lw / 2, ly + lh / 2, lw, lw * 384 / 1024); return; } // 正式 Logo（1024×384）
       GL.rect(lx + 2, ly + 5, lw, lh, 14, COL.shadow, { soft: 6 });
       GL.rect(lx, ly, lw, lh, 14, hex('#8a5a32')); GL.rect(lx + 4, ly + 4, lw - 8, lh - 8, 11, hex('#a8713f'));
       GL.text(L.t('game.title'), lx + lw / 2, ly + lh * 0.4, { size: lh * 0.36, weight: 1000, fill: '#fff4db', outline: '#6b3f1d' });
@@ -695,7 +697,8 @@
     else {
       const next = Core.canUnlockHere(C, S, i);
       GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, next ? COL.lockNext : (r + c) % 2 ? COL.lockB : COL.lockA);
-      GL.img(Art.lock(cs * 0.34), x + sx, y - cs * (next ? 0.1 : 0), cs * 0.34, cs * 0.34, [0.55, 0.42, 0.3, next ? 0.85 : 0.55]);
+      const lt = Art.has('icon_lock') ? [1, 1, 1, next ? 1 : 0.6] : [0.55, 0.42, 0.3, next ? 0.85 : 0.55]; // 占位锁是白图着色，正式图不再着色
+      GL.img(Art.lock(cs * 0.34), x + sx, y - cs * (next ? 0.1 : 0), cs * 0.34, cs * 0.34, lt);
       if (next) {
         const p = String(Core.unlockPrice(C, i)), fs = Math.max(9, cs * 0.2);
         GL.img(Art.coin(fs), x - cs * 0.13 + sx, y + cs * 0.24, fs, fs);
@@ -839,6 +842,14 @@
     requestAnimationFrame(frame);
     Art.load(CONFIG.art.items, 'assets/items/', () => {});
     Art.load(CONFIG.art.avatars || [], 'assets/avatars/', () => {});
+    Art.load(CONFIG.art.ui || [], 'assets/ui/', swapDomIcon);
+  }
+  /* 顶栏和底栏的图标是 DOM 里的 SVG 占位：正式图到了换成 <img> */
+  const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg' };
+  function swapDomIcon(id) {
+    const old = DOM_ICONS[id] && document.querySelector(DOM_ICONS[id]); if (!old) return;
+    const img = document.createElement('img'); img.src = Art.src(id); img.alt = ''; img.className = 'ico'; img.dataset.art = id;
+    old.replaceWith(img); layout();
   }
   // 等内联的 Nunito 解码完再开画（图集里的字形和图标名字要用它），最多等 1.5 秒
   const fontReady = document.fonts && document.fonts.load ? Promise.race([

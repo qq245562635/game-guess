@@ -33,9 +33,9 @@ Issue #38 的主界面效果图（`art/issue-38-main-screen/`）定了风格方�
 | 顾客头像 | `assets/avatars/<id>.png` | 把 id 加进 `art.json` 的 `avatars`，然后构建 | **已接入** |
 | 场景底图、装修图层 | `assets/scene/` + `assets/scene/layers.json` | 见第 5 节 | 到图后由程序接入 |
 | 漫画 | `assets/comics/<id>.webp` | — | 到图后由程序接入 |
-| UI 图标、Logo | `assets/ui/<id>.png` | — | 到图后由程序接入 |
+| 货币图标、Logo、小图标、底栏图标 | `assets/ui/<id>.png` | 把 id 加进 `art.json` 的 `ui`，然后构建 | **已接入**（顶栏 / 底栏的 DOM 图标和画布里的图标都会替换） |
 
-"已接入"这一栏已经实测过：放一张测试 PNG 进去并登记后，棋盘和订单卡上显示的就是新图。
+"已接入"这一栏已经实测过：放测试 PNG 进去并登记后，棋盘、订单卡、生成器按钮、顶栏、底栏、Logo 显示的都是新图。登记了不存在的文件或未知 id 时，构建会直接报错。
 
 ---
 

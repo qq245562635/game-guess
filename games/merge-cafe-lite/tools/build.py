@@ -51,6 +51,13 @@ comic_idx = [i + 1 for i, n in enumerate(nodes) if n['id'] in D['comics']]
 assert comic_idx == [1, 8, 15], f'漫画节点应为第 1/8/15，现在 {comic_idx}'
 for k in D['comics'].values():
     assert k in locale, f'缺本地化：{k}'
+UI_IDS = {'icon_energy', 'icon_coin', 'icon_star', 'logo_merge_cafe_lite', 'icon_lock', 'icon_check', 'icon_clock', 'icon_hand', 'nav_cafe', 'nav_merge'}
+item_ids = {it['id'] for d in config['chains']['chains'].values() for it in d['items']} | {g['id'] for g in config['generators']['generators']}
+avatar_ids = {c['id'] for c in config['orders']['customers']}
+for key, ids, folder in [('items', item_ids, 'items'), ('avatars', avatar_ids, 'avatars'), ('ui', UI_IDS, 'ui')]:
+    for i in config['art'].get(key, []):
+        assert i in ids, f'art.json {key} 里的 {i} 不是已知 id（见 ASSETS.md）'
+        assert (root / 'assets' / folder / f'{i}.png').exists(), f'art.json 登记了 {i}，但 assets/{folder}/{i}.png 不存在'
 for k in config['tutorial']['steps']:
     assert f'tut.{k}' in locale, f'缺本地化：tut.{k}'
 

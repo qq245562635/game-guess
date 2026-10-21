@@ -25,7 +25,7 @@ body { background: #e6c48f; color: var(--ink); font-family: var(--font); -webkit
   background: var(--cream); border: 3px solid #e9d2a6; border-radius: 22px; box-shadow: 0 3px 0 rgba(120,80,40,.35);
   font-weight: 900; font-size: 18px; font-variant-numeric: tabular-nums; box-sizing: border-box; transition: transform .12s; }
 .pill.bump { transform: scale(1.12); }
-.pill svg { width: 30px; height: 30px; flex: none; margin-left: -10px; filter: drop-shadow(0 2px 0 rgba(120,80,40,.3)); }
+.pill svg, .pill img.ico { width: 30px; height: 30px; flex: none; margin-left: -10px; filter: drop-shadow(0 2px 0 rgba(120,80,40,.3)); object-fit: contain; }
 .pill .sub { font-size: 12px; font-weight: 800; opacity: .65; }
 #energy-timer:empty { display: none; }
 
@@ -33,7 +33,7 @@ body { background: #e6c48f; color: var(--ink); font-family: var(--font); -webkit
 #nav { position: fixed; z-index: 2; display: flex; gap: 10px; }
 .navb { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; border: 3px solid #e9d2a6; border-radius: 18px;
   background: var(--cream); color: var(--teal-d); font: 900 20px var(--font); box-shadow: 0 4px 0 rgba(120,80,40,.35); cursor: pointer; padding: 0 10px; }
-.navb svg { width: 34px; height: 34px; flex: none; }
+.navb svg, .navb img.ico { width: 34px; height: 34px; flex: none; object-fit: contain; }
 .navb.on { background: var(--coral); border-color: #f6a08f; color: #fff; box-shadow: 0 4px 0 var(--coral-d); }
 .navb:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(120,80,40,.35); }
 body.tut #nav { opacity: .45; pointer-events: none; }
@@ -137,7 +137,7 @@ body.cafe #deco { display: block; }
 <div id="err"></div>
 <div id="dbg"><span id="dbg-fps"></span></div>
 <script>
-const CONFIG = {"chains":{"_doc":"合成链。id 与正式图标命名一致（item_<chain>_<两位等级>），到图后放 assets/items/<id>.png 并在 art.json 登记即可替换占位。name 是本地化键。color 只给占位图用。","maxLevel":8,"chains":{"coffee":{"name":"chain.coffee","shape":"round","items":[{"id":"item_coffee_01","name":"item.coffee.1","color":"#7a4a2a"},{"id":"item_coffee_02","name":"item.coffee.2","color":"#5a3016"},{"id":"item_coffee_03","name":"item.coffee.3","color":"#3b2214"},{"id":"item_coffee_04","name":"item.coffee.4","color":"#a0623a"},{"id":"item_coffee_05","name":"item.coffee.5","color":"#c98f5e"},{"id":"item_coffee_06","name":"item.coffee.6","color":"#e0b07e"},{"id":"item_coffee_07","name":"item.coffee.7","color":"#2f7f8a"},{"id":"item_coffee_08","name":"item.coffee.8","color":"#e8735a"}]},"bake":{"name":"chain.bake","shape":"square","items":[{"id":"item_bake_01","name":"item.bake.1","color":"#d9cbb0"},{"id":"item_bake_02","name":"item.bake.2","color":"#e8c98f"},{"id":"item_bake_03","name":"item.bake.3","color":"#d9a75e"},{"id":"item_bake_04","name":"item.bake.4","color":"#c2803e"},{"id":"item_bake_05","name":"item.bake.5","color":"#7fae5a"},{"id":"item_bake_06","name":"item.bake.6","color":"#e06a7a"},{"id":"item_bake_07","name":"item.bake.7","color":"#f2d6e0"},{"id":"item_bake_08","name":"item.bake.8","color":"#f0b43c"}]}}},"board":{"_doc":"棋盘。mask：x=初始解锁，.=锁定（策划案：7×7=49 格，初始 28 格；按 #38 效果图上 4 行解锁、下 3 行锁定）。unlockPrice：每格开格金币，0=初始已开（策划案未给，暂定值待 lijie 确认）。requireAdjacent：只能开与已开格相邻的格。startItems 的 at=[行,列]，开局 1 个咖啡豆给新手引导用。","cols":7,"rows":7,"mask":["xxxxxxx","xxxxxxx","xxxxxxx","xxxxxxx",".......",".......","......."],"unlockPrice":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[30,25,20,20,20,25,30],[70,60,50,50,50,60,70],[120,110,100,100,100,110,120]],"requireAdjacent":true,"startItems":[{"chain":"coffee","level":1,"at":[3,3]}]},"generators":{"_doc":"生成器（策划案 §4 / Issue M1）：只出 1–2 级，权重 80/20；储量 10 次，点一次耗 1 体力 + 1 储量，储量耗尽冷却 60 秒。按 #38 效果图放在棋盘外（棋盘下方按钮）；anchor=[行,列] 是出生点参照（可在棋盘外，如第 7 行），产物落到离它最近的空格。","generators":[{"id":"gen_coffee_machine","name":"gen.coffee","chain":"coffee","charges":10,"cooldownSec":60,"energyCost":1,"levelWeights":{"1":80,"2":20},"anchor":[7,1],"color":"#2f7f8a"},{"id":"gen_ingredient_box","name":"gen.bake","chain":"bake","charges":10,"cooldownSec":60,"energyCost":1,"levelWeights":{"1":80,"2":20},"anchor":[7,5],"color":"#e8735a"}]},"economy":{"_doc":"经济。体力：上限 100，自然恢复 1 点/120 秒，按存档时间戳离线结算（策划案 §5）。gems 为手游版钻石预留字段，本期不开放。startCoins 策划案未给，暂定值待 lijie 确认。starEveryOrders：每完成多少个订单奖 1 星（Issue M3，星的第二个来源，第一个是稀有订单）。","energy":{"max":100,"start":100,"regenSec":120},"startCoins":100,"startStars":0,"startGems":0,"starEveryOrders":3},"orders":{"_doc":"订单（策划案 §5 / Issue M2）。同时 slots 个订单；超时自动刷新不惩罚（已交过部分物品的订单不会因超时消失）。普通订单奖 20–80 金币；稀有订单 = 需求里有 rareMinLevel 级以上物品，奖 150–300 金币 + 1 星。构建脚本和单测会检查每个模板的 coins 区间落在对应档位内。minDone=已完成订单数达到多少后才会出现；weight=抽取权重；timeSec=限时区间（策划案未给具体值，暂定待 lijie 确认）。","slots":3,"maxRareAtOnce":1,"rareMinLevel":6,"bands":{"normal":{"coins":[20,80],"stars":0},"rare":{"coins":[150,300],"stars":1}},"customers":[{"id":"avatar_customer_01","color":"#e8b04a","hair":"#7a5230"},{"id":"avatar_customer_02","color":"#4a8fd0","hair":"#2a1d14"},{"id":"avatar_customer_03","color":"#d0605a","hair":"#9c5a2a"},{"id":"avatar_customer_04","color":"#5aa77a","hair":"#c9c2b8"},{"id":"avatar_customer_05","color":"#9a6fc0","hair":"#4a3020"},{"id":"avatar_customer_06","color":"#e07a9a","hair":"#d8a860"}],"templates":[{"id":"n_c2","needs":[["coffee",2]],"coins":[20,25],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_b2","needs":[["bake",2]],"coins":[20,25],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_c3","needs":[["coffee",3]],"coins":[25,35],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_b3","needs":[["bake",3]],"coins":[25,35],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_c2b2","needs":[["coffee",2],["bake",2]],"coins":[30,40],"timeSec":[360,480],"weight":8,"minDone":1},{"id":"n_c4","needs":[["coffee",4]],"coins":[40,50],"timeSec":[360,480],"weight":8,"minDone":2},{"id":"n_b4","needs":[["bake",4]],"coins":[40,50],"timeSec":[360,480],"weight":8,"minDone":2},{"id":"n_c3b3","needs":[["coffee",3],["bake",3]],"coins":[45,60],"timeSec":[420,540],"weight":7,"minDone":3},{"id":"n_c5","needs":[["coffee",5]],"coins":[60,75],"timeSec":[480,600],"weight":6,"minDone":4},{"id":"n_b5","needs":[["bake",5]],"coins":[60,75],"timeSec":[480,600],"weight":6,"minDone":4},{"id":"n_c4b4","needs":[["coffee",4],["bake",4]],"coins":[70,80],"timeSec":[540,660],"weight":5,"minDone":6},{"id":"r_c6","needs":[["coffee",6]],"coins":[150,180],"timeSec":[900,1200],"weight":3,"minDone":5},{"id":"r_b6","needs":[["bake",6]],"coins":[150,180],"timeSec":[900,1200],"weight":3,"minDone":5},{"id":"r_c6b4","needs":[["coffee",6],["bake",4]],"coins":[190,230],"timeSec":[1200,1500],"weight":2,"minDone":8},{"id":"r_c7","needs":[["coffee",7]],"coins":[220,260],"timeSec":[1500,1800],"weight":2,"minDone":10},{"id":"r_b7","needs":[["bake",7]],"coins":[220,260],"timeSec":[1500,1800],"weight":2,"minDone":10},{"id":"r_c8","needs":[["coffee",8]],"coins":[270,300],"timeSec":[1800,2400],"weight":1,"minDone":14},{"id":"r_b8","needs":[["bake",8]],"coins":[270,300],"timeSec":[1800,2400],"weight":1,"minDone":14}]},"tutorial":{"_doc":"新手引导（Issue M2）：首次进入强制 点生成器 → 拖合 → 交订单。引导期间生成器固定出 spawnLevel 级、只允许当前这一步的操作；第一个订单固定为 firstOrder（放在第 1 个订单位），其余订单位照常从模板抽。目标：60 秒内首次合成、3 分钟内首订单。","enabled":true,"generator":"gen_coffee_machine","spawnLevel":1,"firstOrder":{"id":"tut_c2","needs":[["coffee",2]],"coins":[25,25],"timeSec":[900,900],"customer":0},"steps":["tapGen","merge","deliver"]},"deco":{"_doc":"装修（策划案 §6 / Issue M3）：15 个节点分 3 幕，按顺序解锁，每节点耗 1–3 星，总计 34 星（构建时校验）。layer 是场景里切换的图层 id（占位图层在 main.js 的 DECO_LAYERS 里画，正式图到位后按同名替换）；comic=true 的节点解锁后弹一格漫画（第 1/8/15 节点）。第一幕压到 6 星：tools/sim.js 模拟首个会话（100 体力 + 10 分钟自然恢复）约 6–9 星，保证首会话能解锁第一幕。","acts":[{"id":"act1","name":"act.1","nodes":[{"id":"a1_tables","name":"deco.a1_tables","cost":1,"layer":"tables","comic":true},{"id":"a1_parasol","name":"deco.a1_parasol","cost":1,"layer":"parasol"},{"id":"a1_sign","name":"deco.a1_sign","cost":1,"layer":"sign"},{"id":"a1_counter","name":"deco.a1_counter","cost":1,"layer":"counter"},{"id":"a1_light","name":"deco.a1_light","cost":2,"layer":"lightbox"}]},{"id":"act2","name":"act.2","nodes":[{"id":"a2_deck","name":"deco.a2_deck","cost":2,"layer":"deck"},{"id":"a2_flowers","name":"deco.a2_flowers","cost":2,"layer":"flowers"},{"id":"a2_bar","name":"deco.a2_bar","cost":3,"layer":"bar","comic":true},{"id":"a2_menu","name":"deco.a2_menu","cost":3,"layer":"menu"},{"id":"a2_speaker","name":"deco.a2_speaker","cost":3,"layer":"speakers"}]},{"id":"act3","name":"act.3","nodes":[{"id":"a3_neon","name":"deco.a3_neon","cost":3,"layer":"neon"},{"id":"a3_terrace","name":"deco.a3_terrace","cost":3,"layer":"terrace"},{"id":"a3_tower","name":"deco.a3_tower","cost":3,"layer":"tower"},{"id":"a3_photo","name":"deco.a3_photo","cost":3,"layer":"photo"},{"id":"a3_lights","name":"deco.a3_lights","cost":3,"layer":"lights","comic":true}]}],"comics":{"a1_tables":"comic.1","a2_bar":"comic.8","a3_lights":"comic.15"}},"ads":{"_doc":"广告（策划案 §7 / Issue M3），WebGL 版只有广告。当前全部是 Mock：点了模拟播放 mockSec 秒再发奖，接入点见 src/ads.js 里的 TODO（CrazyGames / Playgama SDK）。激励视频 3 个点位：体力见底 +energy、生成器冷却时立即回满、订单完成后奖励翻倍（按钮出现 doubleOfferSec 秒）。插屏：每完成 interstitialEveryOrders 个订单出 1 次，拖拽中、弹窗中、引导中一律延后，禁止打断合成。","rewarded":{"energy":{"amount":30},"refill":{},"double":{"offerSec":6}},"mockSec":5,"interstitialEveryOrders":5,"interstitialMockSec":3},"art":{"_doc":"已到位的正式图（规格见 ASSETS.md）。物品 / 生成器图放 assets/items/<id>.png 后把 id 加进 items；顾客头像放 assets/avatars/<id>.png 后把 id 加进 avatars。没登记的一律用占位，不发多余请求。","items":[],"avatars":[]}};
+const CONFIG = {"chains":{"_doc":"合成链。id 与正式图标命名一致（item_<chain>_<两位等级>），到图后放 assets/items/<id>.png 并在 art.json 登记即可替换占位。name 是本地化键。color 只给占位图用。","maxLevel":8,"chains":{"coffee":{"name":"chain.coffee","shape":"round","items":[{"id":"item_coffee_01","name":"item.coffee.1","color":"#7a4a2a"},{"id":"item_coffee_02","name":"item.coffee.2","color":"#5a3016"},{"id":"item_coffee_03","name":"item.coffee.3","color":"#3b2214"},{"id":"item_coffee_04","name":"item.coffee.4","color":"#a0623a"},{"id":"item_coffee_05","name":"item.coffee.5","color":"#c98f5e"},{"id":"item_coffee_06","name":"item.coffee.6","color":"#e0b07e"},{"id":"item_coffee_07","name":"item.coffee.7","color":"#2f7f8a"},{"id":"item_coffee_08","name":"item.coffee.8","color":"#e8735a"}]},"bake":{"name":"chain.bake","shape":"square","items":[{"id":"item_bake_01","name":"item.bake.1","color":"#d9cbb0"},{"id":"item_bake_02","name":"item.bake.2","color":"#e8c98f"},{"id":"item_bake_03","name":"item.bake.3","color":"#d9a75e"},{"id":"item_bake_04","name":"item.bake.4","color":"#c2803e"},{"id":"item_bake_05","name":"item.bake.5","color":"#7fae5a"},{"id":"item_bake_06","name":"item.bake.6","color":"#e06a7a"},{"id":"item_bake_07","name":"item.bake.7","color":"#f2d6e0"},{"id":"item_bake_08","name":"item.bake.8","color":"#f0b43c"}]}}},"board":{"_doc":"棋盘。mask：x=初始解锁，.=锁定（策划案：7×7=49 格，初始 28 格；按 #38 效果图上 4 行解锁、下 3 行锁定）。unlockPrice：每格开格金币，0=初始已开（策划案未给，暂定值待 lijie 确认）。requireAdjacent：只能开与已开格相邻的格。startItems 的 at=[行,列]，开局 1 个咖啡豆给新手引导用。","cols":7,"rows":7,"mask":["xxxxxxx","xxxxxxx","xxxxxxx","xxxxxxx",".......",".......","......."],"unlockPrice":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[30,25,20,20,20,25,30],[70,60,50,50,50,60,70],[120,110,100,100,100,110,120]],"requireAdjacent":true,"startItems":[{"chain":"coffee","level":1,"at":[3,3]}]},"generators":{"_doc":"生成器（策划案 §4 / Issue M1）：只出 1–2 级，权重 80/20；储量 10 次，点一次耗 1 体力 + 1 储量，储量耗尽冷却 60 秒。按 #38 效果图放在棋盘外（棋盘下方按钮）；anchor=[行,列] 是出生点参照（可在棋盘外，如第 7 行），产物落到离它最近的空格。","generators":[{"id":"gen_coffee_machine","name":"gen.coffee","chain":"coffee","charges":10,"cooldownSec":60,"energyCost":1,"levelWeights":{"1":80,"2":20},"anchor":[7,1],"color":"#2f7f8a"},{"id":"gen_ingredient_box","name":"gen.bake","chain":"bake","charges":10,"cooldownSec":60,"energyCost":1,"levelWeights":{"1":80,"2":20},"anchor":[7,5],"color":"#e8735a"}]},"economy":{"_doc":"经济。体力：上限 100，自然恢复 1 点/120 秒，按存档时间戳离线结算（策划案 §5）。gems 为手游版钻石预留字段，本期不开放。startCoins 策划案未给，暂定值待 lijie 确认。starEveryOrders：每完成多少个订单奖 1 星（Issue M3，星的第二个来源，第一个是稀有订单）。","energy":{"max":100,"start":100,"regenSec":120},"startCoins":100,"startStars":0,"startGems":0,"starEveryOrders":3},"orders":{"_doc":"订单（策划案 §5 / Issue M2）。同时 slots 个订单；超时自动刷新不惩罚（已交过部分物品的订单不会因超时消失）。普通订单奖 20–80 金币；稀有订单 = 需求里有 rareMinLevel 级以上物品，奖 150–300 金币 + 1 星。构建脚本和单测会检查每个模板的 coins 区间落在对应档位内。minDone=已完成订单数达到多少后才会出现；weight=抽取权重；timeSec=限时区间（策划案未给具体值，暂定待 lijie 确认）。","slots":3,"maxRareAtOnce":1,"rareMinLevel":6,"bands":{"normal":{"coins":[20,80],"stars":0},"rare":{"coins":[150,300],"stars":1}},"customers":[{"id":"avatar_customer_01","color":"#e8b04a","hair":"#7a5230"},{"id":"avatar_customer_02","color":"#4a8fd0","hair":"#2a1d14"},{"id":"avatar_customer_03","color":"#d0605a","hair":"#9c5a2a"},{"id":"avatar_customer_04","color":"#5aa77a","hair":"#c9c2b8"},{"id":"avatar_customer_05","color":"#9a6fc0","hair":"#4a3020"},{"id":"avatar_customer_06","color":"#e07a9a","hair":"#d8a860"}],"templates":[{"id":"n_c2","needs":[["coffee",2]],"coins":[20,25],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_b2","needs":[["bake",2]],"coins":[20,25],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_c3","needs":[["coffee",3]],"coins":[25,35],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_b3","needs":[["bake",3]],"coins":[25,35],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_c2b2","needs":[["coffee",2],["bake",2]],"coins":[30,40],"timeSec":[360,480],"weight":8,"minDone":1},{"id":"n_c4","needs":[["coffee",4]],"coins":[40,50],"timeSec":[360,480],"weight":8,"minDone":2},{"id":"n_b4","needs":[["bake",4]],"coins":[40,50],"timeSec":[360,480],"weight":8,"minDone":2},{"id":"n_c3b3","needs":[["coffee",3],["bake",3]],"coins":[45,60],"timeSec":[420,540],"weight":7,"minDone":3},{"id":"n_c5","needs":[["coffee",5]],"coins":[60,75],"timeSec":[480,600],"weight":6,"minDone":4},{"id":"n_b5","needs":[["bake",5]],"coins":[60,75],"timeSec":[480,600],"weight":6,"minDone":4},{"id":"n_c4b4","needs":[["coffee",4],["bake",4]],"coins":[70,80],"timeSec":[540,660],"weight":5,"minDone":6},{"id":"r_c6","needs":[["coffee",6]],"coins":[150,180],"timeSec":[900,1200],"weight":3,"minDone":5},{"id":"r_b6","needs":[["bake",6]],"coins":[150,180],"timeSec":[900,1200],"weight":3,"minDone":5},{"id":"r_c6b4","needs":[["coffee",6],["bake",4]],"coins":[190,230],"timeSec":[1200,1500],"weight":2,"minDone":8},{"id":"r_c7","needs":[["coffee",7]],"coins":[220,260],"timeSec":[1500,1800],"weight":2,"minDone":10},{"id":"r_b7","needs":[["bake",7]],"coins":[220,260],"timeSec":[1500,1800],"weight":2,"minDone":10},{"id":"r_c8","needs":[["coffee",8]],"coins":[270,300],"timeSec":[1800,2400],"weight":1,"minDone":14},{"id":"r_b8","needs":[["bake",8]],"coins":[270,300],"timeSec":[1800,2400],"weight":1,"minDone":14}]},"tutorial":{"_doc":"新手引导（Issue M2）：首次进入强制 点生成器 → 拖合 → 交订单。引导期间生成器固定出 spawnLevel 级、只允许当前这一步的操作；第一个订单固定为 firstOrder（放在第 1 个订单位），其余订单位照常从模板抽。目标：60 秒内首次合成、3 分钟内首订单。","enabled":true,"generator":"gen_coffee_machine","spawnLevel":1,"firstOrder":{"id":"tut_c2","needs":[["coffee",2]],"coins":[25,25],"timeSec":[900,900],"customer":0},"steps":["tapGen","merge","deliver"]},"deco":{"_doc":"装修（策划案 §6 / Issue M3）：15 个节点分 3 幕，按顺序解锁，每节点耗 1–3 星，总计 34 星（构建时校验）。layer 是场景里切换的图层 id（占位图层在 main.js 的 DECO_LAYERS 里画，正式图到位后按同名替换）；comic=true 的节点解锁后弹一格漫画（第 1/8/15 节点）。第一幕压到 6 星：tools/sim.js 模拟首个会话（100 体力 + 10 分钟自然恢复）约 6–9 星，保证首会话能解锁第一幕。","acts":[{"id":"act1","name":"act.1","nodes":[{"id":"a1_tables","name":"deco.a1_tables","cost":1,"layer":"tables","comic":true},{"id":"a1_parasol","name":"deco.a1_parasol","cost":1,"layer":"parasol"},{"id":"a1_sign","name":"deco.a1_sign","cost":1,"layer":"sign"},{"id":"a1_counter","name":"deco.a1_counter","cost":1,"layer":"counter"},{"id":"a1_light","name":"deco.a1_light","cost":2,"layer":"lightbox"}]},{"id":"act2","name":"act.2","nodes":[{"id":"a2_deck","name":"deco.a2_deck","cost":2,"layer":"deck"},{"id":"a2_flowers","name":"deco.a2_flowers","cost":2,"layer":"flowers"},{"id":"a2_bar","name":"deco.a2_bar","cost":3,"layer":"bar","comic":true},{"id":"a2_menu","name":"deco.a2_menu","cost":3,"layer":"menu"},{"id":"a2_speaker","name":"deco.a2_speaker","cost":3,"layer":"speakers"}]},{"id":"act3","name":"act.3","nodes":[{"id":"a3_neon","name":"deco.a3_neon","cost":3,"layer":"neon"},{"id":"a3_terrace","name":"deco.a3_terrace","cost":3,"layer":"terrace"},{"id":"a3_tower","name":"deco.a3_tower","cost":3,"layer":"tower"},{"id":"a3_photo","name":"deco.a3_photo","cost":3,"layer":"photo"},{"id":"a3_lights","name":"deco.a3_lights","cost":3,"layer":"lights","comic":true}]}],"comics":{"a1_tables":"comic.1","a2_bar":"comic.8","a3_lights":"comic.15"}},"ads":{"_doc":"广告（策划案 §7 / Issue M3），WebGL 版只有广告。当前全部是 Mock：点了模拟播放 mockSec 秒再发奖，接入点见 src/ads.js 里的 TODO（CrazyGames / Playgama SDK）。激励视频 3 个点位：体力见底 +energy、生成器冷却时立即回满、订单完成后奖励翻倍（按钮出现 doubleOfferSec 秒）。插屏：每完成 interstitialEveryOrders 个订单出 1 次，拖拽中、弹窗中、引导中一律延后，禁止打断合成。","rewarded":{"energy":{"amount":30},"refill":{},"double":{"offerSec":6}},"mockSec":5,"interstitialEveryOrders":5,"interstitialMockSec":3},"art":{"_doc":"已到位的正式图（规格见 ASSETS.md）。物品 / 生成器放 assets/items/<id>.png → 登记进 items；顾客头像放 assets/avatars/<id>.png → avatars；货币图标、Logo、小图标、底栏图标放 assets/ui/<id>.png → ui（可用 id：icon_energy icon_coin icon_star logo_merge_cafe_lite icon_lock icon_check icon_clock icon_hand nav_cafe nav_merge）。没登记的一律用占位，不发多余请求。","items":[],"avatars":[],"ui":[]}};
 const LOCALE = {"game.title":"Merge Café","chain.coffee":"Coffee","chain.bake":"Bakery","item.coffee.1":"Coffee Beans","item.coffee.2":"Roasted Beans","item.coffee.3":"Espresso","item.coffee.4":"Americano","item.coffee.5":"Latte","item.coffee.6":"Latte Art","item.coffee.7":"Cold Brew","item.coffee.8":"Sea Salt Coffee","item.bake.1":"Flour","item.bake.2":"Dough","item.bake.3":"Raw Loaf","item.bake.4":"Toast","item.bake.5":"Sandwich","item.bake.6":"Fruit Tart","item.bake.7":"Cream Cake","item.bake.8":"Party Cake","gen.coffee":"Coffee","gen.bake":"Ingredients","ui.level":"Lv {n}","ui.maxLevel":"Max level","ui.charges":"{n}/{max} left","ui.recharging":"Recharging {t}","ui.mergeHint":"Drag two matching items together to merge","ui.full":"Board is full! Merge items to free up space.","ui.noEnergyTitle":"Out of Energy","ui.noEnergyBody":"+1 energy every 2 minutes. Next in {t}.","ui.energyFull":"Energy full","ui.ok":"OK","ui.cancel":"Cancel","ui.unlockTitle":"Expand the Board","ui.unlockBody":"Open this tile for {n} coins?","ui.unlock":"Unlock","ui.notAdjacent":"Unlock a tile next to the board first.","ui.noCoins":"Not enough coins.","ui.cantMerge":"These don't match.","ui.maxMerge":"Already at max level!","ui.welcomeBack":"Welcome back! +{n} energy","ui.webglError":"Your browser doesn't support WebGL.","ui.wrongOrder":"This customer ordered something else.","ui.rare":"Rare","ui.orderDone":"Order complete!","ui.soon":"Renovations open soon!","nav.cafe":"Café","nav.merge":"Merge","tut.tapGen":"Tap the Coffee Machine to brew some beans.","tut.merge":"Drag one bean onto the other to merge them!","tut.deliver":"Drag the Roasted Beans to your customer.","tut.done":"Nice! Fill orders to earn coins and stars.","game.titleSub":"Lite","act.1":"Act 1 · Fix Up the Stall","act.2":"Act 2 · Seaside Makeover","act.3":"Act 3 · Insta-Famous","deco.a1_tables":"Tables & Chairs","deco.a1_parasol":"Beach Parasol","deco.a1_sign":"Café Sign","deco.a1_counter":"New Counter","deco.a1_light":"Light Box","deco.a2_deck":"Wooden Deck","deco.a2_flowers":"Flower Wall","deco.a2_bar":"Coffee Bar","deco.a2_menu":"Menu Board","deco.a2_speaker":"Speakers","deco.a3_neon":"Neon Sign","deco.a3_terrace":"Sun Terrace","deco.a3_tower":"Drink Tower","deco.a3_photo":"Photo Wall","deco.a3_lights":"Fairy Lights","comic.1":"“A real table! Customers can finally sit down.”","comic.8":"“The new bar is gorgeous. People are lining up!”","comic.15":"“Look at those lights… we did it. Best café on the coast!”","ui.renovate":"Renovate","ui.needStars":"Need {n} more stars. Fill orders to earn them!","ui.actDone":"{act} complete!","ui.allDone":"Your café is complete!","ui.continue":"Continue","ui.starBonus":"Bonus star for 3 orders!","ui.genEmptyTitle":"Machine Recharging","ui.genEmptyBody":"Ready again in {t}.","ad.watch":"Watch Ad","ad.energy":"+{n} Energy","ad.refill":"Refill Now","ad.double":"Double Coins","ad.playing":"Ad playing… {n}","ad.label":"Advertisement","ad.got":"+{n} coins!"};
 /* 本地化：所有玩家可见文案只从 locale/en.json 取（构建时内联为 LOCALE）。
    DOM 里写 data-l10n="key"，启动时 L.apply() 统一填。 */
@@ -771,16 +771,28 @@ const Art = (() => {
     });
   }
 
+  /* UI 小图标：assets/ui/<id>.png 到位并登记后用正式图，否则画占位（ASSETS.md §4 / §7） */
+  function ui(id, size, fallback) {
+    return GL.sprite('I|' + id + '|', size, size, (g, w, h) => { if (loaded[id]) g.drawImage(loaded[id], 0, 0, w, h); else fallback(g, w, h); });
+  }
+  /* Logo：正式图 1024×384，没到就返回 null，由场景代码画占位木牌 */
+  function logo(w, h) {
+    const id = 'logo_merge_cafe_lite';
+    return loaded[id] ? GL.sprite('I|' + id + '|', w, h, (g, pw, ph) => g.drawImage(loaded[id], 0, 0, pw, ph)) : null;
+  }
+  const has = (id) => !!loaded[id];
+  const src = (id) => (loaded[id] ? loaded[id].src : null);
+
   /* 锁 */
   function lock(size) {
-    return GL.sprite('lock', size, size, (g, w) => {
+    return ui('icon_lock', size, (g, w) => {
       g.fillStyle = 'rgba(255,255,255,0.9)'; g.strokeStyle = 'rgba(255,255,255,0.9)';
       g.lineWidth = w * 0.11; g.beginPath(); g.arc(w / 2, w * 0.42, w * 0.2, Math.PI, 0); g.stroke();
       rr(g, w * 0.24, w * 0.42, w * 0.52, w * 0.4, w * 0.08); g.fill();
     });
   }
   function coin(size) {
-    return GL.sprite('coin', size, size, (g, w) => {
+    return ui('icon_coin', size, (g, w) => {
       g.fillStyle = '#f2b632'; g.beginPath(); g.arc(w / 2, w / 2, w * 0.46, 0, Math.PI * 2); g.fill();
       g.strokeStyle = '#b97a12'; g.lineWidth = w * 0.08; g.stroke();
       g.fillStyle = '#ffe28a'; g.beginPath(); g.arc(w / 2, w / 2, w * 0.22, 0, Math.PI * 2); g.fill();
@@ -804,39 +816,39 @@ const Art = (() => {
     });
   }
   function star(size) {
-    return GL.sprite('star', size, size, (g, w) => {
+    return ui('icon_star', size, (g, w) => {
       g.beginPath();
       for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = (k % 2 ? 0.2 : 0.46) * w; g.lineTo(w / 2 + Math.cos(a) * r, w * 0.53 + Math.sin(a) * r); }
       g.closePath(); g.fillStyle = '#f5c03a'; g.fill(); g.lineJoin = 'round'; g.lineWidth = w * 0.07; g.strokeStyle = '#c4851a'; g.stroke();
     });
   }
   function clock(size) {
-    return GL.sprite('clock', size, size, (g, w) => {
+    return ui('icon_clock', size, (g, w) => {
       g.strokeStyle = '#3a2416'; g.lineWidth = w * 0.12; g.beginPath(); g.arc(w / 2, w / 2, w * 0.38, 0, Math.PI * 2); g.stroke();
       g.lineCap = 'round'; g.beginPath(); g.moveTo(w / 2, w / 2); g.lineTo(w / 2, w * 0.28); g.moveTo(w / 2, w / 2); g.lineTo(w * 0.66, w * 0.58); g.stroke();
     });
   }
   function check(size) {
-    return GL.sprite('check', size, size, (g, w) => {
+    return ui('icon_check', size, (g, w) => {
       g.fillStyle = '#3bb36a'; g.beginPath(); g.arc(w / 2, w / 2, w * 0.46, 0, Math.PI * 2); g.fill();
       g.strokeStyle = '#fff'; g.lineWidth = w * 0.14; g.lineCap = 'round'; g.lineJoin = 'round';
       g.beginPath(); g.moveTo(w * 0.28, w * 0.52); g.lineTo(w * 0.44, w * 0.68); g.lineTo(w * 0.72, w * 0.36); g.stroke();
     });
   }
   function bolt(size) {
-    return GL.sprite('bolt', size, size, (g, w) => {
+    return ui('icon_energy', size, (g, w) => {
       g.beginPath(); g.moveTo(w * 0.58, w * 0.06); g.lineTo(w * 0.2, w * 0.56); g.lineTo(w * 0.46, w * 0.56); g.lineTo(w * 0.38, w * 0.94); g.lineTo(w * 0.8, w * 0.4); g.lineTo(w * 0.53, w * 0.4); g.closePath();
       g.fillStyle = '#f5c03a'; g.fill(); g.lineJoin = 'round'; g.lineWidth = w * 0.07; g.strokeStyle = '#c4851a'; g.stroke();
     });
   }
   function hand(size) {
-    return GL.sprite('hand', size, size, (g, w) => {
+    return ui('icon_hand', size, (g, w) => {
       g.fillStyle = '#fff'; g.strokeStyle = '#3a2416'; g.lineWidth = w * 0.06; g.lineJoin = 'round';
       g.beginPath(); rr(g, w * 0.36, w * 0.08, w * 0.16, w * 0.5, w * 0.08); g.fill(); g.stroke();
       g.beginPath(); rr(g, w * 0.3, w * 0.42, w * 0.46, w * 0.46, w * 0.16); g.fill(); g.stroke();
     });
   }
-  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, FONT };
+  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, logo, has, src, FONT };
 })();
 
 /* Merge Café Lite · 广告层（当前全部 Mock）
@@ -1360,6 +1372,8 @@ const Ads = (() => {
     }
     if (showLogo && h > 110) {
       const lw = Math.min(w * 0.5, 260), lh = lw * 0.36, lx = x + w / 2 - lw / 2, ly = y + (LY.portrait ? Math.max(58, h * 0.2) : 70);
+      const lg = Art.logo(lw, lw * 384 / 1024);
+      if (lg) { GL.img(lg, lx + lw / 2, ly + lh / 2, lw, lw * 384 / 1024); return; } // 正式 Logo（1024×384）
       GL.rect(lx + 2, ly + 5, lw, lh, 14, COL.shadow, { soft: 6 });
       GL.rect(lx, ly, lw, lh, 14, hex('#8a5a32')); GL.rect(lx + 4, ly + 4, lw - 8, lh - 8, 11, hex('#a8713f'));
       GL.text(L.t('game.title'), lx + lw / 2, ly + lh * 0.4, { size: lh * 0.36, weight: 1000, fill: '#fff4db', outline: '#6b3f1d' });
@@ -1578,7 +1592,8 @@ const Ads = (() => {
     else {
       const next = Core.canUnlockHere(C, S, i);
       GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, next ? COL.lockNext : (r + c) % 2 ? COL.lockB : COL.lockA);
-      GL.img(Art.lock(cs * 0.34), x + sx, y - cs * (next ? 0.1 : 0), cs * 0.34, cs * 0.34, [0.55, 0.42, 0.3, next ? 0.85 : 0.55]);
+      const lt = Art.has('icon_lock') ? [1, 1, 1, next ? 1 : 0.6] : [0.55, 0.42, 0.3, next ? 0.85 : 0.55]; // 占位锁是白图着色，正式图不再着色
+      GL.img(Art.lock(cs * 0.34), x + sx, y - cs * (next ? 0.1 : 0), cs * 0.34, cs * 0.34, lt);
       if (next) {
         const p = String(Core.unlockPrice(C, i)), fs = Math.max(9, cs * 0.2);
         GL.img(Art.coin(fs), x - cs * 0.13 + sx, y + cs * 0.24, fs, fs);
@@ -1722,6 +1737,14 @@ const Ads = (() => {
     requestAnimationFrame(frame);
     Art.load(CONFIG.art.items, 'assets/items/', () => {});
     Art.load(CONFIG.art.avatars || [], 'assets/avatars/', () => {});
+    Art.load(CONFIG.art.ui || [], 'assets/ui/', swapDomIcon);
+  }
+  /* 顶栏和底栏的图标是 DOM 里的 SVG 占位：正式图到了换成 <img> */
+  const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg' };
+  function swapDomIcon(id) {
+    const old = DOM_ICONS[id] && document.querySelector(DOM_ICONS[id]); if (!old) return;
+    const img = document.createElement('img'); img.src = Art.src(id); img.alt = ''; img.className = 'ico'; img.dataset.art = id;
+    old.replaceWith(img); layout();
   }
   // 等内联的 Nunito 解码完再开画（图集里的字形和图标名字要用它），最多等 1.5 秒
   const fontReady = document.fonts && document.fonts.load ? Promise.race([
