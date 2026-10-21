@@ -11,7 +11,8 @@ Issue #38 的主界面效果图（`art/issue-38-main-screen/`）定了风格方�
 | 批次 | 状态 |
 |---|---|
 | P0（28 张） | ✅ 已交付（`codex/merge-cafe-p0-art` @ `fe96d78`）并接入。运行包里 PNG 已做无损压缩（像素不变）：2.25 MB → 1.75 MB |
-| **第二批（下表）** | ⏳ 待画（2026-10-21 首测后整理） |
+| 第二批 A 批（12 张） | ✅ 已交付（`codex/merge-cafe-batch-a-art` @ `e206130`）并接入：头图 2、装修底图 + 破摊 3 + 第一幕 5 图层、漫画 1 |
+| 第二批 B / C 批 | ⏳ 待画（B 批到之前，第二、三幕用程序占位画在正式小摊附近） |
 
 ## 第二批待画清单（按优先级）
 
@@ -52,7 +53,7 @@ Issue #38 的主界面效果图（`art/issue-38-main-screen/`）定了风格方�
 | 物品图标、生成器 | `assets/items/<id>.png` | 把 id 加进 `src/config/art.json` 的 `items`，然后跑 `python3 tools/build.py` | **已接入**，放进去立刻替换 |
 | 顾客头像 | `assets/avatars/<id>.png` | 把 id 加进 `art.json` 的 `avatars`，然后构建 | **已接入** |
 | Merge 页头图 | `assets/scene/<id>.webp` | 把 id 加进 `art.json` 的 `scene`，然后构建 | **已接入**（现在放的是临时图，同名覆盖即可） |
-| 场景底图、装修图层 | `assets/scene/` + `assets/scene/layers.json` | 见第 5 节 | 到图后由程序接入 |
+| 场景底图、装修图层 | `assets/scene/<id>.webp` + `assets/scene/layers.json` 坐标 | 把 id 加进 `art.json` 的 `cafe`，然后构建 | **已接入**（A 批），B 批图层同样放图 + 补坐标 + 登记即可 |
 | 漫画 | `assets/comics/<id>.webp` | — | 到图后由程序接入 |
 | 货币图标、Logo、小图标、底栏图标 | `assets/ui/<id>.png` | 把 id 加进 `art.json` 的 `ui`，然后构建 | **已接入**（顶栏 / 底栏的 DOM 图标和画布里的图标都会替换） |
 

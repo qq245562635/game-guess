@@ -60,6 +60,15 @@ for key, ids, folder in [('items', item_ids, 'items'), ('avatars', avatar_ids, '
         assert (root / 'assets' / folder / f'{i}.png').exists(), f'art.json 登记了 {i}，但 assets/{folder}/{i}.png 不存在'
 for i in config['art'].get('scene', []):
     assert (root / 'assets' / 'scene' / f'{i}.webp').exists(), f'art.json 登记了 {i}，但 assets/scene/{i}.webp 不存在'
+layer_pos = json.loads((root / 'assets' / 'scene' / 'layers.json').read_text(encoding='utf-8')) if (root / 'assets' / 'scene' / 'layers.json').exists() else {}
+known_layers = {n['layer'] for n in nodes} | {'shabby_stall', 'shabby_table', 'shabby_litter'}
+for i in config['art'].get('cafe', []):
+    assert (root / 'assets' / 'scene' / f'{i}.webp').exists(), f'art.json cafe 登记了 {i}，但 assets/scene/{i}.webp 不存在'
+    assert i == 'scene_base' or i in known_layers, f'art.json cafe 里的 {i} 不是装修图层 id'
+    assert i == 'scene_base' or i in layer_pos, f'图层 {i} 缺 layers.json 坐标'
+for i in config['art'].get('comics', []):
+    assert (root / 'assets' / 'comics' / f'{i}.webp').exists(), f'art.json comics 登记了 {i}，但 assets/comics/{i}.webp 不存在'
+config['art']['layerPos'] = {k: v for k, v in layer_pos.items() if k in config['art'].get('cafe', [])}
 for t in config['tasks']['list']:
     assert f"task.{t['type']}" in locale, f"缺本地化：task.{t['type']}"
 for k in config['tutorial']['steps']:

@@ -97,6 +97,11 @@ const Art = (() => {
     return loaded[id] ? GL.sprite('I|' + id + '|', w, h, (g, pw, ph) => g.drawImage(loaded[id], 0, 0, pw, ph)) : null;
   }
   const has = (id) => !!loaded[id];
+  /* 装修图层：按显示尺寸进图集（原图 ≤ 700px，缩到屏幕上通常 100–300px） */
+  function layer(id, w, h) {
+    const im = loaded[id]; if (!im) return null;
+    return GL.sprite('I|' + id + '|', w, h, (g, pw, ph) => g.drawImage(im, 0, 0, pw, ph));
+  }
   const img = (id) => loaded[id] || null;
   /* 头图：按可见区"填满再裁切"，焦点 fx 控制横向裁哪边；返回 GL 精灵 */
   function cover(id, w, h, fx, fy) {
@@ -195,5 +200,5 @@ const Art = (() => {
       g.beginPath(); rr(g, w * 0.3, w * 0.42, w * 0.46, w * 0.46, w * 0.16); g.fill(); g.stroke();
     });
   }
-  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, logo, has, src, img, cover, plant, FONT };
+  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, logo, has, src, img, cover, plant, layer, FONT };
 })();

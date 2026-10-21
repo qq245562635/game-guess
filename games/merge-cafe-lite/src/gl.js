@@ -157,6 +157,25 @@ void main(){
     quad(cx, cy, w / 2, h / 2, e.u0, e.v0, e.u1, e.v1, 0, 0, 0, 0, 2, 0, 0, 1, col || WHITE);
   };
   const WHITE = [1, 1, 1, 1];
+  /* 大图（装修场景底图等）：超出 2048² 图集，单独一张纹理。按显示尺寸在 2D 画布里预缩放后上传（WebGL1 非 2 次幂纹理不能 mipmap，
+     直接让 GPU 从 2400px 缩到几百 px 会糊 / 闪），尺寸不变就复用。draw(ctx, pw, ph) 负责把源图画进预缩放画布。 */
+  const big = new Map();
+  api.bigImg = function (key, x, y, w, h, draw) {
+    const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));
+    let e = big.get(key);
+    if (!e || e.pw !== pw || e.ph !== ph) {
+      const c = document.createElement('canvas'); c.width = pw; c.height = ph; draw(c.getContext('2d'), pw, ph);
+      if (!e) { e = { t: gl.createTexture() }; big.set(key, e); }
+      flush(); gl.bindTexture(gl.TEXTURE_2D, e.t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.bindTexture(gl.TEXTURE_2D, tex); e.pw = pw; e.ph = ph;
+    }
+    flush(); gl.bindTexture(gl.TEXTURE_2D, e.t);
+    quad(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, 1, 1, 0, 0, 0, 0, 2, 0, 0, 1, WHITE);
+    flush(); gl.bindTexture(gl.TEXTURE_2D, tex);
+  };
   /* 文字：逐字缓存进图集（计时器数字每秒变化也不会撑爆图集）。y 为中线。
      o = {size, weight, fill, outline(颜色), align: left|center|right, font} */
   api.font = 'Nunito, "Avenir Next", "Trebuchet MS", system-ui, sans-serif';

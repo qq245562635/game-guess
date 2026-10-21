@@ -1,5 +1,5 @@
 {
-  "_doc": "已到位的正式图（规格见 ASSETS.md）。物品 / 生成器放 assets/items/<id>.png → 登记进 items；顾客头像放 assets/avatars/<id>.png → avatars；货币图标、Logo、小图标、底栏图标放 assets/ui/<id>.png → ui（可用 id：icon_energy icon_coin icon_star logo_merge_cafe_lite icon_lock icon_check icon_clock icon_hand nav_cafe nav_merge）。头图放 assets/scene/<id>.webp → scene（header_merge_p 竖屏、header_merge_l 横屏；当前是 #38 效果图裁切的临时图，竖屏版顶部的效果图 HUD 已用 inpaint 抹掉，P1 正式头图到位后同名替换）。没登记的一律用占位，不发多余请求。",
+  "_doc": "已到位的正式图（规格见 ASSETS.md）。物品 / 生成器放 assets/items/<id>.png → 登记进 items；顾客头像放 assets/avatars/<id>.png → avatars；货币图标、Logo、小图标、底栏图标放 assets/ui/<id>.png → ui（可用 id：icon_energy icon_coin icon_star logo_merge_cafe_lite icon_lock icon_check icon_clock icon_hand nav_cafe nav_merge）。头图放 assets/scene/<id>.webp → scene（header_merge_p 竖屏、header_merge_l 横屏；#49 A 批正式头图，P1 正式头图到位后同名替换）。装修场景（#49）放 assets/scene/<id>.webp → cafe（底图 scene_base + 图层，坐标在 assets/scene/layers.json，构建时内联为 layerPos）；漫画放 assets/comics/<id>.webp → comics。cafe / comics 在首帧之后后台加载。没登记的一律用占位，不发多余请求。",
   "items": [
     "gen_coffee_machine",
     "gen_ingredient_box",
@@ -41,10 +41,24 @@
   "sceneMeta": {
     "_doc": "头图元数据：safeTop = 图里 Logo 顶边占图高的比例，这条线以上可以被顶栏盖住，以下不行",
     "header_merge_p": {
-      "safeTop": 0.17
+      "safeTop": 0.25
     },
     "header_merge_l": {
-      "safeTop": 0
+      "safeTop": 0.04
     }
-  }
+  },
+  "cafe": [
+    "scene_base",
+    "shabby_stall",
+    "shabby_table",
+    "shabby_litter",
+    "tables",
+    "parasol",
+    "sign",
+    "counter",
+    "lightbox"
+  ],
+  "comics": [
+    "comic_01"
+  ]
 }
