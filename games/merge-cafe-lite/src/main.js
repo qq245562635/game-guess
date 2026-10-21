@@ -761,6 +761,16 @@
   const FRONT_LAYERS = ['sign', 'lightbox', 'flowers', 'menu', 'speakers', 'neon', 'bar', 'tower', 'tables', 'lights'];
   function drawFloor(W, H) {
     GL.rect(0, 0, W, H, 0, COL.woodL);
+    const tile = Art.img('bg_wood_tile'); // C 批正式木板：四方连续 512²，屏上按 256 CSS px 平铺；没到图就用纯色 + 线条占位
+    if (tile) {
+      const y0 = LY.portrait ? LY.scene.h : 0;
+      GL.bigImg('floor', 0, y0, W, H - y0, (g, pw, ph) => {
+        const k = pw / W * 256 / tile.width, pat = g.createPattern(tile, 'repeat');
+        pat.setTransform && pat.setTransform(new DOMMatrix([k, 0, 0, k, 0, 0]));
+        g.fillStyle = pat; g.fillRect(0, 0, pw, ph);
+      });
+      return;
+    }
     const step = 38;
     for (let y = (LY.portrait ? LY.scene.h : 0); y < H; y += step) GL.rect(0, y, W, 2, 0, COL.plank);
   }

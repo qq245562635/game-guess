@@ -58,7 +58,7 @@ for key, ids, folder in [('items', item_ids, 'items'), ('avatars', avatar_ids, '
     for i in config['art'].get(key, []):
         assert i in ids, f'art.json {key} 里的 {i} 不是已知 id（见 ASSETS.md）'
         assert (root / 'assets' / folder / f'{i}.png').exists(), f'art.json 登记了 {i}，但 assets/{folder}/{i}.png 不存在'
-for i in config['art'].get('scene', []):
+for i in config['art'].get('scene', []):  # 头图 + 木板平铺 bg_wood_tile
     assert (root / 'assets' / 'scene' / f'{i}.webp').exists(), f'art.json 登记了 {i}，但 assets/scene/{i}.webp 不存在'
 layer_pos = json.loads((root / 'assets' / 'scene' / 'layers.json').read_text(encoding='utf-8')) if (root / 'assets' / 'scene' / 'layers.json').exists() else {}
 known_layers = {n['layer'] for n in nodes} | {'shabby_stall', 'shabby_table', 'shabby_litter'}
