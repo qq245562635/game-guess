@@ -101,5 +101,17 @@
   "task.unlocks": "Unlock {n} tiles",
   "task.renovate": "Renovate {n} times",
   "task.coins": "Earn {n} coins",
-  "task.level": "Make a Lv {n} item"
+  "task.level": "Make a Lv {n} item",
+  "ui.upgrade": "Upgrade",
+  "ui.genLevel": "{name} · Lv {n}",
+  "ui.upgradeBody": "Uses per refill: {a} → {b}. Recharge time −{p}%.",
+  "ui.upgradeLv3": "Sometimes makes Lv 3 items ({p}%).",
+  "ui.upgraded": "Upgraded to Lv {n}!",
+  "ui.energyTitle": "Need Energy?",
+  "ui.bubbleTitle": "Bubble Bonus!",
+  "ui.bubbleBody": "Grab this {item} before the bubble pops in {t}.",
+  "ui.bubblePopped": "The bubble popped!",
+  "ui.swap": "Swap Order",
+  "ad.free": "Free",
+  "ui.buy": "Buy"
 }

@@ -200,5 +200,7 @@ const Art = (() => {
       g.beginPath(); rr(g, w * 0.3, w * 0.42, w * 0.46, w * 0.46, w * 0.16); g.fill(); g.stroke();
     });
   }
-  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, logo, has, src, img, cover, plant, layer, FONT };
+  /* 只有正式图、没有占位的 UI 图（D 批：泡泡外壳 fx_bubble、升级箭头 icon_upgrade）：没到返回 null，由调用方画程序版 */
+  function opt(id, w, h) { return loaded[id] ? GL.sprite('I|' + id + '|', w, h || w, (g, pw, ph) => g.drawImage(loaded[id], 0, 0, pw, ph)) : null; }
+  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, logo, has, src, img, cover, plant, layer, opt, FONT };
 })();

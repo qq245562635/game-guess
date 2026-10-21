@@ -3,7 +3,7 @@
    所有数值来自 CONFIG（src/config/*.json），这里不写死任何数。
    时间一律用毫秒时间戳 now 传入，随机数用 rng 传入，方便离线结算和测试。 */
 const Core = (() => {
-  const SAVE_VERSION = 4;
+  const SAVE_VERSION = 5;
   const TUT_DONE = -1;
 
   /* ---------- 配置索引 ---------- */
@@ -19,7 +19,7 @@ const Core = (() => {
       deco, ads: cfg.ads || {}, tasks: cfg.tasks || { active: 0, list: [] },
       cfg, cols: b.cols, rows: b.rows, n: b.cols * b.rows,
       maxLevel: cfg.chains.maxLevel, chains: cfg.chains.chains, gens, genList: cfg.generators.generators,
-      eco: cfg.economy, O, tpl, tut: cfg.tutorial || { enabled: false },
+      eco: cfg.economy, O, tpl, tut: cfg.tutorial || { enabled: false }, ups: cfg.generators.upgrades || [],
     };
   }
   const idx = (C, r, c) => r * C.cols + c;
@@ -43,10 +43,11 @@ const Core = (() => {
       deco: 0,                 // 已完成的装修节点数（按顺序解锁）
       ads: newAdStats(),
       tasks: { next: 0, active: [] },
+      daily: newDaily(now),    // 每日限次的金币消耗（UTC 0 点重置）
       stats: newStats(now),
     };
     for (let r = 0; r < C.rows; r++) for (let c = 0; c < C.cols; c++) s.unlocked[idx(C, r, c)] = b.mask[r][c] === 'x';
-    for (const g of C.genList) s.gens[g.id] = { charges: g.charges, cdEnd: 0 };
+    for (const g of C.genList) s.gens[g.id] = { charges: g.charges, cdEnd: 0, lv: 1 };
     for (const it of b.startItems) s.cells[idx(C, it.at[0], it.at[1])] = { k: 'item', chain: it.chain, lvl: it.level };
     fillTasks(C, s);
     for (let k = 0; k < C.O.slots; k++) {
@@ -76,14 +77,18 @@ const Core = (() => {
   function spendEnergy(C, s, n, now) { settleEnergy(C, s, now); s.energy -= n; }
 
   /* ---------- 生成器（棋盘外按钮） ---------- */
+  /* 生成器等级：Lv1 用生成器自己的定义，Lv2+ 查 generators.json 的 upgrades 表 */
+  const genStats = (C, id, lv) => (lv > 1 && C.ups[lv - 2]) || { charges: C.gens[id].charges, cdMul: 1, levelWeights: C.gens[id].levelWeights };
+  const genMaxCharges = (C, id, g) => genStats(C, id, (g && g.lv) || 1).charges;
   function settleGen(C, id, g, now) {
-    if (g.charges <= 0 && g.cdEnd && now >= g.cdEnd) { g.charges = C.gens[id].charges; g.cdEnd = 0; return true; }
+    if (g.charges <= 0 && g.cdEnd && now >= g.cdEnd) { g.charges = genMaxCharges(C, id, g); g.cdEnd = 0; return true; }
     return false;
   }
   function settleAll(C, s, now, rng) {
     const gained = settleEnergy(C, s, now);
     for (const id in s.gens) settleGen(C, id, s.gens[id], now);
     settleOrders(C, s, now, rng);
+    settleBubbles(C, s, now);
     return gained;
   }
   function rollLevel(weights, rng) {
@@ -121,7 +126,7 @@ const Core = (() => {
     spendEnergy(C, s, def.energyCost, now);
     g.charges--;
     if (g.charges <= 0) { g.cdLen = cooldownSec(C, s, id); g.cdEnd = now + g.cdLen * 1000; }
-    const lvl = s.tut !== TUT_DONE ? C.tut.spawnLevel : rollLevel(def.levelWeights, rng);
+    const lvl = s.tut !== TUT_DONE ? C.tut.spawnLevel : rollLevel(genStats(C, id, g.lv || 1).levelWeights, rng);
     const item = { k: 'item', chain: def.chain, lvl };
     s.cells[to] = item;
     s.stats.spawns++; s.stats.maxLvl = Math.max(s.stats.maxLvl || 0, item.lvl);
@@ -130,23 +135,101 @@ const Core = (() => {
   }
   /* 冷却时长：前期按已完成订单数走 cooldownRamp（15 → 30 秒），之后用生成器自己的 cooldownSec */
   function cooldownSec(C, s, id) {
-    const ramp = C.cfg.generators.cooldownRamp || [], done = s.stats.ordersDone;
-    for (const r of ramp) if (done < r.beforeOrders) return r.sec;
-    return C.gens[id].cooldownSec;
+    const ramp = C.cfg.generators.cooldownRamp || [], done = s.stats.ordersDone, mul = genStats(C, id, (s.gens[id] && s.gens[id].lv) || 1).cdMul || 1;
+    for (const r of ramp) if (done < r.beforeOrders) return Math.round(r.sec * mul);
+    return Math.round(C.gens[id].cooldownSec * mul);
   }
   /* 生成器立即回满（激励广告点位 2） */
   function refillGen(C, s, id) {
     const g = s.gens[id]; if (!g) return false;
-    g.charges = C.gens[id].charges; g.cdEnd = 0; return true;
+    g.charges = genMaxCharges(C, id, g); g.cdEnd = 0; return true;
+  }
+
+  /* ---------- 金币消耗（2026-10-21）：生成器升级 / 金币回满 / 金币买体力 / 合成泡泡 / 换单 ---------- */
+  const dayOf = (now) => Math.floor((now || 0) / 86400000); // UTC 日
+  function newDaily(now) { return { day: dayOf(now), refills: 0, energyBuys: 0 }; }
+  function daily(s, now) { if (!s.daily || s.daily.day !== dayOf(now)) s.daily = newDaily(now); return s.daily; }
+  /* 升级：下一级价格，满级返回 null */
+  function upgradeCost(C, s, id) { const g = s.gens[id], u = g && C.ups[(g.lv || 1) - 1]; return u ? u.cost : null; }
+  function upgradeGen(C, s, id) {
+    const g = s.gens[id]; if (!g) return { ok: false, reason: 'notGen' };
+    if (tutStep(C, s)) return { ok: false, reason: 'tutorial' };
+    const cost = upgradeCost(C, s, id);
+    if (cost === null) return { ok: false, reason: 'max' };
+    if (s.coins < cost) return { ok: false, reason: 'coins', price: cost };
+    const before = genMaxCharges(C, id, g);
+    s.coins -= cost; g.lv = (g.lv || 1) + 1; s.stats.coinsSpent.upgrade += cost;
+    if (g.charges > 0) g.charges += genMaxCharges(C, id, g) - before; // 升级立即多给差额储量；冷却中的等回满时按新上限
+    return { ok: true, price: cost, lv: g.lv };
+  }
+  /* 金币立即回满：当天第 n 次（从 0 起）价格 base + step×n */
+  function refillPrice(C, s, now) { const R = C.eco.coinRefill; return R ? R.base + R.step * daily(s, now).refills : null; }
+  function buyRefill(C, s, id, now) {
+    const g = s.gens[id]; if (!g) return { ok: false, reason: 'notGen' };
+    settleGen(C, id, g, now);
+    if (g.charges > 0) return { ok: false, reason: 'notEmpty' };
+    const p = refillPrice(C, s, now); if (p === null) return { ok: false, reason: 'off' };
+    if (s.coins < p) return { ok: false, reason: 'coins', price: p };
+    s.coins -= p; daily(s, now).refills++; s.stats.coinsSpent.refill += p; refillGen(C, s, id);
+    return { ok: true, price: p };
+  }
+  /* 金币买体力：每天按 prices 逐次涨价，买完当天返回 null（UI 不显示按钮） */
+  function energyPrice(C, s, now) { const E = C.eco.coinEnergy; if (!E) return null; const n = daily(s, now).energyBuys; return n < E.prices.length ? E.prices[n] : null; }
+  function buyEnergy(C, s, now) {
+    const p = energyPrice(C, s, now); if (p === null) return { ok: false, reason: 'limit' };
+    if (s.coins < p) return { ok: false, reason: 'coins', price: p };
+    settleEnergy(C, s, now);
+    s.coins -= p; daily(s, now).energyBuys++; s.stats.coinsSpent.energy += p; s.energy += C.eco.coinEnergy.amount;
+    return { ok: true, price: p, amount: C.eco.coinEnergy.amount };
+  }
+  /* 合成泡泡：合出 minLevel 级以上时按 chance 在离合成格最近的空格冒一个同款泡泡（棋盘上同时最多 maxAtOnce 个）。
+     泡泡占格、不能拖、不能合、不能交单；lifeSec 到点自动消失。 */
+  function maybeBubble(C, s, at, it, now, rng) {
+    const B = C.eco.bubble; if (!B || it.lvl < B.minLevel || s.tut !== TUT_DONE) return -1;
+    if (s.cells.filter((c) => c && c.k === 'bubble').length >= B.maxAtOnce) return -1;
+    if (rng() >= B.chance) return -1;
+    const [r, c] = rc(C, at), to = nearestEmpty(C, s, r, c);
+    if (to < 0) return -1;
+    s.cells[to] = { k: 'bubble', chain: it.chain, lvl: it.lvl, until: (now || 0) + B.lifeSec * 1000 };
+    s.stats.bubbles = (s.stats.bubbles || 0) + 1;
+    return to;
+  }
+  function settleBubbles(C, s, now) {
+    const gone = [];
+    for (let i = 0; i < C.n; i++) { const c = s.cells[i]; if (c && c.k === 'bubble' && !c.hold && now >= c.until) { s.cells[i] = null; gone.push(i); } }
+    return gone;
+  }
+  const bubblePrice = (C, b) => b.lvl * C.eco.bubble.pricePerLevel;
+  /* 拿下泡泡：pay='coins' 扣金币，pay='ad' 由广告发奖调用（不扣钱）。
+     看广告期间 UI 给泡泡打 hold 标记：不会在广告播放中过期，看完照样能拿（没看完由 UI 去掉 hold，过期的下一次结算就消失） */
+  function popBubble(C, s, i, pay, now) {
+    const b = s.cells[i]; if (!b || b.k !== 'bubble') return { ok: false, reason: 'none' };
+    if (now >= b.until && !(pay === 'ad' && b.hold)) { s.cells[i] = null; return { ok: false, reason: 'expired' }; }
+    const p = pay === 'ad' ? 0 : bubblePrice(C, b);
+    if (s.coins < p) return { ok: false, reason: 'coins', price: p };
+    s.coins -= p; s.stats.coinsSpent.bubble += p;
+    if (pay === 'ad') s.ads.rewards++;
+    s.cells[i] = { k: 'item', chain: b.chain, lvl: b.lvl };
+    return { ok: true, price: p, item: s.cells[i] };
+  }
+  /* 换单：花金币把第 k 个订单换成别的（交过一部分的不能换，引导中不能换） */
+  function canSwap(C, s, k) { const o = s.orders[k]; return !!(o && C.eco.swapOrder && !tutStep(C, s) && !o.needs.some((n) => n.done)); }
+  function swapOrder(C, s, k, now, rng) {
+    if (!canSwap(C, s, k)) return { ok: false, reason: 'locked' };
+    const p = C.eco.swapOrder.price;
+    if (s.coins < p) return { ok: false, reason: 'coins', price: p };
+    s.coins -= p; s.stats.coinsSpent.swap += p;
+    s.orders[k] = rollOrder(C, s, now, rng || Math.random); // 旧单还在槽位里时抽，保证换到的不是同一张
+    return { ok: true, price: p };
   }
 
   /* ---------- 拖放 ---------- */
   function canMerge(C, a, b) {
     return !!(a && b && a.k === 'item' && b.k === 'item' && a.chain === b.chain && a.lvl === b.lvl && a.lvl < C.maxLevel);
   }
-  function drop(C, s, from, to, now) {
+  function drop(C, s, from, to, now, rng) {
     const a = s.cells[from];
-    if (!a) return { type: 'none' };
+    if (!a || a.k !== 'item') return { type: 'none' };
     if (to < 0 || to >= C.n || to === from) return { type: 'none' };
     if (!s.unlocked[to]) return { type: 'bounce', reason: 'locked' };
     const b = s.cells[to];
@@ -162,7 +245,8 @@ const Core = (() => {
       s.stats.merges++; s.stats.maxLvl = Math.max(s.stats.maxLvl || 0, a.lvl + 1);
       if (!s.stats.firstMergeAt) s.stats.firstMergeAt = now || 1;
       if (step === 'merge') s.tut++;
-      return { type: 'merge', lvl: a.lvl + 1 };
+      const bubble = maybeBubble(C, s, to, s.cells[to], now, rng || Math.random);
+      return { type: 'merge', lvl: a.lvl + 1, bubble };
     }
     let reason = 'mismatch';
     if (a.k === 'item' && b.k === 'item' && a.chain === b.chain && a.lvl === b.lvl) reason = 'max';
@@ -256,7 +340,8 @@ const Core = (() => {
   const decoDone = (C, s, layer) => { const i = C.deco.findIndex((d) => d.layer === layer); return i >= 0 && i < s.deco; };
 
   /* ---------- 任务（底栏 Tasks） ---------- */
-  function newStats(now) { return { merges: 0, spawns: 0, ordersDone: 0, coinsEarned: 0, unlocks: 0, maxLvl: 0, firstMergeAt: 0, firstOrderAt: 0, createdAt: now }; }
+  const newSpent = () => ({ unlock: 0, upgrade: 0, refill: 0, energy: 0, bubble: 0, swap: 0 });
+  function newStats(now) { return { merges: 0, spawns: 0, ordersDone: 0, coinsEarned: 0, unlocks: 0, maxLvl: 0, firstMergeAt: 0, firstOrderAt: 0, createdAt: now, coinsSpent: newSpent(), bubbles: 0 }; }
   function taskStat(s, type) {
     switch (type) {
       case 'merges': return s.stats.merges; case 'orders': return s.stats.ordersDone; case 'spawns': return s.stats.spawns;
@@ -294,7 +379,9 @@ const Core = (() => {
   }
 
   /* ---------- 广告奖励（激励视频发奖，Mock 和正式 SDK 共用这些入口） ---------- */
-  function newAdStats() { return { offers: { energy: 0, refill: 0, double: 0 }, clicks: { energy: 0, refill: 0, double: 0 }, rewards: 0, interstitials: 0, lastInterAt: 0 }; }
+  const AD_KINDS = ['energy', 'refill', 'double', 'bubble'];
+  const zeros = () => { const o = {}; for (const k of AD_KINDS) o[k] = 0; return o; };
+  function newAdStats() { return { offers: zeros(), clicks: zeros(), rewards: 0, interstitials: 0, lastInterAt: 0 }; }
   function adOffer(s, kind) { s.ads.offers[kind]++; }
   function adClick(s, kind) { s.ads.clicks[kind]++; }
   function markInterstitial(s, now) { s.ads.interstitials++; s.ads.lastInterAt = now; }
@@ -322,7 +409,7 @@ const Core = (() => {
     if (!canUnlockHere(C, s, i)) return { ok: false, reason: 'notAdjacent' };
     const p = unlockPrice(C, i);
     if (s.coins < p) return { ok: false, reason: 'coins', price: p };
-    s.coins -= p; s.unlocked[i] = true; s.stats.unlocks = (s.stats.unlocks || 0) + 1;
+    s.coins -= p; s.unlocked[i] = true; s.stats.unlocks = (s.stats.unlocks || 0) + 1; s.stats.coinsSpent.unlock += p;
     return { ok: true, price: p };
   }
 
@@ -336,10 +423,12 @@ const Core = (() => {
     if (!o || typeof o !== 'object' || typeof o.v !== 'number') return null;
     if (o.v === 2) { o.deco = 0; o.ads = newAdStats(); o.v = 3; } // v2 → v3：加装修进度和广告统计
     if (o.v === 3) { o.tasks = { next: 0, active: [] }; o.v = 4; } // v3 → v4：加任务（统计里新增的 unlocks / maxLvl 由下面的默认值补齐）
+    if (o.v === 4) { o.v = 5; } // v4 → v5：金币消耗（生成器等级 lv、每日限次 daily、花费统计），全部由下面的默认值补齐
     if (o.v !== SAVE_VERSION) return null;
     if (!Array.isArray(o.cells) || o.cells.length !== C.n || !Array.isArray(o.unlocked) || o.unlocked.length !== C.n) return null;
     if (!o.gens || typeof o.gens !== 'object' || !Array.isArray(o.orders)) return null;
     o.stats = Object.assign(newStats(o.savedAt || 0), o.stats || {});
+    o.stats.coinsSpent = Object.assign(newSpent(), o.stats.coinsSpent || {});
     if (!o.stats.maxLvl) for (const c of o.cells) if (c) o.stats.maxLvl = Math.max(o.stats.maxLvl, c.lvl);
     if (!o.tasks || !Array.isArray(o.tasks.active)) o.tasks = { next: 0, active: [] };
     o.tasks.active = o.tasks.active.filter((a) => taskDef(C, a.id));
@@ -350,13 +439,16 @@ const Core = (() => {
     if (typeof o.deco !== 'number' || o.deco < 0) o.deco = 0;
     o.deco = Math.min(o.deco, C.deco.length);
     o.ads = Object.assign(newAdStats(), o.ads || {});
+    o.ads.offers = Object.assign(zeros(), o.ads.offers); o.ads.clicks = Object.assign(zeros(), o.ads.clicks);
+    if (!o.daily || typeof o.daily.day !== 'number') o.daily = newDaily(now || o.savedAt || 0);
     // 配置改动后可能有删掉的生成器 / 越界等级 / 删掉的订单模板：清理掉而不是崩
     for (let i = 0; i < C.n; i++) {
       const c = o.cells[i];
-      if (c && (c.k !== 'item' || !C.chains[c.chain] || c.lvl < 1 || c.lvl > C.maxLevel)) o.cells[i] = null;
+      if (c && ((c.k !== 'item' && c.k !== 'bubble') || !C.chains[c.chain] || c.lvl < 1 || c.lvl > C.maxLevel)) o.cells[i] = null;
     }
     for (const id in o.gens) if (!C.gens[id]) delete o.gens[id];
-    for (const g of C.genList) if (!o.gens[g.id]) o.gens[g.id] = { charges: g.charges, cdEnd: 0 };
+    for (const g of C.genList) if (!o.gens[g.id]) o.gens[g.id] = { charges: g.charges, cdEnd: 0, lv: 1 };
+    for (const id in o.gens) { const g = o.gens[id]; g.lv = Math.max(1, Math.min(C.ups.length + 1, Math.floor(g.lv) || 1)); }
     const t = now || o.savedAt || 0;
     o.orders = o.orders.slice(0, C.O.slots);
     for (let k = 0; k < C.O.slots; k++) if (!o.orders[k] || !C.tpl[o.orders[k].tid]) { o.orders[k] = null; o.orders[k] = rollOrder(C, o, t, rng || Math.random); }
@@ -367,7 +459,7 @@ const Core = (() => {
   }
   function tutViable(C, s) {
     const step = tutStep(C, s);
-    const lvl1 = s.cells.filter((c) => c && c.chain === 'coffee' && c.lvl === C.tut.spawnLevel).length;
+    const lvl1 = s.cells.filter((c) => c && c.k === 'item' && c.chain === 'coffee' && c.lvl === C.tut.spawnLevel).length;
     if (step === 'tapGen') return lvl1 >= 1;
     if (step === 'merge') return lvl1 >= 2;
     if (step === 'deliver') return s.cells.some((c) => orderNeedFor(C, s.orders[0], c) >= 0);
@@ -382,6 +474,8 @@ const Core = (() => {
     isRare, rollOrder, settleOrders, orderNeedFor, deliver, tutStep, skipTutorial,
     decoNext, renovate, decoDone, adOffer, adClick, grantEnergy, grantDouble, markInterstitial, cooldownSec,
     fillTasks, taskProgress, tasksClaimable, claimTask,
+    genMaxCharges, upgradeCost, upgradeGen, refillPrice, buyRefill, energyPrice, buyEnergy,
+    maybeBubble, settleBubbles, bubblePrice, popBubble, canSwap, swapOrder, daily,
     unlockPrice, canUnlockHere, unlock, serialize, deserialize, itemDef,
   };
 })();

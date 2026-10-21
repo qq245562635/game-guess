@@ -51,7 +51,7 @@ comic_idx = [i + 1 for i, n in enumerate(nodes) if n['id'] in D['comics']]
 assert comic_idx == [1, 8, 15], f'漫画节点应为第 1/8/15，现在 {comic_idx}'
 for k in D['comics'].values():
     assert k in locale, f'缺本地化：{k}'
-UI_IDS = {'icon_energy', 'icon_coin', 'icon_star', 'logo_merge_cafe_lite', 'icon_lock', 'icon_check', 'icon_clock', 'icon_hand', 'nav_cafe', 'nav_merge', 'nav_tasks', 'deco_plant_pot', 'deco_plant_fern', 'deco_plant_bush'}
+UI_IDS = {'icon_energy', 'icon_coin', 'icon_star', 'logo_merge_cafe_lite', 'icon_lock', 'icon_check', 'icon_clock', 'icon_hand', 'nav_cafe', 'nav_merge', 'nav_tasks', 'deco_plant_pot', 'deco_plant_fern', 'deco_plant_bush', 'fx_bubble', 'icon_upgrade'}
 item_ids = {it['id'] for d in config['chains']['chains'].values() for it in d['items']} | {g['id'] for g in config['generators']['generators']}
 avatar_ids = {c['id'] for c in config['orders']['customers']}
 for key, ids, folder in [('items', item_ids, 'items'), ('avatars', avatar_ids, 'avatars'), ('ui', UI_IDS, 'ui')]:
