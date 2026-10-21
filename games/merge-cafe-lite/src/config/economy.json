@@ -1,7 +1,12 @@
 {
-  "_doc": "经济。体力：上限 100，自然恢复 1 点/120 秒，按存档时间戳离线结算（策划案 §5）。gems 为手游版钻石预留字段，本期不开放。startCoins 策划案未给，暂定值待 lijie 确认。",
-  "energy": { "max": 100, "start": 100, "regenSec": 120 },
+  "_doc": "经济。体力：上限 100，自然恢复 1 点/120 秒，按存档时间戳离线结算（策划案 §5）。gems 为手游版钻石预留字段，本期不开放。startCoins 策划案未给，暂定值待 lijie 确认。starEveryOrders：每完成多少个订单奖 1 星（Issue M3，星的第二个来源，第一个是稀有订单）。",
+  "energy": {
+    "max": 100,
+    "start": 100,
+    "regenSec": 120
+  },
   "startCoins": 100,
   "startStars": 0,
-  "startGems": 0
+  "startGems": 0,
+  "starEveryOrders": 3
 }

@@ -1,4 +1,6 @@
 {
-  "_doc": "已到位的正式图。把文件放进 assets/items/<id>.png 后，把 id 加进 items 数组；没登记的一律用占位色块，不发多余请求。",
-  "items": []
+  "_doc": "已到位的正式图（规格见 ASSETS.md）。物品 / 生成器放 assets/items/<id>.png → 登记进 items；顾客头像放 assets/avatars/<id>.png → avatars；货币图标、Logo、小图标、底栏图标放 assets/ui/<id>.png → ui（可用 id：icon_energy icon_coin icon_star logo_merge_cafe_lite icon_lock icon_check icon_clock icon_hand nav_cafe nav_merge）。没登记的一律用占位，不发多余请求。",
+  "items": [],
+  "avatars": [],
+  "ui": []
 }

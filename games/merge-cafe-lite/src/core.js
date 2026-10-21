@@ -3,7 +3,7 @@
    所有数值来自 CONFIG（src/config/*.json），这里不写死任何数。
    时间一律用毫秒时间戳 now 传入，随机数用 rng 传入，方便离线结算和测试。 */
 const Core = (() => {
-  const SAVE_VERSION = 2;
+  const SAVE_VERSION = 3;
   const TUT_DONE = -1;
 
   /* ---------- 配置索引 ---------- */
@@ -13,7 +13,10 @@ const Core = (() => {
     const O = cfg.orders, tpl = {};
     for (const t of O.templates) tpl[t.id] = t;
     if (cfg.tutorial && cfg.tutorial.firstOrder) tpl[cfg.tutorial.firstOrder.id] = cfg.tutorial.firstOrder;
+    const deco = [];
+    if (cfg.deco) cfg.deco.acts.forEach((a, ai) => a.nodes.forEach((nd, ni) => deco.push(Object.assign({ act: ai, inAct: ni, actName: a.name }, nd))));
     return {
+      deco, ads: cfg.ads || {},
       cfg, cols: b.cols, rows: b.rows, n: b.cols * b.rows,
       maxLevel: cfg.chains.maxLevel, chains: cfg.chains.chains, gens, genList: cfg.generators.generators,
       eco: cfg.economy, O, tpl, tut: cfg.tutorial || { enabled: false },
@@ -37,6 +40,8 @@ const Core = (() => {
       orders: [],
       tut: C.tut.enabled ? 0 : TUT_DONE,
       seq: 0,
+      deco: 0,                 // 已完成的装修节点数（按顺序解锁）
+      ads: newAdStats(),
       stats: { merges: 0, spawns: 0, ordersDone: 0, coinsEarned: 0, firstMergeAt: 0, firstOrderAt: 0, createdAt: now },
     };
     for (let r = 0; r < C.rows; r++) for (let c = 0; c < C.cols; c++) s.unlocked[idx(C, r, c)] = b.mask[r][c] === 'x';
@@ -121,7 +126,7 @@ const Core = (() => {
     if (s.tut !== TUT_DONE) s.tut++;
     return { ok: true, to, item };
   }
-  /* 生成器立即回满（M3 激励广告点位用） */
+  /* 生成器立即回满（激励广告点位 2） */
   function refillGen(C, s, id) {
     const g = s.gens[id]; if (!g) return false;
     g.charges = C.gens[id].charges; g.cdEnd = 0; return true;
@@ -216,12 +221,35 @@ const Core = (() => {
     if (o.needs.some((n) => !n.done)) return { type: 'partial', need: ni };
     s.coins += o.coins; s.stars += o.stars;
     s.stats.ordersDone++; s.stats.coinsEarned += o.coins;
+    const every = C.eco.starEveryOrders || 0, bonusStar = every && s.stats.ordersDone % every === 0 ? 1 : 0;
+    s.stars += bonusStar;
     if (!s.stats.firstOrderAt) s.stats.firstOrderAt = now || 1;
     if (step === 'deliver') s.tut = TUT_DONE;
     const doneOrder = o;
     s.orders[k] = null; s.orders[k] = rollOrder(C, s, now, rng);
-    return { type: 'complete', coins: doneOrder.coins, stars: doneOrder.stars, order: doneOrder };
+    const inter = C.ads.interstitialEveryOrders, interstitial = !!(inter && s.stats.ordersDone % inter === 0);
+    return { type: 'complete', coins: doneOrder.coins, stars: doneOrder.stars, bonusStar, interstitial, order: doneOrder };
   }
+
+  /* ---------- 装修：按顺序解锁，扣星 ---------- */
+  function decoNext(C, s) { return C.deco[s.deco] || null; }
+  function renovate(C, s) {
+    const nd = decoNext(C, s);
+    if (!nd) return { ok: false, reason: 'done' };
+    if (tutStep(C, s)) return { ok: false, reason: 'tutorial' };
+    if (s.stars < nd.cost) return { ok: false, reason: 'stars', need: nd.cost - s.stars };
+    s.stars -= nd.cost; s.deco++;
+    const next = decoNext(C, s);
+    return { ok: true, node: nd, comic: C.cfg.deco.comics[nd.id] || null, actDone: !next || next.act !== nd.act, allDone: !next };
+  }
+  const decoDone = (C, s, layer) => { const i = C.deco.findIndex((d) => d.layer === layer); return i >= 0 && i < s.deco; };
+
+  /* ---------- 广告奖励（激励视频发奖，Mock 和正式 SDK 共用这些入口） ---------- */
+  function newAdStats() { return { offers: { energy: 0, refill: 0, double: 0 }, clicks: { energy: 0, refill: 0, double: 0 }, rewards: 0, interstitials: 0 }; }
+  function adOffer(s, kind) { s.ads.offers[kind]++; }
+  function adClick(s, kind) { s.ads.clicks[kind]++; }
+  function grantEnergy(C, s, now) { settleEnergy(C, s, now); s.energy += C.ads.rewarded.energy.amount; s.ads.rewards++; return C.ads.rewarded.energy.amount; }
+  function grantDouble(s, coins) { s.coins += coins; s.stats.coinsEarned += coins; s.ads.rewards++; return coins; }
 
   /* ---------- 新手引导 ---------- */
   function tutStep(C, s) { return s.tut === TUT_DONE || s.tut === undefined ? null : C.tut.steps[s.tut] || null; }
@@ -252,10 +280,11 @@ const Core = (() => {
   function serialize(s, now) { return JSON.stringify(Object.assign({}, s, { savedAt: now })); }
   /* 读档：版本不认识或数据坏了返回 null（调用方新开档）。
      v1（M1 测试档：生成器在棋盘里、下 4 行解锁、无订单）与 #38 效果图后的棋盘布局不兼容，直接新开档；
-     原型没有线上玩家，不做逐格迁移。 */
+     原型没有线上玩家，不做逐格迁移。v2 → v3 迁移：补装修进度 deco=0 和广告统计。 */
   function deserialize(C, text, now, rng) {
     let o; try { o = JSON.parse(text); } catch (e) { return null; }
     if (!o || typeof o !== 'object' || typeof o.v !== 'number') return null;
+    if (o.v === 2) { o.deco = 0; o.ads = newAdStats(); o.v = 3; } // v2 → v3：加装修进度和广告统计
     if (o.v !== SAVE_VERSION) return null;
     if (!Array.isArray(o.cells) || o.cells.length !== C.n || !Array.isArray(o.unlocked) || o.unlocked.length !== C.n) return null;
     if (!o.gens || typeof o.gens !== 'object' || !Array.isArray(o.orders)) return null;
@@ -263,6 +292,9 @@ const Core = (() => {
     if (typeof o.gems !== 'number') o.gems = 0;
     if (typeof o.tut !== 'number') o.tut = TUT_DONE;
     if (typeof o.seq !== 'number') o.seq = 0;
+    if (typeof o.deco !== 'number' || o.deco < 0) o.deco = 0;
+    o.deco = Math.min(o.deco, C.deco.length);
+    o.ads = Object.assign(newAdStats(), o.ads || {});
     // 配置改动后可能有删掉的生成器 / 越界等级 / 删掉的订单模板：清理掉而不是崩
     for (let i = 0; i < C.n; i++) {
       const c = o.cells[i];
@@ -293,6 +325,7 @@ const Core = (() => {
     SAVE_VERSION, TUT_DONE, index, idx, rc, newState, settleEnergy, energyNextIn, settleAll, settleGen,
     tapGen, refillGen, rollLevel, nearestEmpty, emptyCount, canMerge, drop,
     isRare, rollOrder, settleOrders, orderNeedFor, deliver, tutStep, skipTutorial,
+    decoNext, renovate, decoDone, adOffer, adClick, grantEnergy, grantDouble,
     unlockPrice, canUnlockHere, unlock, serialize, deserialize, itemDef,
   };
 })();

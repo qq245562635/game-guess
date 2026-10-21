@@ -4,9 +4,7 @@
    正式图：assets/items/<id>.png 到位并登记进 config/art.json 后，自动换掉同 id 的占位，逻辑代码不用改。 */
 const Art = (() => {
   const loaded = {};           // id -> HTMLImageElement（正式图）
-  let onReady = null;
-  function load(list, base, cb) {
-    onReady = cb;
+  function load(list, base, onReady) {
     for (const id of list) {
       const im = new Image();
       im.onload = () => { loaded[id] = im; GL.forget('I|' + id + '|'); if (onReady) onReady(id); };
@@ -88,16 +86,28 @@ const Art = (() => {
     });
   }
 
+  /* UI 小图标：assets/ui/<id>.png 到位并登记后用正式图，否则画占位（ASSETS.md §4 / §7） */
+  function ui(id, size, fallback) {
+    return GL.sprite('I|' + id + '|', size, size, (g, w, h) => { if (loaded[id]) g.drawImage(loaded[id], 0, 0, w, h); else fallback(g, w, h); });
+  }
+  /* Logo：正式图 1024×384，没到就返回 null，由场景代码画占位木牌 */
+  function logo(w, h) {
+    const id = 'logo_merge_cafe_lite';
+    return loaded[id] ? GL.sprite('I|' + id + '|', w, h, (g, pw, ph) => g.drawImage(loaded[id], 0, 0, pw, ph)) : null;
+  }
+  const has = (id) => !!loaded[id];
+  const src = (id) => (loaded[id] ? loaded[id].src : null);
+
   /* 锁 */
   function lock(size) {
-    return GL.sprite('lock', size, size, (g, w) => {
+    return ui('icon_lock', size, (g, w) => {
       g.fillStyle = 'rgba(255,255,255,0.9)'; g.strokeStyle = 'rgba(255,255,255,0.9)';
       g.lineWidth = w * 0.11; g.beginPath(); g.arc(w / 2, w * 0.42, w * 0.2, Math.PI, 0); g.stroke();
       rr(g, w * 0.24, w * 0.42, w * 0.52, w * 0.4, w * 0.08); g.fill();
     });
   }
   function coin(size) {
-    return GL.sprite('coin', size, size, (g, w) => {
+    return ui('icon_coin', size, (g, w) => {
       g.fillStyle = '#f2b632'; g.beginPath(); g.arc(w / 2, w / 2, w * 0.46, 0, Math.PI * 2); g.fill();
       g.strokeStyle = '#b97a12'; g.lineWidth = w * 0.08; g.stroke();
       g.fillStyle = '#ffe28a'; g.beginPath(); g.arc(w / 2, w / 2, w * 0.22, 0, Math.PI * 2); g.fill();
@@ -121,37 +131,37 @@ const Art = (() => {
     });
   }
   function star(size) {
-    return GL.sprite('star', size, size, (g, w) => {
+    return ui('icon_star', size, (g, w) => {
       g.beginPath();
       for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = (k % 2 ? 0.2 : 0.46) * w; g.lineTo(w / 2 + Math.cos(a) * r, w * 0.53 + Math.sin(a) * r); }
       g.closePath(); g.fillStyle = '#f5c03a'; g.fill(); g.lineJoin = 'round'; g.lineWidth = w * 0.07; g.strokeStyle = '#c4851a'; g.stroke();
     });
   }
   function clock(size) {
-    return GL.sprite('clock', size, size, (g, w) => {
+    return ui('icon_clock', size, (g, w) => {
       g.strokeStyle = '#3a2416'; g.lineWidth = w * 0.12; g.beginPath(); g.arc(w / 2, w / 2, w * 0.38, 0, Math.PI * 2); g.stroke();
       g.lineCap = 'round'; g.beginPath(); g.moveTo(w / 2, w / 2); g.lineTo(w / 2, w * 0.28); g.moveTo(w / 2, w / 2); g.lineTo(w * 0.66, w * 0.58); g.stroke();
     });
   }
   function check(size) {
-    return GL.sprite('check', size, size, (g, w) => {
+    return ui('icon_check', size, (g, w) => {
       g.fillStyle = '#3bb36a'; g.beginPath(); g.arc(w / 2, w / 2, w * 0.46, 0, Math.PI * 2); g.fill();
       g.strokeStyle = '#fff'; g.lineWidth = w * 0.14; g.lineCap = 'round'; g.lineJoin = 'round';
       g.beginPath(); g.moveTo(w * 0.28, w * 0.52); g.lineTo(w * 0.44, w * 0.68); g.lineTo(w * 0.72, w * 0.36); g.stroke();
     });
   }
   function bolt(size) {
-    return GL.sprite('bolt', size, size, (g, w) => {
+    return ui('icon_energy', size, (g, w) => {
       g.beginPath(); g.moveTo(w * 0.58, w * 0.06); g.lineTo(w * 0.2, w * 0.56); g.lineTo(w * 0.46, w * 0.56); g.lineTo(w * 0.38, w * 0.94); g.lineTo(w * 0.8, w * 0.4); g.lineTo(w * 0.53, w * 0.4); g.closePath();
       g.fillStyle = '#f5c03a'; g.fill(); g.lineJoin = 'round'; g.lineWidth = w * 0.07; g.strokeStyle = '#c4851a'; g.stroke();
     });
   }
   function hand(size) {
-    return GL.sprite('hand', size, size, (g, w) => {
+    return ui('icon_hand', size, (g, w) => {
       g.fillStyle = '#fff'; g.strokeStyle = '#3a2416'; g.lineWidth = w * 0.06; g.lineJoin = 'round';
       g.beginPath(); rr(g, w * 0.36, w * 0.08, w * 0.16, w * 0.5, w * 0.08); g.fill(); g.stroke();
       g.beginPath(); rr(g, w * 0.3, w * 0.42, w * 0.46, w * 0.46, w * 0.16); g.fill(); g.stroke();
     });
   }
-  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, FONT };
+  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, logo, has, src, FONT };
 })();

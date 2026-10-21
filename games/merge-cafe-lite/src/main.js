@@ -43,6 +43,7 @@
   document.title = L.t('game.title');
 
   /* ---------- 布局 ---------- */
+  let mode = 'merge'; // 'merge' 棋盘 / 'cafe' 装修
   const LY = { W: 0, H: 0, portrait: true, bx: 0, by: 0, bs: 0, cs: 0, pad: 0, scene: null, orders: [], gens: [], hud: null };
   const gap = 8;
   function layout() {
@@ -88,6 +89,14 @@
     }
     LY.pad = Math.round(LY.bs * 0.022);
     LY.cs = (LY.bs - LY.pad * 2) / C.cols;
+    if (mode === 'cafe') { // 装修：场景铺满，下面是装修面板 + 底栏
+      const cw = Math.min(W - 16, 620), cx = (W - cw) / 2;
+      placeNav(cx, H - navH - safeB - 4, cw, navH);
+      placeHud(0, safeT + 8, W);
+      const ds = $('deco').style; ds.left = cx + 'px'; ds.width = cw + 'px'; ds.bottom = (navH + safeB + 4 + gap * 1.5) + 'px';
+      const ph = $('deco').getBoundingClientRect().height || 200;
+      LY.cafeScene = { x: 0, y: 0, w: W, h: Math.max(160, H - navH - safeB - ph - gap * 3) };
+    }
     const pc = $('pill-coins').getBoundingClientRect(), ps = $('pill-stars').getBoundingClientRect();
     LY.coinTarget = [pc.left + 18, pc.top + pc.height / 2]; LY.starTarget = [ps.left + 18, ps.top + ps.height / 2];
   }
@@ -143,11 +152,14 @@
     el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1800);
   }
   let modalOnClose = null, energyModalTick = null;
-  function modal(title, body, buttons) {
+  function modal(title, body, buttons, comic) {
     $('m-title').textContent = title; $('m-body').textContent = body;
+    $('m-comic').style.display = comic ? 'block' : 'none';
+    if (comic) $('m-comic').innerHTML = comicSVG(comic);
     const box = $('m-btns'); box.textContent = '';
     for (const b of buttons) {
       const el = document.createElement('button'); el.className = 'btn' + (b.alt ? ' alt' : ''); el.textContent = b.label;
+      if (b.ad) el.classList.add('ad');
       el.onclick = () => { closeModal(); if (b.on) b.on(); }; box.appendChild(el);
     }
     $('modal').classList.add('show');
@@ -209,15 +221,63 @@
     }
     shakes.set('g' + id, clock());
     if (r.reason === 'full') toast(L.t('ui.full'));
-    else if (r.reason === 'cooldown') toast(L.t('ui.recharging', { t: mmss(r.left) }));
+    else if (r.reason === 'cooldown') showRefill(id);
     else if (r.reason === 'energy') showNoEnergy();
   }
-  function showNoEnergy() {
+  /* 激励视频：offer 计展示、click 计点击（策划案 §11 主动点击率 ≥40% 的数据口径） */
+  async function watchAd(kind, grant) {
+    Core.adClick(S, kind); markDirty();
+    const ok = await Ads.rewarded(kind);
+    if (ok) { grant(); markDirty(); save(); hudCache = ''; updateHud(); }
+  }
+  function showNoEnergy() { // 激励视频点位 1：+30 体力
     const body = () => L.t('ui.noEnergyBody', { t: mmss(Core.energyNextIn(C, S, now())) });
-    modal(L.t('ui.noEnergyTitle'), body(), [{ label: L.t('ui.ok') }]);
-    // TODO(M3)：这里加"看广告 +30 体力"按钮（激励视频点位 1）
+    Core.adOffer(S, 'energy'); markDirty();
+    modal(L.t('ui.noEnergyTitle'), body(), [
+      { label: L.t('ui.ok'), alt: true },
+      { label: '▶ ' + L.t('ad.energy', { n: C.ads.rewarded.energy.amount }), ad: true, on: () => watchAd('energy', () => {
+        const n = Core.grantEnergy(C, S, now()); bump('pill-energy'); toast('+' + n + ' ⚡');
+      }) },
+    ]);
     energyModalTick = () => { $('m-body').textContent = body(); };
     modalOnClose = () => { energyModalTick = null; };
+  }
+  function showRefill(id) { // 激励视频点位 2：生成器立即回满
+    const g = S.gens[id], body = () => L.t('ui.genEmptyBody', { t: mmss(g.cdEnd - now()) });
+    Core.adOffer(S, 'refill'); markDirty();
+    modal(L.t('ui.genEmptyTitle'), body(), [
+      { label: L.t('ui.ok'), alt: true },
+      { label: '▶ ' + L.t('ad.refill'), ad: true, on: () => watchAd('refill', () => { Core.refillGen(C, S, id); genPress.set(id, clock()); const R = genRect(id); burst(R.x + R.h / 2, R.y + R.h / 2, '#f5c03a', 14); }) },
+    ]);
+    energyModalTick = () => { if (g.charges > 0) closeModal(); else $('m-body').textContent = body(); };
+    modalOnClose = () => { energyModalTick = null; };
+  }
+  /* 激励视频点位 3：订单完成后顶栏金币旁出现"翻倍"按钮，几秒后消失（不打断操作） */
+  let x2Timer = 0, x2Coins = 0;
+  function offerDouble(coins) {
+    x2Coins = coins; Core.adOffer(S, 'double'); markDirty();
+    const el = $('x2'); el.querySelector('span').textContent = L.t('ad.double') + ' +' + coins;
+    const pc = $('pill-coins').getBoundingClientRect();
+    el.style.left = (pc.left + pc.width / 2) + 'px'; el.style.top = (pc.bottom + 6) + 'px';
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(x2Timer); x2Timer = setTimeout(() => el.classList.remove('show'), C.ads.rewarded.double.offerSec * 1000);
+  }
+  $('x2').onclick = () => {
+    $('x2').classList.remove('show'); clearTimeout(x2Timer);
+    const coins = x2Coins;
+    watchAd('double', () => {
+      Core.grantDouble(S, coins); pendingCoins += coins;
+      const n = 6, each = Math.floor(coins / n);
+      for (let k = 0; k < n; k++) coinsFly.push({ kind: 'coin', x0: LY.W / 2 + (Math.random() - 0.5) * 60, y0: LY.H / 2, t0: clock() + k * 0.06, dur: 0.6, val: k === n - 1 ? coins - each * (n - 1) : each });
+      toast(L.t('ad.got', { n: coins }));
+    });
+  };
+  /* 插屏：每 N 单一次，排队到"没在拖、没弹窗、没在引导、不在播别的广告"时才放 */
+  let interQueued = false;
+  function tryInterstitial() {
+    if (!interQueued || down || drag || modalOpen() || Ads.busy || Core.tutStep(C, S) || flies.length) return;
+    interQueued = false; S.ads.interstitials++; markDirty();
+    Ads.interstitial();
   }
   function tapLocked(i) {
     if (Core.tutStep(C, S)) { shakes.set(i, clock()); return; }
@@ -240,8 +300,10 @@
     flies.push({ cell: -1, item: it, x0: px, y0: py, x1: R.x + R.w * 0.62, y1: R.y + R.h * 0.35, t0: clock(), dur: 0.22, shrink: true });
     if (r.type === 'complete') {
       cardPops.set(k, clock() + 0.2);
-      flyRewards(R.x + R.w / 2, R.y + R.h / 2, r.coins, r.stars);
-      toast(L.t('ui.orderDone'));
+      flyRewards(R.x + R.w / 2, R.y + R.h / 2, r.coins, r.stars + r.bonusStar);
+      toast(r.bonusStar ? L.t('ui.starBonus') : L.t('ui.orderDone'));
+      if (!Core.tutStep(C, S) && S.stats.ordersDone > 1) offerDouble(r.coins);
+      if (r.interstitial) interQueued = true;
     } else cardPops.set(k, clock());
     markDirty();
     return true;
@@ -251,7 +313,7 @@
   let down = null, drag = null, sel = -1, selT = 0;
   const DRAG_PX = 8;
   cv.addEventListener('pointerdown', (e) => {
-    if (modalOpen() || down) return;
+    if (modalOpen() || down || mode !== 'merge' || Ads.busy) return;
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
     down = { id: e.pointerId, x: e.clientX, y: e.clientY, cell: cellAt(e.clientX, e.clientY), gen: genAt(e.clientX, e.clientY) };
   });
@@ -310,8 +372,68 @@
   cv.addEventListener('pointerup', (e) => release(e, false));
   cv.addEventListener('pointercancel', (e) => release(e, true));
   $('modal').addEventListener('pointerdown', (e) => { if (e.target === $('modal')) closeModal(); });
-  $('nav-cafe').onclick = () => toast(L.t('ui.soon')); // M3：装修
-  $('nav-merge').onclick = () => {};
+  /* ---------- Café（装修）/ Merge 切换 ---------- */
+  function setMode(m) {
+    if (mode === m) return;
+    mode = m; down = drag = null; sel = -1;
+    document.body.classList.toggle('cafe', m === 'cafe');
+    $('nav-cafe').classList.toggle('on', m === 'cafe'); $('nav-merge').classList.toggle('on', m === 'merge');
+    $('x2').classList.remove('show');
+    updateDeco(); layout();
+  }
+  $('nav-cafe').onclick = () => setMode('cafe');
+  $('nav-merge').onclick = () => setMode('merge');
+  let decoKey = '';
+  function updateDeco() {
+    const nd = Core.decoNext(C, S), afford = !!nd && S.stars - pendingStars >= nd.cost;
+    $('nav-cafe').classList.toggle('dot', afford && mode !== 'cafe');
+    if (mode !== 'cafe') return;
+    const key = S.deco + '|' + S.stars + '|' + pendingStars;
+    if (key === decoKey) return; decoKey = key;
+    const act = nd ? nd.act : C.cfg.deco.acts.length - 1, A = C.cfg.deco.acts[act];
+    $('deco-act').textContent = nd ? L.t(A.name) : L.t('ui.allDone');
+    const done = C.deco.filter((d) => d.act === act).filter((d) => C.deco.indexOf(d) < S.deco).length;
+    $('deco-prog').textContent = done + '/' + A.nodes.length;
+    const list = $('deco-list'); list.textContent = '';
+    C.deco.filter((d) => d.act === act).forEach((d) => {
+      const i = C.deco.indexOf(d), st = i < S.deco ? 'done' : i === S.deco ? 'next' : 'todo';
+      const el = document.createElement('div'); el.className = 'chip ' + st;
+      el.innerHTML = `<b></b><span>${st === 'done' ? '✓' : '★ ' + d.cost}</span>`; el.querySelector('b').textContent = L.t(d.name);
+      list.appendChild(el);
+    });
+    const btn = $('deco-btn');
+    btn.style.display = nd ? '' : 'none';
+    if (nd) { btn.innerHTML = `<span></span> ★ ${nd.cost}`; btn.querySelector('span').textContent = L.t('ui.renovate') + ' · ' + L.t(nd.name); btn.classList.toggle('dim', !afford); }
+    layout();
+  }
+  $('deco-btn').onclick = () => {
+    if (pendingStars) return; // 星星还在飞，等落地
+    const r = Core.renovate(C, S);
+    if (!r.ok) { if (r.reason === 'stars') toast(L.t('ui.needStars', { n: r.need })); return; }
+    markDirty(); save(); hudCache = ''; updateHud(); bump('pill-stars');
+    layerPop.set(r.node.layer, clock());
+    const G = sceneGeom(LY.cafeScene), a = DECO_LAYERS[r.node.layer].anchor(G);
+    burst(a[0], a[1], '#f5c03a', 24); burst(a[0], a[1], '#ef7965', 12);
+    decoKey = ''; updateDeco();
+    const after = () => { if (r.actDone) toast(r.allDone ? L.t('ui.allDone') : L.t('ui.actDone', { act: L.t(C.cfg.deco.acts[r.node.act].name) })); };
+    if (r.comic) setTimeout(() => { modal(L.t(r.node.name), L.t(r.comic), [{ label: L.t('ui.continue') }], r.comic); modalOnClose = after; }, 900);
+    else after();
+  };
+  /* 场景几何：u 按较窄的一边定，竖屏高场景里小摊和装饰不会被拉得又高又小 */
+  function sceneGeom(R) {
+    const { x, y, w, h } = R, u = Math.min(h / 100, w / 105), gy = y + h * 0.74;
+    const sw = Math.min(w * 0.46, u * 60), sx = x + w * 0.04, rx0 = sx + sw + u * 5;
+    const wallTop = Math.max(y + h * 0.22, gy - u * 44), horizon = Math.max(y + h * 0.3, gy - u * 26);
+    return { x, y, w, h, u, horizon, gy, bot: y + h, sx, sw, wallTop, rx0, rw: x + w * 0.97 - rx0 };
+  }
+  /* 一格漫画占位：两个成年人剪影 + 场景色块（正式稿由 Codex 出，按 comic.N 同名替换） */
+  function comicSVG(key) {
+    const tint = { 'comic.1': ['#bfe8f2', '#e3cfa2'], 'comic.8': ['#ffd9a8', '#c8955a'], 'comic.15': ['#3d3a6b', '#c8955a'] }[key] || ['#bfe8f2', '#e3cfa2'];
+    return `<svg viewBox="0 0 300 150" role="img"><rect width="300" height="150" rx="10" fill="${tint[0]}"/><rect y="105" width="300" height="45" fill="${tint[1]}"/>
+      ${key === 'comic.15' ? [30, 70, 110, 150, 190, 230, 270].map((x, k) => `<circle cx="${x}" cy="${22 + Math.sin(k) * 6}" r="5" fill="${['#ffe08a', '#ff8fa8', '#8fe0d6'][k % 3]}"/>`).join('') : ''}
+      <g fill="#3a2416"><circle cx="105" cy="52" r="15"/><path d="M80 130c0-35 10-55 25-55s25 20 25 55z"/><circle cx="195" cy="48" r="15"/><path d="M170 130c0-38 10-60 25-60s25 22 25 60z"/></g>
+      <rect x="2" y="2" width="296" height="146" rx="9" fill="none" stroke="#3a2416" stroke-width="4"/></svg>`;
+  }
 
   /* ---------- 绘制 ---------- */
   const COL = {
@@ -323,46 +445,163 @@
     cream: hex('#fff4db'), creamD: hex('#ead2a6'), white: [1, 1, 1, 1], coral: hex('#ef7965'), coralD: hex('#c4553c'),
     gold: hex('#f5c03a'), goldD: hex('#d89a22'), teal: hex('#48b8af'), dim: [0.08, 0.12, 0.14, 0.55], cd: [0.15, 0.12, 0.1, 0.5],
   };
-  function drawScene(R, t) {
-    const { x, y, w, h } = R;
-    GL.rect(x, y, w, h * 0.6, 0, COL.sky);
-    GL.rect(x, y + h * 0.35, w, h * 0.25, 0, COL.skyLo, { soft: h * 0.15 });
-    // 云
-    for (let k = 0; k < 3; k++) { const cx = x + ((k * 0.37 + t * 0.006) % 1.2 - 0.1) * w, cy = y + h * (0.16 + k * 0.08), s = h * 0.06;
-      GL.circle(cx, cy, s, [1, 1, 1, 0.85]); GL.circle(cx + s, cy + s * 0.2, s * 0.8, [1, 1, 1, 0.85]); GL.circle(cx - s, cy + s * 0.25, s * 0.7, [1, 1, 1, 0.85]); }
-    // 海 + 小岛 + 帆船
-    const seaY = y + h * 0.55;
-    GL.circle(x + w * 0.78, seaY + h * 0.04, h * 0.16, COL.island); GL.circle(x + w * 0.9, seaY + h * 0.07, h * 0.12, COL.islandD);
-    for (let k = 0; k < 4; k++) GL.rect(x + w * (0.72 + k * 0.035), seaY - h * (0.06 + (k % 2) * 0.03), w * 0.025, h * 0.06, 2, hex(k % 2 ? '#fff4db' : '#ef7965'));
-    GL.rect(x, seaY, w, h - (seaY - y), 0, COL.sea);
-    for (let k = 0; k < 4; k++) GL.rect(x - 20, seaY + 6 + k * h * 0.07 + Math.sin(t * 0.8 + k) * 2, w + 40, 3, 1.5, [1, 1, 1, 0.25]);
-    const bx = x + w * (0.55 + 0.03 * Math.sin(t * 0.3)), by = seaY + h * 0.08;
-    GL.rect(bx - h * 0.03, by, h * 0.06, h * 0.02, 3, COL.white); GL.rect(bx - h * 0.002, by - h * 0.07, h * 0.03, h * 0.07, 2, COL.white);
-    // 左侧咖啡小摊（M3 装修节点会在这里切换图层）
-    const sw = Math.min(w * 0.42, h * 0.95), sx = x + w * 0.02, top = y + h * 0.2, bot = y + h;
-    GL.rect(sx, top, sw, bot - top, 6, hex('#f6e6c8'));
-    const stripes = 7, stw = (sw + 12) / stripes;
-    for (let k = 0; k < stripes; k++) GL.rect(sx - 6 + k * stw, top - h * 0.05, stw, h * 0.12, 4, k % 2 ? COL.cream : COL.coral);
-    GL.rect(sx + sw * 0.08, top + h * 0.16, sw * 0.32, h * 0.22, 4, hex('#3d5a52'));       // 菜单黑板
-    for (let k = 0; k < 3; k++) GL.rect(sx + sw * 0.12, top + h * (0.2 + k * 0.05), sw * 0.2, 2, 1, [1, 1, 1, 0.6]);
-    GL.rect(sx + sw * 0.5, top + h * 0.18, sw * 0.42, h * 0.04, 2, COL.woodD);             // 架子
-    for (let k = 0; k < 3; k++) GL.circle(sx + sw * (0.58 + k * 0.13), top + h * 0.15, h * 0.03, hex(['#7fb26a', '#ef7965', '#f5c03a'][k]));
-    GL.rect(sx - 4, bot - h * 0.2, sw + 8, h * 0.2, 6, COL.woodD);                          // 柜台
-    GL.rect(sx - 4, bot - h * 0.2, sw + 8, h * 0.035, 4, COL.wood);
-    // 右侧遮阳伞
-    const ux = x + w * 0.86, uy = y + h * 0.36, ur = Math.min(w * 0.16, h * 0.3);
-    GL.rect(ux - 2, uy, 4, bot - uy, 2, hex('#8a5a32'));
-    GL.rect(ux - ur, uy - ur * 0.35, ur * 2, ur * 0.45, ur * 0.4, COL.coral);
-    GL.rect(ux - ur * 0.35, uy - ur * 0.35, ur * 0.7, ur * 0.45, ur * 0.2, COL.cream);
-    // Logo 木牌
-    if (h > 120) {
-      const lw = Math.min(w * 0.5, 260), lh = lw * 0.36, lx = x + (LY.portrait ? w / 2 : w * 0.5) - lw / 2, ly = y + (LY.portrait ? Math.max(62, h * 0.24) : 70);
+  /* 场景：海边小摊。底图是"破摊"（灰褐墙、木箱当柜台、地上有垃圾、一张塌了的桌子），
+     每个装修节点打开一个图层（DECO_LAYERS，id 对应 deco.json 的 layer），刚解锁的图层弹跳出现。
+     正式美术到位后按图层 id 换成贴图即可。 */
+  const layerPop = new Map();
+  const has = (layer) => Core.decoDone(C, S, layer);
+  function drawScene(R, t, showLogo) {
+    const G = sceneGeom(R), { x, y, w, h, u, horizon, gy, bot, rx0, rw } = G;
+    // 天空 / 云 / 海 / 小岛
+    GL.rect(x, y, w, horizon - y + 2, 0, COL.sky);
+    GL.rect(x, y + h * 0.3, w, horizon - y - h * 0.3, 0, COL.skyLo, { soft: h * 0.12 });
+    for (let k = 0; k < 3; k++) { const cx = x + ((k * 0.37 + t * 0.006) % 1.2 - 0.1) * w, cy = y + h * (0.1 + k * 0.07), c = u * 5;
+      GL.circle(cx, cy, c, [1, 1, 1, 0.85]); GL.circle(cx + c, cy + c * 0.2, c * 0.8, [1, 1, 1, 0.85]); GL.circle(cx - c, cy + c * 0.25, c * 0.7, [1, 1, 1, 0.85]); }
+    GL.circle(x + w * 0.8, horizon + u * 2, u * 14, COL.island); GL.circle(x + w * 0.9, horizon + u * 4, u * 10, COL.islandD);
+    for (let k = 0; k < 4; k++) GL.rect(x + w * (0.75 + k * 0.03), horizon - u * (4 + (k % 2) * 3), u * 2.4, u * 5, 1.5, hex(k % 2 ? '#fff4db' : '#ef7965'));
+    GL.rect(x, horizon, w, gy - horizon + 2, 0, COL.sea);
+    for (let k = 0; k < 4; k++) GL.rect(x - 20, horizon + u * 3 + k * (gy - horizon) * 0.22 + Math.sin(t * 0.8 + k) * 2, w + 40, Math.max(1.5, u * 0.6), 1, [1, 1, 1, 0.25]);
+    const bx = x + w * (0.6 + 0.03 * Math.sin(t * 0.3)), by = horizon + u * 6;
+    GL.rect(bx - u * 3, by, u * 6, u * 1.8, 2, COL.white); GL.rect(bx - u * 0.3, by - u * 6, u * 2.6, u * 6, 2, COL.white);
+    // 地面：沙地 + 垃圾（没铺木地板时）
+    if (!has('deck')) {
+      GL.rect(x, gy, w, bot - gy, 0, hex('#e3cfa2'));
+      for (let k = 0; k < 7; k++) GL.rect(x + w * (0.1 + k * 0.13), gy + (bot - gy) * (0.3 + (k % 3) * 0.2), u * (2 + k % 3), u * 1.2, 1, [0.45, 0.4, 0.35, 0.45]);
+    }
+    for (const L0 of BACK_LAYERS) drawLayer(L0, G, t);
+    drawStall(G, t);
+    for (const L0 of FRONT_LAYERS) drawLayer(L0, G, t);
+    if (!has('tables')) { // 塌了的桌子
+      GL.rect(rx0 + rw * 0.2, gy + u * 9, u * 18, u * 2.4, 2, hex('#8d7a64'));
+      GL.rect(rx0 + rw * 0.48, gy + u * 2, u * 2, u * 9, 1, hex('#7a6855'));
+    }
+    if (showLogo && h > 110) {
+      const lw = Math.min(w * 0.5, 260), lh = lw * 0.36, lx = x + w / 2 - lw / 2, ly = y + (LY.portrait ? Math.max(58, h * 0.2) : 70);
+      const lg = Art.logo(lw, lw * 384 / 1024);
+      if (lg) { GL.img(lg, lx + lw / 2, ly + lh / 2, lw, lw * 384 / 1024); return; } // 正式 Logo（1024×384）
       GL.rect(lx + 2, ly + 5, lw, lh, 14, COL.shadow, { soft: 6 });
       GL.rect(lx, ly, lw, lh, 14, hex('#8a5a32')); GL.rect(lx + 4, ly + 4, lw - 8, lh - 8, 11, hex('#a8713f'));
-      GL.text('Merge Café', lx + lw / 2, ly + lh * 0.4, { size: lh * 0.36, weight: 1000, fill: '#fff4db', outline: '#6b3f1d' });
-      GL.text('Lite', lx + lw * 0.72, ly + lh * 0.78, { size: lh * 0.24, weight: 1000, fill: '#7fd0c6', outline: '#1d5f5a' });
+      GL.text(L.t('game.title'), lx + lw / 2, ly + lh * 0.4, { size: lh * 0.36, weight: 1000, fill: '#fff4db', outline: '#6b3f1d' });
+      GL.text(L.t('game.titleSub'), lx + lw * 0.72, ly + lh * 0.78, { size: lh * 0.24, weight: 1000, fill: '#7fd0c6', outline: '#1d5f5a' });
     }
   }
+  function drawLayer(layer, G, t) {
+    if (!has(layer)) return;
+    const p = layerPop.get(layer), sc = p !== undefined ? popScale((t - p) * 0.6) : 1;
+    if (p !== undefined && t - p > 1) layerPop.delete(layer);
+    const a = DECO_LAYERS[layer].anchor(G);
+    GL.save(); GL.scaleAt(a[0], a[1], sc); DECO_LAYERS[layer].draw(G, t); GL.restore();
+  }
+  function drawStall(G, t) {
+    const { u, sx, sw, wallTop, gy } = G, fixed = has('counter');
+    // 墙
+    GL.rect(sx, wallTop, sw, gy - wallTop, 4, fixed ? hex('#f6e6c8') : hex('#9d8f7d'));
+    if (!fixed) for (let k = 0; k < 4; k++) GL.rect(sx + sw * (0.15 + k * 0.22), wallTop + u * (6 + (k % 2) * 8), u * 0.8, u * 9, 0.5, [0.3, 0.25, 0.2, 0.5]); // 裂缝
+    // 顶：破木板 / 修好后条纹雨棚
+    if (fixed) { const n = 7, stw = (sw + u * 6) / n; for (let k = 0; k < n; k++) GL.rect(sx - u * 3 + k * stw, wallTop - u * 7, stw, u * 10, u * 1.5, k % 2 ? COL.cream : COL.coral); }
+    else { GL.rect(sx - u * 2, wallTop - u * 4, sw + u * 4, u * 4, 1, hex('#7a6855')); GL.rect(sx + sw * 0.6, wallTop - u * 7, sw * 0.35, u * 3, 1, hex('#6b5a48')); }
+    // 柜台：木箱 / 新柜台
+    if (fixed) {
+      GL.rect(sx - u * 2, gy - u * 16, sw + u * 4, u * 16, u * 1.5, COL.woodD);
+      GL.rect(sx - u * 3, gy - u * 17, sw + u * 6, u * 3, u * 1.5, hex('#fff4db'));
+    } else for (let k = 0; k < 2; k++) {
+      const cx = sx + sw * (0.12 + k * 0.45);
+      GL.rect(cx, gy - u * 13, sw * 0.38, u * 13, 2, hex('#8d6e4c'));
+      GL.rect(cx, gy - u * 13, sw * 0.38, u * 13, 2, hex('#5e4630'), { stroke: Math.max(1, u * 0.8) });
+    }
+  }
+  const glow = (cx, cy, r, col, a) => GL.circle(cx, cy, r, [col[0], col[1], col[2], a], r * 0.9);
+  /* 15 个装修图层：anchor 是弹跳出现时的缩放中心 */
+  const DECO_LAYERS = {
+    deck: { anchor: (G) => [G.x + G.w / 2, G.bot], draw: (G) => {
+      GL.rect(G.x, G.gy, G.w, G.bot - G.gy, 0, hex('#c8955a'));
+      for (let yy = G.gy; yy < G.bot; yy += G.u * 5) GL.rect(G.x, yy, G.w, Math.max(1, G.u * 0.5), 0, [0.45, 0.28, 0.12, 0.35]);
+    } },
+    tables: { anchor: (G) => [G.rx0 + G.rw * 0.35, G.gy + G.u * 10], draw: (G) => {
+      const cx = G.rx0 + G.rw * 0.35, u = G.u, gy = G.gy + u * 10;
+      for (const dx of [-13, 13]) { GL.rect(cx + dx * u - u * 3.5, gy - u * 9, u * 7, u * 2, 1, hex('#e9b04a')); GL.rect(cx + dx * u - u * 0.8, gy - u * 9, u * 1.6, u * 9, 1, hex('#8a5a32')); GL.rect(cx + dx * u + (dx > 0 ? u * 2 : -u * 3.5), gy - u * 16, u * 1.5, u * 9, 1, hex('#8a5a32')); }
+      GL.rect(cx - u * 9, gy - u * 13, u * 18, u * 3, u * 1.5, hex('#fff4db')); GL.rect(cx - u * 1, gy - u * 11, u * 2, u * 11, 1, hex('#8a5a32'));
+      GL.circle(cx - u * 3, gy - u * 14.5, u * 1.6, hex('#ffffff')); GL.circle(cx + u * 3, gy - u * 14.5, u * 1.6, hex('#ffffff'));
+    } },
+    parasol: { anchor: (G) => [G.rx0 + G.rw * 0.35, G.gy], draw: (G) => {
+      const cx = G.rx0 + G.rw * 0.35, u = G.u, top = G.y + G.h * 0.28;
+      GL.rect(cx - u * 0.7, top, u * 1.4, G.gy + u * 8 - top, 1, hex('#8a5a32'));
+      GL.rect(cx - u * 20, top - u * 5, u * 40, u * 9, u * 5, COL.coral);
+      GL.rect(cx - u * 7, top - u * 5, u * 14, u * 9, u * 3, COL.cream);
+    } },
+    sign: { anchor: (G) => [G.sx + G.sw / 2, G.wallTop], draw: (G) => {
+      const u = G.u, w = G.sw * 0.7, cx = G.sx + G.sw / 2, yy = G.wallTop - u * 20;
+      GL.rect(cx - u * 0.5 - w * 0.3, yy + u * 9, u, u * 5, 0, hex('#5e4630')); GL.rect(cx - u * 0.5 + w * 0.3, yy + u * 9, u, u * 5, 0, hex('#5e4630'));
+      GL.rect(cx - w / 2, yy, w, u * 10, u * 2, hex('#8a5a32')); GL.rect(cx - w / 2 + u, yy + u, w - u * 2, u * 8, u * 1.5, hex('#a8713f'));
+      GL.text(L.t('game.title'), cx, yy + u * 5, { size: Math.max(7, u * 5), weight: 1000, fill: '#fff4db' });
+    } },
+    counter: { anchor: (G) => [G.sx + G.sw / 2, G.gy], draw: () => {} }, // 修好的墙 / 雨棚 / 柜台画在 drawStall 里
+    lightbox: { anchor: (G) => [G.sx + G.sw * 0.15, G.wallTop + G.u * 10], draw: (G, t) => {
+      const u = G.u, cx = G.sx + G.sw * 0.15, cy = G.wallTop + G.u * 10;
+      glow(cx, cy, u * 9, hex('#ffe08a'), 0.5 + 0.15 * Math.sin(t * 3));
+      GL.rect(cx - u * 5, cy - u * 4, u * 10, u * 8, u * 1.5, hex('#fff6c8')); GL.rect(cx - u * 5, cy - u * 4, u * 10, u * 8, u * 1.5, hex('#e9b04a'), { stroke: Math.max(1, u * 0.8) });
+      GL.circle(cx, cy, u * 2.2, hex('#ef7965'));
+    } },
+    flowers: { anchor: (G) => [G.sx + G.sw / 2, G.gy], draw: (G) => {
+      const u = G.u;
+      for (let k = 0; k < 9; k++) { const fx = G.sx + G.sw * (0.05 + k * 0.11), fy = G.wallTop + u * (2 + (k % 3) * 2.5);
+        GL.circle(fx, fy, u * 2.2, hex('#7fb26a')); GL.circle(fx + u, fy - u, u * 1.4, hex(['#ef7965', '#f5a6c0', '#f5c03a'][k % 3])); }
+      for (const fx of [G.sx - u * 4, G.sx + G.sw + u * 1]) { GL.rect(fx, G.gy - u * 6, u * 6, u * 6, u, hex('#c4553c')); GL.circle(fx + u * 3, G.gy - u * 8, u * 3.5, hex('#5f9752')); GL.circle(fx + u * 3, G.gy - u * 10, u * 1.6, hex('#f5a6c0')); }
+    } },
+    bar: { anchor: (G) => [G.sx + G.sw * 0.3, G.gy - G.u * 17], draw: (G) => {
+      const u = G.u, bx = G.sx + G.sw * 0.18, by = G.gy - G.u * 17;
+      GL.rect(bx, by - u * 11, u * 12, u * 11, u * 1.5, hex('#c94f3c')); GL.rect(bx + u * 1.5, by - u * 9.5, u * 9, u * 3, u, hex('#e8e2d8'));
+      GL.rect(bx + u * 4, by - u * 5, u * 4, u * 3, u * 0.8, hex('#fff')); 
+      GL.rect(bx + u * 16, by - u * 7, u * 10, u * 7, u * 3.5, [0.85, 0.95, 1, 0.7]); GL.circle(bx + u * 21, by - u * 2.5, u * 2.5, hex('#e9b04a'));
+    } },
+    menu: { anchor: (G) => [G.sx + G.sw * 0.72, G.wallTop + G.u * 14], draw: (G) => {
+      const u = G.u, mx = G.sx + G.sw * 0.6, my = G.wallTop + u * 5;
+      GL.rect(mx, my, G.sw * 0.3, u * 18, u, hex('#8a5a32')); GL.rect(mx + u, my + u, G.sw * 0.3 - u * 2, u * 16, u * 0.5, hex('#2f4a44'));
+      for (let k = 0; k < 4; k++) GL.rect(mx + u * 2.5, my + u * (4 + k * 3.4), G.sw * 0.3 * (0.5 + (k % 2) * 0.2), Math.max(1, u * 0.7), 0.5, [1, 1, 1, 0.75]);
+    } },
+    speakers: { anchor: (G) => [G.sx + G.sw / 2, G.wallTop + G.u * 4], draw: (G, t) => {
+      const u = G.u;
+      for (const fx of [G.sx + u * 2, G.sx + G.sw - u * 8]) { GL.rect(fx, G.wallTop + u * 2, u * 6, u * 9, u, hex('#2a2a30')); GL.circle(fx + u * 3, G.wallTop + u * 8, u * 2, hex('#55555e')); GL.circle(fx + u * 3, G.wallTop + u * 4.3, u * 1.1, hex('#55555e')); }
+      for (let k = 0; k < 3; k++) { const ph = (t * 0.6 + k / 3) % 1, nx = G.sx + G.sw * (0.3 + k * 0.2), ny = G.wallTop - u * 2 - ph * u * 12;
+        GL.alpha = 1 - ph; GL.circle(nx, ny, u * 1.3, hex('#3a2416')); GL.rect(nx + u * 0.8, ny - u * 4, u * 0.6, u * 4, 0, hex('#3a2416')); GL.alpha = 1; }
+    } },
+    neon: { anchor: (G) => [G.sx + G.sw * 0.38, G.wallTop + G.u * 13], draw: (G, t) => {
+      const u = G.u, cx = G.sx + G.sw * 0.38, cy = G.wallTop + u * 13, on = 0.75 + 0.25 * Math.sin(t * 5);
+      glow(cx, cy, u * 12, hex('#ff5fa8'), 0.35 * on);
+      GL.arc(cx, cy, u * 6, Math.max(1.5, u * 1.2), Math.PI * 2, [1, 0.37, 0.66, on]);
+      GL.arc(cx, cy, u * 3, Math.max(1.5, u * 1.0), Math.PI * 2, [0.37, 0.9, 0.86, on]);
+    } },
+    terrace: { anchor: (G) => [G.rx0 + G.rw * 0.75, G.bot], draw: (G) => {
+      const u = G.u, cx = G.rx0 + G.rw * 0.78, gy = G.gy + u * 12;
+      GL.rect(cx - u * 6, gy - u * 9, u * 12, u * 2.4, u * 1.2, hex('#fff4db')); GL.rect(cx - u * 0.8, gy - u * 8, u * 1.6, u * 8, 1, hex('#8a5a32'));
+      GL.circle(cx, gy - u * 10.5, u * 1.4, hex('#ef7965'));
+      const ry = G.bot - u * 6; GL.rect(G.x, ry, G.w, Math.max(1.5, u * 1.2), 1, hex('#fff4db'));
+      for (let xx = G.x + u * 4; xx < G.x + G.w; xx += u * 8) GL.rect(xx, ry, Math.max(1.5, u * 1.2), u * 6, 1, hex('#fff4db'));
+    } },
+    tower: { anchor: (G) => [G.sx + G.sw * 0.82, G.gy - G.u * 17], draw: (G) => {
+      const u = G.u, cx = G.sx + G.sw * 0.82, by = G.gy - u * 17;
+      for (let r = 0; r < 3; r++) for (let k = 0; k <= 2 - r; k++) {
+        const xx = cx + (k - (2 - r) / 2) * u * 4.4, yy = by - u * (2.4 + r * 4.6);
+        GL.rect(xx - u * 2, yy - u * 2.2, u * 4, u * 4.4, u * 1, hex(['#fff4db', '#f5a6c0', '#7fd0c6'][r])); GL.rect(xx - u * 2, yy - u * 2.2, u * 4, u * 1.4, u * 0.6, hex('#c98f5e'));
+      }
+    } },
+    photo: { anchor: (G) => [G.x + G.w * 0.93, G.gy], draw: (G) => {
+      const u = G.u, cx = G.x + G.w * 0.93, top = G.gy - u * 22;
+      GL.rect(cx - u * 0.6, top + u * 14, u * 1.2, u * 10, 0, hex('#8a5a32'));
+      GL.rect(cx - u * 7, top, u * 14, u * 15, u * 1.5, COL.teal); GL.rect(cx - u * 5.5, top + u * 1.5, u * 11, u * 12, u, hex('#fff4db'));
+      GL.circle(cx - u * 1.6, top + u * 6.4, u * 2.2, hex('#ef7965')); GL.circle(cx + u * 1.6, top + u * 6.4, u * 2.2, hex('#ef7965')); GL.rect(cx - u * 2.6, top + u * 6.5, u * 5.2, u * 3.5, u * 2, hex('#ef7965'));
+    } },
+    lights: { anchor: (G) => [G.x + G.w / 2, G.y + G.h * 0.22], draw: (G, t) => {
+      const u = G.u, x0 = G.sx + G.sw, x1 = G.x + G.w * 0.98, y0 = G.wallTop - u * 6, sag = u * 7, n = Math.max(8, Math.round((x1 - x0) / (u * 6)));
+      for (let k = 0; k <= n; k++) {
+        const f = k / n, xx = x0 + (x1 - x0) * f, yy = y0 + Math.sin(f * Math.PI) * sag;
+        GL.circle(xx, yy, Math.max(0.8, u * 0.4), hex('#5e4630'));
+        if (k % 2 === 0) { const c = hex(['#ffe08a', '#ff8fa8', '#8fe0d6'][(k / 2) % 3]), tw = 0.6 + 0.4 * Math.sin(t * 4 + k); glow(xx, yy + u * 1.5, u * 3, c, 0.35 * tw); GL.circle(xx, yy + u * 1.5, u * 1.2, [c[0], c[1], c[2], 0.8 + 0.2 * tw]); }
+      }
+    } },
+  };
+  const BACK_LAYERS = ['deck', 'parasol', 'photo', 'terrace'];
+  const FRONT_LAYERS = ['sign', 'lightbox', 'flowers', 'menu', 'speakers', 'neon', 'bar', 'tower', 'tables', 'lights'];
   function drawFloor(W, H) {
     GL.rect(0, 0, W, H, 0, COL.woodL);
     const step = 38;
@@ -458,7 +697,8 @@
     else {
       const next = Core.canUnlockHere(C, S, i);
       GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, next ? COL.lockNext : (r + c) % 2 ? COL.lockB : COL.lockA);
-      GL.img(Art.lock(cs * 0.34), x + sx, y - cs * (next ? 0.1 : 0), cs * 0.34, cs * 0.34, [0.55, 0.42, 0.3, next ? 0.85 : 0.55]);
+      const lt = Art.has('icon_lock') ? [1, 1, 1, next ? 1 : 0.6] : [0.55, 0.42, 0.3, next ? 0.85 : 0.55]; // 占位锁是白图着色，正式图不再着色
+      GL.img(Art.lock(cs * 0.34), x + sx, y - cs * (next ? 0.1 : 0), cs * 0.34, cs * 0.34, lt);
       if (next) {
         const p = String(Core.unlockPrice(C, i)), fs = Math.max(9, cs * 0.2);
         GL.img(Art.coin(fs), x - cs * 0.13 + sx, y + cs * 0.24, fs, fs);
@@ -491,7 +731,8 @@
     const W = LY.W, H = LY.H, t = clock(), cs = LY.cs;
     GL.begin(COL.woodL);
     drawFloor(W, H);
-    drawScene(LY.scene, t);
+    if (mode === 'cafe') { drawScene(LY.cafeScene || LY.scene, t, false); drawFx(t); T = t; return GL.end(); }
+    drawScene(LY.scene, t, true);
     const needs = needSet();
     const dragIt = drag ? S.cells[drag.from] : null;
     const overOrder = drag ? orderAt(drag.x, drag.y) : -1;
@@ -518,13 +759,7 @@
       drawItem(f.item, x, y, cs * 0.9 * (f.spawn ? 0.6 + 0.4 * e : f.shrink ? 1 - 0.5 * e : 1));
       if (u >= 1) { flies.splice(k, 1); if (f.cell >= 0) pops.set(f.cell, t); }
     }
-    // 粒子
-    const dt = Math.min(0.05, t - T);
-    for (let k = parts.length - 1; k >= 0; k--) {
-      const p = parts[k]; p.life += dt; if (p.life >= p.max) { parts.splice(k, 1); continue; }
-      p.vy += cs * 9 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
-      const a = 1 - p.life / p.max; GL.circle(p.x, p.y, p.r * (0.5 + a * 0.5), [p.col[0], p.col[1], p.col[2], a]);
-    }
+    drawParticles(t);
     // 拖拽中的物品（最上层，放大一点跟手）
     if (drag && dragIt) drawItem(dragIt, drag.x - drag.ox, drag.y - drag.oy - 4, cs * 1.0);
     // 选中物品的名字
@@ -537,6 +772,20 @@
       GL.text(name, lx + tw / 2, ly, { size: fs, weight: 800, fill: '#fff4db' });
       GL.alpha = 1;
     }
+    drawFx(t, true);
+    T = t;
+    return GL.end();
+  }
+  function drawParticles(t) {
+    const dt = Math.min(0.05, t - T), g = LY.cs * 9;
+    for (let k = parts.length - 1; k >= 0; k--) {
+      const p = parts[k]; p.life += dt; if (p.life >= p.max) { parts.splice(k, 1); continue; }
+      p.vy += g * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      const a = 1 - p.life / p.max; GL.circle(p.x, p.y, p.r * (0.5 + a * 0.5), [p.col[0], p.col[1], p.col[2], a]);
+    }
+  }
+  function drawFx(t, particlesDone) {
+    if (!particlesDone) drawParticles(t);
     // 金币 / 星星飞进顶栏
     for (let k = coinsFly.length - 1; k >= 0; k--) {
       const f = coinsFly[k], u = (t - f.t0) / f.dur; if (u < 0) continue;
@@ -547,11 +796,9 @@
       if (u >= 1) {
         coinsFly.splice(k, 1);
         if (f.kind === 'coin') { pendingCoins -= f.val; bump('pill-coins'); } else { pendingStars -= f.val; bump('pill-stars'); }
-        hudCache = ''; updateHud(); // 落地这一帧就跳数字
+        hudCache = ''; updateHud(); updateDeco(); // 落地这一帧就跳数字
       }
     }
-    T = t;
-    return GL.end();
   }
   function drawHand(F, t) {
     const sz = LY.cs * 0.8;
@@ -580,7 +827,7 @@
       for (const id in S.gens) if (Core.settleGen(C, id, S.gens[id], now())) markDirty();
       const ref = Core.settleOrders(C, S, now());
       for (const k of ref) { cardPops.set(k, clock()); markDirty(); }
-      updateHud(); updateTutorial();
+      updateHud(); updateTutorial(); updateDeco(); tryInterstitial();
       if (dirty) { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); }
       if (DEBUG) debugStats();
     }
@@ -594,6 +841,15 @@
     updateHud(); updateTutorial();
     requestAnimationFrame(frame);
     Art.load(CONFIG.art.items, 'assets/items/', () => {});
+    Art.load(CONFIG.art.avatars || [], 'assets/avatars/', () => {});
+    Art.load(CONFIG.art.ui || [], 'assets/ui/', swapDomIcon);
+  }
+  /* 顶栏和底栏的图标是 DOM 里的 SVG 占位：正式图到了换成 <img> */
+  const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg' };
+  function swapDomIcon(id) {
+    const old = DOM_ICONS[id] && document.querySelector(DOM_ICONS[id]); if (!old) return;
+    const img = document.createElement('img'); img.src = Art.src(id); img.alt = ''; img.className = 'ico'; img.dataset.art = id;
+    old.replaceWith(img); layout();
   }
   // 等内联的 Nunito 解码完再开画（图集里的字形和图标名字要用它），最多等 1.5 秒
   const fontReady = document.fonts && document.fonts.load ? Promise.race([
@@ -605,7 +861,7 @@
   /* ---------- 调试面板（?debug=1，给 QA 用，文案不进本地化表） ---------- */
   function debugStats() {
     const st = S.stats, c = st.createdAt;
-    $('dbg-fps').textContent = `${fps} fps · ${renderMs.toFixed(2)} ms/frame\norders ${st.ordersDone} · merges ${st.merges}\n1st merge ${st.firstMergeAt ? ((st.firstMergeAt - c) / 1000).toFixed(1) + 's' : '-'} · 1st order ${st.firstOrderAt ? ((st.firstOrderAt - c) / 1000).toFixed(1) + 's' : '-'}`;
+    $('dbg-fps').textContent = `${fps} fps · ${renderMs.toFixed(2)} ms/frame\norders ${st.ordersDone} · merges ${st.merges}\n1st merge ${st.firstMergeAt ? ((st.firstMergeAt - c) / 1000).toFixed(1) + 's' : '-'} · 1st order ${st.firstOrderAt ? ((st.firstOrderAt - c) / 1000).toFixed(1) + 's' : '-'}\nads ${['energy', 'refill', 'double'].map((k) => k + ' ' + S.ads.clicks[k] + '/' + S.ads.offers[k]).join(' · ')} · inter ${S.ads.interstitials}\ndeco ${S.deco}/${C.deco.length}`;
   }
   if (DEBUG) {
     const box = $('dbg'); box.classList.add('show');
@@ -614,16 +870,17 @@
     btn('+1m', () => skip(60e3)); btn('+10m', () => skip(600e3)); btn('+1h', () => skip(3600e3));
     btn('energy 0', () => { S.energy = 0; S.energyTs = now(); });
     btn('+100 coins', () => { S.coins += 100; });
+    btn('+5 stars', () => { S.stars += 5; decoKey = ''; });
     btn('skip tutorial', () => Core.skipTutorial(S));
     btn('fill board', () => { for (let i = 0; i < C.n; i++) if (S.unlocked[i] && !S.cells[i]) S.cells[i] = { k: 'item', chain: i % 2 ? 'coffee' : 'bake', lvl: 1 + (i % 7) }; });
     btn('serve-ready', () => { // 把三个订单要的东西都放到棋盘上
       for (const o of S.orders) for (const n of o.needs) if (!n.done) { const e = S.cells.findIndex((c, i) => !c && S.unlocked[i]); if (e >= 0) S.cells[e] = { k: 'item', chain: n.chain, lvl: n.lvl }; }
     });
-    btn('reset', () => { const ls = store(); if (ls) ls.removeItem(SAVE_KEY); try { sessionStorage.removeItem('mcl.timeOffset'); } catch (e) {} timeOffset = 0; S = Core.newState(C, now()); sel = -1; pendingCoins = pendingStars = 0; });
+    btn('reset', () => { const ls = store(); if (ls) ls.removeItem(SAVE_KEY); try { sessionStorage.removeItem('mcl.timeOffset'); } catch (e) {} timeOffset = 0; S = Core.newState(C, now()); sel = -1; pendingCoins = pendingStars = 0; decoKey = ''; });
   }
   // 自动化测试 / 调试入口
   window.MCL = {
-    C, get S() { return S; }, cellXY, cellAt, layout: LY, save, now, genRect, orderRect: (k) => LY.orders[k],
+    C, get S() { return S; }, cellXY, cellAt, layout: LY, save, now, genRect, orderRect: (k) => LY.orders[k], get mode() { return mode; },
     get fps() { return fps; }, get renderMs() { return renderMs; }, get pending() { return pendingCoins + pendingStars; },
   };
 })();

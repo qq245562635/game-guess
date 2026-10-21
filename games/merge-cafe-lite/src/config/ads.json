@@ -1,0 +1,11 @@
+{
+  "_doc": "广告（策划案 §7 / Issue M3），WebGL 版只有广告。当前全部是 Mock：点了模拟播放 mockSec 秒再发奖，接入点见 src/ads.js 里的 TODO（CrazyGames / Playgama SDK）。激励视频 3 个点位：体力见底 +energy、生成器冷却时立即回满、订单完成后奖励翻倍（按钮出现 doubleOfferSec 秒）。插屏：每完成 interstitialEveryOrders 个订单出 1 次，拖拽中、弹窗中、引导中一律延后，禁止打断合成。",
+  "rewarded": {
+    "energy": { "amount": 30 },
+    "refill": {},
+    "double": { "offerSec": 6 }
+  },
+  "mockSec": 5,
+  "interstitialEveryOrders": 5,
+  "interstitialMockSec": 3
+}
