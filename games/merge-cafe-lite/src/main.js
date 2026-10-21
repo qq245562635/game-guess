@@ -56,7 +56,7 @@
     if (LY.portrait) {
       const cw = Math.min(W - 16, 620), cx = (W - cw) / 2;
       const gensH = Math.round(Math.min(84, Math.max(56, cw * 0.15)));
-      const ordersH = Math.round(Math.min(150, Math.max(100, cw * 0.27)));
+      const ordersH = Math.round(Math.min(140, Math.max(92, cw * 0.22))); // 效果图订单卡约 0.21 屏宽，省下的高度给头图
       const fixed = hudH + ordersH + gensH + navH + safeB + gap * 5;
       const sceneMin = Math.max(56, H * 0.1);
       const bs = Math.floor(Math.min(cw * 0.86, H - fixed - sceneMin)); // 按 #38 效果图收窄，两侧放绿植
@@ -520,13 +520,18 @@
   const layerPop = new Map();
   const has = (layer) => Core.decoDone(C, S, layer);
   /* Merge 页头图：只在"顶栏下面 / 底栏上面"的可见区里铺图（不让顶栏挡住图里的 Logo），被盖住的部分用天色补 */
+  /* Merge 页头图：从屏幕最顶上铺起，顶栏浮在图上（同 #38 效果图）。
+     art.json 的 sceneMeta.safeTop 是图里"不能被顶栏挡住"的那条线（Logo 顶边，占图高的比例）：
+     如果按宽铺满后 Logo 会钻到顶栏下面，就把图往下挪一点，挪出来的缝用图最上面一条拉伸补上。横屏时底栏盖在图的底部。 */
   function drawHeader(R) {
-    const id = LY.portrait ? 'header_merge_p' : 'header_merge_l'; if (!Art.has(id)) return false;
-    const top = LY.portrait ? LY.hudBottom : 0, bottom = LY.portrait ? R.y + R.h : R.y + R.h - LY.navH - 16;
-    const vh = bottom - top; if (vh < 40) return false;
-    GL.rect(R.x, R.y, R.w, R.h, 0, hex('#9fdcf0'));
-    const sp = Art.cover(id, R.w, vh, LY.portrait ? 0.5 : 0.42, 0); if (!sp) return false; // 竖向不够时裁底部（柜台），保住顶上的 Logo
-    GL.img(sp, R.x + R.w / 2, top + vh / 2, R.w, vh);
+    const id = LY.portrait ? 'header_merge_p' : 'header_merge_l', im = Art.img(id); if (!im) return false;
+    const bottom = LY.portrait ? R.y + R.h : R.y + R.h - LY.navH - 16, vh = bottom - R.y; if (vh < 40) return false;
+    const meta = (CONFIG.art.sceneMeta || {})[id] || {}, safe = meta.safeTop || 0, guard = LY.portrait ? LY.hudBottom + 4 : 0;
+    let d = 0;
+    for (let k = 0; k < 3; k++) { const sc = Math.max(R.w / im.width, (vh - d) / im.height); d = Math.max(0, Math.min(vh * 0.4, guard - safe * im.height * sc)); }
+    if (d > 0) { const band = Art.cover(id + '#top', R.w, d, 0.5, 0); if (band) GL.img(band, R.x + R.w / 2, R.y + d / 2, R.w, d); }
+    const sp = Art.cover(id, R.w, vh - d, LY.portrait ? 0.5 : 0.42, 0); if (!sp) return false; // 竖向放不下时裁底部（柜台），保住顶上的 Logo
+    GL.img(sp, R.x + R.w / 2, R.y + d + (vh - d) / 2, R.w, vh - d);
     if (LY.portrait) GL.rect(R.x, bottom - 2, R.w, 6, 0, [0.35, 0.2, 0.08, 0.18], { soft: 6 });
     return true;
   }
@@ -727,7 +732,7 @@
     cx += GL.text(String(o.coins), cx, by, { size: fs, weight: 900, fill: '#3a2416', align: 'left' }) + 4;
     if (o.stars) { GL.img(Art.star(ic), cx + ic / 2, by, ic, ic); GL.text(String(o.stars), cx + ic + 1, by, { size: fs * 0.85, weight: 900, fill: '#3a2416', align: 'left' }); }
     const left = o.needs.some((nd) => nd.done) ? null : o.expiresAt - now();
-    if (left !== null && (k !== 0 || !Core.tutStep(C, S)) && w > 120) {
+    if (left !== null && (k !== 0 || !Core.tutStep(C, S)) && w > 100) {
       const tw = GL.measure(mmss(left), { size: fs * 0.9, weight: 800 });
       GL.text(mmss(left), x + w - pad * 1.8, by, { size: fs * 0.9, weight: 800, fill: left < 30000 ? '#c4553c' : '#3a2416', align: 'right' });
       GL.img(Art.clock(ic * 0.85), x + w - pad * 1.8 - tw - ic * 0.55, by, ic * 0.85, ic * 0.85);
