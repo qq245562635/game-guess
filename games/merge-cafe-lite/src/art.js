@@ -4,9 +4,7 @@
    正式图：assets/items/<id>.png 到位并登记进 config/art.json 后，自动换掉同 id 的占位，逻辑代码不用改。 */
 const Art = (() => {
   const loaded = {};           // id -> HTMLImageElement（正式图）
-  let onReady = null;
-  function load(list, base, cb) {
-    onReady = cb;
+  function load(list, base, onReady) {
     for (const id of list) {
       const im = new Image();
       im.onload = () => { loaded[id] = im; GL.forget('I|' + id + '|'); if (onReady) onReady(id); };

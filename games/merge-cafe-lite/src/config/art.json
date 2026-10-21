@@ -1,4 +1,5 @@
 {
-  "_doc": "已到位的正式图。把文件放进 assets/items/<id>.png 后，把 id 加进 items 数组；没登记的一律用占位色块，不发多余请求。",
-  "items": []
+  "_doc": "已到位的正式图（规格见 ASSETS.md）。物品 / 生成器图放 assets/items/<id>.png 后把 id 加进 items；顾客头像放 assets/avatars/<id>.png 后把 id 加进 avatars。没登记的一律用占位，不发多余请求。",
+  "items": [],
+  "avatars": []
 }

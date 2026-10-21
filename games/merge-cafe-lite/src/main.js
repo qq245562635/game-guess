@@ -838,6 +838,7 @@
     updateHud(); updateTutorial();
     requestAnimationFrame(frame);
     Art.load(CONFIG.art.items, 'assets/items/', () => {});
+    Art.load(CONFIG.art.avatars || [], 'assets/avatars/', () => {});
   }
   // 等内联的 Nunito 解码完再开画（图集里的字形和图标名字要用它），最多等 1.5 秒
   const fontReady = document.fonts && document.fonts.load ? Promise.race([

@@ -32,8 +32,8 @@ docs/selftest/           各里程碑自测截图
 
 ## 换正式美术
 
-图标 id 已按正式命名：`item_coffee_01`–`08`、`item_bake_01`–`08`、生成器 `gen_coffee_machine`、`gen_ingredient_box`、顾客头像 `avatar_customer_01`–`06`。装修图层按 `deco.json` 的 `layer` 名替换（`tables`、`parasol`…），漫画按 `comic.1/8/15`。
-到图后放进 `assets/items/<id>.png`（建议 256×256 透明底），把 id 加进 `src/config/art.json` 的 `items`，重新构建即可，逻辑不用改。
+逐项规格（尺寸、内容、命名、优先级、包体额度）见 **`ASSETS.md`**。
+物品 / 生成器图放 `assets/items/<id>.png`，顾客头像放 `assets/avatars/<id>.png`，把 id 登记进 `src/config/art.json` 再构建即可替换占位，逻辑不用改。场景图层、漫画、UI 图标到图后由程序接入。
 
 ## 规则
 
