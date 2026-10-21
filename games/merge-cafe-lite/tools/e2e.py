@@ -239,7 +239,7 @@ with sync_playwright() as p:
     pg.wait_for_timeout(800); pg.screenshot(path=str(out / 'cafe-all-done.png'))
     scene_png(pg, out / 'deco-after15.png')
     d15 = img_diff(out / 'deco-before.png', out / 'deco-after15.png')
-    check('全部装完与破摊对比：场景像素变化大', d15 > 0.15, f'{d15 * 100:.1f}%')
+    check('全部装完与破摊对比：场景像素变化 ≥ 40%（B 批正式美术实测 44–46%，防退化）', d15 >= 0.40, f'{d15 * 100:.1f}%')
     pg.click('#nav-merge'); pg.wait_for_timeout(300)
     check('切回 Merge：棋盘可玩', pg.evaluate('MCL.mode') == 'merge')
 

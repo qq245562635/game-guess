@@ -56,9 +56,21 @@
     "parasol",
     "sign",
     "counter",
-    "lightbox"
+    "lightbox",
+    "deck",
+    "flowers",
+    "bar",
+    "menu",
+    "speakers",
+    "neon",
+    "terrace",
+    "tower",
+    "photo",
+    "lights"
   ],
   "comics": [
-    "comic_01"
+    "comic_01",
+    "comic_08",
+    "comic_15"
   ]
 }

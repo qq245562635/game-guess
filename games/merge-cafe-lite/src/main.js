@@ -569,13 +569,11 @@
       const im = Art.img(id), p = POS[id]; if (!im || !p) return false;
       const x = sx(p[0]), y = sy(p[1]), w = im.width * sc, h = im.height * sc, pop = layerPop.get(id);
       const k = pop !== undefined ? popScale((t - pop) * 0.6) : 1; if (pop !== undefined && t - pop > 1) layerPop.delete(id);
-      GL.save(); GL.scaleAt(x + w / 2, y + h, k); GL.img(Art.layer(id, w, h), x + w / 2, y + h / 2, w, h);
-      if (id === 'sign') { // 招牌左侧留白：程序写本地化店名
-        const fs = h * 0.3, maxW = w * 0.66; let size = fs; while (size > 6 && GL.measure(L.t('game.title'), { size, weight: 1000 }) > maxW) size -= 1;
-        GL.text(L.t('game.title'), x + w * 0.4, y + h * 0.43, { size, weight: 1000, fill: '#fff4db', outline: '#6b3f1d' });
-      }
-      GL.restore(); return true;
+      GL.save(); GL.scaleAt(x + w / 2, y + h, k); GL.img(Art.layer(id, w, h), x + w / 2, y + h / 2, w, h); GL.restore();
+      if (id === 'sign') signAt = { x, y, w, h, k };
+      return true;
     };
+    let signAt = null;
     for (const k of ART_ORDER) {
       if (k === 'STALL') { if (!has('counter')) draw('shabby_stall'); else if (!draw('counter')) draw('shabby_stall'); continue; }
       if (k === 'TABLE') { if (!has('tables')) draw('shabby_table'); else if (!draw('tables')) drawLayer('tables', G, t); continue; }
@@ -590,6 +588,13 @@
         continue;
       }
       if (!draw(k)) drawLayer(k, G, t); // B 批还没到的图层：程序占位
+    }
+    if (signAt) { // 招牌左侧留白：程序写本地化店名。放在所有图层之后画，灯串（第 15 节点）从招牌前面拉过时不遮字
+      const { x, y, w, h, k } = signAt, maxW = w * 0.66; let size = h * 0.3;
+      while (size > 6 && GL.measure(L.t('game.title'), { size, weight: 1000 }) > maxW) size -= 1;
+      GL.save(); GL.scaleAt(x + w / 2, y + h, k);
+      GL.text(L.t('game.title'), x + w * 0.4, y + h * 0.43, { size, weight: 1000, fill: '#fff4db', outline: '#6b3f1d' });
+      GL.restore();
     }
     LY.artScene = { sc, ox, oy };
     return true;
