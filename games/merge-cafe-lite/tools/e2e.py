@@ -51,10 +51,10 @@ def img_diff(a, b):
     from PIL import Image, ImageChops
     d = ImageChops.difference(Image.open(a).convert('RGB'), Image.open(b).convert('RGB')).convert('L').point(lambda v: 255 if v > 24 else 0)
     return d.histogram()[255] / (d.width * d.height)
-SETUP_DOUBLE = ("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; s.stats.ordersDone=13;"
+SETUP_DOUBLE = ("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; s.stats.ordersDone=14;"
   "s.orders[0]={uid:990,tid:'n_c4',needs:[{chain:'coffee',lvl:4,done:false}],coins:44,stars:0,rare:false,cust:0,start:MCL.now(),expiresAt:MCL.now()+600000};"
   "s.cells[2]={k:'item',chain:'coffee',lvl:4};})()")
-SETUP_INTER = ("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; s.stats.ordersDone=14;"
+SETUP_INTER = ("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; s.stats.ordersDone=19;"
   "s.orders[0]={uid:991,tid:'n_c2',needs:[{chain:'coffee',lvl:2,done:false}],coins:20,stars:0,rare:false,cust:0,start:MCL.now(),expiresAt:MCL.now()+600000};"
   "s.cells[2]={k:'item',chain:'coffee',lvl:2}; s.cells[10]={k:'item',chain:'bake',lvl:1};})()")
 S = lambda pg, expr: pg.evaluate('MCL.S.' + expr)
@@ -147,7 +147,8 @@ with sync_playwright() as p:
     check('点咖啡机：耗 1 体力 + 1 储量，物品落到棋盘', S(pg, 'energy') == e0 - 1 and S(pg, f"gens['{GC}'].charges") == ch0 - 1)
     for _ in range(10): tap_gen(pg, GB)
     g = S(pg, f"gens['{GB}']"); cd = g['cdEnd'] - pg.evaluate('MCL.now()')
-    check('食材箱 10 次后储量 0、冷却 60 秒', g['charges'] == 0 and 58000 < cd <= 60000, f'{cd/1000:.1f}s')
+    exp = pg.evaluate(f"Core.cooldownSec(MCL.C, MCL.S, '{GB}')") * 1000
+    check('食材箱 10 次后储量 0、冷却时长按前期档位（第 8 单前 15 秒）', g['charges'] == 0 and exp - 2000 < cd <= exp and exp == 15000, f'{cd/1000:.1f}s / 应为 {exp/1000:.0f}s')
     e1 = S(pg, 'energy'); tap_gen(pg, GB)
     check('冷却中点击：不扣体力，弹出冷却倒计时（含看广告回满）', S(pg, 'energy') == e1 and pg.is_visible('#modal.show') and 'Recharging' in pg.inner_text('#m-title'), pg.inner_text('#m-body'))
     pg.click('#m-btns .btn.alt'); pg.wait_for_timeout(200); pg.screenshot(path=str(out / 'gen-cooldown.png'))
@@ -227,7 +228,7 @@ with sync_playwright() as p:
     check('第一幕 5 节点全部解锁：共扣 6 星，进入第二幕，场景大幅变化', S(pg, 'deco') == 5 and S(pg, 'stars') == 0 and 'Act 2' in pg.inner_text('#deco-act') and d5 > 0.05, f'{d5 * 100:.1f}% 像素变化')
     pg.screenshot(path=str(out / 'cafe-act1-done.png'))
     reload(pg)
-    check('刷新后装修进度保留', S(pg, 'deco') == 5 and S(pg, 'v') == 3)
+    check('刷新后装修进度保留', S(pg, 'deco') == 5 and S(pg, 'v') == 4)
     pg.evaluate('MCL.S.stars=34'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)
     comics = 0
     for _ in range(20):
@@ -265,21 +266,35 @@ with sync_playwright() as p:
     check('看完发奖：订单金币再加一倍（44 → 共 88）', S(pg, 'coins') == c0 + 88, f'{S(pg, "coins") - c0}')
     ads = S(pg, 'ads')
     check('广告展示 / 点击计数（点击率数据口径）', all(ads['offers'][k] >= 1 and ads['clicks'][k] >= 1 for k in ('energy', 'refill', 'double')), json.dumps(ads))
-    # 插屏：第 15 单（5 的倍数）完成时正拖着别的物品 → 拖拽期间不弹，松手后才弹
+    # 插屏：第 20 单（第一次允许插屏）完成时正拖着别的物品 → 拖拽期间不弹，松手后才弹
     pg.evaluate(SETUP_INTER)
     pg.wait_for_timeout(300); inter0 = S(pg, 'ads.interstitials')
-    # 交完第 15 单后立刻抓起另一个物品（不留空档），模拟玩家连续操作
+    # 交完第 20 单后立刻抓起另一个物品（不留空档），模拟玩家连续操作
     (ax, ay), (ox, oy), (x0, y0) = cxy(pg, 2), order_xy(pg, 0), cxy(pg, 10)
     pg.mouse.move(ax, ay); pg.mouse.down()
     for k in range(1, 9): pg.mouse.move(ax + (ox - ax) * k / 8, ay + (oy - ay) * k / 8)
     pg.mouse.up(); pg.mouse.move(x0, y0); pg.mouse.down(); pg.mouse.move(x0 + 30, y0 + 20, steps=4)
-    check('第 15 单已结算（触发插屏排队）', S(pg, 'stats.ordersDone') == 15)
+    check('第 20 单已结算（触发插屏排队）', S(pg, 'stats.ordersDone') == 20)
     seen = False
     for k in range(12): pg.mouse.move(x0 + 30 + k * 2, y0 + 20, steps=1); pg.wait_for_timeout(120); seen = seen or pg.is_visible('#ad.show')
     check('插屏：拖拽合成过程中不弹', not seen and S(pg, 'ads.interstitials') == inter0)
     pg.mouse.up(); pg.wait_for_timeout(900)
-    check('插屏：松手后才弹（每 5 单 1 次）', S(pg, 'ads.interstitials') == inter0 + 1, f"interstitials={S(pg, 'ads.interstitials')}")
+    check('插屏：松手后才弹（第 20 单起、每 10 单 1 次）', S(pg, 'ads.interstitials') == inter0 + 1, f"interstitials={S(pg, 'ads.interstitials')}")
     no_ad(pg)
+
+    # ================= 任务 =================
+    pg.evaluate("(()=>{const s=MCL.S; s.tasks={next:0,active:[]}; Core.fillTasks(MCL.C,s);})()"); pg.wait_for_timeout(300)
+    pg.click('#nav-tasks'); pg.wait_for_timeout(400)
+    check('Tasks 页：3 个任务、未完成的领取按钮不可点', pg.evaluate('MCL.mode') == 'tasks' and pg.locator('.task').count() == 3 and pg.locator('.task button[disabled]').count() == 3)
+    pg.evaluate("MCL.S.stats.merges += 5"); pg.wait_for_timeout(400)
+    c0 = S(pg, 'coins')
+    check('完成"合成 5 次"后可领取', pg.locator('.task.ready').count() == 1)
+    pg.screenshot(path=str(out / 'tasks.png'))
+    pg.locator('.task.ready button').click(); settle_rewards(pg); pg.wait_for_timeout(300)
+    check('领取：+20 金币，按顺序补上第 4 个任务', S(pg, 'coins') == c0 + 20 and pg.evaluate("MCL.S.tasks.active.map(a=>a.id).join()") == 't02,t03,t04', pg.evaluate("MCL.S.tasks.active.map(a=>a.id).join()"))
+    pg.click('#nav-merge'); pg.wait_for_timeout(300)
+    pg.evaluate("MCL.S.stats.ordersDone += 2"); pg.wait_for_timeout(500)
+    check('有可领任务时 Tasks 按钮出红点', pg.evaluate("document.getElementById('nav-tasks').classList.contains('dot')"))
     ctx.close()
 
     # ================= 多分辨率布局 =================

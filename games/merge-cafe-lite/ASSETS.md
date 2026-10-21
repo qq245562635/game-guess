@@ -215,6 +215,17 @@ scene_base → deck → shabby_litter → parasol → photo → terrace → shab
 | nav_cafe | 96×96 | 底栏 Café 按钮（小摊图形） |
 | nav_merge | 96×96 | 底栏 Merge 按钮（交叉的勺叉或合并箭头） |
 
+## 8. 首测后新增（P1）
+
+| id | 规格 | 用途 | 现状 |
+|---|---|---|---|
+| header_merge_p | 1500×624 WebP | Merge 页竖屏头图：咖啡师（主角）在柜台后、一位顾客在柜台前、背后海景 + 小岛，构图参照 #38 竖屏效果图上半部分。**顶部 30% 会被顶栏盖住一部分，Logo 放在图里时要在 30% 以下**；矮屏会从底部（柜台）裁 | 临时用 #38 效果图裁切（`assets/scene/header_merge_p.webp`） |
+| header_merge_l | 1180×948 WebP | Merge 页横屏头图（左侧竖条），咖啡师为主体，参照 #38 横屏草图左栏；底部 80px 会被底栏盖住 | 临时用 #38 横屏草图裁切 |
+| nav_tasks | 96×96 PNG | 底栏 Tasks 按钮（剪贴板 + 勾） | 程序画的 SVG 占位 |
+| deco_plant_pot / deco_plant_fern / deco_plant_bush | 256×256 透明 PNG | 棋盘两侧装饰：花盆（粉 / 珊瑚色花）、蕨叶丛、开花灌木 | 程序画的占位 |
+
+头图放 `assets/scene/`，登记到 `art.json` 的 `scene`；`nav_tasks` 和三种绿植放 `assets/ui/`，登记到 `ui`，放图登记即替换。
+
 ## 不需要做的
 
 - **UI 面板、按钮、订单卡底板、弹窗**：由程序用 CSS / WebGL 画（圆角、粗描边、木色、珊瑚按钮），这样省包体，也方便改。Codex 如果对颜色、圆角、描边粗细有意见，直接在 #38 里给出数值，程序照改。如果坚持要木纹质感，可以交九宫格 PNG 并注明切分边距。

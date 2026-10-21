@@ -59,7 +59,7 @@
       const ordersH = Math.round(Math.min(150, Math.max(100, cw * 0.27)));
       const fixed = hudH + ordersH + gensH + navH + safeB + gap * 5;
       const sceneMin = Math.max(56, H * 0.1);
-      const bs = Math.floor(Math.min(cw - 10, H - fixed - sceneMin));
+      const bs = Math.floor(Math.min(cw * 0.86, H - fixed - sceneMin)); // 按 #38 效果图收窄，两侧放绿植
       const sceneH = H - fixed - bs; // 场景吃掉剩余高度
       let y = hudH + sceneH;
       LY.scene = { x: 0, y: 0, w: W, h: y };
@@ -89,18 +89,22 @@
     }
     LY.pad = Math.round(LY.bs * 0.022);
     LY.cs = (LY.bs - LY.pad * 2) / C.cols;
-    if (mode === 'cafe') { // 装修：场景铺满，下面是装修面板 + 底栏
-      const cw = Math.min(W - 16, 620), cx = (W - cw) / 2;
+    if (mode !== 'merge') { // 装修 / 任务：场景铺满，下面是面板 + 底栏
+      const cw = Math.min(W - 16, 620), cx = (W - cw) / 2, panel = $(mode === 'cafe' ? 'deco' : 'tasks');
       placeNav(cx, H - navH - safeB - 4, cw, navH);
       placeHud(0, safeT + 8, W);
-      const ds = $('deco').style; ds.left = cx + 'px'; ds.width = cw + 'px'; ds.bottom = (navH + safeB + 4 + gap * 1.5) + 'px';
-      const ph = $('deco').getBoundingClientRect().height || 200;
+      const ds = panel.style; ds.left = cx + 'px'; ds.width = cw + 'px'; ds.bottom = (navH + safeB + 4 + gap * 1.5) + 'px';
+      const ph = panel.getBoundingClientRect().height || 200;
       LY.cafeScene = { x: 0, y: 0, w: W, h: Math.max(160, H - navH - safeB - ph - gap * 3) };
     }
+    LY.hudBottom = Math.max(...[...document.querySelectorAll('.pill')].map((e) => e.getBoundingClientRect().bottom)) + 4; LY.navH = navH;
     const pc = $('pill-coins').getBoundingClientRect(), ps = $('pill-stars').getBoundingClientRect();
     LY.coinTarget = [pc.left + 18, pc.top + pc.height / 2]; LY.starTarget = [ps.left + 18, ps.top + ps.height / 2];
   }
-  function placeNav(x, y, w, h) { const s = $('nav').style; s.left = x + 'px'; s.top = y + 'px'; s.width = w + 'px'; s.height = h + 'px'; }
+  function placeNav(x, y, w, h) {
+    const s = $('nav').style; s.left = x + 'px'; s.top = y + 'px'; s.width = w + 'px'; s.height = h + 'px';
+    $('nav').classList.toggle('compact', (w - 20) / 3 < 128); // 三个按钮放不下"图标 + 文字"横排时改成图标在上、文字在下
+  }
   function placeHud(x, y, w) { const s = $('hud').style; s.left = x + 'px'; s.top = y + 'px'; s.width = w + 'px'; }
   document.documentElement.style.setProperty('--sat', 'env(safe-area-inset-top)');
   addEventListener('resize', layout);
@@ -298,7 +302,7 @@
   let interQueued = false;
   function tryInterstitial() {
     if (!interQueued || down || drag || modalOpen() || Ads.busy || Core.tutStep(C, S) || flies.length) return;
-    interQueued = false; S.ads.interstitials++; markDirty();
+    interQueued = false; Core.markInterstitial(S, now()); markDirty();
     Ads.interstitial();
   }
   function tapLocked(i) {
@@ -324,7 +328,7 @@
       cardPops.set(k, clock() + 0.2);
       flyRewards(R.x + R.w / 2, R.y + R.h / 2, r.coins, r.stars + r.bonusStar);
       toast(r.bonusStar ? L.t('ui.starBonus') : L.t('ui.orderDone'));
-      if (!Core.tutStep(C, S) && S.stats.ordersDone > 1) offerDouble(r.coins);
+      if (!Core.tutStep(C, S) && S.stats.ordersDone > 1 && r.offerDouble) offerDouble(r.coins);
       if (r.interstitial) interQueued = true;
     } else cardPops.set(k, clock());
     markDirty();
@@ -402,13 +406,52 @@
   function setMode(m) {
     if (mode === m) return;
     mode = m; down = drag = null; sel = -1;
-    document.body.classList.toggle('cafe', m === 'cafe');
-    $('nav-cafe').classList.toggle('on', m === 'cafe'); $('nav-merge').classList.toggle('on', m === 'merge');
+    document.body.classList.toggle('cafe', m === 'cafe'); document.body.classList.toggle('tasks', m === 'tasks');
+    for (const k of ['cafe', 'merge', 'tasks']) $('nav-' + k).classList.toggle('on', m === k);
     $('x2').classList.remove('show');
-    updateDeco(); layout();
+    updateDeco(); tasksKey = ''; updateTasks(); layout();
   }
   $('nav-cafe').onclick = () => setMode('cafe');
   $('nav-merge').onclick = () => setMode('merge');
+  $('nav-tasks').onclick = () => setMode('tasks');
+
+  /* ---------- 任务页 ---------- */
+  let tasksKey = '';
+  const REWARD_ICON = { coins: 'icon_coin', energy: 'icon_energy', stars: 'icon_star' };
+  function updateTasks() {
+    $('nav-tasks').classList.toggle('dot', mode !== 'tasks' && !Core.tutStep(C, S) && Core.tasksClaimable(C, S));
+    if (mode !== 'tasks') return;
+    const ps = S.tasks.active.map((_, k) => Core.taskProgress(C, S, k));
+    const key = ps.map((p) => p.def.id + ':' + p.cur).join('|');
+    if (key === tasksKey) return; tasksKey = key;
+    const list = $('tasks-list'); list.textContent = '';
+    if (!ps.length) { const el = document.createElement('p'); el.className = 'done-all'; el.textContent = L.t('ui.tasksDone'); list.appendChild(el); }
+    ps.forEach((p, k) => {
+      const row = document.createElement('div'); row.className = 'task' + (p.done ? ' ready' : '');
+      const txt = document.createElement('div'); txt.className = 't-txt';
+      const b = document.createElement('b'); b.textContent = L.t('task.' + p.def.type, { n: p.def.n }); txt.appendChild(b);
+      const bar = document.createElement('div'); bar.className = 't-bar'; const fill = document.createElement('i'); fill.style.width = (p.cur / p.need * 100) + '%'; bar.appendChild(fill);
+      const num = document.createElement('span'); num.textContent = p.def.type === 'level' ? (p.done ? '✓' : '') : p.cur + '/' + p.need; bar.appendChild(num); txt.appendChild(bar);
+      const rw = document.createElement('div'); rw.className = 't-rw';
+      for (const [kind, n] of Object.entries(p.def.reward)) {
+        const c = document.createElement('span'); const src = Art.src(REWARD_ICON[kind]);
+        if (src) { const im = document.createElement('img'); im.src = src; im.alt = ''; c.appendChild(im); } else c.className = 'rw-' + kind;
+        c.appendChild(document.createTextNode('+' + n)); rw.appendChild(c);
+      }
+      const btn = document.createElement('button'); btn.className = 'btn small'; btn.textContent = L.t('ui.claim'); btn.disabled = !p.done;
+      btn.onclick = () => claim(k, btn);
+      row.append(txt, rw, btn); list.appendChild(row);
+    });
+    layout();
+  }
+  function claim(k, btn) {
+    const r = Core.claimTask(C, S, k, now()); if (!r.ok) return;
+    const b = btn.getBoundingClientRect(), x = b.left + b.width / 2, y = b.top;
+    if (r.reward.coins || r.reward.stars) flyRewards(x, y, r.reward.coins || 0, r.reward.stars || 0);
+    if (r.reward.energy) { bump('pill-energy'); toast('+' + r.reward.energy + ' ⚡'); }
+    burst(x, y, '#f5c03a', 14);
+    markDirty(); save(); hudCache = ''; updateHud(); tasksKey = ''; updateTasks();
+  }
   let decoKey = '';
   function updateDeco() {
     const nd = Core.decoNext(C, S), afford = !!nd && S.stars - pendingStars >= nd.cost;
@@ -476,7 +519,19 @@
      正式美术到位后按图层 id 换成贴图即可。 */
   const layerPop = new Map();
   const has = (layer) => Core.decoDone(C, S, layer);
+  /* Merge 页头图：只在"顶栏下面 / 底栏上面"的可见区里铺图（不让顶栏挡住图里的 Logo），被盖住的部分用天色补 */
+  function drawHeader(R) {
+    const id = LY.portrait ? 'header_merge_p' : 'header_merge_l'; if (!Art.has(id)) return false;
+    const top = LY.portrait ? LY.hudBottom : 0, bottom = LY.portrait ? R.y + R.h : R.y + R.h - LY.navH - 16;
+    const vh = bottom - top; if (vh < 40) return false;
+    GL.rect(R.x, R.y, R.w, R.h, 0, hex('#9fdcf0'));
+    const sp = Art.cover(id, R.w, vh, LY.portrait ? 0.5 : 0.42, 0); if (!sp) return false; // 竖向不够时裁底部（柜台），保住顶上的 Logo
+    GL.img(sp, R.x + R.w / 2, top + vh / 2, R.w, vh);
+    if (LY.portrait) GL.rect(R.x, bottom - 2, R.w, 6, 0, [0.35, 0.2, 0.08, 0.18], { soft: 6 });
+    return true;
+  }
   function drawScene(R, t, showLogo) {
+    if (showLogo && drawHeader(R)) return;
     const G = sceneGeom(R), { x, y, w, h, u, horizon, gy, bot, rx0, rw } = G;
     // 天空 / 云 / 海 / 小岛
     GL.rect(x, y, w, horizon - y + 2, 0, COL.sky);
@@ -702,7 +757,7 @@
     }
     // 冷却遮罩
     if (g.charges <= 0) {
-      const left = Math.max(0, g.cdEnd - now()), frac = 1 - left / (def.cooldownSec * 1000);
+      const left = Math.max(0, g.cdEnd - now()), frac = 1 - left / ((g.cdLen || def.cooldownSec) * 1000);
       GL.rect(x, y, w, h, 16, COL.cd);
       const rr = h * 0.3, cxx = x + 6 + isz / 2;
       GL.arc(cxx, y + h / 2, rr, h * 0.08, Math.PI * 2, [1, 1, 1, 0.35]);
@@ -710,6 +765,21 @@
       GL.text(mmss(left), (nx + bxx) / 2, y + h / 2, { size: Math.max(12, h * 0.32), weight: 900, outline: 'rgba(30,18,10,0.8)' });
     }
     GL.restore();
+  }
+  /* 棋盘两侧的装饰绿植（按 #38 效果图：右侧花盆、左下蕨叶、底部花丛），只占两侧留白，不压格子 */
+  function drawDecor(t) {
+    const sway = (k) => Math.sin(t * 0.9 + k) * 0.6;
+    if (LY.portrait) {
+      const gutter = LY.bx, s1 = Math.max(46, gutter * 1.9);
+      GL.img(Art.plant('fern', s1), LY.bx - s1 * 0.18 + sway(1), LY.by + LY.bs * 0.78, s1, s1);
+      GL.img(Art.plant('pot', s1 * 1.05), LY.bx + LY.bs + s1 * 0.16 + sway(2), LY.by + LY.bs * 0.62, s1 * 1.05, s1 * 1.05);
+      GL.img(Art.plant('bush', s1 * 0.9), LY.bx - s1 * 0.12, LY.by + LY.bs * 0.18, s1 * 0.9, s1 * 0.9);
+      const g0 = LY.gens[0], g1 = LY.gens[LY.gens.length - 1];
+      if (g0) { GL.img(Art.plant('bush', 60), g0.x - 6, g0.y + g0.h + 6, 60, 60); GL.img(Art.plant('fern', 64), g1.x + g1.w + 4, g1.y + g1.h + 2, 64, 64); }
+    } else {
+      const s1 = Math.min(110, LY.bs * 0.2); // 横屏右侧紧贴订单 / 生成器，只在棋盘左下放一丛
+      GL.img(Art.plant('fern', s1), LY.bx - 6 + sway(1), LY.by + LY.bs - s1 * 0.3, s1, s1);
+    }
   }
   function drawBoardFrame() {
     GL.rect(LY.bx + 2, LY.by + 8, LY.bs, LY.bs, 20, COL.shadow, { soft: 12 });
@@ -757,13 +827,14 @@
     const W = LY.W, H = LY.H, t = clock(), cs = LY.cs;
     GL.begin(COL.woodL);
     drawFloor(W, H);
-    if (mode === 'cafe') { drawScene(LY.cafeScene || LY.scene, t, false); drawFx(t); T = t; return GL.end(); }
+    if (mode !== 'merge') { drawScene(LY.cafeScene || LY.scene, t, false); drawFx(t); T = t; return GL.end(); }
     drawScene(LY.scene, t, true);
     const needs = needSet();
     const dragIt = drag ? S.cells[drag.from] : null;
     const overOrder = drag ? orderAt(drag.x, drag.y) : -1;
     for (let k = 0; k < LY.orders.length; k++) drawOrder(k, t, k === overOrder && Core.orderNeedFor(C, S.orders[k], dragIt) >= 0 ? 1 : 0);
     for (const R of LY.gens) drawGenButton(R, t);
+    drawDecor(t);
     drawBoardFrame();
     const target = drag ? cellAt(drag.x - drag.ox, drag.y - drag.oy) : -1;
     for (let i = 0; i < C.n; i++) drawCell(i, t, target);
@@ -853,7 +924,7 @@
       for (const id in S.gens) if (Core.settleGen(C, id, S.gens[id], now())) markDirty();
       const ref = Core.settleOrders(C, S, now());
       for (const k of ref) { cardPops.set(k, clock()); markDirty(); }
-      updateHud(); updateTutorial(); updateDeco(); tryInterstitial();
+      updateHud(); updateTutorial(); updateDeco(); updateTasks(); tryInterstitial();
       if (dirty) { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); }
       if (DEBUG) debugStats();
     }
@@ -872,9 +943,10 @@
     Art.load(CONFIG.art.items, 'assets/items/', () => {}),
     Art.load(CONFIG.art.avatars || [], 'assets/avatars/', () => {}),
     Art.load(CONFIG.art.ui || [], 'assets/ui/', swapDomIcon),
+    Art.load(CONFIG.art.scene || [], 'assets/scene/', () => {}, 'webp'),
   ]);
   /* 顶栏和底栏的图标是 DOM 里的 SVG 占位：正式图到了换成 <img> */
-  const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg' };
+  const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg', nav_tasks: '#nav-tasks svg' };
   function swapDomIcon(id) {
     const old = DOM_ICONS[id] && document.querySelector(DOM_ICONS[id]); if (!old) return;
     const img = document.createElement('img'); img.src = Art.src(id); img.alt = ''; img.className = 'ico'; img.dataset.art = id;

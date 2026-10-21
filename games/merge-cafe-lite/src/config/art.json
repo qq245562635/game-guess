@@ -1,5 +1,5 @@
 {
-  "_doc": "已到位的正式图（规格见 ASSETS.md）。物品 / 生成器放 assets/items/<id>.png → 登记进 items；顾客头像放 assets/avatars/<id>.png → avatars；货币图标、Logo、小图标、底栏图标放 assets/ui/<id>.png → ui（可用 id：icon_energy icon_coin icon_star logo_merge_cafe_lite icon_lock icon_check icon_clock icon_hand nav_cafe nav_merge）。没登记的一律用占位，不发多余请求。",
+  "_doc": "已到位的正式图（规格见 ASSETS.md）。物品 / 生成器放 assets/items/<id>.png → 登记进 items；顾客头像放 assets/avatars/<id>.png → avatars；货币图标、Logo、小图标、底栏图标放 assets/ui/<id>.png → ui（可用 id：icon_energy icon_coin icon_star logo_merge_cafe_lite icon_lock icon_check icon_clock icon_hand nav_cafe nav_merge）。头图放 assets/scene/<id>.webp → scene（header_merge_p 竖屏、header_merge_l 横屏；当前是 #38 效果图裁切的临时图，P1 正式头图到位后同名替换）。没登记的一律用占位，不发多余请求。",
   "items": [
     "gen_coffee_machine",
     "gen_ingredient_box",
@@ -33,5 +33,9 @@
     "icon_energy",
     "icon_star",
     "logo_merge_cafe_lite"
+  ],
+  "scene": [
+    "header_merge_p",
+    "header_merge_l"
   ]
 }

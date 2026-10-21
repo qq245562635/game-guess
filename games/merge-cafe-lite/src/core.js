@@ -3,7 +3,7 @@
    所有数值来自 CONFIG（src/config/*.json），这里不写死任何数。
    时间一律用毫秒时间戳 now 传入，随机数用 rng 传入，方便离线结算和测试。 */
 const Core = (() => {
-  const SAVE_VERSION = 3;
+  const SAVE_VERSION = 4;
   const TUT_DONE = -1;
 
   /* ---------- 配置索引 ---------- */
@@ -16,7 +16,7 @@ const Core = (() => {
     const deco = [];
     if (cfg.deco) cfg.deco.acts.forEach((a, ai) => a.nodes.forEach((nd, ni) => deco.push(Object.assign({ act: ai, inAct: ni, actName: a.name }, nd))));
     return {
-      deco, ads: cfg.ads || {},
+      deco, ads: cfg.ads || {}, tasks: cfg.tasks || { active: 0, list: [] },
       cfg, cols: b.cols, rows: b.rows, n: b.cols * b.rows,
       maxLevel: cfg.chains.maxLevel, chains: cfg.chains.chains, gens, genList: cfg.generators.generators,
       eco: cfg.economy, O, tpl, tut: cfg.tutorial || { enabled: false },
@@ -42,11 +42,13 @@ const Core = (() => {
       seq: 0,
       deco: 0,                 // 已完成的装修节点数（按顺序解锁）
       ads: newAdStats(),
-      stats: { merges: 0, spawns: 0, ordersDone: 0, coinsEarned: 0, firstMergeAt: 0, firstOrderAt: 0, createdAt: now },
+      tasks: { next: 0, active: [] },
+      stats: newStats(now),
     };
     for (let r = 0; r < C.rows; r++) for (let c = 0; c < C.cols; c++) s.unlocked[idx(C, r, c)] = b.mask[r][c] === 'x';
     for (const g of C.genList) s.gens[g.id] = { charges: g.charges, cdEnd: 0 };
     for (const it of b.startItems) s.cells[idx(C, it.at[0], it.at[1])] = { k: 'item', chain: it.chain, lvl: it.level };
+    fillTasks(C, s);
     for (let k = 0; k < C.O.slots; k++) {
       if (k === 0 && s.tut !== TUT_DONE) s.orders.push(makeOrder(C, s, C.tut.firstOrder, now, rng, C.tut.firstOrder.customer));
       else s.orders.push(rollOrder(C, s, now, rng));
@@ -118,13 +120,19 @@ const Core = (() => {
     if (s.energy < def.energyCost) return { ok: false, reason: 'energy', next: energyNextIn(C, s, now) };
     spendEnergy(C, s, def.energyCost, now);
     g.charges--;
-    if (g.charges <= 0) g.cdEnd = now + def.cooldownSec * 1000;
+    if (g.charges <= 0) { g.cdLen = cooldownSec(C, s, id); g.cdEnd = now + g.cdLen * 1000; }
     const lvl = s.tut !== TUT_DONE ? C.tut.spawnLevel : rollLevel(def.levelWeights, rng);
     const item = { k: 'item', chain: def.chain, lvl };
     s.cells[to] = item;
-    s.stats.spawns++;
+    s.stats.spawns++; s.stats.maxLvl = Math.max(s.stats.maxLvl || 0, item.lvl);
     if (s.tut !== TUT_DONE) s.tut++;
     return { ok: true, to, item };
+  }
+  /* 冷却时长：前期按已完成订单数走 cooldownRamp（15 → 30 秒），之后用生成器自己的 cooldownSec */
+  function cooldownSec(C, s, id) {
+    const ramp = C.cfg.generators.cooldownRamp || [], done = s.stats.ordersDone;
+    for (const r of ramp) if (done < r.beforeOrders) return r.sec;
+    return C.gens[id].cooldownSec;
   }
   /* 生成器立即回满（激励广告点位 2） */
   function refillGen(C, s, id) {
@@ -151,7 +159,7 @@ const Core = (() => {
     if (canMerge(C, a, b)) {
       s.cells[to] = { k: 'item', chain: a.chain, lvl: a.lvl + 1 };
       s.cells[from] = null;
-      s.stats.merges++;
+      s.stats.merges++; s.stats.maxLvl = Math.max(s.stats.maxLvl || 0, a.lvl + 1);
       if (!s.stats.firstMergeAt) s.stats.firstMergeAt = now || 1;
       if (step === 'merge') s.tut++;
       return { type: 'merge', lvl: a.lvl + 1 };
@@ -227,8 +235,11 @@ const Core = (() => {
     if (step === 'deliver') s.tut = TUT_DONE;
     const doneOrder = o;
     s.orders[k] = null; s.orders[k] = rollOrder(C, s, now, rng);
-    const inter = C.ads.interstitialEveryOrders, interstitial = !!(inter && s.stats.ordersDone % inter === 0);
-    return { type: 'complete', coins: doneOrder.coins, stars: doneOrder.stars, bonusStar, interstitial, order: doneOrder };
+    const A = C.ads, done = s.stats.ordersDone, ie = A.interstitialEveryOrders;
+    const interstitial = !!(ie && done % ie === 0 && done >= (A.interstitialFirstAtOrder || 0) &&
+      (now || 0) - (s.ads.lastInterAt || 0) >= (A.interstitialMinGapSec || 0) * 1000);
+    const de = (A.rewarded && A.rewarded.double && A.rewarded.double.everyOrders) || 1, offerDouble = done % de === 0;
+    return { type: 'complete', coins: doneOrder.coins, stars: doneOrder.stars, bonusStar, interstitial, offerDouble, order: doneOrder };
   }
 
   /* ---------- 装修：按顺序解锁，扣星 ---------- */
@@ -244,10 +255,49 @@ const Core = (() => {
   }
   const decoDone = (C, s, layer) => { const i = C.deco.findIndex((d) => d.layer === layer); return i >= 0 && i < s.deco; };
 
+  /* ---------- 任务（底栏 Tasks） ---------- */
+  function newStats(now) { return { merges: 0, spawns: 0, ordersDone: 0, coinsEarned: 0, unlocks: 0, maxLvl: 0, firstMergeAt: 0, firstOrderAt: 0, createdAt: now }; }
+  function taskStat(s, type) {
+    switch (type) {
+      case 'merges': return s.stats.merges; case 'orders': return s.stats.ordersDone; case 'spawns': return s.stats.spawns;
+      case 'unlocks': return s.stats.unlocks || 0; case 'renovate': return s.deco; case 'coins': return s.stats.coinsEarned;
+      case 'level': return s.stats.maxLvl || 0;
+    }
+    return 0;
+  }
+  /* 空位按 list 顺序补；base 记下接任务时的统计值（level 类型不减 base） */
+  function fillTasks(C, s) {
+    const T = C.tasks;
+    while (s.tasks.active.length < T.active && s.tasks.next < T.list.length) {
+      const def = T.list[s.tasks.next++];
+      s.tasks.active.push({ id: def.id, base: def.type === 'level' ? 0 : taskStat(s, def.type) });
+    }
+  }
+  function taskDef(C, id) { return C.tasks.list.find((t) => t.id === id); }
+  function taskProgress(C, s, k) {
+    const a = s.tasks.active[k]; if (!a) return null;
+    const def = taskDef(C, a.id), cur = Math.min(def.n, Math.max(0, taskStat(s, def.type) - a.base));
+    return { def, cur, need: def.n, done: cur >= def.n };
+  }
+  const tasksClaimable = (C, s) => s.tasks.active.some((_, k) => taskProgress(C, s, k).done);
+  function claimTask(C, s, k, now) {
+    const p = taskProgress(C, s, k);
+    if (!p) return { ok: false, reason: 'none' };
+    if (tutStep(C, s)) return { ok: false, reason: 'tutorial' };
+    if (!p.done) return { ok: false, reason: 'notDone' };
+    const r = p.def.reward || {};
+    if (r.coins) { s.coins += r.coins; }
+    if (r.energy) { settleEnergy(C, s, now); s.energy += r.energy; }
+    if (r.stars) s.stars += r.stars;
+    s.tasks.active.splice(k, 1); fillTasks(C, s);
+    return { ok: true, reward: r, task: p.def };
+  }
+
   /* ---------- 广告奖励（激励视频发奖，Mock 和正式 SDK 共用这些入口） ---------- */
-  function newAdStats() { return { offers: { energy: 0, refill: 0, double: 0 }, clicks: { energy: 0, refill: 0, double: 0 }, rewards: 0, interstitials: 0 }; }
+  function newAdStats() { return { offers: { energy: 0, refill: 0, double: 0 }, clicks: { energy: 0, refill: 0, double: 0 }, rewards: 0, interstitials: 0, lastInterAt: 0 }; }
   function adOffer(s, kind) { s.ads.offers[kind]++; }
   function adClick(s, kind) { s.ads.clicks[kind]++; }
+  function markInterstitial(s, now) { s.ads.interstitials++; s.ads.lastInterAt = now; }
   function grantEnergy(C, s, now) { settleEnergy(C, s, now); s.energy += C.ads.rewarded.energy.amount; s.ads.rewards++; return C.ads.rewarded.energy.amount; }
   function grantDouble(s, coins) { s.coins += coins; s.stats.coinsEarned += coins; s.ads.rewards++; return coins; }
 
@@ -272,7 +322,7 @@ const Core = (() => {
     if (!canUnlockHere(C, s, i)) return { ok: false, reason: 'notAdjacent' };
     const p = unlockPrice(C, i);
     if (s.coins < p) return { ok: false, reason: 'coins', price: p };
-    s.coins -= p; s.unlocked[i] = true;
+    s.coins -= p; s.unlocked[i] = true; s.stats.unlocks = (s.stats.unlocks || 0) + 1;
     return { ok: true, price: p };
   }
 
@@ -280,15 +330,20 @@ const Core = (() => {
   function serialize(s, now) { return JSON.stringify(Object.assign({}, s, { savedAt: now })); }
   /* 读档：版本不认识或数据坏了返回 null（调用方新开档）。
      v1（M1 测试档：生成器在棋盘里、下 4 行解锁、无订单）与 #38 效果图后的棋盘布局不兼容，直接新开档；
-     原型没有线上玩家，不做逐格迁移。v2 → v3 迁移：补装修进度 deco=0 和广告统计。 */
+     原型没有线上玩家，不做逐格迁移。v2 → v3 迁移：补装修进度 deco=0 和广告统计；v3 → v4：补任务。 */
   function deserialize(C, text, now, rng) {
     let o; try { o = JSON.parse(text); } catch (e) { return null; }
     if (!o || typeof o !== 'object' || typeof o.v !== 'number') return null;
     if (o.v === 2) { o.deco = 0; o.ads = newAdStats(); o.v = 3; } // v2 → v3：加装修进度和广告统计
+    if (o.v === 3) { o.tasks = { next: 0, active: [] }; o.v = 4; } // v3 → v4：加任务（统计里新增的 unlocks / maxLvl 由下面的默认值补齐）
     if (o.v !== SAVE_VERSION) return null;
     if (!Array.isArray(o.cells) || o.cells.length !== C.n || !Array.isArray(o.unlocked) || o.unlocked.length !== C.n) return null;
     if (!o.gens || typeof o.gens !== 'object' || !Array.isArray(o.orders)) return null;
-    o.stats = Object.assign({ merges: 0, spawns: 0, ordersDone: 0, coinsEarned: 0, firstMergeAt: 0, firstOrderAt: 0, createdAt: o.savedAt || 0 }, o.stats || {});
+    o.stats = Object.assign(newStats(o.savedAt || 0), o.stats || {});
+    if (!o.stats.maxLvl) for (const c of o.cells) if (c) o.stats.maxLvl = Math.max(o.stats.maxLvl, c.lvl);
+    if (!o.tasks || !Array.isArray(o.tasks.active)) o.tasks = { next: 0, active: [] };
+    o.tasks.active = o.tasks.active.filter((a) => taskDef(C, a.id));
+    fillTasks(C, o);
     if (typeof o.gems !== 'number') o.gems = 0;
     if (typeof o.tut !== 'number') o.tut = TUT_DONE;
     if (typeof o.seq !== 'number') o.seq = 0;
@@ -325,7 +380,8 @@ const Core = (() => {
     SAVE_VERSION, TUT_DONE, index, idx, rc, newState, settleEnergy, energyNextIn, settleAll, settleGen,
     tapGen, refillGen, rollLevel, nearestEmpty, emptyCount, canMerge, drop,
     isRare, rollOrder, settleOrders, orderNeedFor, deliver, tutStep, skipTutorial,
-    decoNext, renovate, decoDone, adOffer, adClick, grantEnergy, grantDouble,
+    decoNext, renovate, decoDone, adOffer, adClick, grantEnergy, grantDouble, markInterstitial, cooldownSec,
+    fillTasks, taskProgress, tasksClaimable, claimTask,
     unlockPrice, canUnlockHere, unlock, serialize, deserialize, itemDef,
   };
 })();

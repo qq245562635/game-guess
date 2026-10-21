@@ -90,5 +90,16 @@
   "ad.got": "+{n} coins!",
   "ui.howToMake": "How to make {item}",
   "ui.chainTip": "Merge two of the same item to get the next one.",
-  "ui.onBoard": "x{n}"
+  "ui.onBoard": "x{n}",
+  "nav.tasks": "Tasks",
+  "ui.tasksTitle": "Tasks",
+  "ui.claim": "Claim",
+  "ui.tasksDone": "All tasks done! More coming soon.",
+  "task.merges": "Merge {n} items",
+  "task.orders": "Complete {n} orders",
+  "task.spawns": "Tap generators {n} times",
+  "task.unlocks": "Unlock {n} tiles",
+  "task.renovate": "Renovate {n} times",
+  "task.coins": "Earn {n} coins",
+  "task.level": "Make a Lv {n} item"
 }

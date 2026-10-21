@@ -5,12 +5,12 @@
 const Art = (() => {
   const loaded = {};           // id -> HTMLImageElement（正式图）
   /* 加载登记过的正式图；返回 Promise，全部加载完（或失败）时 resolve，失败的继续用占位 */
-  function load(list, base, onReady) {
+  function load(list, base, onReady, ext) {
     return Promise.all(list.map((id) => new Promise((done) => {
       const im = new Image();
       im.onload = () => { loaded[id] = im; GL.forget('I|' + id + '|'); if (onReady) onReady(id); done(); };
       im.onerror = () => { console.warn('[art] missing', id); done(); };
-      im.src = base + id + '.png';
+      im.src = base + id + '.' + (ext || 'png');
     })));
   }
   const FONT = 'Nunito, "Avenir Next", "Trebuchet MS", "Segoe UI", system-ui, sans-serif';
@@ -97,6 +97,35 @@ const Art = (() => {
     return loaded[id] ? GL.sprite('I|' + id + '|', w, h, (g, pw, ph) => g.drawImage(loaded[id], 0, 0, pw, ph)) : null;
   }
   const has = (id) => !!loaded[id];
+  const img = (id) => loaded[id] || null;
+  /* 头图：按可见区"填满再裁切"，焦点 fx 控制横向裁哪边；返回 GL 精灵 */
+  function cover(id, w, h, fx, fy) {
+    const im = loaded[id]; if (!im) return null;
+    return GL.sprite('I|' + id + '|' + Math.round(w) + 'x' + Math.round(h) + '|', w, h, (g, pw, ph) => {
+      const sc = Math.max(pw / im.width, ph / im.height), sw = pw / sc, sh = ph / sc;
+      const sx = Math.max(0, Math.min(im.width - sw, im.width * fx - sw / 2)), sy = (im.height - sh) * (fy === undefined ? 0.5 : fy);
+      g.drawImage(im, sx, sy, sw, sh, 0, 0, pw, ph);
+    });
+  }
+  /* 装饰绿植（占位，正式图可按同名替换）：pot 花盆、fern 蕨叶丛、bush 开花灌木 */
+  function plant(kind, size) {
+    return GL.sprite('I|deco_plant_' + kind + '|', size, size, (g, w) => {
+      if (loaded['deco_plant_' + kind]) { g.drawImage(loaded['deco_plant_' + kind], 0, 0, w, w); return; }
+      const leaf = (x, y, rx, ry, rot, col) => { g.save(); g.translate(x, y); g.rotate(rot); g.fillStyle = col; g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); g.fill(); g.restore(); };
+      const flower = (x, y, r, col) => { g.fillStyle = col; for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; g.beginPath(); g.arc(x + Math.cos(a) * r * 0.7, y + Math.sin(a) * r * 0.7, r * 0.55, 0, Math.PI * 2); g.fill(); } g.fillStyle = '#ffd86b'; g.beginPath(); g.arc(x, y, r * 0.35, 0, Math.PI * 2); g.fill(); };
+      if (kind === 'pot') {
+        for (let k = 0; k < 9; k++) leaf(w * (0.5 + Math.sin(k * 1.7) * 0.22), w * (0.32 + (k % 3) * 0.08), w * 0.08, w * 0.2, (k - 4) * 0.35, k % 2 ? '#5f9752' : '#7fb26a');
+        for (let k = 0; k < 4; k++) flower(w * (0.32 + k * 0.12), w * (0.2 + (k % 2) * 0.1), w * 0.07, k % 2 ? '#f08aa6' : '#ef7965');
+        g.fillStyle = '#c96a45'; g.beginPath(); g.moveTo(w * 0.26, w * 0.58); g.lineTo(w * 0.74, w * 0.58); g.lineTo(w * 0.66, w * 0.96); g.lineTo(w * 0.34, w * 0.96); g.closePath(); g.fill();
+        g.fillStyle = '#e08158'; g.fillRect(w * 0.22, w * 0.55, w * 0.56, w * 0.08);
+      } else if (kind === 'fern') {
+        for (let k = 0; k < 11; k++) leaf(w * (0.15 + k * 0.07), w * (0.62 - Math.sin(k / 10 * Math.PI) * 0.22), w * 0.07, w * 0.32, (k - 5) * 0.22, k % 2 ? '#4f8a46' : '#6aa85c');
+      } else {
+        for (let k = 0; k < 8; k++) leaf(w * (0.2 + k * 0.085), w * (0.66 - (k % 3) * 0.06), w * 0.14, w * 0.11, k * 0.4, k % 2 ? '#5f9752' : '#7fb26a');
+        for (let k = 0; k < 6; k++) flower(w * (0.22 + k * 0.11), w * (0.5 - (k % 2) * 0.1), w * 0.065, ['#f5a6c0', '#ffffff', '#ef7965'][k % 3]);
+      }
+    });
+  }
   const src = (id) => (loaded[id] ? loaded[id].src : null);
 
   /* 锁 */
@@ -164,5 +193,5 @@ const Art = (() => {
       g.beginPath(); rr(g, w * 0.3, w * 0.42, w * 0.46, w * 0.46, w * 0.16); g.fill(); g.stroke();
     });
   }
-  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, logo, has, src, FONT };
+  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, logo, has, src, img, cover, plant, FONT };
 })();
