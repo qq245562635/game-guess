@@ -1,4 +1,4 @@
-/* 数值模拟：node tools/sim.js [局数]
+/* 数值模拟：node tools/sim.js [局数] [--first 只跑首会话]
    用真实的 core.js + src/config 跑一个"还算会玩"的机器人，估算首个会话能拿多少星、能不能解锁第一幕。
    机器人策略（贪心，偏保守，真人通常更好；做完的任务会去领）：
      1. 有能直接交的物品就交（优先交齐快完成的单）
@@ -17,33 +17,46 @@ const T = { tap: 1.0, merge: 1.6, deliver: 1.8 };
 
 function lcg(seed) { let x = seed >>> 0; return () => { x = (Math.imul(x, 1103515245) + 12345) >>> 0; return x / 4294967296; }; }
 
-function play(seed, sessionSec, adEnergy) {
-  const rng = lcg(seed), T0 = 1e12;
-  const s = Core.newState(C, T0, rng);
-  let t = 0, stuck = false, adsLeft = adEnergy ? 1 : 0;
-  const now = () => T0 + t * 1000;
-  // 引导三步（真实流程）
-  const gc = C.tut.generator;
-  { const r = Core.tapGen(C, s, gc, now(), rng); t += T.tap * 3;
-    const a = s.cells.findIndex((c, i) => c && c.lvl === 1 && i !== r.to); Core.drop(C, s, r.to, a, now()); t += T.merge * 2;
-    Core.deliver(C, s, a, 0, now(), rng); t += T.deliver * 2; }
+/* 一个会话：从 t0（毫秒时间戳）起玩 sec 秒。sinks=true 时机器人也会花金币（2026-10-21 金币消耗）：
+     - 开格：点不出来又没东西可合时开第一个买得起的相邻格（原策略）；sinks 时空格 ≤ 4 也会主动开最便宜的
+     - 升级生成器：钱 ≥ 价格 + 50 就升（先升等级低的那台）
+     - 泡泡：冒出来时钱 ≥ 价格 × 2 就买
+     - 回满：两台都在冷却、还有体力、钱 ≥ 价格 × 4 就买
+     - 体力：体力见底、钱 ≥ 价格 × 2 就买（每天限次）
+   返回会话内统计；状态 s 原地修改，跨会话继续用。 */
+function session(s, rng, t0, sec, opt) {
+  opt = opt || {};
+  let t = 0, stuck = false, adsLeft = opt.adEnergy ? 1 : 0, act1At = null, starsTotal = 0;
+  const now = () => t0 + t * 1000;
   const firstAct = C.deco.filter((d) => d.act === 0).reduce((a, d) => a + d.cost, 0);
-  let act1At = null, starsTotal = s.stars;
-  const countStars = (before) => { starsTotal += Math.max(0, s.stars - before); };
-  while (t < sessionSec) {
+  const countStars = (before) => { starsTotal += Math.max(0, s.stars - before); if (act1At === null && starsTotal + (opt.starsBefore || 0) >= firstAct) act1At = t; };
+  Core.settleAll(C, s, now(), rng);
+  const unlockCheapest = () => {
+    let best = -1;
+    for (let i = 0; i < C.n; i++) if (!s.unlocked[i] && Core.canUnlockHere(C, s, i) && (best < 0 || Core.unlockPrice(C, i) < Core.unlockPrice(C, best))) best = i;
+    if (best >= 0 && s.coins >= Core.unlockPrice(C, best)) { Core.unlock(C, s, best); t += 3; return true; }
+    return false;
+  };
+  while (t < sec) {
     Core.settleAll(C, s, now(), rng);
-    // 0. 有做完的任务就领（Tasks 页）
     for (let k = s.tasks.active.length - 1; k >= 0; k--) { const b = s.stars; if (Core.claimTask(C, s, k, now()).ok) { t += 2; countStars(b); } }
+    if (opt.sinks) {
+      const b = s.cells.findIndex((c) => c && c.k === 'bubble');
+      if (b >= 0 && s.coins >= Core.bubblePrice(C, s.cells[b]) * 2) { Core.popBubble(C, s, b, 'coins', now()); t += 3; }
+      const g = C.genList.map((d) => d.id).sort((a, b2) => s.gens[a].lv - s.gens[b2].lv)[0], uc = Core.upgradeCost(C, s, g);
+      if (uc !== null && s.coins >= uc + 50) { Core.upgradeGen(C, s, g); t += 3; }
+      if (Core.emptyCount(C, s) <= 4 && unlockCheapest()) continue;
+    }
     // 1. 交单
     let did = false;
     for (let k = 0; k < s.orders.length && !did; k++) {
       for (let i = 0; i < C.n && !did; i++) {
         if (Core.orderNeedFor(C, s.orders[k], s.cells[i]) >= 0) {
-          const b = s.stars; const r = Core.deliver(C, s, i, k, now(), rng); t += T.deliver; countStars(b); did = true;
+          const b = s.stars; Core.deliver(C, s, i, k, now(), rng); t += T.deliver; countStars(b); did = true;
         }
       }
     }
-    if (did) { if (act1At === null && starsTotal >= firstAct) act1At = t; continue; }
+    if (did) continue;
     // 2. 合成：先找对订单有用的
     const want = {}; // chain -> 需要的最高等级
     for (const o of s.orders) for (const n of o.needs) if (!n.done) want[n.chain] = Math.max(want[n.chain] || 0, n.lvl);
@@ -58,30 +71,76 @@ function play(seed, sessionSec, adEnergy) {
     }
     const empty = Core.emptyCount(C, s);
     if (!pair && fallback && empty <= 3) pair = fallback; // 快满了才合没用的
-    if (pair) { Core.drop(C, s, pair[0], pair[1], now()); t += T.merge; continue; }
+    if (pair) { Core.drop(C, s, pair[0], pair[1], now(), rng); t += T.merge; continue; }
     // 3. 点生成器
     const need = {}; for (const o of s.orders) for (const n of o.needs) if (!n.done) need[n.chain] = (need[n.chain] || 0) + Math.pow(2, n.lvl - 1);
     const gens = C.genList.slice().sort((a, b) => (need[b.chain] || 0) - (need[a.chain] || 0));
-    let tapped = false;
+    let tapped = false, why = '';
     for (const g of gens) {
       const r = Core.tapGen(C, s, g.id, now(), rng);
       if (r.ok) { t += T.tap; tapped = true; break; }
+      why = r.reason;
       if (r.reason === 'full') break;
       if (r.reason === 'energy') {
         if (adsLeft > 0) { adsLeft--; Core.grantEnergy(C, s, now()); t += C.ads.mockSec + 2; tapped = true; }
+        else if (opt.sinks) { const p = Core.energyPrice(C, s, now()); if (p !== null && s.coins >= p * 2) { Core.buyEnergy(C, s, now()); t += 3; tapped = true; } }
         break;
       }
     }
     if (tapped) continue;
-    if (fallback) { Core.drop(C, s, fallback[0], fallback[1], now()); t += T.merge; continue; }
-    // 满格无可合：开格
-    const cell = s.unlocked.findIndex((u, i) => !u && Core.canUnlockHere(C, s, i) && s.coins >= Core.unlockPrice(C, i));
-    if (cell >= 0) { Core.unlock(C, s, cell); t += 3; continue; }
+    if (opt.sinks && why === 'cooldown' && s.energy > 0) {
+      const id = gens[0].id, p = Core.refillPrice(C, s, now());
+      if (s.coins >= p * 4) { Core.buyRefill(C, s, id, now()); t += 3; continue; }
+    }
+    if (fallback) { Core.drop(C, s, fallback[0], fallback[1], now(), rng); t += T.merge; continue; }
+    // 点不出来（满格 / 没体力 / 冷却）又没东西可合：有钱就开格（原策略：开第一个买得起的相邻格）
+    { const cell = s.unlocked.findIndex((u, i) => !u && Core.canUnlockHere(C, s, i) && s.coins >= Core.unlockPrice(C, i));
+      if (cell >= 0) { Core.unlock(C, s, cell); t += 3; continue; } }
     // 没体力 / 冷却：等
     if (s.energy < 1 || C.genList.every((g) => s.gens[g.id].charges <= 0)) { t += 5; continue; }
     stuck = true; break;
   }
-  return { stars: starsTotal, orders: s.stats.ordersDone, act1At, coins: s.coins, stuck, energyLeft: s.energy };
+  return { stars: starsTotal, act1At, stuck, endT: now() };
+}
+
+function play(seed, sessionSec, adEnergy) {
+  const rng = lcg(seed), T0 = 1e12;
+  const s = Core.newState(C, T0, rng);
+  let t = 0;
+  const now = () => T0 + t * 1000;
+  // 引导三步（真实流程）
+  const gc = C.tut.generator;
+  { const r = Core.tapGen(C, s, gc, now(), rng); t += T.tap * 3;
+    const a = s.cells.findIndex((c, i) => c && c.lvl === 1 && i !== r.to); Core.drop(C, s, r.to, a, now(), rng); t += T.merge * 2;
+    Core.deliver(C, s, a, 0, now(), rng); t += T.deliver * 2; }
+  const s0 = s.stars, r = session(s, rng, now(), sessionSec - t, { adEnergy, starsBefore: s0 });
+  return { stars: s0 + r.stars, orders: s.stats.ordersDone, act1At: r.act1At === null ? null : r.act1At + t, coins: s.coins, stuck: r.stuck, energyLeft: s.energy };
+}
+
+/* 7 天金币曲线：每天 2 个会话（早 15 分钟 + 晚 15 分钟，中间离线体力回满），不看广告。
+   对比"只有开格"（旧）和"全部金币消耗"（新）：每天结束时手里还剩多少金币、各项花了多少。 */
+function campaign(seed, days, sinks) {
+  const rng = lcg(seed), T0 = 1e12, s = Core.newState(C, T0, rng);
+  Core.skipTutorial(s);
+  const out = [];
+  for (let d = 0; d < days; d++) {
+    for (const [h, len] of [[9, 900], [21, 900]]) session(s, rng, T0 + d * 86400e3 + h * 3600e3, len, { sinks });
+    out.push({ coins: s.coins, earned: s.stats.coinsEarned, spent: Object.assign({}, s.stats.coinsSpent), unlocks: s.stats.unlocks, lv: C.genList.map((g) => s.gens[g.id].lv) });
+  }
+  return out;
+}
+function campaignReport(days, runs) {
+  const pct = (xs, p) => xs.slice().sort((a, b) => a - b)[Math.floor((xs.length - 1) * p)];
+  for (const sinks of [false, true]) {
+    const all = []; for (let k = 1; k <= runs; k++) all.push(campaign(k, days, sinks));
+    console.log(`\n${sinks ? '新：全部金币消耗' : '旧：只有开格'}（每天 2×15 分钟，不看广告，${runs} 局中位数）`);
+    console.log('天  累计赚   手里余额  开格数  生成器等级  累计花费（开格/升级/回满/体力/泡泡）');
+    for (let d = 0; d < days; d++) {
+      const r = all.map((a) => a[d]), m = (f) => pct(r.map(f), 0.5);
+      console.log(`D${d + 1}  ${String(m((x) => x.earned)).padStart(6)}  ${String(m((x) => x.coins)).padStart(8)}  ${String(m((x) => x.unlocks)).padStart(6)}  ${(m((x) => x.lv[0]) + '/' + m((x) => x.lv[1])).padStart(10)}  ` +
+        ['unlock', 'upgrade', 'refill', 'energy', 'bubble'].map((k) => m((x) => x.spent[k])).join('/'));
+    }
+  }
 }
 
 const N = +(process.argv[2] || 300);
@@ -97,3 +156,4 @@ for (const [label, sec, ad] of [['首会话 10 分钟（不看广告）', 600, f
     `解锁第一幕 ${(hit.length / N * 100).toFixed(0)}%` + (hit.length ? `（中位用时 ${(pct(at, .5) / 60).toFixed(1)} 分钟）` : '') +
     `，卡死 ${rs.filter((r) => r.stuck).length} 局`);
 }
+if (!process.argv.includes('--first')) campaignReport(7, Math.min(N, 60));

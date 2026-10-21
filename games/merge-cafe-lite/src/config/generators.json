@@ -1,8 +1,14 @@
 {
-  "_doc": "生成器（策划案 §4 / Issue M1）：只出 1–2 级，权重 80/20；储量 10 次，点一次耗 1 体力 + 1 储量，储量耗尽冷却 60 秒。cooldownRamp：前期冷却缩短（首测反馈），按已完成订单数分档，beforeOrders 之前用 sec 秒，过了最后一档用各生成器自己的 cooldownSec。按 #38 效果图放在棋盘外（棋盘下方按钮）；anchor=[行,列] 是出生点参照（可在棋盘外，如第 7 行），产物落到离它最近的空格。",
+  "_doc": "生成器（策划案 §4 / Issue M1）：只出 1–2 级，权重 80/20；储量 10 次，点一次耗 1 体力 + 1 储量，储量耗尽冷却 60 秒。cooldownRamp：前期冷却缩短（首测反馈），按已完成订单数分档，beforeOrders 之前用 sec 秒，过了最后一档用各生成器自己的 cooldownSec。按 #38 效果图放在棋盘外（棋盘下方按钮）；anchor=[行,列] 是出生点参照（可在棋盘外，如第 7 行），产物落到离它最近的空格。 upgrades：生成器升级（金币消耗，2026-10-21 金币消耗设计），两台共用这张表；第 k 项是升到 Lv(k+2) 的价格和效果，Lv1 用生成器自己的 charges / levelWeights。cdMul 乘在冷却时长上（含 cooldownRamp 前期档）。",
   "cooldownRamp": [
-    { "beforeOrders": 8, "sec": 15 },
-    { "beforeOrders": 20, "sec": 30 }
+    {
+      "beforeOrders": 8,
+      "sec": 15
+    },
+    {
+      "beforeOrders": 20,
+      "sec": 30
+    }
   ],
   "generators": [
     {
@@ -12,8 +18,14 @@
       "charges": 10,
       "cooldownSec": 60,
       "energyCost": 1,
-      "levelWeights": { "1": 80, "2": 20 },
-      "anchor": [7, 1],
+      "levelWeights": {
+        "1": 80,
+        "2": 20
+      },
+      "anchor": [
+        7,
+        1
+      ],
       "color": "#2f7f8a"
     },
     {
@@ -23,9 +35,56 @@
       "charges": 10,
       "cooldownSec": 60,
       "energyCost": 1,
-      "levelWeights": { "1": 80, "2": 20 },
-      "anchor": [7, 5],
+      "levelWeights": {
+        "1": 80,
+        "2": 20
+      },
+      "anchor": [
+        7,
+        5
+      ],
       "color": "#e8735a"
+    }
+  ],
+  "upgrades": [
+    {
+      "cost": 150,
+      "charges": 12,
+      "cdMul": 0.9,
+      "levelWeights": {
+        "1": 80,
+        "2": 20
+      }
+    },
+    {
+      "cost": 300,
+      "charges": 14,
+      "cdMul": 0.8,
+      "levelWeights": {
+        "1": 75,
+        "2": 20,
+        "3": 5
+      }
+    },
+    {
+      "cost": 600,
+      "charges": 16,
+      "cdMul": 0.7,
+      "levelWeights": {
+        "1": 70,
+        "2": 22,
+        "3": 8
+      }
+    },
+    {
+      "cost": 1000,
+      "charges": 18,
+      "cdMul": 0.6,
+      "levelWeights": {
+        "1": 65,
+        "2": 23,
+        "3": 12
+      }
     }
   ]
 }

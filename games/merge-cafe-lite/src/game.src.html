@@ -105,6 +105,13 @@ body.tasks #tasks { display: block; }
 #x2.show { display: block; animation: x2 .35s cubic-bezier(.2,1.6,.4,1); }
 @keyframes x2 { from { transform: translateX(-50%) scale(.5); opacity: 0; } }
 .btn.ad { background: linear-gradient(#5fc8be, #2f9d97); border-color: #1d6f6a; box-shadow: 0 4px 0 #1d6f6a; }
+/* 金币消耗按钮（2026-10-21）：金色底 + 金币图标 + 价格；钱不够时变灰但仍可点（点了提示金币不足） */
+.btn.coin { background: linear-gradient(#ffd866, #f2b632); color: #5a3a12; border-color: #b97a12; box-shadow: 0 4px 0 #b97a12; }
+.btn.coin.dim { filter: grayscale(.7); opacity: .65; }
+.btn .pr { display: inline-flex; align-items: center; gap: 3px; margin-right: 6px; padding-right: 8px; border-right: 2px solid rgba(90,58,18,.25); }
+.btn .pr img, .btn .pr svg { width: 20px; height: 20px; }
+.btns.col { flex-direction: column; align-items: stretch; }
+#pill-energy { cursor: pointer; }
 #m-comic { display: none; margin: 0 0 12px; } #m-comic svg { width: 100%; height: auto; display: block; }
 /* 合成路线 */
 .chain { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 2px; }
