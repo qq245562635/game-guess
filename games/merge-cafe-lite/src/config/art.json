@@ -32,11 +32,22 @@
     "icon_coin",
     "icon_energy",
     "icon_star",
-    "logo_merge_cafe_lite"
+    "logo_merge_cafe_lite",
+    "icon_lock",
+    "icon_check",
+    "icon_clock",
+    "icon_hand",
+    "nav_cafe",
+    "nav_merge",
+    "nav_tasks",
+    "deco_plant_pot",
+    "deco_plant_fern",
+    "deco_plant_bush"
   ],
   "scene": [
     "header_merge_p",
-    "header_merge_l"
+    "header_merge_l",
+    "bg_wood_tile"
   ],
   "sceneMeta": {
     "_doc": "头图元数据：safeTop = 图里 Logo 顶边占图高的比例，这条线以上可以被顶栏盖住，以下不行",

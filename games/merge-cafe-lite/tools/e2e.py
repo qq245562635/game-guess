@@ -8,6 +8,11 @@ import json, math, sys, time, http.server, threading, functools
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
+
+def diff_snap(a, b):
+    a, b = json.loads(a), json.loads(b)
+    return '; '.join(f'{k}: {json.dumps(a[k])[:300]} -> {json.dumps(b[k])[:300]}' for k in a if a[k] != b.get(k))
+
 root = Path(__file__).resolve().parent.parent
 out = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'tools' / '_e2e'
 out.mkdir(parents=True, exist_ok=True)
@@ -24,6 +29,10 @@ def check(name, ok, detail=''):
     print(('  ✓ ' if ok else '  ✗ ') + name + (f'  [{detail}]' if detail else ''))
 
 def idx(r, c): return r * 7 + c
+
+def wait_js(pg, expr, ms=5000):
+    try: pg.wait_for_function(expr, timeout=ms); return True
+    except Exception: return False
 def cxy(pg, i): return pg.evaluate(f'MCL.cellXY({i})')
 def cell(pg, i): return pg.evaluate(f'MCL.S.cells[{i}]')
 def gen_xy(pg, gid):
@@ -156,7 +165,7 @@ with sync_playwright() as p:
     # ---- 订单超时刷新 ----
     pg.evaluate("(()=>{const o=MCL.S.orders[0]; o.expiresAt=MCL.now()+500; o.needs.forEach(n=>n.done=false); window.__u=o.uid;})()")
     c1, s1, e2 = S(pg, 'coins'), S(pg, 'stars'), S(pg, 'energy')
-    pg.wait_for_timeout(1200)
+    wait_js(pg, 'MCL.S.orders[0].uid !== window.__u')
     check('订单超时自动刷新，不扣金币 / 星 / 体力', S(pg, 'orders[0].uid') != pg.evaluate('window.__u') and (S(pg, 'coins'), S(pg, 'stars')) == (c1, s1) and S(pg, 'energy') >= e2)
 
     # ---- 体力见底 ----
@@ -182,9 +191,10 @@ with sync_playwright() as p:
     check('开格扣金币、格子解锁', S(pg, f'unlocked[{idx(4, 3)}]') and S(pg, 'coins') == coins - price)
 
     # ---- 刷新续玩 / 离线恢复 ----
+    pg.evaluate("Object.values(MCL.S.gens).forEach(g=>{ if (g.cdEnd) g.cdEnd = MCL.now() + 600000; })")
     snap = pg.evaluate('JSON.stringify({c:MCL.S.cells,u:MCL.S.unlocked,coins:MCL.S.coins,stars:MCL.S.stars,o:MCL.S.orders,g:MCL.S.gens,t:MCL.S.tut,v:MCL.S.v})')
     reload(pg)
-    check('刷新页面续玩：棋盘 / 开格 / 金币 / 星星 / 订单 / 生成器 / 引导状态一致，v=3', pg.evaluate('JSON.stringify({c:MCL.S.cells,u:MCL.S.unlocked,coins:MCL.S.coins,stars:MCL.S.stars,o:MCL.S.orders,g:MCL.S.gens,t:MCL.S.tut,v:MCL.S.v})') == snap)
+    check('刷新页面续玩：棋盘 / 开格 / 金币 / 星星 / 订单 / 生成器 / 引导状态一致，v=3', pg.evaluate('JSON.stringify({c:MCL.S.cells,u:MCL.S.unlocked,coins:MCL.S.coins,stars:MCL.S.stars,o:MCL.S.orders,g:MCL.S.gens,t:MCL.S.tut,v:MCL.S.v})') == snap, diff_snap(snap, pg.evaluate('JSON.stringify({c:MCL.S.cells,u:MCL.S.unlocked,coins:MCL.S.coins,stars:MCL.S.stars,o:MCL.S.orders,g:MCL.S.gens,t:MCL.S.tut,v:MCL.S.v})')))
     pg.evaluate('MCL.S.energy=40; MCL.S.energyTs=MCL.now(); MCL.save()')
     pg.evaluate("sessionStorage.setItem('mcl.timeOffset', String((+sessionStorage.getItem('mcl.timeOffset')||0)+1800000))")
     pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0'); pg.wait_for_timeout(500)
@@ -278,7 +288,7 @@ with sync_playwright() as p:
     seen = False
     for k in range(12): pg.mouse.move(x0 + 30 + k * 2, y0 + 20, steps=1); pg.wait_for_timeout(120); seen = seen or pg.is_visible('#ad.show')
     check('插屏：拖拽合成过程中不弹', not seen and S(pg, 'ads.interstitials') == inter0)
-    pg.mouse.up(); pg.wait_for_timeout(900)
+    pg.mouse.up(); wait_js(pg, f'MCL.S.ads.interstitials === {inter0 + 1}')
     check('插屏：松手后才弹（第 20 单起、每 10 单 1 次）', S(pg, 'ads.interstitials') == inter0 + 1, f"interstitials={S(pg, 'ads.interstitials')}")
     no_ad(pg)
 
@@ -286,7 +296,7 @@ with sync_playwright() as p:
     pg.evaluate("(()=>{const s=MCL.S; s.tasks={next:0,active:[]}; Core.fillTasks(MCL.C,s);})()"); pg.wait_for_timeout(300)
     pg.click('#nav-tasks'); pg.wait_for_timeout(400)
     check('Tasks 页：3 个任务、未完成的领取按钮不可点', pg.evaluate('MCL.mode') == 'tasks' and pg.locator('.task').count() == 3 and pg.locator('.task button[disabled]').count() == 3)
-    pg.evaluate("MCL.S.stats.merges += 5"); pg.wait_for_timeout(400)
+    pg.evaluate("MCL.S.stats.merges += 5"); wait_js(pg, "document.querySelectorAll('.task.ready').length === 1")
     c0 = S(pg, 'coins')
     check('完成"合成 5 次"后可领取', pg.locator('.task.ready').count() == 1)
     pg.screenshot(path=str(out / 'tasks.png'))
