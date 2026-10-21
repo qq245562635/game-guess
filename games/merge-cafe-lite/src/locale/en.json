@@ -50,7 +50,7 @@
   "tut.tapGen": "Tap the Coffee Machine to brew some beans.",
   "tut.merge": "Drag one bean onto the other to merge them!",
   "tut.deliver": "Drag the Roasted Beans to your customer.",
-  "tut.done": "Nice! Fill orders to earn coins and stars.",
+  "tut.done": "Nice! Tap any order to see how to make it.",
   "game.titleSub": "Lite",
   "act.1": "Act 1 · Fix Up the Stall",
   "act.2": "Act 2 · Seaside Makeover",
@@ -87,5 +87,8 @@
   "ad.double": "Double Coins",
   "ad.playing": "Ad playing… {n}",
   "ad.label": "Advertisement",
-  "ad.got": "+{n} coins!"
+  "ad.got": "+{n} coins!",
+  "ui.howToMake": "How to make {item}",
+  "ui.chainTip": "Merge two of the same item to get the next one.",
+  "ui.onBoard": "x{n}"
 }

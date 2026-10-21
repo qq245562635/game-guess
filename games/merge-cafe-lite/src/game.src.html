@@ -85,6 +85,16 @@ body.cafe #deco { display: block; }
 @keyframes x2 { from { transform: translateX(-50%) scale(.5); opacity: 0; } }
 .btn.ad { background: linear-gradient(#5fc8be, #2f9d97); border-color: #1d6f6a; box-shadow: 0 4px 0 #1d6f6a; }
 #m-comic { display: none; margin: 0 0 12px; } #m-comic svg { width: 100%; height: auto; display: block; }
+/* 合成路线 */
+.chain { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 2px; }
+.chain .st { position: relative; width: 62px; display: flex; flex-direction: column; align-items: center; padding: 4px 2px; border-radius: 12px; }
+.chain .st img, .chain .st i { width: 48px; height: 48px; display: block; }
+.chain .st i { border-radius: 50%; color: #fff; font: 900 22px/48px var(--font); text-align: center; font-style: normal; }
+.chain .st b { font-size: 11px; line-height: 1.15; text-align: center; font-weight: 800; }
+.chain .st span { font-size: 10px; opacity: .6; font-weight: 800; }
+.chain .st em { position: absolute; top: 0; right: 2px; background: var(--teal-d); color: #fff; font: 900 11px var(--font); font-style: normal; padding: 1px 5px; border-radius: 8px; }
+.chain .st.goal { background: #fff; outline: 3px solid var(--coral); }
+.chain s { text-decoration: none; font-weight: 900; color: #c4851a; }
 #m-body:empty { display: none; }
 
 /* 广告 Mock 遮罩 */
