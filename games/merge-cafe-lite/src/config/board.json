@@ -1,0 +1,28 @@
+{
+  "_doc": "棋盘。mask：x=初始解锁，.=锁定（策划案：7×7=49 格，初始 28 格）。unlockPrice：每格开格金币，0=初始已开。requireAdjacent：只能开与已开格相邻的格。startItems / generators 的 at=[行,列]。",
+  "cols": 7,
+  "rows": 7,
+  "mask": [
+    ".......",
+    ".......",
+    ".......",
+    "xxxxxxx",
+    "xxxxxxx",
+    "xxxxxxx",
+    "xxxxxxx"
+  ],
+  "unlockPrice": [
+    [120, 110, 100, 100, 100, 110, 120],
+    [ 70,  60,  50,  50,  50,  60,  70],
+    [ 30,  25,  20,  20,  20,  25,  30],
+    [  0,   0,   0,   0,   0,   0,   0],
+    [  0,   0,   0,   0,   0,   0,   0],
+    [  0,   0,   0,   0,   0,   0,   0],
+    [  0,   0,   0,   0,   0,   0,   0]
+  ],
+  "requireAdjacent": true,
+  "startItems": [
+    { "chain": "coffee", "level": 1, "at": [4, 2] },
+    { "chain": "coffee", "level": 1, "at": [4, 4] }
+  ]
+}

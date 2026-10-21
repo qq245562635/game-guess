@@ -1,0 +1,34 @@
+{
+  "_doc": "合成链。id 与正式图标命名一致（item_<chain>_<两位等级>），到图后放 assets/items/<id>.png 并在 art.json 登记即可替换占位。name 是本地化键。color 只给占位图用。",
+  "maxLevel": 8,
+  "chains": {
+    "coffee": {
+      "name": "chain.coffee",
+      "shape": "round",
+      "items": [
+        { "id": "item_coffee_01", "name": "item.coffee.1", "color": "#7a4a2a" },
+        { "id": "item_coffee_02", "name": "item.coffee.2", "color": "#5a3016" },
+        { "id": "item_coffee_03", "name": "item.coffee.3", "color": "#3b2214" },
+        { "id": "item_coffee_04", "name": "item.coffee.4", "color": "#a0623a" },
+        { "id": "item_coffee_05", "name": "item.coffee.5", "color": "#c98f5e" },
+        { "id": "item_coffee_06", "name": "item.coffee.6", "color": "#e0b07e" },
+        { "id": "item_coffee_07", "name": "item.coffee.7", "color": "#2f7f8a" },
+        { "id": "item_coffee_08", "name": "item.coffee.8", "color": "#e8735a" }
+      ]
+    },
+    "bake": {
+      "name": "chain.bake",
+      "shape": "square",
+      "items": [
+        { "id": "item_bake_01", "name": "item.bake.1", "color": "#d9cbb0" },
+        { "id": "item_bake_02", "name": "item.bake.2", "color": "#e8c98f" },
+        { "id": "item_bake_03", "name": "item.bake.3", "color": "#d9a75e" },
+        { "id": "item_bake_04", "name": "item.bake.4", "color": "#c2803e" },
+        { "id": "item_bake_05", "name": "item.bake.5", "color": "#7fae5a" },
+        { "id": "item_bake_06", "name": "item.bake.6", "color": "#e06a7a" },
+        { "id": "item_bake_07", "name": "item.bake.7", "color": "#f2d6e0" },
+        { "id": "item_bake_08", "name": "item.bake.8", "color": "#f0b43c" }
+      ]
+    }
+  }
+}
