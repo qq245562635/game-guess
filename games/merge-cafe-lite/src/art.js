@@ -100,7 +100,9 @@ const Art = (() => {
   const img = (id) => loaded[id] || null;
   /* 头图：按可见区"填满再裁切"，焦点 fx 控制横向裁哪边；返回 GL 精灵 */
   function cover(id, w, h, fx, fy) {
-    const im = loaded[id]; if (!im) return null;
+    const band = id.endsWith('#top'), im = loaded[band ? id.slice(0, -4) : id]; if (!im) return null;
+    if (band) // 图最上面 2% 拉伸成一条，用来补头图下挪后留出的缝
+      return GL.sprite('I|' + id + '|' + Math.round(w) + 'x' + Math.round(h) + '|', w, h, (g, pw, ph) => g.drawImage(im, 0, 0, im.width, Math.max(2, im.height * 0.02), 0, 0, pw, ph));
     return GL.sprite('I|' + id + '|' + Math.round(w) + 'x' + Math.round(h) + '|', w, h, (g, pw, ph) => {
       const sc = Math.max(pw / im.width, ph / im.height), sw = pw / sc, sh = ph / sc;
       const sx = Math.max(0, Math.min(im.width - sw, im.width * fx - sw / 2)), sy = (im.height - sh) * (fy === undefined ? 0.5 : fy);
