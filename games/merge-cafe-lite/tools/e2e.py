@@ -1,8 +1,8 @@
 """浏览器端到端自测（真实指针事件）：python3 tools/e2e.py [输出目录]
 需要 playwright + chromium。用无头 Chromium（SwiftShader 软件 WebGL）跑：
-  加载耗时、拖拽合成、异级回弹、点生成器、冷却、满格、体力见底弹窗、开格、刷新续玩、横竖屏截图。
-帧率在软件渲染下偏低，仅作参考；真机帧率要在手机上开 ?debug=1 看右下角。"""
-import json, sys, time, http.server, threading, functools
+  新手引导全流程计时、拖拽合成 / 回弹、交单 / 拒收 / 金币飞入、订单超时刷新、生成器冷却、满格、体力见底、开格、刷新续玩、离线恢复、多分辨率布局。
+帧率在软件渲染下偏低，只看每帧 JS 耗时；真机帧率要在手机上开 ?debug=1 看右上角。"""
+import json, math, sys, time, http.server, threading, functools
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
@@ -21,158 +21,192 @@ def check(name, ok, detail=''):
     results.append(('PASS' if ok else 'FAIL', name, detail))
     print(('  ✓ ' if ok else '  ✗ ') + name + (f'  [{detail}]' if detail else ''))
 
-def cell_xy(pg, r, c):
-    return pg.evaluate(f'MCL.cellXY({r}*7+{c})')
-def cell(pg, r, c):
-    return pg.evaluate(f'MCL.S.cells[{r}*7+{c}]')
-def drag(pg, a, b, steps=12):
-    (x0, y0), (x1, y1) = cell_xy(pg, *a), cell_xy(pg, *b)
+def idx(r, c): return r * 7 + c
+def cxy(pg, i): return pg.evaluate(f'MCL.cellXY({i})')
+def cell(pg, i): return pg.evaluate(f'MCL.S.cells[{i}]')
+def gen_xy(pg, gid):
+    R = pg.evaluate(f"MCL.genRect('{gid}')"); return R['x'] + R['w'] * 0.3, R['y'] + R['h'] / 2
+def order_xy(pg, k):
+    R = pg.evaluate(f'MCL.orderRect({k})'); return R['x'] + R['w'] * 0.6, R['y'] + R['h'] * 0.4
+def drag_xy(pg, x0, y0, x1, y1, steps=12):
     pg.mouse.move(x0, y0); pg.mouse.down()
-    for k in range(1, steps + 1):
-        pg.mouse.move(x0 + (x1 - x0) * k / steps, y0 + (y1 - y0) * k / steps)
+    for k in range(1, steps + 1): pg.mouse.move(x0 + (x1 - x0) * k / steps, y0 + (y1 - y0) * k / steps)
     pg.mouse.up(); pg.wait_for_timeout(350)
-def tap(pg, r, c):
-    x, y = cell_xy(pg, r, c); pg.mouse.click(x, y); pg.wait_for_timeout(120)
+def drag(pg, a, b): (x0, y0), (x1, y1) = cxy(pg, a), cxy(pg, b); drag_xy(pg, x0, y0, x1, y1)
+def drag_to_order(pg, a, k): (x0, y0) = cxy(pg, a); x1, y1 = order_xy(pg, k); drag_xy(pg, x0, y0, x1, y1)
+def click(pg, x, y): pg.mouse.click(x, y); pg.wait_for_timeout(150)
+def tap_gen(pg, gid): click(pg, *gen_xy(pg, gid))
+def tap_cell(pg, i): click(pg, *cxy(pg, i))
+def boot(pg, q='?reset=1'):
+    pg.goto(URL + q); pg.wait_for_function('window.MCL && MCL.layout.bs > 0'); pg.wait_for_timeout(600)
+def reload(pg):
+    pg.evaluate('MCL.save()'); pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0'); pg.wait_for_timeout(500)
+def settle_rewards(pg): pg.wait_for_function('MCL.pending === 0', timeout=5000); pg.wait_for_timeout(100)
+S = lambda pg, expr: pg.evaluate('MCL.S.' + expr)
+GC, GB = 'gen_coffee_machine', 'gen_ingredient_box'
 
 with sync_playwright() as p:
     br = p.chromium.launch(args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'])
     errors = []
+    def watch(pg):
+        pg.on('pageerror', lambda e: errors.append(str(e)))
+        pg.on('console', lambda m: errors.append(m.text) if m.type in ('error', 'warning') and 'l10n' in m.text or m.type == 'error' else None)
 
-    # ---------- 竖屏 9:16 ----------
-    ctx = br.new_context(viewport={'width': 405, 'height': 720}, device_scale_factor=2, has_touch=False)
-    pg = ctx.new_page()
-    pg.on('pageerror', lambda e: errors.append(str(e)))
-    pg.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
+    # ================= 竖屏 9:16：新手引导 + 全玩法 =================
+    ctx = br.new_context(viewport={'width': 405, 'height': 720}, device_scale_factor=2)
+    pg = ctx.new_page(); watch(pg)
+    t_open = time.time(); boot(pg)
+    load_ms = (time.time() - t_open) * 1000
+    check('首屏可交互耗时 ≤3 秒（本地，含字体解码）', load_ms < 3000, f'{load_ms:.0f} ms')
+    check('初始解锁 28 格（上 4 行）、生成器在棋盘外', sum(S(pg, 'unlocked')) == 28 and all(S(pg, 'unlocked')[:28]) and not any(c and c['k'] == 'gen' for c in S(pg, 'cells')))
+    check('同时 3 个订单', len(S(pg, 'orders')) == 3 and all(S(pg, 'orders')))
+    check('新手引导开启：第 1 单是引导单、气泡显示', S(pg, 'tut') == 0 and S(pg, 'orders[0].tid') == 'tut_c2' and pg.is_visible('#tip.show'), pg.inner_text('#tip'))
+    pg.screenshot(path=str(out / 'tut-1-tap-gen.png'))
+
+    # 引导中乱点：食材箱、锁格、挪物品，都不应生效
+    SNAP = 'JSON.stringify(Object.assign({}, MCL.S, {energyTs: 0}))'  # energyTs 在满体力时每帧对齐到当前时间，不算状态变化
+    snap = pg.evaluate(SNAP)
+    tap_gen(pg, GB); tap_cell(pg, idx(5, 3)); drag(pg, idx(3, 3), idx(1, 1))
+    check('引导中只能做当前这一步（点食材箱 / 开格 / 挪物品都无效）', pg.evaluate(SNAP) == snap and not pg.is_visible('#modal.show'))
+
     t0 = time.time()
-    pg.goto(URL + '?reset=1')
-    pg.wait_for_function('window.MCL && MCL.fps >= 0')
-    pg.wait_for_timeout(100)
-    load_ms = (time.time() - t0) * 1000
-    check('首屏可交互耗时 ≤3 秒（本地）', load_ms < 3000, f'{load_ms:.0f} ms')
-    pg.screenshot(path=str(out / 'portrait-start.png'))
+    tap_gen(pg, GC); pg.wait_for_timeout(450)
+    spawned = [i for i, c in enumerate(S(pg, 'cells')) if c and c['chain'] == 'coffee' and c['lvl'] == 1 and i != idx(3, 3)]
+    check('引导第 1 步：点咖啡机出 1 级咖啡豆，进入合成步骤', len(spawned) == 1 and S(pg, 'tut') == 1, f'spawn at {spawned}')
+    pg.screenshot(path=str(out / 'tut-2-merge.png'))
+    drag(pg, spawned[0], idx(3, 3))
+    t_merge = time.time() - t0
+    check('引导第 2 步：拖合成功（Roasted Beans Lv2），进入交单步骤', cell(pg, idx(3, 3)) == {'k': 'item', 'chain': 'coffee', 'lvl': 2} and S(pg, 'tut') == 2)
+    pg.screenshot(path=str(out / 'tut-3-deliver.png'))
+    coins0 = S(pg, 'coins')
+    drag_to_order(pg, idx(3, 3), 0)
+    pg.wait_for_timeout(200); pg.screenshot(path=str(out / 'tut-4-coins-fly.png'))
+    settle_rewards(pg)
+    t_order = time.time() - t0
+    check('引导第 3 步：拖进订单卡交单，+25 金币，引导结束、气泡消失', S(pg, 'coins') == coins0 + 25 and S(pg, 'tut') == -1 and not pg.is_visible('#tip.show'))
+    check('金币飞入后顶栏数字更新', pg.inner_text('#coins').replace(',', '') == str(coins0 + 25), pg.inner_text('#coins'))
+    st = S(pg, 'stats')
+    first_merge = (st['firstMergeAt'] - st['createdAt']) / 1000; first_order = (st['firstOrderAt'] - st['createdAt']) / 1000
+    check('60 秒内首次合成（引导路径）', first_merge <= 60, f'游戏内计时 {first_merge:.1f}s（自动化操作 {t_merge:.1f}s）')
+    check('3 分钟内首订单（引导路径）', first_order <= 180, f'游戏内计时 {first_order:.1f}s')
+    check('引导单交完后槽位刷新新订单，3 单仍在', all(S(pg, 'orders')) and S(pg, 'orders[0].tid') != 'tut_c2')
 
-    s = pg.evaluate('MCL.S')
-    check('初始解锁 28 格', sum(s['unlocked']) == 28)
-    check('体力 100 / 存档版本字段 v', s['energy'] == 100 and s['v'] == 1)
-
-    # 首次合成：两个起始咖啡豆（4,2）+（4,4）
-    t_merge = time.time()
-    drag(pg, (4, 2), (4, 4))
-    it = cell(pg, 4, 4)
-    check('拖拽合成：同链同级 → 升 1 级', it == {'k': 'item', 'chain': 'coffee', 'lvl': 2} and cell(pg, 4, 2) is None, json.dumps(it))
-    check('首次合成可在 60 秒内完成（打开即可合）', time.time() - t0 < 60, f'{(time.time()-t0):.1f}s from load')
-
-    # 点生成器：咖啡机 (6,1)
-    tap(pg, 6, 1)
-    s = pg.evaluate('MCL.S')
-    g = s['cells'][6 * 7 + 1]
-    check('点生成器：耗 1 体力 + 1 储量', s['energy'] == 99 and g['charges'] == 9, f"energy={s['energy']} charges={g['charges']}")
-    spawned = [c for c in s['cells'] if c and c['k'] == 'item' and c['chain'] == 'coffee']
-    check('生成器产出咖啡链 1–2 级', all(c['lvl'] in (1, 2, 3) for c in spawned) and len(spawned) == 2)
-    pg.wait_for_timeout(400)
-    pg.screenshot(path=str(out / 'portrait-after-spawn.png'))
-
-    # 异链回弹：放一个烘焙 1 到 (5,3)，咖啡 2 (4,4) 拖上去
-    pg.evaluate("MCL.S.cells[5*7+3]={k:'item',chain:'bake',lvl:2}")
-    before = pg.evaluate('JSON.stringify(MCL.S.cells)')
-    drag(pg, (4, 4), (5, 3))
-    check('异链拖放回弹，不吞物品', pg.evaluate('JSON.stringify(MCL.S.cells)') == before)
-    pg.evaluate("MCL.S.cells[5*7+4]={k:'item',chain:'bake',lvl:3}")
-    before = pg.evaluate('JSON.stringify(MCL.S.cells)')
-    drag(pg, (5, 3), (5, 4))
-    check('异级拖放回弹，不吞物品', pg.evaluate('JSON.stringify(MCL.S.cells)') == before)
-    # 中途截一张拖拽中的图
-    (x0, y0), (x1, y1) = cell_xy(pg, 5, 3), cell_xy(pg, 4, 3)
-    pg.mouse.move(x0, y0); pg.mouse.down(); pg.mouse.move((x0 + x1) / 2, (y0 + y1) / 2, steps=6)
-    pg.wait_for_timeout(50); pg.screenshot(path=str(out / 'portrait-dragging.png')); pg.mouse.up(); pg.wait_for_timeout(300)
-
-    # 拖到锁格回弹
-    before = pg.evaluate('JSON.stringify(MCL.S.cells)')
-    drag(pg, (4, 4), (2, 4))
-    check('拖到锁格回弹', pg.evaluate('JSON.stringify(MCL.S.cells)') == before)
-
-    # 生成器储量耗尽 → 冷却（用食材箱）
-    for _ in range(10):
-        tap(pg, 6, 5)
-    g = cell(pg, 6, 5)
-    cd = g['cdEnd'] - pg.evaluate('MCL.now()')
-    check('食材箱 10 次后储量 0、进入冷却', g['charges'] == 0 and g['cdEnd'] > 0)
-    e = pg.evaluate('MCL.S.energy')
-    tap(pg, 6, 5)
-    check('冷却中点击：不出物品、不扣体力、提示冷却', pg.evaluate('MCL.S.energy') == e and 'Recharging' in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    # ---- 交单：拒收 / 部分交 / 完成 ----
+    pg.evaluate("""(()=>{const s=MCL.S; for(let i=0;i<49;i++) if(s.cells[i]) s.cells[i]=null;
+      s.orders[1]={uid:901,tid:'n_c3b3',needs:[{chain:'coffee',lvl:3,done:false},{chain:'bake',lvl:3,done:false}],coins:50,stars:0,rare:false,cust:2,start:MCL.now(),expiresAt:MCL.now()+600000};
+      s.orders[2]={uid:902,tid:'r_c6',needs:[{chain:'coffee',lvl:6,done:false}],coins:160,stars:1,rare:true,cust:3,start:MCL.now(),expiresAt:MCL.now()+900000};
+      s.cells[0]={k:'item',chain:'bake',lvl:2}; s.cells[1]={k:'item',chain:'coffee',lvl:3}; s.cells[2]={k:'item',chain:'bake',lvl:3}; s.cells[3]={k:'item',chain:'coffee',lvl:6};})()""")
     pg.wait_for_timeout(300)
-    pg.screenshot(path=str(out / 'portrait-cooldown.png'))
-    check('冷却时长 60 秒', 59000 < cd <= 60000, f'{cd/1000:.1f}s 剩余（第 10 次点击后立即读）')
-    # 快进 61 秒（调试时钟），冷却结束自动回满
-    pg.evaluate("sessionStorage.setItem('mcl.timeOffset', 61000)")
-    pg.evaluate('MCL.save()'); pg.reload(); pg.wait_for_function('window.MCL'); pg.wait_for_timeout(400)
-    check('冷却 60 秒到点后储量回满 10', cell(pg, 6, 5)['charges'] == 10)
+    pg.screenshot(path=str(out / 'orders-ready.png'))
+    before = pg.evaluate('JSON.stringify(MCL.S.cells)')
+    drag_to_order(pg, 0, 1)
+    check('交错物品：拒收、提示、物品回到棋盘', pg.evaluate('JSON.stringify(MCL.S.cells)') == before and 'ordered something else' in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    c0 = S(pg, 'coins')
+    drag_to_order(pg, 1, 1)
+    check('两需求订单：先交一个 → 打勾、不结算', cell(pg, 1) is None and S(pg, 'orders[1].needs[0].done') and S(pg, 'coins') == c0)
+    pg.screenshot(path=str(out / 'orders-partial.png'))
+    drag_to_order(pg, 2, 1); settle_rewards(pg)
+    check('两需求订单：交齐 → 结算 50 金币、换新单', S(pg, 'coins') == c0 + 50 and S(pg, 'orders[1].uid') != 901)
+    s0 = S(pg, 'stars')
+    drag_to_order(pg, 3, 2); settle_rewards(pg)
+    check('稀有订单：+160 金币 +1 星', S(pg, 'coins') == c0 + 210 and S(pg, 'stars') == s0 + 1 and pg.inner_text('#stars') == str(s0 + 1))
 
-    # 体力见底弹窗
+    # ---- 合成 / 回弹 ----
+    pg.evaluate("(()=>{const s=MCL.S; s.cells[10]={k:'item',chain:'coffee',lvl:2}; s.cells[11]={k:'item',chain:'coffee',lvl:2}; s.cells[12]={k:'item',chain:'bake',lvl:2}; s.cells[13]={k:'item',chain:'bake',lvl:4};})()")
+    drag(pg, 10, 11)
+    check('拖拽合成：同链同级 → 升 1 级', cell(pg, 11) == {'k': 'item', 'chain': 'coffee', 'lvl': 3} and cell(pg, 10) is None)
+    before = pg.evaluate('JSON.stringify(MCL.S.cells)')
+    drag(pg, 11, 12); drag(pg, 12, 13); drag(pg, 13, idx(5, 3))
+    check('异链 / 异级 / 锁格 拖放都回弹，不吞物品', pg.evaluate('JSON.stringify(MCL.S.cells)') == before)
+    (x0, y0), (x1, y1) = cxy(pg, 12), cxy(pg, 5)
+    pg.mouse.move(x0, y0); pg.mouse.down(); pg.mouse.move((x0 + x1) / 2, (y0 + y1) / 2, steps=6)
+    pg.wait_for_timeout(60); pg.screenshot(path=str(out / 'dragging.png')); pg.mouse.up(); pg.wait_for_timeout(300)
+
+    # ---- 生成器 ----
+    e0, ch0 = S(pg, 'energy'), S(pg, f"gens['{GC}'].charges")
+    tap_gen(pg, GC); pg.wait_for_timeout(400)
+    check('点咖啡机：耗 1 体力 + 1 储量，物品落到棋盘', S(pg, 'energy') == e0 - 1 and S(pg, f"gens['{GC}'].charges") == ch0 - 1)
+    for _ in range(10): tap_gen(pg, GB)
+    g = S(pg, f"gens['{GB}']"); cd = g['cdEnd'] - pg.evaluate('MCL.now()')
+    check('食材箱 10 次后储量 0、冷却 60 秒', g['charges'] == 0 and 58000 < cd <= 60000, f'{cd/1000:.1f}s')
+    e1 = S(pg, 'energy'); tap_gen(pg, GB)
+    check('冷却中点击：不扣体力、提示倒计时', S(pg, 'energy') == e1 and 'Recharging' in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    pg.wait_for_timeout(200); pg.screenshot(path=str(out / 'gen-cooldown.png'))
+
+    # ---- 订单超时刷新 ----
+    pg.evaluate("(()=>{const o=MCL.S.orders[0]; o.expiresAt=MCL.now()+500; o.needs.forEach(n=>n.done=false); window.__u=o.uid;})()")
+    c1, s1, e2 = S(pg, 'coins'), S(pg, 'stars'), S(pg, 'energy')
+    pg.wait_for_timeout(1200)
+    check('订单超时自动刷新，不扣金币 / 星 / 体力', S(pg, 'orders[0].uid') != pg.evaluate('window.__u') and (S(pg, 'coins'), S(pg, 'stars')) == (c1, s1) and S(pg, 'energy') >= e2)
+
+    # ---- 体力见底 ----
     pg.evaluate('MCL.S.energy=0; MCL.S.energyTs=MCL.now()')
-    tap(pg, 6, 1)
-    vis = pg.is_visible('#modal.show')
-    check('体力见底：弹窗出现、不扣储量', vis and 'Out of Energy' in pg.inner_text('#modal'), pg.inner_text('#m-body') if vis else '')
-    pg.screenshot(path=str(out / 'portrait-no-energy.png'))
+    tap_gen(pg, GC)
+    check('体力见底：弹窗、显示下一点倒计时、不扣储量', pg.is_visible('#modal.show') and 'Out of Energy' in pg.inner_text('#modal'), pg.inner_text('#m-body') if pg.is_visible('#modal.show') else '')
+    pg.screenshot(path=str(out / 'no-energy.png'))
     pg.click('#m-btns .btn'); pg.wait_for_timeout(200)
 
-    # 满格提示
-    pg.evaluate("MCL.S.energy=50; for(let i=0;i<49;i++) if(MCL.S.unlocked[i]&&!MCL.S.cells[i]) MCL.S.cells[i]={k:'item',chain:'bake',lvl:1+(i%7)}")
-    before = pg.evaluate('JSON.stringify(MCL.S.cells)')
-    tap(pg, 6, 1)
-    check('棋盘满格：有提示、不丢物品、不扣体力', 'full' in pg.inner_text('#toast') and pg.evaluate('JSON.stringify(MCL.S.cells)') == before and pg.evaluate('MCL.S.energy') == 50, pg.inner_text('#toast'))
-    pg.wait_for_timeout(150)
-    pg.screenshot(path=str(out / 'portrait-full.png'))
+    # ---- 满格 ----
+    pg.evaluate("MCL.S.energy=50; for(let i=0;i<49;i++) if(MCL.S.unlocked[i]&&!MCL.S.cells[i]) MCL.S.cells[i]={k:'item',chain:'bake',lvl:1+(i%5)}")
+    before = pg.evaluate('JSON.stringify(MCL.S.cells)'); tap_gen(pg, GC)
+    check('棋盘满格：提示、不丢物品、不扣体力', 'full' in pg.inner_text('#toast') and pg.evaluate('JSON.stringify(MCL.S.cells)') == before and S(pg, 'energy') == 50)
+    pg.wait_for_timeout(150); pg.screenshot(path=str(out / 'board-full.png'))
 
-    # 开格：(2,3) 相邻；(0,3) 不相邻
-    coins = pg.evaluate('MCL.S.coins')
-    tap(pg, 0, 3)
+    # ---- 开格 ----
+    coins = S(pg, 'coins'); tap_cell(pg, idx(6, 3))
     check('不相邻锁格：提示先开相邻格', 'next to' in pg.inner_text('#toast'))
-    tap(pg, 2, 3)
+    tap_cell(pg, idx(4, 3))
     check('相邻锁格：弹开格确认', pg.is_visible('#modal.show'), pg.inner_text('#m-body'))
     pg.click('#m-btns .btn:not(.alt)'); pg.wait_for_timeout(300)
-    price = pg.evaluate('CONFIG.board.unlockPrice[2][3]')
-    check('开格扣金币、格子解锁', pg.evaluate('MCL.S.unlocked[2*7+3]') and pg.evaluate('MCL.S.coins') == coins - price, f'{coins}→{pg.evaluate("MCL.S.coins")}')
+    price = pg.evaluate('CONFIG.board.unlockPrice[4][3]')
+    check('开格扣金币、格子解锁', S(pg, f'unlocked[{idx(4, 3)}]') and S(pg, 'coins') == coins - price)
 
-    # 刷新续玩
-    snap = pg.evaluate('JSON.stringify({c:MCL.S.cells,u:MCL.S.unlocked,coins:MCL.S.coins,e:MCL.S.energy})')
-    pg.evaluate('MCL.save()'); pg.reload(); pg.wait_for_function('window.MCL'); pg.wait_for_timeout(300)
-    check('刷新页面续玩：棋盘 / 开格 / 金币 / 体力一致', pg.evaluate('JSON.stringify({c:MCL.S.cells,u:MCL.S.unlocked,coins:MCL.S.coins,e:MCL.S.energy})') == snap)
-
-    # 离线恢复：体力 40，快进 30 分钟 → +15
+    # ---- 刷新续玩 / 离线恢复 ----
+    snap = pg.evaluate('JSON.stringify({c:MCL.S.cells,u:MCL.S.unlocked,coins:MCL.S.coins,stars:MCL.S.stars,o:MCL.S.orders,g:MCL.S.gens,t:MCL.S.tut,v:MCL.S.v})')
+    reload(pg)
+    check('刷新页面续玩：棋盘 / 开格 / 金币 / 星星 / 订单 / 生成器 / 引导状态一致，v=2', pg.evaluate('JSON.stringify({c:MCL.S.cells,u:MCL.S.unlocked,coins:MCL.S.coins,stars:MCL.S.stars,o:MCL.S.orders,g:MCL.S.gens,t:MCL.S.tut,v:MCL.S.v})') == snap)
     pg.evaluate('MCL.S.energy=40; MCL.S.energyTs=MCL.now(); MCL.save()')
-    pg.evaluate("sessionStorage.setItem('mcl.timeOffset', 61000+1800000)")
-    pg.reload(); pg.wait_for_function('window.MCL'); pg.wait_for_timeout(500)
-    check('离线 30 分钟恢复 15 点体力（按时间戳）', pg.evaluate('MCL.S.energy') == 55, f"energy={pg.evaluate('MCL.S.energy')}, toast={pg.inner_text('#toast')!r}")
+    pg.evaluate("sessionStorage.setItem('mcl.timeOffset', String((+sessionStorage.getItem('mcl.timeOffset')||0)+1800000))")
+    pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0'); pg.wait_for_timeout(500)
+    check('离线 30 分钟恢复 15 点体力（按时间戳）', S(pg, 'energy') == 55, f"energy={S(pg, 'energy')} toast={pg.inner_text('#toast')!r}")
+    check('离线期间冷却结束的生成器回满', S(pg, f"gens['{GB}'].charges") == 10)
 
-    # 帧率（软件渲染参考值）：拖拽中采样 2 秒
-    pg.evaluate("sessionStorage.removeItem('mcl.timeOffset')")
-    pg.goto(URL + '?reset=1&debug=1'); pg.wait_for_function('window.MCL'); pg.wait_for_timeout(1200)
-    (x0, y0) = cell_xy(pg, 4, 2)
-    pg.mouse.move(x0, y0); pg.mouse.down()
-    for k in range(60):
-        pg.mouse.move(x0 + 60 * __import__('math').sin(k / 6), y0 - 80 + 40 * __import__('math').cos(k / 6)); pg.wait_for_timeout(16)
-    fps_drag = pg.evaluate('MCL.fps'); rms = pg.evaluate('MCL.renderMs'); pg.mouse.up()
-    check('拖拽中每帧 JS 耗时 ≤4 ms（50fps 预算 20 ms）', rms <= 4, f'{rms:.2f} ms/帧；SwiftShader 软件光栅帧率 {fps_drag} fps 仅参考，真机帧率需 ?debug=1 实测')
+    # ---- 引导中刷新能续上 ----
+    boot(pg); tap_gen(pg, GC); pg.wait_for_timeout(400); reload(pg)
+    check('引导中刷新：从合成步骤续上', S(pg, 'tut') == 1 and pg.is_visible('#tip.show') and 'merge' in pg.inner_text('#tip').lower())
+
+    # ---- 帧耗时 ----
+    boot(pg, '?reset=1&debug=1'); pg.evaluate('document.querySelector("#dbg button:nth-of-type(6)").click()')  # skip tutorial
+    pg.evaluate("for(let i=0;i<28;i++) if(!MCL.S.cells[i]) MCL.S.cells[i]={k:'item',chain:i%2?'coffee':'bake',lvl:1+(i%8)}")
+    pg.wait_for_timeout(800)
+    (x0, y0) = cxy(pg, 10); pg.mouse.move(x0, y0); pg.mouse.down()
+    for k in range(60): pg.mouse.move(x0 + 60 * math.sin(k / 6), y0 + 40 * math.cos(k / 6)); pg.wait_for_timeout(16)
+    rms, fps = pg.evaluate('MCL.renderMs'), pg.evaluate('MCL.fps'); pg.mouse.up()
+    check('满棋盘拖拽中每帧 JS 耗时 ≤4 ms（50fps 预算 20 ms）', rms <= 4, f'{rms:.2f} ms/帧；SwiftShader 软件光栅 {fps} fps 仅参考，真机请 ?debug=1 实测')
     ctx.close()
 
-    # ---------- 横屏 16:9 ----------
-    for name, vw, vh in [('landscape-16x9', 1280, 720), ('landscape-phone', 844, 390), ('portrait-tall', 390, 844)]:
+    # ================= 多分辨率布局 =================
+    for name, vw, vh in [('portrait-9x16', 405, 720), ('portrait-tall', 390, 844), ('portrait-short', 375, 667),
+                         ('landscape-16x9', 1280, 720), ('landscape-phone', 844, 390), ('tablet', 820, 1180)]:
         ctx = br.new_context(viewport={'width': vw, 'height': vh}, device_scale_factor=2)
-        pg = ctx.new_page(); pg.on('pageerror', lambda e: errors.append(str(e)))
-        pg.goto(URL + '?reset=1'); pg.wait_for_function('window.MCL'); pg.wait_for_timeout(300)
-        ly = pg.evaluate('({bx:MCL.layout.bx,by:MCL.layout.by,bs:MCL.layout.bs,W:MCL.layout.W,H:MCL.layout.H})')
-        info = pg.evaluate("(()=>{const r=document.getElementById('info').getBoundingClientRect();return {b:r.bottom}})()")
-        hud = pg.evaluate("(()=>{let m=0;for(const e of document.querySelectorAll('.pill'))m=Math.max(m,e.getBoundingClientRect().bottom);return m})()")
-        inside = ly['bx'] >= 0 and ly['by'] >= hud and ly['bx'] + ly['bs'] <= ly['W'] and info['b'] <= ly['H'] + 0.5
-        check(f'{name} {vw}×{vh}：棋盘完整、正方形、不被顶栏/信息栏遮挡', inside and ly['bs'] > 200, f"board {ly['bs']}px @({ly['bx']},{ly['by']}) hud≤{hud:.0f}")
-        drag(pg, (4, 2), (4, 4))
-        check(f'{name}：可拖拽合成', cell(pg, 4, 4) == {'k': 'item', 'chain': 'coffee', 'lvl': 2})
-        tap(pg, 6, 1); pg.wait_for_timeout(400)
-        pg.screenshot(path=str(out / f'{name}.png'))
+        pg = ctx.new_page(); watch(pg); boot(pg)
+        L = pg.evaluate('({bx:MCL.layout.bx,by:MCL.layout.by,bs:MCL.layout.bs,W:MCL.layout.W,H:MCL.layout.H,o:MCL.layout.orders,g:MCL.layout.gens})')
+        hud = pg.evaluate("Math.max(...[...document.querySelectorAll('.pill')].map(e=>e.getBoundingClientRect().bottom))")
+        nav = pg.evaluate("(()=>{const r=document.getElementById('nav').getBoundingClientRect();return {l:r.left,t:r.top,r:r.right,b:r.bottom}})()")
+        board = (L['bx'], L['by'], L['bx'] + L['bs'], L['by'] + L['bs'])
+        def overlap(a, b): return not (a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1])
+        rects = [(R['x'], R['y'], R['x'] + R['w'], R['y'] + R['h']) for R in L['o'] + L['g']]
+        on_screen = all(r[0] >= 0 and r[1] >= 0 and r[2] <= vw + 0.5 and r[3] <= vh + 0.5 for r in rects + [board])
+        clear = board[1] >= hud and not overlap(board, (nav['l'], nav['t'], nav['r'], nav['b'])) and not any(overlap(board, r) for r in rects)
+        check(f'{name} {vw}×{vh}：棋盘正方形完整，订单 / 生成器 / 顶栏 / 底栏都不遮挡棋盘', on_screen and clear and L['bs'] > 200, f"board {L['bs']}px")
+        tap_gen(pg, GC); pg.wait_for_timeout(450)
+        sp = [i for i, c in enumerate(S(pg, 'cells')) if c and c['lvl'] == 1 and i != idx(3, 3)]
+        if sp: drag(pg, sp[0], idx(3, 3))
+        check(f'{name}：引导内可点生成器 + 拖合', cell(pg, idx(3, 3)) == {'k': 'item', 'chain': 'coffee', 'lvl': 2})
+        pg.wait_for_timeout(250); pg.screenshot(path=str(out / f'{name}.png'))
         ctx.close()
 
-    check('无 JS 报错', not errors, '; '.join(errors[:3]))
+    check('无 JS 报错 / 无缺失文案', not errors, '; '.join(errors[:3]))
     br.close()
 
 srv.shutdown()

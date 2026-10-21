@@ -1,0 +1,8 @@
+{
+  "_doc": "新手引导（Issue M2）：首次进入强制 点生成器 → 拖合 → 交订单。引导期间生成器固定出 spawnLevel 级、只允许当前这一步的操作；第一个订单固定为 firstOrder（放在第 1 个订单位），其余订单位照常从模板抽。目标：60 秒内首次合成、3 分钟内首订单。",
+  "enabled": true,
+  "generator": "gen_coffee_machine",
+  "spawnLevel": 1,
+  "firstOrder": { "id": "tut_c2", "needs": [["coffee", 2]], "coins": [25, 25], "timeSec": [900, 900], "customer": 0 },
+  "steps": ["tapGen", "merge", "deliver"]
+}

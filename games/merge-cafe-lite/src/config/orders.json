@@ -1,0 +1,38 @@
+{
+  "_doc": "订单（策划案 §5 / Issue M2）。同时 slots 个订单；超时自动刷新不惩罚（已交过部分物品的订单不会因超时消失）。普通订单奖 20–80 金币；稀有订单 = 需求里有 rareMinLevel 级以上物品，奖 150–300 金币 + 1 星。构建脚本和单测会检查每个模板的 coins 区间落在对应档位内。minDone=已完成订单数达到多少后才会出现；weight=抽取权重；timeSec=限时区间（策划案未给具体值，暂定待 lijie 确认）。",
+  "slots": 3,
+  "maxRareAtOnce": 1,
+  "rareMinLevel": 6,
+  "bands": {
+    "normal": { "coins": [20, 80], "stars": 0 },
+    "rare": { "coins": [150, 300], "stars": 1 }
+  },
+  "customers": [
+    { "id": "avatar_customer_01", "color": "#e8b04a", "hair": "#7a5230" },
+    { "id": "avatar_customer_02", "color": "#4a8fd0", "hair": "#2a1d14" },
+    { "id": "avatar_customer_03", "color": "#d0605a", "hair": "#9c5a2a" },
+    { "id": "avatar_customer_04", "color": "#5aa77a", "hair": "#c9c2b8" },
+    { "id": "avatar_customer_05", "color": "#9a6fc0", "hair": "#4a3020" },
+    { "id": "avatar_customer_06", "color": "#e07a9a", "hair": "#d8a860" }
+  ],
+  "templates": [
+    { "id": "n_c2",    "needs": [["coffee", 2]],               "coins": [20, 25], "timeSec": [300, 420], "weight": 10, "minDone": 0 },
+    { "id": "n_b2",    "needs": [["bake", 2]],                 "coins": [20, 25], "timeSec": [300, 420], "weight": 10, "minDone": 0 },
+    { "id": "n_c3",    "needs": [["coffee", 3]],               "coins": [25, 35], "timeSec": [300, 420], "weight": 10, "minDone": 0 },
+    { "id": "n_b3",    "needs": [["bake", 3]],                 "coins": [25, 35], "timeSec": [300, 420], "weight": 10, "minDone": 0 },
+    { "id": "n_c2b2",  "needs": [["coffee", 2], ["bake", 2]],  "coins": [30, 40], "timeSec": [360, 480], "weight": 8,  "minDone": 1 },
+    { "id": "n_c4",    "needs": [["coffee", 4]],               "coins": [40, 50], "timeSec": [360, 480], "weight": 8,  "minDone": 2 },
+    { "id": "n_b4",    "needs": [["bake", 4]],                 "coins": [40, 50], "timeSec": [360, 480], "weight": 8,  "minDone": 2 },
+    { "id": "n_c3b3",  "needs": [["coffee", 3], ["bake", 3]],  "coins": [45, 60], "timeSec": [420, 540], "weight": 7,  "minDone": 3 },
+    { "id": "n_c5",    "needs": [["coffee", 5]],               "coins": [60, 75], "timeSec": [480, 600], "weight": 6,  "minDone": 4 },
+    { "id": "n_b5",    "needs": [["bake", 5]],                 "coins": [60, 75], "timeSec": [480, 600], "weight": 6,  "minDone": 4 },
+    { "id": "n_c4b4",  "needs": [["coffee", 4], ["bake", 4]],  "coins": [70, 80], "timeSec": [540, 660], "weight": 5,  "minDone": 6 },
+    { "id": "r_c6",    "needs": [["coffee", 6]],               "coins": [150, 180], "timeSec": [900, 1200], "weight": 3, "minDone": 5 },
+    { "id": "r_b6",    "needs": [["bake", 6]],                 "coins": [150, 180], "timeSec": [900, 1200], "weight": 3, "minDone": 5 },
+    { "id": "r_c6b4",  "needs": [["coffee", 6], ["bake", 4]],  "coins": [190, 230], "timeSec": [1200, 1500], "weight": 2, "minDone": 8 },
+    { "id": "r_c7",    "needs": [["coffee", 7]],               "coins": [220, 260], "timeSec": [1500, 1800], "weight": 2, "minDone": 10 },
+    { "id": "r_b7",    "needs": [["bake", 7]],                 "coins": [220, 260], "timeSec": [1500, 1800], "weight": 2, "minDone": 10 },
+    { "id": "r_c8",    "needs": [["coffee", 8]],               "coins": [270, 300], "timeSec": [1800, 2400], "weight": 1, "minDone": 14 },
+    { "id": "r_b8",    "needs": [["bake", 8]],                 "coins": [270, 300], "timeSec": [1800, 2400], "weight": 1, "minDone": 14 }
+  ]
+}

@@ -157,24 +157,39 @@ void main(){
     quad(cx, cy, w / 2, h / 2, e.u0, e.v0, e.u1, e.v1, 0, 0, 0, 0, 2, 0, 0, 1, col || WHITE);
   };
   const WHITE = [1, 1, 1, 1];
-  /* 单行文字（整串做一张贴图，适合不常变的短标签）。y 为中线 */
-  api.text = function (str, x, y, o) {
-    const size = o.size, wt = o.weight || 700, font = o.font || 'system-ui, sans-serif';
-    const fill = o.fill || '#fff';
-    const key = 'T|' + wt + '|' + size + '|' + fill + '|' + (o.outline ? o.outline : '') + '|' + str;
-    const sc = atlas.scratch.getContext('2d');
-    sc.font = `${wt} ${size * dpr}px ${font}`;
-    const ow = o.outline ? Math.ceil(size * 0.18 * dpr) : 0;
-    const tw = sc.measureText(str).width + ow * 2 + 4, th = size * 1.4 * dpr + ow * 2;
-    const e = alloc(key + '|' + dpr, tw, th, (g, w, h) => {
-      g.font = `${wt} ${size * dpr}px ${font}`; g.textBaseline = 'middle'; g.textAlign = 'center';
-      if (ow) { g.lineJoin = 'round'; g.lineWidth = ow * 2; g.strokeStyle = o.outline; g.strokeText(str, w / 2, h / 2); }
-      g.fillStyle = fill; g.fillText(str, w / 2, h / 2);
+  /* 文字：逐字缓存进图集（计时器数字每秒变化也不会撑爆图集）。y 为中线。
+     o = {size, weight, fill, outline(颜色), align: left|center|right, font} */
+  api.font = 'Nunito, "Avenir Next", "Trebuchet MS", system-ui, sans-serif';
+  function glyph(ch, wt, px, fill, oc, ow, font) {
+    const key = 'G|' + wt + '|' + px + '|' + fill + '|' + oc + '|' + ow + '|' + font + '|' + ch;
+    let e = atlas.map.get(key); if (e) return e;
+    const sc = atlas.scratch.getContext('2d'); sc.font = `${wt} ${px}px ${font}`;
+    const adv = sc.measureText(ch).width, pad = 2 + ow;
+    e = alloc(key, adv + pad * 2, px * 1.4 + pad * 2, (g, w, h) => {
+      g.font = `${wt} ${px}px ${font}`; g.textBaseline = 'middle'; g.textAlign = 'left';
+      if (ow) { g.lineJoin = 'round'; g.lineWidth = ow * 2; g.strokeStyle = oc; g.strokeText(ch, pad, h / 2); }
+      g.fillStyle = fill; g.fillText(ch, pad, h / 2);
     });
-    const w = e.w / dpr, h = e.h / dpr;
-    const cx = o.align === 'left' ? x + w / 2 : o.align === 'right' ? x - w / 2 : x;
-    api.img(e, cx, y, w, h, WHITE);
-    return w;
+    e.adv = adv; e.pad = pad; return e;
+  }
+  function glyphs(str, o) {
+    const px = Math.max(6, Math.round(o.size * dpr)), wt = o.weight || 800, font = o.font || api.font;
+    const ow = o.outline ? Math.max(1, Math.round(o.size * 0.16 * dpr)) : 0;
+    return Array.from(String(str)).map((ch) => glyph(ch, wt, px, o.fill || '#fff', o.outline || '', ow, font));
+  }
+  api.measure = (str, o) => glyphs(str, o).reduce((w, g) => w + g.adv, 0) / dpr;
+  api.text = function (str, x, y, o) {
+    const gs = glyphs(str, o), sc = o.scale || 1;
+    const tw = gs.reduce((w, g) => w + g.adv, 0) / dpr * sc;
+    let cx = o.align === 'left' ? x : o.align === 'right' ? x - tw : x - tw / 2;
+    for (const g of gs) {
+      const w = g.w / dpr * sc, h = g.h / dpr * sc;
+      api.img(g, cx - g.pad / dpr * sc + w / 2, y, w, h, WHITE);
+      cx += g.adv / dpr * sc;
+    }
+    return tw;
   };
+  api.reset = function () { flush(); atlas.x = atlas.y = atlas.row = 0; atlas.map.clear();
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, atlas.size, atlas.size, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); };
   return api;
 })();
