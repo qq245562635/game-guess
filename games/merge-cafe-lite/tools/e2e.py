@@ -448,34 +448,39 @@ with sync_playwright() as p:
     pg.evaluate('MCL.C.eco.combo.windowSec = 2.5'); pg.wait_for_timeout(2700)  # 恢复 2.5 秒，等窗口过去
     pg.evaluate("MCL.S.cells[28]={k:'item',chain:'bake',lvl:1}; MCL.S.cells[29]={k:'item',chain:'bake',lvl:1}; MCL.S.unlocked[28]=MCL.S.unlocked[29]=true"); pg.wait_for_timeout(150); drag(pg, 28, 29)
     check('超过 2.5 秒再合成：连击从 1 重新数，不罚', S(pg, 'combo.n') == 1 and S(pg, 'coins') == c0 + 5)
-    # 出售
-    pg.evaluate("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; s.cells[15]={k:'item',chain:'bake',lvl:2}; s.cells[16]={k:'item',chain:'coffee',lvl:5}; s.recycle=0;})()"); pg.wait_for_timeout(200)
-    c0 = S(pg, 'coins'); tap_cell(pg, 15); wait_sell(pg)
-    check('M2 出售：点选物品，下方出现 "Sell +2"', pg.is_visible('#sell.show') and 'Sell +2' in pg.inner_text('#sell'), pg.inner_text('#sell') if pg.is_visible('#sell') else '')
-    pg.screenshot(path=str(out / 'm2-sell.png'))
-    tap_cell(pg, 15); wait_sell(pg); pg.evaluate("document.getElementById('sell').click()"); settle_rewards(pg)  # Sell 按钮 4 秒自动收起，截图慢时重新选中
-    check('卖掉 2 级物品：+2 金币、格子空出、回收桶 1/8', cell(pg, 15) is None and S(pg, 'coins') == c0 + 2 and S(pg, 'recycle') == 1 and '1/8' in pg.inner_text('#toast') and not pg.is_visible('#sell.show'))
-    tap_cell(pg, 16); wait_sell(pg); pg.evaluate("document.getElementById('sell').click()"); pg.wait_for_timeout(200)
-    check('5 级以上要确认：弹窗、未确认前不卖', pg.is_visible('#modal.show') and 'Latte' in pg.inner_text('#m-title') and cell(pg, 16) is not None)
-    pg.click('#m-btns .btn.coin'); settle_rewards(pg)
-    check('确认后卖出：+16 金币', cell(pg, 16) is None and S(pg, 'coins') == c0 + 18)
-    pg.evaluate("MCL.S.recycle=7; MCL.S.cells[17]={k:'item',chain:'bake',lvl:1}; MCL.S.energy=40; MCL.S.energyTs=MCL.now()"); pg.wait_for_timeout(150)
-    tap_cell(pg, 17); wait_sell(pg); pg.evaluate("document.getElementById('sell').click()"); pg.wait_for_timeout(300)
-    check('回收桶满 8 件：送 5 体力、桶清零', S(pg, 'energy') == 45 and S(pg, 'recycle') == 0 and 'Recycle bonus' in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    # 出售：平时点选物品不出 Sell（按钮贴着下一格，容易点错），只在满格无可合时出
+    pg.evaluate("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; s.cells[15]={k:'item',chain:'bake',lvl:2}; s.recycle=0;})()"); pg.wait_for_timeout(200)
+    tap_cell(pg, 15); pg.wait_for_timeout(800)
+    check('M2 出售防误触：平时点选物品，不出现 Sell 按钮', pg.evaluate('MCL.sel') == 15 and not pg.is_visible('#sell.show'), f"sel={pg.evaluate('MCL.sel')}")
+    pg.screenshot(path=str(out / 'm2-select-no-sell.png'))
+    pg.evaluate("document.getElementById('sell').click()"); pg.wait_for_timeout(200)
+    check('平时就算点到 Sell 也不卖、不弹窗', cell(pg, 15) is not None and not pg.is_visible('#modal.show'))
     # 高级合成特写
     pg.evaluate("MCL.S.cells[22]={k:'item',chain:'coffee',lvl:5}; MCL.S.cells[23]={k:'item',chain:'coffee',lvl:5}"); pg.wait_for_timeout(150)
     drag(pg, 22, 23); sp = pg.evaluate('MCL.spotlight'); pg.screenshot(path=str(out / 'm2-spotlight.png'))
     check('M2 高级合成特写：合出 6 级时物品放大到棋盘中央', sp and cell(pg, 23)['lvl'] == 6)
     pg.wait_for_timeout(1000)
     check('特写 0.9 秒后结束，物品回到格子', not pg.evaluate('MCL.spotlight') and cell(pg, 23)['lvl'] == 6)
-    # 满格且无可合：提示卖最低级的
+    # 满格且无可合：提示卖最低级的；这时才出 Sell，而且卖之前一律确认
     # 填满：前 16 格是两条链 1–8 级各一个（两两不同），其余全是 8 级（满级同款也不能合）
+    pg.evaluate("MCL.S.recycle=0")
     pg.evaluate("(()=>{const s=MCL.S; let k=0; for(let i=0;i<49;i++) if(s.unlocked[i]) { s.cells[i]= k<16 ? {k:'item',chain:k%2?'coffee':'bake',lvl:1+Math.floor(k/2)} : {k:'item',chain:k%2?'coffee':'bake',lvl:8}; k++; } })()")
-    try: pg.wait_for_function('Core.stuckHint(MCL.C, MCL.S) >= 0 && MCL.sel === Core.stuckHint(MCL.C, MCL.S)', timeout=6000); wait_sell(pg)  # 软件渲染很慢：等提示真的生效
-    except Exception: pass
+    def wait_stuck():
+        try: pg.wait_for_function('Core.stuckHint(MCL.C, MCL.S) >= 0 && MCL.sel === Core.stuckHint(MCL.C, MCL.S)', timeout=6000); wait_sell(pg)  # 软件渲染很慢：等提示真的生效
+        except Exception: pass
+    wait_stuck()
     stuck = pg.evaluate('Core.stuckHint(MCL.C, MCL.S)')
     check('M2 永不卡死：满格无可合 → 自动选中最低级物品、提示卖掉、出现 Sell 按钮', stuck >= 0 and pg.evaluate('MCL.sel') == stuck and 'No matches' in pg.inner_text('#toast') and pg.is_visible('#sell.show'), f'stuck={stuck} sel={pg.evaluate("MCL.sel")}')
     pg.screenshot(path=str(out / 'm2-stuck.png'))
+    it0 = cell(pg, stuck); c0 = S(pg, 'coins')
+    pg.evaluate("document.getElementById('sell').click()"); pg.wait_for_timeout(300)
+    check('卡死时卖也要确认：弹窗、未确认前不卖', pg.is_visible('#modal.show') and 'Sell' in pg.inner_text('#m-title') and cell(pg, stuck) is not None, pg.inner_text('#m-title') if pg.is_visible('#modal.show') else 'no modal')
+    pg.screenshot(path=str(out / 'm2-sell-confirm.png'))
+    pg.click('#m-btns .btn.coin'); settle_rewards(pg)
+    check('确认后卖出：+1 金币、格子空出、回收桶 1/8、Sell 收起', cell(pg, stuck) is None and S(pg, 'coins') == c0 + 1 and S(pg, 'recycle') == 1 and '1/8' in pg.inner_text('#toast') and not pg.is_visible('#sell.show'))
+    pg.evaluate("([i, it]) => { const s=MCL.S; s.cells[i]=it; s.recycle=7; s.energy=40; s.energyTs=MCL.now(); }", [stuck, it0]); wait_stuck()
+    pg.evaluate("document.getElementById('sell').click()"); pg.wait_for_timeout(300); pg.click('#m-btns .btn.coin'); pg.wait_for_timeout(300)
+    check('回收桶满 8 件：送 5 体力、桶清零', S(pg, 'energy') == 45 and S(pg, 'recycle') == 0 and 'Recycle bonus' in pg.inner_text('#toast'), pg.inner_text('#toast'))
     # 音效开关
     pg.evaluate("for(let i=0;i<49;i++) MCL.S.cells[i]=null"); pg.wait_for_timeout(200)
     check('M2 音效：右上角喇叭按钮，默认开', pg.is_visible('#snd') and pg.get_attribute('#snd','data-mute') == '0' and pg.evaluate('Sfx.supported'))
