@@ -8,7 +8,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parent.parent
 src = root / 'src'
 CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression', 'regulars', 'recipes', 'daily']
-JS = ['l10n.js', 'core.js', 'gl.js', 'art.js', 'sfx.js', 'ads.js', 'main.js']
+JS = ['l10n.js', 'core.js', 'gl.js', 'art.js', 'sfx.js', 'platform.js', 'ads.js', 'main.js']
 MAX_STRINGS = 200  # 策划案 v0.4：V1 新系统文案，上限由 120 提到 180
 
 config = {name: json.loads((src / 'config' / f'{name}.json').read_text(encoding='utf-8')) for name in CONFIG_FILES}
@@ -122,3 +122,30 @@ try:
 except ImportError:
     br = ''
 print(f'built {out}  ({len(raw) / 1024:.1f} KB, gzip {gz / 1024:.1f} KB{br}, {len(locale)} 条文案)')
+
+# ---------- CrazyGames 上传包：python3 tools/build.py --crazygames ----------
+# dist/crazygames/：index.html（<head> 先加载 CrazyGames SDK v3、标记 MCL_PLATFORM）+ art.json 登记过的图片（相对路径），
+# 再打成 dist/merge-cafe-lite-crazygames.zip，直接在 CrazyGames 开发者后台上传。普通构建（GitHub Pages）不受影响。
+if '--crazygames' in sys.argv:
+    import shutil, zipfile
+    dist = root / 'dist' / 'crazygames'
+    if dist.exists(): shutil.rmtree(dist)
+    sdk_tag = ('<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>\n'
+               "<script>window.MCL_PLATFORM = 'crazygames';</script>\n")
+    cg = page.replace('</head>', sdk_tag + '</head>', 1)
+    assert cg != page
+    files = []
+    A = config['art']
+    for key, folder, ext in [('items', 'items', 'png'), ('avatars', 'avatars', 'png'), ('ui', 'ui', 'png'), ('uiWebp', 'ui', 'webp'),
+                             ('scene', 'scene', 'webp'), ('cafe', 'scene', 'webp'), ('comics', 'comics', 'webp')]:
+        for i in A.get(key, []): files.append(Path('assets') / folder / f'{i}.{ext}')
+    (dist).mkdir(parents=True)
+    (dist / 'index.html').write_text(cg, encoding='utf-8')
+    for f in files:
+        (dist / f).parent.mkdir(parents=True, exist_ok=True); shutil.copy2(root / f, dist / f)
+    z = root / 'dist' / 'merge-cafe-lite-crazygames.zip'
+    with zipfile.ZipFile(z, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for p in sorted(dist.rglob('*')):
+            if p.is_file(): zf.write(p, p.relative_to(dist))
+    total = sum(p.stat().st_size for p in dist.rglob('*') if p.is_file())
+    print(f'CrazyGames 包：{dist}（{len(files) + 1} 个文件，{total / 1048576:.2f} MB）→ {z.name}（{z.stat().st_size / 1048576:.2f} MB）')

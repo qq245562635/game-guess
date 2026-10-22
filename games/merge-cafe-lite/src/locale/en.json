@@ -191,5 +191,7 @@
   "ui.loginBody": "Come back every day. Missed days never reset your progress.",
   "ui.welcomeTitle": "Welcome Back!",
   "ui.welcomeBody": "Your café earned {n} coins while you were away ({t}).",
-  "ui.offlineCap": "Earnings cap at {h} hours. Come back sooner for more!"
+  "ui.offlineCap": "Earnings cap at {h} hours. Come back sooner for more!",
+  "ad.failed": "No video available right now. Please try again later.",
+  "ad.blocked": "Video rewards are unavailable while an ad blocker is on."
 }
