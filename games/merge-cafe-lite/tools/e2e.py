@@ -471,7 +471,8 @@ with sync_playwright() as p:
     # 满格且无可合：提示卖最低级的
     # 填满：前 16 格是两条链 1–8 级各一个（两两不同），其余全是 8 级（满级同款也不能合）
     pg.evaluate("(()=>{const s=MCL.S; let k=0; for(let i=0;i<49;i++) if(s.unlocked[i]) { s.cells[i]= k<16 ? {k:'item',chain:k%2?'coffee':'bake',lvl:1+Math.floor(k/2)} : {k:'item',chain:k%2?'coffee':'bake',lvl:8}; k++; } })()")
-    pg.wait_for_timeout(1500)
+    try: pg.wait_for_function('Core.stuckHint(MCL.C, MCL.S) >= 0 && MCL.sel === Core.stuckHint(MCL.C, MCL.S)', timeout=6000); wait_sell(pg)  # 软件渲染很慢：等提示真的生效
+    except Exception: pass
     stuck = pg.evaluate('Core.stuckHint(MCL.C, MCL.S)')
     check('M2 永不卡死：满格无可合 → 自动选中最低级物品、提示卖掉、出现 Sell 按钮', stuck >= 0 and pg.evaluate('MCL.sel') == stuck and 'No matches' in pg.inner_text('#toast') and pg.is_visible('#sell.show'), f'stuck={stuck} sel={pg.evaluate("MCL.sel")}')
     pg.screenshot(path=str(out / 'm2-stuck.png'))
