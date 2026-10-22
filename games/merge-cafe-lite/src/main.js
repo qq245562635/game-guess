@@ -25,18 +25,22 @@
   }
   let S = null, welcomeGain = 0;
   { const ls = store(), raw = ls && ls.getItem(SAVE_KEY); if (raw) S = Core.deserialize(C, raw, now()); }
-  if (S) welcomeGain = Core.settleAll(C, S, now());
+  let awayFrom = 0; // 上次存档时间：开画后算离线营业（M5）
+  if (S) { awayFrom = S.lastSeen || 0; delete S.lastSeen; welcomeGain = Core.settleAll(C, S, now()); }
   else S = Core.newState(C, now());
   Core.markDay(S, now()); // 留存打点：今天来过
   if (!S.settings) S.settings = { mute: false };
   Sfx.setMuted(S.settings.mute);
-  let dirty = true, saveTimer = 0;
+  let dirty = true, saveTimer = 0, hiddenAt = 0;
   function save() { const ls = store(); if (!ls) return; try { ls.setItem(SAVE_KEY, Core.serialize(S, now())); dirty = false; } catch (e) {} }
   const markDirty = () => { dirty = true; };
   addEventListener('pagehide', save);
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) save();
-    else { Core.markDay(S, now()); const g = Core.settleAll(C, S, now()); if (g > 0) toast(L.t('ui.welcomeBack', { n: g })); }
+    if (document.hidden) { save(); hiddenAt = now(); }
+    else {
+      Core.markDay(S, now()); const g = Core.settleAll(C, S, now()); if (g > 0) toast(L.t('ui.welcomeBack', { n: g }));
+      if (hiddenAt) { const r = Core.offlineEarn(C, S, hiddenAt, now()); hiddenAt = 0; if (r) { queueWelcome(r); markDirty(); save(); } }
+    }
   });
 
   /* 音效：第一次触摸时解锁 WebAudio；右上角喇叭按钮切换静音（存档里记住） */
@@ -487,8 +491,52 @@
   let obstacleTipShown = false;
   function tryPopups() {
     if (!obstacleTipShown && Core.featureOn(C, S, 'obstacles') && mode === 'merge' && !modalOpen() && !lvQueue.length) { obstacleTipShown = true; if (!S.stats.dug) toast(L.t('ui.obstacleTip')); }
+    if (!loginQueued && Core.loginDue(C, S, now())) { loginQueued = true; popups.push(showLogin); }
     if (!popups.length || lvQueue.length || down || drag || modalOpen() || Ads.busy || flies.length || Core.tutStep(C, S)) return;
     popups.shift()();
+  }
+  /* ---------- 每天回来（V1 M5） ---------- */
+  let loginQueued = false, startedAt = 0;
+  const calPic = (px) => ico('icon_calendar', '📅', px);
+  /* 累计签到：弹出时才领（core 入账），7 格日历，今天这格高亮；Collect 飞进顶栏，第 7 格再开宝箱 */
+  function showLogin() {
+    loginQueued = false;
+    const r = Core.claimLogin(C, S, now()); if (!r.ok) return;
+    markDirty(); save();
+    pendingCoins += r.reward.coins; pendingStars += r.reward.stars;
+    if (r.chest) { pendingCoins += r.chest.coins; pendingStars += r.chest.stars; }
+    const cells = C.DY.login.rewards.map((rw, k) => {
+      const kind = rw.stars ? 'stars' : rw.coins ? 'coins' : 'energy', n = rw[kind];
+      const pic = kind === 'coins' ? coinIcon() : kind === 'stars' ? icon('icon_star', STAR_SVG) : icon('icon_energy', BOLT_SVG);
+      const cls = [k + 1 < r.day ? 'got' : '', k + 1 === r.day ? 'now' : '', rw.chest ? 'big' : ''].filter(Boolean).join(' ');
+      return `<div class="${cls}"><b>${k + 1}</b>${pic}+${n}${rw.chest ? ' ' + ico('icon_gift', '🎁', 22) : ''}</div>`;
+    }).join('');
+    Sfx.unlock(); sfxBurst();
+    modal(L.t('ui.loginTitle', { n: r.day }), L.t('ui.loginBody'), [{ label: L.t('ui.collect') }], null, `<div class="cal-top">${calPic(56)}</div><div class="cal">${cells}</div>`);
+    modalOnClose = () => {
+      landRewards(r.reward, LY.W / 2, LY.H * 0.45);
+      if (r.chest) setTimeout(() => showChest(r.chest), 400);
+    };
+  }
+  const hm = (mins) => mins >= 60 ? Math.floor(mins / 60) + 'h' + (mins % 60 ? ' ' + (mins % 60) + 'm' : '') : mins + 'm';
+  /* 欢迎回来：离线营业金币 core 已入账 → 待落地；卡上可看广告翻倍（第 5 个激励点位）。排在所有弹窗最前 */
+  function queueWelcome(r) {
+    pendingCoins += r.coins;
+    const show = () => {
+      if (!Art.src('welcome_back') && clock() - startedAt < 2) { popups.unshift(show); return; } // 插画后台加载，最多等 2 秒
+      const pic = Art.src('welcome_back');
+      Core.adOffer(S, 'offline'); markDirty();
+      const html = `<div class="welcome">${pic ? `<img class="pic" src="${esc2(pic)}" alt="">` : ''}<div class="amt">${coinIcon()}+${r.coins}</div>${r.capped ? `<div style="font:800 13px var(--font);color:#7a5a3a">${esc2(L.t('ui.offlineCap', { h: r.capH }))}</div>` : ''}</div>`;
+      Sfx.coin();
+      modal(L.t('ui.welcomeTitle'), L.t('ui.welcomeBody', { n: r.coins, t: hm(r.mins) }), [
+        { label: L.t('ui.collect'), alt: true },
+        { label: '▶ ' + L.t('ad.double') + ' +' + r.coins, ad: true, on: () => watchAd('offline', () => {
+          Core.grantDouble(S, r.coins); pendingCoins += r.coins; flyRewards(LY.W / 2, LY.H * 0.45, r.coins, 0); toast(L.t('ad.got', { n: r.coins }));
+        }) },
+      ], null, html);
+      modalOnClose = () => landRewards({ coins: r.coins }, LY.W / 2, LY.H * 0.45);
+    };
+    popups.unshift(show);
   }
   /* 新菜谱：金币 core 已入账 → 记成待落地，卡片 Collect 时飞进顶栏；集齐一条链再开宝箱 */
   function queueFound(f, x, y) {
@@ -784,12 +832,22 @@
   /* ---------- 任务页 ---------- */
   let tasksKey = '';
   const REWARD_ICON = { coins: 'icon_coin', energy: 'icon_energy', stars: 'icon_star' };
+  let dailyDone = null; // 每日任务刚做完时提示一次
   function updateTasks() {
-    $('nav-tasks').classList.toggle('dot', mode !== 'tasks' && !Core.tutStep(C, S) && Core.tasksClaimable(C, S));
+    const dp = Core.dailyProgress(C, S, now());
+    if (dp) {
+      const doneNow = dp.list.map((t) => t.done).join();
+      if (dailyDone !== null && dailyDone !== doneNow && S.dtasks && dailyDone.split(',').length === dp.list.length) {
+        dp.list.forEach((t, k) => { if (t.done && dailyDone.split(',')[k] !== 'true') { toast('✓ ' + L.t('task.' + t.type, { n: t.n })); Sfx.deliver(); } });
+      }
+      dailyDone = doneNow;
+    }
+    $('nav-tasks').classList.toggle('dot', mode !== 'tasks' && !Core.tutStep(C, S) && (Core.tasksClaimable(C, S) || !!(dp && dp.ready)));
     if (mode !== 'tasks') return;
     const ps = S.tasks.active.map((_, k) => Core.taskProgress(C, S, k));
-    const key = ps.map((p) => p.def.id + ':' + p.cur).join('|');
+    const key = ps.map((p) => p.def.id + ':' + p.cur).join('|') + '#' + (dp ? dp.list.map((t) => t.type + t.cur + '/' + t.n).join(',') + dp.ready + dp.claimed + S.dtasks.day : '-');
     if (key === tasksKey) return; tasksKey = key;
+    renderDaily(dp);
     const list = $('tasks-list'); list.textContent = '';
     if (!ps.length) { const el = document.createElement('p'); el.className = 'done-all'; el.textContent = L.t('ui.tasksDone'); list.appendChild(el); }
     ps.forEach((p, k) => {
@@ -810,6 +868,31 @@
     });
     layout();
   }
+  function renderDaily(dp) {
+    $('daily').style.display = dp ? 'block' : 'none'; if (!dp) return;
+    $('daily-ico').innerHTML = calPic(26);
+    const list = $('daily-list'); list.textContent = '';
+    for (const t of dp.list) {
+      const row = document.createElement('div'); row.className = 'task' + (t.done ? ' ok' : '');
+      const txt = document.createElement('div'); txt.className = 't-txt';
+      const b = document.createElement('b'); b.textContent = L.t('task.' + t.type, { n: t.n }); txt.appendChild(b);
+      const bar = document.createElement('div'); bar.className = 't-bar'; const fill = document.createElement('i'); fill.style.width = (t.cur / t.n * 100) + '%'; bar.appendChild(fill);
+      const num = document.createElement('span'); num.textContent = t.cur + '/' + t.n; bar.appendChild(num); txt.appendChild(bar);
+      const ok = document.createElement('div'); ok.className = 't-ok'; ok.textContent = t.done ? '✓' : '';
+      row.append(txt, ok); list.appendChild(row);
+    }
+    const btn = $('daily-chest'), n = dp.list.filter((t) => t.done).length;
+    btn.className = 'btn' + (dp.ready ? ' ready' : ' wait'); btn.disabled = !dp.ready;
+    btn.innerHTML = chestPic(false) + ' ' + esc2(dp.ready ? L.t('ui.dailyChest') : dp.claimed ? L.t('ui.dailyDone') : L.t('ui.dailyChest') + ' ' + n + '/' + dp.list.length);
+  }
+  $('daily-chest').onclick = () => {
+    const r = Core.claimDailyChest(C, S, now()); if (!r.ok) return;
+    pendingCoins += r.coins; pendingStars += r.stars; markDirty(); save();
+    showChest({ coins: r.coins, stars: r.stars, energy: r.energy }, L.t('unlock.daily'));
+    const land = modalOnClose;
+    modalOnClose = () => { land(); if (r.wild >= 0) { pops.set(r.wild, clock()); setTimeout(() => toast(L.t('ui.wildGot')), 500); } };
+    tasksKey = ''; updateTasks();
+  };
   function claim(k, btn) {
     const r = Core.claimTask(C, S, k, now()); if (!r.ok) return;
     const b = btn.getBoundingClientRect(), x = b.left + b.width / 2, y = b.top;
@@ -1464,9 +1547,12 @@
   function start() {
     layout();
     // 装修场景和漫画不挡首帧：开画后再后台加载（玩家进 Café 页前一般早就到了；没到时先画程序占位）
+    Art.load(CONFIG.art.uiWebp || [], 'assets/ui/', () => {}, 'webp'); // 欢迎回来插画（M5）
     Art.load(CONFIG.art.cafe || [], 'assets/scene/', () => {}, 'webp');
     Art.load(CONFIG.art.comics || [], 'assets/comics/', () => {}, 'webp');
     if (welcomeGain > 0) setTimeout(() => toast(L.t('ui.welcomeBack', { n: welcomeGain })), 300);
+    { const r = Core.offlineEarn(C, S, awayFrom, now()); if (r) { queueWelcome(r); markDirty(); } }
+    startedAt = clock();
     updateHud(); updateTutorial(); updateSndBtn();
     requestAnimationFrame(frame);
   }
@@ -1497,7 +1583,7 @@
   /* ---------- 调试面板（?debug=1，给 QA 用，文案不进本地化表） ---------- */
   function debugStats() {
     const st = S.stats, c = st.createdAt;
-    $('dbg-fps').textContent = `${fps} fps · ${renderMs.toFixed(2)} ms/frame\norders ${st.ordersDone} · merges ${st.merges}\n1st merge ${st.firstMergeAt ? ((st.firstMergeAt - c) / 1000).toFixed(1) + 's' : '-'} · 1st order ${st.firstOrderAt ? ((st.firstOrderAt - c) / 1000).toFixed(1) + 's' : '-'}\nads ${['energy', 'refill', 'double', 'bubble'].map((k) => k + ' ' + S.ads.clicks[k] + '/' + S.ads.offers[k]).join(' · ')} · inter ${S.ads.interstitials}\nLv ${S.level} (${S.xp}/${Core.xpNeed(C, S.level)}) · ev ${st.ev.small}/${st.ev.mid}/${st.ev.big} · mid/3min ${st.playMs > 60e3 ? (st.ev.mid / (st.playMs / 180e3)).toFixed(1) : '-'} · days ${Core.daysInFirstWeek(S)} · play ${Math.round(st.playMs / 60e3)}m\ndeco ${S.deco}/${Core.areaNodes(C, S).length} · gens ${C.genList.map((g) => 'Lv' + (S.gens[g.id].lv || 1)).join('/')}\nspent ${Object.entries(st.coinsSpent).filter(([, v]) => v).map(([k, v]) => k + ' ' + v).join(' · ') || '-'} · earned ${st.coinsEarned}`;
+    $('dbg-fps').textContent = `${fps} fps · ${renderMs.toFixed(2)} ms/frame\norders ${st.ordersDone} · merges ${st.merges}\n1st merge ${st.firstMergeAt ? ((st.firstMergeAt - c) / 1000).toFixed(1) + 's' : '-'} · 1st order ${st.firstOrderAt ? ((st.firstOrderAt - c) / 1000).toFixed(1) + 's' : '-'}\nads ${['energy', 'refill', 'double', 'bubble', 'offline'].map((k) => k + ' ' + S.ads.clicks[k] + '/' + S.ads.offers[k]).join(' · ')} · inter ${S.ads.interstitials}\nLv ${S.level} (${S.xp}/${Core.xpNeed(C, S.level)}) · ev ${st.ev.small}/${st.ev.mid}/${st.ev.big} · mid/3min ${st.playMs > 60e3 ? (st.ev.mid / (st.playMs / 180e3)).toFixed(1) : '-'} · days ${Core.daysInFirstWeek(S)} · play ${Math.round(st.playMs / 60e3)}m\ndeco ${S.deco}/${Core.areaNodes(C, S).length} · gens ${C.genList.map((g) => 'Lv' + (S.gens[g.id].lv || 1)).join('/')}\nspent ${Object.entries(st.coinsSpent).filter(([, v]) => v).map(([k, v]) => k + ' ' + v).join(' · ') || '-'} · earned ${st.coinsEarned}`;
   }
   if (DEBUG) {
     const box = $('dbg'); box.classList.add('show');
@@ -1514,6 +1600,9 @@
     btn('+20 hearts', () => { for (const r of C.regs) if (Core.regOn(C, S, r)) { const st = Core.regState(S, r.id); st.pts += 20; } });
     btn('chest', () => { const r = Core.openChest(C, S, now()); pendingCoins += r.coins; pendingStars += r.stars; showChest(r); });
     btn('skip tutorial', () => Core.skipTutorial(S));
+    btn('+1 day', () => skip(864e5));
+    btn('away 3h', () => { const r = Core.offlineEarn(C, S, now() - 3 * 3600e3, now()); if (r) queueWelcome(r); });
+    btn('daily done', () => { if (S.dtasks) for (const t of S.dtasks.list) t.base -= t.n; });
     btn('fill board', () => { for (let i = 0; i < C.n; i++) if (S.unlocked[i] && !S.cells[i]) S.cells[i] = { k: 'item', chain: i % 2 ? 'coffee' : 'bake', lvl: 1 + (i % 7) }; });
     btn('serve-ready', () => { // 把三个订单要的东西都放到棋盘上
       for (const o of S.orders) for (const n of o.needs) if (!n.done) { const e = S.cells.findIndex((c, i) => !c && S.unlocked[i]); if (e >= 0) S.cells[e] = { k: 'item', chain: n.chain, lvl: n.lvl }; }
@@ -1523,6 +1612,6 @@
   // 自动化测试 / 调试入口
   window.MCL = {
     C, get S() { return S; }, get pendingLevels() { return pendingLevels; }, cellXY, cellAt, layout: LY, save, now, genRect, upgradeBadge: (id) => upgradeBadge(genRect(id)), orderRect: (k) => LY.orders[k], get mode() { return mode; }, needAt,
-    get fps() { return fps; }, get sel() { return sel; }, get popups() { return popups.length; }, setMode, get spotlight() { return !!spotlight; }, get renderMs() { return renderMs; }, get pending() { return pendingCoins + pendingStars; },
+    get fps() { return fps; }, get sel() { return sel; }, get popups() { return popups.length; }, setMode, get spotlight() { return !!spotlight; }, get renderMs() { return renderMs; }, get pending() { return pendingCoins + pendingStars; }, get pendingCoins() { return pendingCoins; },
   };
 })();

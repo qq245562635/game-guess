@@ -7,7 +7,7 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
 src = root / 'src'
-CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression', 'regulars', 'recipes']
+CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression', 'regulars', 'recipes', 'daily']
 JS = ['l10n.js', 'core.js', 'gl.js', 'art.js', 'sfx.js', 'ads.js', 'main.js']
 MAX_STRINGS = 200  # 策划案 v0.4：V1 新系统文案，上限由 120 提到 180
 
@@ -88,6 +88,13 @@ for i in config['art'].get('comics', []):
 config['art']['layerPos'] = {k: v for k, v in layer_pos.items() if k in config['art'].get('cafe', [])}
 for t in config['tasks']['list']:
     assert f"task.{t['type']}" in locale, f"缺本地化：task.{t['type']}"
+for i in config['art'].get('uiWebp', []):  # 欢迎回来插画等大图（M5），开画后后台加载
+    assert (root / 'assets' / 'ui' / f'{i}.webp').exists(), f'art.json uiWebp 登记了 {i}，但 assets/ui/{i}.webp 不存在'
+DY = config['daily']  # 每天回来（M5）
+for d in DY['tasks']['fixed'] + DY['tasks']['extra']:
+    assert f"task.{d['type']}" in locale, f"缺本地化：task.{d['type']}"
+    assert not d.get('feature') or any(u['feature'] == d['feature'] for u in P['unlocks']), f"每日任务 {d['type']} 的 feature 不存在"
+assert len(DY['login']['rewards']) == 7, '签到一轮 7 格'
 for k in config['tutorial']['steps']:
     assert f'tut.{k}' in locale, f'缺本地化：tut.{k}'
 

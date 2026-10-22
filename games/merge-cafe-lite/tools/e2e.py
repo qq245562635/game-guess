@@ -53,14 +53,21 @@ def wait_sell(pg):  # 软件渲染下帧率很低：等 Sell 按钮真的出现
     except Exception: pass
 # 老用例按"没有店铺升级弹窗"写的：默认把升级经验调到够不着，店铺等级在自己的段落里单独测（levels=True）
 NO_LEVELUP = 'MCL.C.prog.levelNeed = []; MCL.C.prog.after = 1e12'
+# 老用例里直接把店铺等级改到 2 级以上：先记成今天已签到，免得签到卡（M5）挡住操作；M5 段落单独测签到
+NO_LOGIN = 'MCL.S.login = { n: 0, day: Core.dayOf(MCL.now()) }'
 def boot(pg, q='?reset=1&fastads', levels=False):
     pg.goto(URL + q); pg.wait_for_function('window.MCL && MCL.layout.bs > 0')
     if not levels: pg.evaluate(NO_LEVELUP)
+    pg.evaluate(NO_LOGIN)
     pg.wait_for_timeout(600)
 def reload(pg, levels=False):
     pg.evaluate('MCL.save()'); pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0')
     if not levels: pg.evaluate(NO_LEVELUP)
+    pg.evaluate(NO_LOGIN)
     pg.wait_for_timeout(500)
+def skip_time(pg, ms): pg.evaluate(f"sessionStorage.setItem('mcl.timeOffset', String((+sessionStorage.getItem('mcl.timeOffset')||0)+{ms}))")
+def close_modal(pg):
+    pg.click('#m-btns .btn'); pg.wait_for_function("!document.getElementById('modal').classList.contains('show')", timeout=4000)
 def no_ad(pg): pg.wait_for_function("!document.getElementById('ad').classList.contains('show')", timeout=8000)
 def settle_rewards(pg): pg.wait_for_function('MCL.pending === 0', timeout=5000); pg.wait_for_timeout(100); no_ad(pg)
 def scene_png(pg, path):
@@ -561,7 +568,63 @@ with sync_playwright() as p:
     drag(pg, 16, 18); pg.wait_for_timeout(300)
     check('百搭星拖到美式上：升成拿铁，星消失', cell(pg, 18) == {'k': 'item', 'chain': 'coffee', 'lvl': 5} and cell(pg, 16) is None)
     reload(pg, levels=True)
-    check('刷新后障碍和挖开的格子保留（存档 v8）', S(pg, 'v') == 8 and S(pg, 'unlocked[31]') and S(pg, 'hidden[31]') is None and S(pg, 'hidden[40]') is not None)
+    check('刷新后障碍和挖开的格子保留（存档 v9）', S(pg, 'v') == 9 and S(pg, 'unlocked[31]') and S(pg, 'hidden[31]') is None and S(pg, 'hidden[40]') is not None)
+    ctx.close()
+
+    # ================= V1 M5：每天回来 =================
+    ctx = br.new_context(viewport={'width': 405, 'height': 720}, device_scale_factor=2)
+    pg = ctx.new_page(); watch(pg); boot(pg, '?reset=1&fastads', levels=True)
+    pg.evaluate("Core.skipTutorial(MCL.S); MCL.C.prog.levelNeed=[]; MCL.C.prog.after=1e12; for(let i=0;i<49;i++) MCL.S.cells[i]=null"); pg.wait_for_timeout(300)
+    check('M5：1 级没有每日任务、不弹签到', pg.evaluate('Core.dailyProgress(MCL.C, MCL.S, MCL.now())') is None and not pg.is_visible('#modal.show'))
+    c0 = S(pg, 'coins')
+    pg.evaluate("MCL.S.level = 2; MCL.S.login = { n: 0, day: -1 }")
+    pg.wait_for_selector('#modal.show', timeout=5000)
+    check('2 级：弹签到卡 Day 1，7 格日历、第 1 格高亮、第 7 格是宝箱', 'Day 1' in pg.inner_text('#m-title') and pg.evaluate("document.querySelectorAll('.cal div').length") == 7
+          and pg.evaluate("[...document.querySelectorAll('.cal div')].findIndex(d=>d.classList.contains('now'))") == 0 and pg.evaluate("document.querySelectorAll('.cal div')[6].classList.contains('big')"), pg.inner_text('#m-title'))
+    pg.wait_for_timeout(500); pg.screenshot(path=str(out / 'm5-login.png'))
+    close_modal(pg); settle_rewards(pg)
+    check('签到 Collect：+50 金币飞进顶栏', S(pg, 'coins') - c0 == 50 and S(pg, 'login.n') == 1, f"+{S(pg, 'coins') - c0}")
+    pg.wait_for_timeout(400)
+    check('同一天不再弹签到', not pg.is_visible('#modal.show'))
+    pg.click('#nav-tasks'); pg.wait_for_selector('#daily-list .task', timeout=4000)
+    rows = pg.evaluate("[...document.querySelectorAll('#daily-list .task b')].map(b=>b.textContent)")
+    check('Tasks 页顶部 3 条每日任务：合成 / 做单 / 一条随机', len(rows) == 3 and rows[0].startswith('Merge') and rows[1].startswith('Complete'), str(rows))
+    check('没做完时宝箱按钮灰着、写 0/3', pg.evaluate("document.getElementById('daily-chest').disabled") and '0/3' in pg.inner_text('#daily-chest'))
+    pg.screenshot(path=str(out / 'm5-daily.png'))
+    pg.evaluate("for (const t of MCL.S.dtasks.list) t.base -= t.n"); pg.wait_for_function("!document.getElementById('daily-chest').disabled", timeout=4000)
+    check('3 条做完：宝箱按钮亮起，底栏 Tasks 有红点逻辑', pg.evaluate("Core.dailyProgress(MCL.C, MCL.S, MCL.now()).ready"))
+    pg.screenshot(path=str(out / 'm5-daily-ready.png'))
+    c0, s0, e0 = S(pg, 'coins'), S(pg, 'stars'), S(pg, 'energy')
+    pg.click('#daily-chest'); pg.wait_for_selector('#modal.show', timeout=3000); pg.wait_for_timeout(1300)
+    pg.screenshot(path=str(out / 'm5-daily-chest.png')); close_modal(pg); settle_rewards(pg)
+    check('每日宝箱：+100 金币 +1 星 +30 体力（以上），按钮变成「明天再来」', S(pg, 'coins') - c0 == 100 and S(pg, 'stars') - s0 == 1 and S(pg, 'energy') - e0 >= 30 and 'tomorrow' in pg.inner_text('#daily-chest'),
+          f"coins +{S(pg, 'coins') - c0} stars +{S(pg, 'stars') - s0} energy +{S(pg, 'energy') - e0} btn={pg.inner_text('#daily-chest')!r}")
+    pg.click('#nav-merge'); pg.wait_for_timeout(300)
+    # 隔天：换新任务、签到第 2 格
+    d0 = S(pg, 'dtasks.day'); pg.evaluate('MCL.save()'); skip_time(pg, 86400000); pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0')
+    titles = []
+    for _ in range(4):  # 先欢迎回来（离线 24 小时，2 级封顶 4 小时），再签到
+        try: pg.wait_for_selector('#modal.show', timeout=5000)
+        except Exception: break
+        titles.append(pg.inner_text('#m-title')); close_modal(pg); pg.wait_for_timeout(500)
+    settle_rewards(pg)
+    check('隔天回来：先欢迎回来卡、再签到 Day 2', len(titles) >= 2 and 'Welcome' in titles[0] and 'Day 2' in titles[1], str(titles))
+    check('隔天回来：每日任务换新、宝箱可以再开', S(pg, 'dtasks.day') == d0 + 1 and not S(pg, 'dtasks.claimed'))
+    # 离线营业 + 欢迎回来卡 + 广告翻倍
+    pg.evaluate("MCL.S.level = 9; MCL.S.deco = 5; MCL.S.login.day = Core.dayOf(MCL.now()) + 1; MCL.save()")  # 签到记到明天，下面跳 3 小时不会再弹
+    c0 = S(pg, 'coins'); skip_time(pg, 3 * 3600000); pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0')
+    pg.wait_for_selector('#modal.show', timeout=6000)
+    check('离开 3 小时回来：欢迎回来卡，插画 + 186 金币（每小时 10+27+25）', 'Welcome' in pg.inner_text('#m-title') and pg.is_visible('.welcome img.pic') and '186' in pg.inner_text('.welcome .amt'),
+          f"{pg.inner_text('#m-title')!r} {pg.inner_text('#m-comic')!r}")
+    pg.wait_for_timeout(400); pg.screenshot(path=str(out / 'm5-welcome.png'))
+    pg.click('#m-btns .btn.ad'); no_ad(pg); settle_rewards(pg)
+    check('看广告翻倍：一共 +372，广告统计记 offline 1/1', S(pg, 'coins') - c0 == 372 and S(pg, 'ads.offers.offline') == 1 and S(pg, 'ads.clicks.offline') == 1, f"+{S(pg, 'coins') - c0}")
+    pg.evaluate('MCL.save()'); skip_time(pg, 20 * 3600000); c0 = S(pg, 'coins'); pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0')
+    pg.wait_for_selector('#modal.show', timeout=6000)
+    check('离开 20 小时：9 级封顶 6 小时（372），卡上提示上限', 'Welcome' in pg.inner_text('#m-title') and '372' in pg.inner_text('.welcome .amt') and '6 hours' in pg.inner_text('.welcome'), pg.inner_text('#m-comic'))
+    while pg.is_visible('#modal.show'): close_modal(pg); pg.wait_for_timeout(400)
+    settle_rewards(pg)
+    check('不看广告直接 Collect：+372', S(pg, 'coins') - c0 >= 372, f"+{S(pg, 'coins') - c0}")
     ctx.close()
 
     # ================= 多分辨率布局 =================

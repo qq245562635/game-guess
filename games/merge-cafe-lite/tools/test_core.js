@@ -3,7 +3,7 @@
 const fs = require('fs'), path = require('path'), assert = require('assert');
 const root = path.join(__dirname, '..');
 const Core = require(path.join(root, 'src/core.js'));
-const CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression', 'regulars', 'recipes'];
+const CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression', 'regulars', 'recipes', 'daily'];
 const loadCfg = () => { const cfg = {}; for (const n of CONFIG_FILES) cfg[n] = JSON.parse(fs.readFileSync(path.join(root, 'src/config', n + '.json'), 'utf8')); return cfg; };
 const cfg = loadCfg();
 const C = Core.index(cfg);
@@ -374,21 +374,21 @@ test('任务：全部领完后不再补，也不报错', () => {
 });
 
 /* ---------- 存档 ---------- */
-test('存档往返：版本字段 v=8、棋盘/生成器/订单/装修/广告统计/体力/金币/星星一致', () => {
+test('存档往返：版本字段 v=9、棋盘/生成器/订单/装修/广告统计/体力/金币/星星一致', () => {
   const s = fresh(); Core.tapGen(CN, s, GC, T0, seq(0.9)); s.deco = 4; Core.adOffer(s, 'energy');
   const txt = Core.serialize(s, T0 + 5);
-  assert.strictEqual(JSON.parse(txt).v, 8);
+  assert.strictEqual(JSON.parse(txt).v, 9);
   const back = Core.deserialize(CN, txt, T0 + 5, lcg(1));
   for (const k of ['coins', 'stars', 'gems', 'energy', 'energyTs', 'tut', 'level', 'xp', 'area']) assert.strictEqual(back[k], s[k], k);
   for (const k of ['cells', 'unlocked', 'gens', 'orders', 'ads', 'tasks', 'daily', 'regs', 'recipes', 'hidden']) assert.deepStrictEqual(back[k], s[k], k);
   assert.strictEqual(back.deco, 4);
 });
-test('v2 存档（M2）连续迁移到 v8：棋盘 / 订单 / 金币原样保留，补 deco=0、广告统计、任务', () => {
+test('v2 存档（M2）连续迁移到 v9：棋盘 / 订单 / 金币原样保留，补 deco=0、广告统计、任务', () => {
   const s = fresh(); Core.tapGen(CN, s, GC, T0, seq(0.9)); s.coins = 321; s.stars = 4;
   const v2 = JSON.parse(Core.serialize(s, T0)); v2.v = 2; delete v2.deco; delete v2.ads; delete v2.tasks; delete v2.stats.unlocks; delete v2.stats.maxLvl;
   const back = Core.deserialize(CN, JSON.stringify(v2), T0, lcg(1));
-  assert(back); assert.strictEqual(back.v, 8); assert.strictEqual(back.tasks.active.length, 3);
-  assert.strictEqual(back.stats.maxLvl, Math.max(...back.cells.filter(Boolean).map((c) => c.lvl)), 'maxLvl 从棋盘补'); assert.strictEqual(back.deco, 0); assert.deepStrictEqual(back.ads.clicks, { energy: 0, refill: 0, double: 0, bubble: 0 });
+  assert(back); assert.strictEqual(back.v, 9); assert.strictEqual(back.tasks.active.length, 3);
+  assert.strictEqual(back.stats.maxLvl, Math.max(...back.cells.filter(Boolean).map((c) => c.lvl)), 'maxLvl 从棋盘补'); assert.strictEqual(back.deco, 0); assert.deepStrictEqual(back.ads.clicks, { energy: 0, refill: 0, double: 0, bubble: 0, offline: 0 });
   assert.deepStrictEqual(back.cells, s.cells); assert.deepStrictEqual(back.orders, s.orders);
   assert.strictEqual(back.coins, 321); assert.strictEqual(back.stars, 4);
 });
@@ -482,12 +482,12 @@ test('换单：扣 10 金币换成不同模板；交过一部分的、引导中�
   s.coins = 9; assert.strictEqual(Core.swapOrder(CN, s, 0, T0).reason, 'coins'); assert.strictEqual(s.coins, 9);
   const g = Core.newState(C, T0, lcg(1)); g.coins = 100; assert.strictEqual(Core.swapOrder(C, g, 1, T0).reason, 'locked');
 });
-test('v4 存档迁移到 v8：生成器补 lv=1、补每日计数和花费统计、广告统计补 bubble，原有数据不变', () => {
+test('v4 存档迁移到 v9：生成器补 lv=1、补每日计数和花费统计、广告统计补 bubble，原有数据不变', () => {
   const s = fresh(); Core.tapGen(CN, s, GC, T0, seq(0.9)); s.coins = 777; Core.adClick(s, 'energy');
   const v4 = JSON.parse(Core.serialize(s, T0)); v4.v = 4; delete v4.daily; delete v4.stats.coinsSpent; delete v4.ads.offers.bubble; delete v4.ads.clicks.bubble;
   for (const id in v4.gens) delete v4.gens[id].lv;
   const back = Core.deserialize(CN, JSON.stringify(v4), T0, lcg(1));
-  assert.strictEqual(back.v, 8); assert.strictEqual(back.gens[GC].lv, 1); assert.strictEqual(back.gens[GC].charges, s.gens[GC].charges);
+  assert.strictEqual(back.v, 9); assert.strictEqual(back.gens[GC].lv, 1); assert.strictEqual(back.gens[GC].charges, s.gens[GC].charges);
   assert.deepStrictEqual(back.daily, { day: Math.floor(T0 / 86400000), refills: 0, energyBuys: 0 });
   assert.strictEqual(back.stats.coinsSpent.upgrade, 0); assert.strictEqual(back.ads.clicks.energy, 1); assert.strictEqual(back.ads.clicks.bubble, 0);
   assert.strictEqual(back.coins, 777); assert.deepStrictEqual(back.cells, s.cells);
@@ -550,11 +550,11 @@ test('打点：每天上线按 UTC 日去重；首周来了几天；奖励事件
   Core.drop(CN, s, 7, 8, T0, () => 0.99); assert.strictEqual(s.stats.ev.mid, m0 + 1, '第一次做出 7 级算中奖励');
   Core.addXp(CN, s, 125, T0); assert(s.stats.ev.big >= 1, '5 级宝箱算大奖励');
 });
-test('v5 存档迁移到 v8：按已完成订单数估店铺等级（老玩家不从 1 级重来），补区域和打点，原数据不变', () => {
+test('v5 存档迁移到 v9：按已完成订单数估店铺等级（老玩家不从 1 级重来），补区域和打点，原数据不变', () => {
   const s = fresh(); s.coins = 555; s.deco = 7; s.stats.ordersDone = 40;
   const v5 = JSON.parse(Core.serialize(s, T0)); v5.v = 5; delete v5.level; delete v5.xp; delete v5.area; delete v5.stats.ev; delete v5.stats.days; delete v5.stats.xpEarned;
   const back = Core.deserialize(CN, JSON.stringify(v5), T0, lcg(1));
-  assert.strictEqual(back.v, 8); assert.strictEqual(back.area, 0); assert.strictEqual(back.deco, 7); assert.strictEqual(back.coins, 555);
+  assert.strictEqual(back.v, 9); assert.strictEqual(back.area, 0); assert.strictEqual(back.deco, 7); assert.strictEqual(back.coins, 555);
   assert.strictEqual(back.level, 5, '40 单 × 4 经验 = 160 → 5 级（累计 125 到 5 级、180 才到 6 级）'); assert.strictEqual(back.xp, 35);
   assert.deepStrictEqual(back.stats.ev, { small: 0, mid: 0, big: 0 }); assert(Array.isArray(back.stats.days));
 });
@@ -669,11 +669,11 @@ test('熟客入座：座位所在图层装修后才坐，按登场顺序依次�
   s.deco = 1; assert.deepStrictEqual(Core.seatedRegulars(CN, s).map((x) => x.reg.id), ['mia', 'kai'], '桌椅 2 个座位');
   s.deco = 6; assert.deepStrictEqual(Core.seatedRegulars(CN, s).map((x) => x.reg.id), ['mia', 'kai', 'rose'], '木栈台再加座位，Leo 9 级才来');
 });
-test('v6 存档迁移到 v8：补熟客和菜谱；棋盘上已有物品记为做出过', () => {
+test('v6 存档迁移到 v9：补熟客和菜谱；棋盘上已有物品记为做出过', () => {
   const s = fresh(); clearBoard(s); put(s, 0, 0, 'bake', 4);
   const v6 = JSON.parse(Core.serialize(s, T0)); v6.v = 6; delete v6.regs; delete v6.recipes;
   const back = Core.deserialize(CN, JSON.stringify(v6), T0, lcg(1));
-  assert.strictEqual(back.v, 8); assert.deepStrictEqual(back.regs, {}); assert.deepStrictEqual(back.recipes, { bake4: { f: 1, p: 0 } });
+  assert.strictEqual(back.v, 9); assert.deepStrictEqual(back.regs, {}); assert.deepStrictEqual(back.recipes, { bake4: { f: 1, p: 0 } });
 });
 
 /* ---------- V1 M4：棋盘障碍、套餐单、百搭星 ---------- */
@@ -741,11 +741,92 @@ test('卡死提示：有百搭星或能挖的障碍就不算卡死', () => {
   s.cells[27] = { k: 'item', chain: 'coffee', lvl: 8 }; s.hidden[Core.idx(CN, 4, 0)] = { kind: 'sand', chain: 'bake', lvl: 1 };
   assert.strictEqual(Core.stuckHint(CN, s), -1, '能挖');
 });
-test('v7 存档迁移到 v8：按当前锁格补埋物品，已开格不埋；百搭星格子保留', () => {
+test('v7 存档迁移到 v9：按当前锁格补埋物品，已开格不埋；百搭星格子保留', () => {
   const s = fresh(); s.unlocked[28] = true; s.cells[3] = { k: 'tool', id: 'wild' };
   const v7 = JSON.parse(Core.serialize(s, T0)); v7.v = 7; delete v7.hidden;
   const back = Core.deserialize(CN, JSON.stringify(v7), T0, lcg(1));
-  assert.strictEqual(back.v, 8); assert.strictEqual(back.hidden[28], null); assert(back.hidden[29]); assert.deepStrictEqual(back.cells[3], { k: 'tool', id: 'wild' });
+  assert.strictEqual(back.v, 9); assert.strictEqual(back.hidden[28], null); assert(back.hidden[29]); assert.deepStrictEqual(back.cells[3], { k: 'tool', id: 'wild' });
+});
+
+/* ---------- V1 M5：每天回来 ---------- */
+const DAY = 86400000;
+const atLv = (lv) => { const s = fresh(); s.level = lv; return s; };
+test('每日任务：店铺 2 级开放；每天 3 条，前两条合成 / 做单，第三条只出已开放功能的类型；数量随等级涨、有上限', () => {
+  assert.strictEqual(Core.dailyProgress(CN, atLv(1), T0), null);
+  const s = atLv(2), p = Core.dailyProgress(CN, s, T0, lcg(3));
+  assert.strictEqual(p.list.length, 3); assert.strictEqual(p.list[0].type, 'merges'); assert.strictEqual(p.list[1].type, 'orders');
+  assert(['spawns', 'combo5'].includes(p.list[2].type), '2 级只能出没有功能门槛的类型：' + p.list[2].type);
+  assert.strictEqual(p.list[0].n, 16); assert(p.list.every((t) => t.cur === 0 && !t.done));
+  const hi = Core.dailyProgress(CN, atLv(40), T0, lcg(1)); assert.strictEqual(hi.list[0].n, 60); assert.strictEqual(hi.list[1].n, 15);
+  const seen = new Set(); for (let seed = 1; seed < 60; seed++) seen.add(Core.dailyProgress(CN, atLv(13), T0, lcg(seed)).list[2].type);
+  assert.deepStrictEqual([...seen].sort(), ['combo5', 'digs', 'regulars', 'setOrders', 'spawns']);
+});
+test('每日任务：从接到那一刻起算；当天不换；UTC 跨天换新一组', () => {
+  const s = atLv(2); s.stats.merges = 100;
+  Core.dailyProgress(CN, s, T0, lcg(1)); s.stats.merges += 5;
+  assert.strictEqual(Core.dailyProgress(CN, s, T0 + 3600e3).list[0].cur, 5);
+  const day0 = s.dtasks.day; s.stats.merges += 50;
+  assert.strictEqual(Core.dailyProgress(CN, s, T0 + 3600e3).list[0].cur, 16, '封顶在 n');
+  const p2 = Core.dailyProgress(CN, s, T0 + DAY, lcg(2));
+  assert.strictEqual(s.dtasks.day, day0 + 1); assert.strictEqual(p2.list[0].cur, 0);
+});
+test('每日宝箱：3 条做完才能开，30 体力 + 100 金币 + 1 星；一天只开一次；25% 给百搭星，棋盘满了改给体力', () => {
+  const s = atLv(2); clearBoard(s); Core.dailyProgress(CN, s, T0, lcg(1));
+  assert.strictEqual(Core.claimDailyChest(CN, s, T0).reason, 'notDone');
+  for (const t of s.dtasks.list) t.base -= t.n;
+  const e0 = s.energy, c0 = s.coins, st0 = s.stars;
+  const r = Core.claimDailyChest(CN, s, T0, () => 0.1);
+  assert(r.ok); assert.strictEqual(s.coins - c0, 100); assert.strictEqual(s.stars - st0, 1); assert.strictEqual(s.energy - e0, 30);
+  assert(r.wild >= 0); assert.deepStrictEqual(s.cells[r.wild], { k: 'tool', id: 'wild' });
+  assert.strictEqual(Core.claimDailyChest(CN, s, T0).reason, 'claimed');
+  const f = atLv(2); for (let i = 0; i < CN.n; i++) if (f.unlocked[i]) f.cells[i] = { k: 'item', chain: 'coffee', lvl: 1 };
+  Core.dailyProgress(CN, f, T0, lcg(1)); for (const t of f.dtasks.list) t.base -= t.n;
+  const e1 = f.energy, r2 = Core.claimDailyChest(CN, f, T0, () => 0.1);
+  assert.strictEqual(r2.wild, -1); assert.strictEqual(f.energy - e1, 50);
+  const g = atLv(2); Core.dailyProgress(CN, g, T0, lcg(1)); for (const t of g.dtasks.list) t.base -= t.n;
+  assert.strictEqual(Core.claimDailyChest(CN, g, T0, () => 0.9).wild, -1, '75% 不给星');
+});
+test('每日宝箱不惩罚：昨天做完没领，今天照样能领，领完不影响今天的新宝箱', () => {
+  const s = atLv(2); Core.dailyProgress(CN, s, T0, lcg(1)); for (const t of s.dtasks.list) t.base -= t.n;
+  const p = Core.dailyProgress(CN, s, T0 + DAY, lcg(2));
+  assert(p.ready && p.owed && !p.allDone);
+  assert(Core.claimDailyChest(CN, s, T0 + DAY, () => 0.9).ok);
+  const p2 = Core.dailyProgress(CN, s, T0 + DAY); assert(!p2.ready && !p2.claimed, '今天的宝箱还在');
+});
+test('每日任务「x5 连击」：一串连击打到第 5 下记 1 次，断了重来再记', () => {
+  const s = atLv(2);
+  for (let k = 0; k < 6; k++) Core.addCombo(CN, s, T0 + k * 1000);
+  assert.strictEqual(s.stats.combo5, 1);
+  for (let k = 0; k < 5; k++) Core.addCombo(CN, s, T0 + 100e3 + k * 1000);
+  assert.strictEqual(s.stats.combo5, 2);
+});
+test('累计签到：2 级开放；每天领一格，同一天不重复；断签不清零；第 7 格 3 星 + 宝箱；第 8 天回到第 1 格', () => {
+  assert(!Core.loginDue(CN, atLv(1), T0));
+  const s = atLv(2), c0 = s.coins;
+  const r1 = Core.claimLogin(CN, s, T0); assert(r1.ok); assert.strictEqual(r1.day, 1); assert.strictEqual(s.coins - c0, 50);
+  assert(!Core.loginDue(CN, s, T0 + 3600e3)); assert(!Core.claimLogin(CN, s, T0 + 3600e3).ok);
+  assert.strictEqual(Core.claimLogin(CN, s, T0 + DAY).day, 2);
+  assert.strictEqual(Core.claimLogin(CN, s, T0 + 10 * DAY).day, 3, '隔了一周回来接着第 3 格');
+  for (let d = 11; d <= 13; d++) Core.claimLogin(CN, s, T0 + d * DAY);
+  const st0 = s.stars, r7 = Core.claimLogin(CN, s, T0 + 14 * DAY);
+  assert.strictEqual(r7.day, 7); assert(r7.chest); assert.strictEqual(s.stars - st0, 3 + r7.chest.stars);
+  const r8 = Core.claimLogin(CN, s, T0 + 15 * DAY); assert.strictEqual(r8.day, 1); assert.strictEqual(r8.round, 2);
+});
+test('离线营业：每小时 10 + 3×等级 + 5×装修节点；不满 30 分钟不算；上限 4 / 6（9 级）/ 8（15 级）小时；引导中和时间倒退不算', () => {
+  const s = atLv(1); s.deco = 0; const c0 = s.coins;
+  assert.strictEqual(Core.offlineEarn(CN, s, T0, T0 + 29 * 60e3), null);
+  const r = Core.offlineEarn(CN, s, T0, T0 + 2 * 3600e3); assert.strictEqual(r.coins, 26); assert.strictEqual(r.mins, 120); assert(!r.capped); assert.strictEqual(s.coins - c0, 26);
+  const a = atLv(5); a.deco = 4; assert.strictEqual(Core.offlineRate(CN, a), 45);
+  const r2 = Core.offlineEarn(CN, a, T0, T0 + 10 * 3600e3); assert.strictEqual(r2.coins, 180); assert(r2.capped); assert.strictEqual(r2.capH, 4);
+  assert.strictEqual(Core.offlineCapH(CN, atLv(9)), 6); assert.strictEqual(Core.offlineCapH(CN, atLv(15)), 8);
+  assert.strictEqual(Core.offlineEarn(CN, atLv(3), T0 + 3600e3, T0), null);
+  const t = Core.newState(C, T0, lcg(1)); assert.strictEqual(Core.offlineEarn(C, t, T0, T0 + 3 * 3600e3), null);
+});
+test('v8 存档迁移到 v9：补签到；读档时把上次存档时间记成 lastSeen 给离线营业用', () => {
+  const s = fresh(); delete s.login;
+  const v8 = JSON.parse(Core.serialize(s, T0)); v8.v = 8;
+  const back = Core.deserialize(CN, JSON.stringify(v8), T0 + 5000, lcg(1));
+  assert.strictEqual(back.v, 9); assert.deepStrictEqual(back.login, { n: 0, day: -1 }); assert.strictEqual(back.lastSeen, T0);
 });
 
 for (const [st, n] of results) console.log(st === 'PASS' ? '  ✓' : '  ✗', n);
