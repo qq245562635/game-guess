@@ -68,6 +68,11 @@ def reload(pg, levels=False):
 def skip_time(pg, ms): pg.evaluate(f"sessionStorage.setItem('mcl.timeOffset', String((+sessionStorage.getItem('mcl.timeOffset')||0)+{ms}))")
 def close_modal(pg):
     pg.click('#m-btns .btn'); pg.wait_for_function("!document.getElementById('modal').classList.contains('show')", timeout=4000)
+def close_all(pg):  # 弹窗排队一个接一个弹（中间有空档），每个等 2.5 秒
+    for _ in range(6):
+        try: pg.wait_for_selector('#modal.show', timeout=2500)
+        except Exception: return
+        close_modal(pg); pg.wait_for_timeout(300)
 def no_ad(pg): pg.wait_for_function("!document.getElementById('ad').classList.contains('show')", timeout=8000)
 def settle_rewards(pg): pg.wait_for_function('MCL.pending === 0', timeout=12000); pg.wait_for_timeout(100); no_ad(pg)
 def scene_png(pg, path):
@@ -620,13 +625,13 @@ with sync_playwright() as p:
           f"{pg.inner_text('#m-title')!r} {pg.inner_text('#m-comic')!r}")
     pg.wait_for_timeout(400); pg.screenshot(path=str(out / 'm5-welcome.png'))
     pg.click('#m-btns .btn.ad'); no_ad(pg); pg.wait_for_timeout(800)
-    while pg.is_visible('#modal.show'): close_modal(pg); pg.wait_for_timeout(500)
+    close_all(pg)
     settle_rewards(pg)
     check('看广告翻倍：一共 +372，广告统计 offline 点 1 次 / 展示 2 次（含隔天那张）', S(pg, 'coins') - c0 >= 372 and S(pg, 'stats.offlineCoins') == 186 + 64 and S(pg, 'ads.offers.offline') == 2 and S(pg, 'ads.clicks.offline') == 1, f"+{S(pg, 'coins') - c0}")
     pg.evaluate('MCL.save()'); skip_time(pg, 20 * 3600000); c0 = S(pg, 'coins'); pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0')
     pg.wait_for_selector('#modal.show', timeout=6000)
     check('离开 20 小时：9 级封顶 6 小时（372），卡上提示上限', 'Welcome' in pg.inner_text('#m-title') and '372' in pg.inner_text('.welcome .amt') and '6 hours' in pg.inner_text('.welcome'), pg.inner_text('#m-comic'))
-    while pg.is_visible('#modal.show'): close_modal(pg); pg.wait_for_timeout(400)
+    close_all(pg)
     settle_rewards(pg)
     check('不看广告直接 Collect：+372', S(pg, 'coins') - c0 >= 372, f"+{S(pg, 'coins') - c0}")
     ctx.close()
