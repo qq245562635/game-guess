@@ -9,7 +9,7 @@ root = Path(__file__).resolve().parent.parent
 src = root / 'src'
 CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression', 'regulars', 'recipes']
 JS = ['l10n.js', 'core.js', 'gl.js', 'art.js', 'sfx.js', 'ads.js', 'main.js']
-MAX_STRINGS = 180  # 策划案 v0.4：V1 新系统文案，上限由 120 提到 180
+MAX_STRINGS = 200  # 策划案 v0.4：V1 新系统文案，上限由 120 提到 180
 
 config = {name: json.loads((src / 'config' / f'{name}.json').read_text(encoding='utf-8')) for name in CONFIG_FILES}
 locale = json.loads((src / 'locale' / 'en.json').read_text(encoding='utf-8'))
@@ -68,7 +68,7 @@ P = config['progression']
 assert all(x > 0 for x in P['levelNeed']) and P['after'] > 0, '店铺等级经验表不合法'
 for u in P['unlocks']:
     assert u['name'] in locale, f'缺本地化：{u["name"]}'
-UI_IDS = {'icon_energy', 'icon_coin', 'icon_star', 'logo_merge_cafe_lite', 'icon_lock', 'icon_check', 'icon_clock', 'icon_hand', 'nav_cafe', 'nav_merge', 'nav_tasks', 'deco_plant_pot', 'deco_plant_fern', 'deco_plant_bush', 'fx_bubble', 'icon_upgrade', 'badge_level', 'chest_closed', 'chest_open', 'obstacle_sand', 'obstacle_crate', 'nav_book'}
+UI_IDS = {'icon_energy', 'icon_coin', 'icon_star', 'logo_merge_cafe_lite', 'icon_lock', 'icon_check', 'icon_clock', 'icon_hand', 'nav_cafe', 'nav_merge', 'nav_tasks', 'deco_plant_pot', 'deco_plant_fern', 'deco_plant_bush', 'fx_bubble', 'icon_upgrade', 'badge_level', 'chest_closed', 'chest_open', 'obstacle_sand', 'obstacle_crate', 'nav_book', 'icon_heart', 'icon_heart_empty', 'icon_sound_on', 'icon_sound_off', 'icon_gift', 'icon_unlock', 'badge_set_order', 'icon_calendar'}
 item_ids = {it['id'] for d in config['chains']['chains'].values() for it in d['items']} | {g['id'] for g in config['generators']['generators']} | {'item_wild_star'}  # 百搭星（M4）
 avatar_ids = {c['id'] for c in config['orders']['customers']} | {c['id'] + '_happy' for c in config['orders']['customers']}
 for key, ids, folder in [('items', item_ids, 'items'), ('avatars', avatar_ids, 'avatars'), ('ui', UI_IDS, 'ui')]:

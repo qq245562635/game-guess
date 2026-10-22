@@ -1,0 +1,100 @@
+{
+  "issue": 63,
+  "base": "b703ca555ccddb6c4625125cbba279385177561a",
+  "generator": "built-in image_gen",
+  "runtimeBytes": 95641,
+  "limits": {
+    "batch": 170000,
+    "eachIcon": 12000,
+    "welcome": 60000
+  },
+  "pairedChecks": {
+    "heartAlphaIdentical": true,
+    "heartCommonOuterBandPixelsIdentical": true,
+    "soundLeft62ColumnsRGBAIdentical": true
+  },
+  "webpQuality": 80,
+  "files": [
+    {
+      "id": "icon_heart",
+      "file": "assets/ui/icon_heart.png",
+      "width": 96,
+      "height": 96,
+      "bytes": 7451,
+      "sha256": "c13556cf23564276e6b44b8ace83feeca11244ac618e7d704422bbf955bfdd25",
+      "prompt": "Create ONE finished mobile game UI raster icon, centered on truly transparent square canvas, ample ~8% margin. Match attached Merge Cafe Lite icon reference: warm rounded thick-painted flat casual Western game art, deep brown #3a2416 bold outline about 4-6% of icon width, broad clean fills, restrained top-left highlight, readable at 16-30px. NO ground shadow, text, letters, numbers, backdrop, extra symbols, mockup, border frame. One plump symmetric pink heart #e2566f, warm pale cream outer border to remain clear over avatars, brown inner contour, single simple upper-left shine. Heart fills most canvas and is easy to recognize at 16px."
+    },
+    {
+      "id": "icon_heart_empty",
+      "file": "assets/ui/icon_heart_empty.png",
+      "width": 96,
+      "height": 96,
+      "bytes": 7577,
+      "sha256": "54e5198ccb8a73962519763f253f6c8c47f370d4a6f4e9e759426bf44cf0bc23",
+      "prompt": "Edit this EXACT heart icon into its unearned/empty state. Keep canvas, silhouette, cream outside border, brown contour, exact location/scale UNCHANGED. Replace only saturated pink interior with very pale cream/pink center, outlined by a thick pink heart-shaped rim. Same highlight restrained. Clear empty versus filled at16px. Transparent background, no shadows or text. Do not shift or rotate."
+    },
+    {
+      "id": "icon_sound_on",
+      "file": "assets/ui/icon_sound_on.png",
+      "width": 96,
+      "height": 96,
+      "bytes": 5160,
+      "sha256": "51011643a6051bddcf0cd11d9988706b5c0b03d936ef5116056d94f0c97794bf",
+      "prompt": "Create ONE finished mobile game UI raster icon, centered on truly transparent square canvas, ample ~8% margin. Match attached Merge Cafe Lite icon reference: warm rounded thick-painted flat casual Western game art, deep brown #3a2416 bold outline about 4-6% of icon width, broad clean fills, restrained top-left highlight, readable at 16-30px. NO ground shadow, text, letters, numbers, backdrop, extra symbols, mockup, border frame. One honey-gold small speaker facing right, solid brown contours. Speaker occupies left 60% of composition; exactly TWO bold curved sound-wave arcs at right. No musical notes. Clear at 22px."
+    },
+    {
+      "id": "icon_sound_off",
+      "file": "assets/ui/icon_sound_off.png",
+      "width": 96,
+      "height": 96,
+      "bytes": 4362,
+      "sha256": "510c1c4780e7ee8b87bcd58c4e360fc402188e89f85a8f3c0b64c2ae9c1e17f1",
+      "prompt": "Edit EXACT icon into muted state. Keep entire honey-gold speaker at left PIXEL EXACT, same location, size, shape, colors; do not shift canvas or recenter. REMOVE two soundwave arcs at right and replace them with ONE chunky coral red diagonal slash, brown outlined and a simple cream shine, entirely at right in the former soundwave area. No overlap or changes to speaker. Transparent background, no text/shadow, no extra symbols."
+    },
+    {
+      "id": "icon_gift",
+      "file": "assets/ui/icon_gift.png",
+      "width": 96,
+      "height": 96,
+      "bytes": 8286,
+      "sha256": "098e75dc1298c0b113c9ebf7f5d4db36156e8debf2b4880e502e798c893d4ebd",
+      "prompt": "Create ONE finished mobile game UI raster icon, centered on truly transparent square canvas, ample ~8% margin. Match attached Merge Cafe Lite icon reference: warm rounded thick-painted flat casual Western game art, deep brown #3a2416 bold outline about 4-6% of icon width, broad clean fills, restrained top-left highlight, readable at 16-30px. NO ground shadow, text, letters, numbers, backdrop, extra symbols, mockup, border frame. One squat coral-red gift box wrapped with golden cream ribbon and a simple two-loop bow, slight three-quarter view. Big simple silhouette readable at 20px."
+    },
+    {
+      "id": "icon_unlock",
+      "file": "assets/ui/icon_unlock.png",
+      "width": 96,
+      "height": 96,
+      "bytes": 7506,
+      "sha256": "4e1c1790d181ec5195b2473bf5dbe82394ec05ba6441de0586fbe106716ca0c6",
+      "prompt": "Create ONE finished mobile game UI raster icon, centered on truly transparent square canvas, ample ~8% margin. Match attached Merge Cafe Lite icon reference: warm rounded thick-painted flat casual Western game art, deep brown #3a2416 bold outline about 4-6% of icon width, broad clean fills, restrained top-left highlight, readable at 16-30px. NO ground shadow, text, letters, numbers, backdrop, extra symbols, mockup, border frame. One large golden four-point rounded sparkle with warm cream core and brown outline, plus two small companion sparkles. Clearly a sparkle, not five-point currency star. Bold simple shapes at 20px."
+    },
+    {
+      "id": "badge_set_order",
+      "file": "assets/ui/badge_set_order.png",
+      "width": 96,
+      "height": 96,
+      "bytes": 7180,
+      "sha256": "5fdb6eac5fcf644cbe985854ac216e94528cd5c8615b6b19b70cc9252d66b968",
+      "prompt": "Create ONE finished mobile game UI raster icon, centered on truly transparent square canvas, ample ~8% margin. Match attached Merge Cafe Lite icon reference: warm rounded thick-painted flat casual Western game art, deep brown #3a2416 bold outline about 4-6% of icon width, broad clean fills, restrained top-left highlight, readable at 16-30px. NO ground shadow, text, letters, numbers, backdrop, extra symbols, mockup, border frame. One small teal-rimmed cream oval serving tray holding exactly one white coffee cup with visible brown coffee and one golden croissant. Clear large silhouettes, little detail, readable as combo meal at24px."
+    },
+    {
+      "id": "icon_calendar",
+      "file": "assets/ui/icon_calendar.png",
+      "width": 96,
+      "height": 96,
+      "bytes": 6827,
+      "sha256": "57dca5fc103b58d6678c627f870ac46c489754fd8ea99596f0446b768308bb78",
+      "prompt": "Create ONE finished mobile game UI raster icon, centered on truly transparent square canvas, ample ~8% margin. Match attached Merge Cafe Lite icon reference: warm rounded thick-painted flat casual Western game art, deep brown #3a2416 bold outline about 4-6% of icon width, broad clean fills, restrained top-left highlight, readable at 16-30px. NO ground shadow, text, letters, numbers, backdrop, extra symbols, mockup, border frame. One small upright desk calendar with coral top binding, two chunky gold rings and ivory page with one large green check mark. No numbers or letters. Clear at28px."
+    },
+    {
+      "id": "welcome_back",
+      "file": "assets/ui/welcome_back.webp",
+      "width": 960,
+      "height": 480,
+      "bytes": 41292,
+      "sha256": "78f54cc11864e1ae1ece2379417c49d2db85d754ae578871ecb742758c2ba9fb",
+      "prompt": "Create ONE finished wide2:1 illustration for Merge Caf茅 Lite welcome-back card, final960x480. Attached header is CHARACTER and STYLE reference only. SAME adult woman with brown curly bun, coral red tied headband, white short sleeves, green apron, gold hoop earrings, smiling and waving. She stands behind a repaired seaside coffee kiosk: coral/cream striped scalloped awning, cream posts, teal front panels, honeywood trim. One glass jar filled with gold coins on counter, one or two empty white coffee cups. Woman and jar inside central70% width. Warm sunset sea and sky, large smooth color areas, minimal background detail. Warm rounded painted-flat Western casual game style, upper-left light; preserve reference face, adult proportions. CRUCIAL bottom20% is continuous LIGHT CREAM counter front/foreground, no objects/hands/stripes there, program numbers will overlay it. Face, hand, jar and cups above bottom20%. No text, logo, numbers, mockup or frames. No woodgrain, tiny foliage or texture noise. Must compress WebP quality80 under60KB."
+    }
+  ]
+}

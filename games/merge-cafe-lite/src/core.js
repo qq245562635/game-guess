@@ -3,7 +3,7 @@
    所有数值来自 CONFIG（src/config/*.json），这里不写死任何数。
    时间一律用毫秒时间戳 now 传入，随机数用 rng 传入，方便离线结算和测试。 */
 const Core = (() => {
-  const SAVE_VERSION = 7;
+  const SAVE_VERSION = 8;
   const TUT_DONE = -1;
 
   /* ---------- 配置索引 ---------- */
@@ -66,6 +66,7 @@ const Core = (() => {
       stats: newStats(now),
     };
     for (let r = 0; r < C.rows; r++) for (let c = 0; c < C.cols; c++) s.unlocked[idx(C, r, c)] = b.mask[r][c] === 'x';
+    s.hidden = rollHidden(C, s, rng); // 锁格里埋的物品（M4 棋盘障碍）
     for (const g of C.genList) s.gens[g.id] = { charges: g.charges, cdEnd: 0, lv: 1 };
     for (const it of b.startItems) s.cells[idx(C, it.at[0], it.at[1])] = { k: 'item', chain: it.chain, lvl: it.level };
     fillTasks(C, s);
@@ -74,6 +75,24 @@ const Core = (() => {
       else s.orders.push(rollOrder(C, s, now, rng));
     }
     return s;
+  }
+
+  /* ---------- 棋盘障碍（V1 M4）：锁格里埋物品 ---------- */
+  function rollHidden(C, s, rng) {
+    const R = (C.cfg.board.obstacles || {}).rows || {}, chains = Object.keys(C.chains), h = new Array(C.n).fill(null);
+    for (let i = 0; i < C.n; i++) {
+      if (s.unlocked[i]) continue;
+      const def = R[String(rc(C, i)[0])]; if (!def) continue;
+      h[i] = { kind: def.kind, chain: chains[Math.floor(rng() * chains.length)], lvl: randInt(rng, def.lvl[0], def.lvl[1]) };
+    }
+    return h;
+  }
+  /* 这个锁格现在是不是"能挖的障碍"（开放了、埋了东西、和已开格相邻） */
+  const obstacleAt = (C, s, i) => (featureOn(C, s, 'obstacles') && !s.unlocked[i] && s.hidden && s.hidden[i]) || null;
+  /* 挖：把同款物品拖到障碍上 → 格子打开，里面是合成升一级的物品 */
+  function canDig(C, s, it, i) {
+    const h = obstacleAt(C, s, i);
+    return !!(h && it && it.k === 'item' && it.chain === h.chain && it.lvl === h.lvl && it.lvl < C.maxLevel && canUnlockHere(C, s, i));
   }
 
   /* ---------- 体力：按时间戳结算，返回本次恢复了多少 ---------- */
@@ -217,6 +236,18 @@ const Core = (() => {
     s.stats.bubbles = (s.stats.bubbles || 0) + 1;
     return to;
   }
+  /* 百搭星掉落（V1 M4）：合出 minLevel 级以上按 chance 在旁边空格掉一颗，连续 pity 次没掉必掉 */
+  function maybeWildStar(C, s, at, it, rng) {
+    const W = C.eco.wildStar; if (!W || !featureOn(C, s, 'wildStar') || it.lvl < W.minLevel) return -1;
+    const forced = (s.wildPity || 0) >= W.pity;
+    if (!forced && rng() >= W.chance) { s.wildPity = (s.wildPity || 0) + 1; return -1; }
+    const [r, c] = rc(C, at), to = nearestEmpty(C, s, r, c);
+    if (to < 0) { s.wildPity = (s.wildPity || 0) + 1; return -1; }
+    s.wildPity = 0; s.cells[to] = { k: 'tool', id: 'wild' }; s.stats.wildGot = (s.stats.wildGot || 0) + 1; logEv(s, 'mid');
+    return to;
+  }
+  /* 直接给一颗百搭星（每日宝箱等）：放到离 (ar,ac) 最近的空格，没空格返回 -1 */
+  function giveWildStar(C, s, ar, ac) { const to = nearestEmpty(C, s, ar, ac); if (to < 0) return -1; s.cells[to] = { k: 'tool', id: 'wild' }; s.stats.wildGot = (s.stats.wildGot || 0) + 1; return to; }
   function settleBubbles(C, s, now) {
     const gone = [];
     for (let i = 0; i < C.n; i++) { const c = s.cells[i]; if (c && c.k === 'bubble' && !c.hold && now >= c.until) { s.cells[i] = null; gone.push(i); } }
@@ -252,11 +283,31 @@ const Core = (() => {
   }
   function drop(C, s, from, to, now, rng) {
     const a = s.cells[from];
-    if (!a || a.k !== 'item') return { type: 'none' };
+    if (!a || (a.k !== 'item' && a.k !== 'tool')) return { type: 'none' };
     if (to < 0 || to >= C.n || to === from) return { type: 'none' };
-    if (!s.unlocked[to]) return { type: 'bounce', reason: 'locked' };
+    if (!s.unlocked[to]) {
+      if (canDig(C, s, a, to)) { // 挖障碍
+        const it = { k: 'item', chain: a.chain, lvl: a.lvl + 1 };
+        s.unlocked[to] = true; s.hidden[to] = null; s.cells[to] = it; s.cells[from] = null;
+        s.stats.unlocks = (s.stats.unlocks || 0) + 1; s.stats.dug = (s.stats.dug || 0) + 1; s.stats.merges++;
+        s.stats.maxLvl = Math.max(s.stats.maxLvl || 0, it.lvl); logEv(s, 'mid');
+        const found = markFound(C, s, it, now), combo = addCombo(C, s, now);
+        return { type: 'dig', lvl: it.lvl, found, combo, star: maybeWildStar(C, s, to, it, rng || Math.random) };
+      }
+      return { type: 'bounce', reason: obstacleAt(C, s, to) ? 'dig' : 'locked' };
+    }
     const b = s.cells[to];
     const step = tutStep(C, s);
+    if (a.k === 'tool') { // 百搭星：拖到 8 级以下物品上 = 升 1 级；拖到空格是移动
+      if (step) return { type: 'bounce', reason: 'tutorial' };
+      if (!b) { s.cells[to] = a; s.cells[from] = null; return { type: 'move' }; }
+      if (b.k !== 'item' || b.lvl >= C.maxLevel) return { type: 'bounce', reason: b.k === 'item' ? 'max' : 'mismatch' };
+      const it = { k: 'item', chain: b.chain, lvl: b.lvl + 1 };
+      s.cells[to] = it; s.cells[from] = null; s.stats.wildUsed = (s.stats.wildUsed || 0) + 1;
+      s.stats.maxLvl = Math.max(s.stats.maxLvl || 0, it.lvl); logEv(s, 'mid');
+      return { type: 'wild', lvl: it.lvl, found: markFound(C, s, it, now) };
+    }
+    if (b && b.k === 'tool') return { type: 'bounce', reason: 'mismatch' };
     if (step && step !== 'merge') return { type: 'bounce', reason: 'tutorial' };
     if (!b) {
       if (step) return { type: 'bounce', reason: 'tutorial' };
@@ -272,7 +323,8 @@ const Core = (() => {
       if (step === 'merge') s.tut++;
       const bubble = maybeBubble(C, s, to, s.cells[to], now, rng || Math.random);
       const combo = step ? null : addCombo(C, s, now);
-      return { type: 'merge', lvl: a.lvl + 1, bubble, combo, found };
+      const star = step ? -1 : maybeWildStar(C, s, to, s.cells[to], rng || Math.random);
+      return { type: 'merge', lvl: a.lvl + 1, bubble, combo, found, star };
     }
     let reason = 'mismatch';
     if (a.k === 'item' && b.k === 'item' && a.chain === b.chain && a.lvl === b.lvl) reason = 'max';
@@ -320,6 +372,8 @@ const Core = (() => {
   /* 满格且没有能合的：返回最低级物品的格子（提示卖掉它腾地方），否则 -1 */
   function stuckHint(C, s) {
     if (emptyCount(C, s) > 0 || findMergePair(C, s)) return -1;
+    if (s.cells.some((c) => c && c.k === 'tool') && s.cells.some((c) => c && c.k === 'item' && c.lvl < C.maxLevel)) return -1; // 有百搭星能用
+    for (let i = 0; i < C.n; i++) if (s.cells[i] && s.cells.some((_, j) => canDig(C, s, s.cells[i], j))) return -1; // 有障碍能挖
     let low = -1;
     for (let i = 0; i < C.n; i++) { const c = s.cells[i]; if (c && c.k === 'item' && (low < 0 || c.lvl < s.cells[low].lvl)) low = i; }
     return low;
@@ -337,7 +391,14 @@ const Core = (() => {
       stars: C.O.bands[rare ? 'rare' : 'normal'].stars,
       rare, cust: customer !== undefined ? customer : randInt(rng, 0, C.O.customers.length - 1),
       start: now, expiresAt: now + sec * 1000,
+      ...setOrderFields(C, s, t.needs, now),
     };
+  }
+  /* 套餐单（V1 M4）：开放后，同时要两条链的订单在 perfectSec 秒内交齐有 Perfect 加成 */
+  function setOrderFields(C, s, needs, now) {
+    const S2 = C.eco.setOrder; if (!S2 || !featureOn(C, s, 'setOrders') || s.tut !== TUT_DONE) return {};
+    const chains = new Set(needs.map((n) => n[0] || n.chain));
+    return chains.size >= 2 ? { set: true, perfectEnd: now + S2.perfectSec * 1000 } : {};
   }
   /* 熟客单：2 心以上的熟客每人每天最多 1 张；新订单有 chance 概率出 */
   function rollRegularOrder(C, s, now, rng) {
@@ -396,7 +457,8 @@ const Core = (() => {
     if (ni < 0) return { type: 'reject', reason: 'mismatch' };
     o.needs[ni].done = true; s.cells[from] = null;
     if (o.needs.some((n) => !n.done)) return { type: 'partial', need: ni };
-    const pay = orderCoins(C, s, o);
+    const pay = orderCoins(C, s, o, now);
+    if (pay.perfect) { s.stats.perfects = (s.stats.perfects || 0) + 1; logEv(s, 'mid'); }
     s.coins += pay.total; s.stars += o.stars;
     s.stats.ordersDone++; s.stats.coinsEarned += pay.total;
     logEv(s, 'small');
@@ -471,13 +533,15 @@ const Core = (() => {
     return ups;
   }
   /* 这张订单实际给多少金币：基础 + 菜谱星级加成（多道菜取平均）+ 熟客小费 */
-  function orderCoins(C, s, o) {
+  function orderCoins(C, s, o, now) {
     const base = o.coins;
+    // 套餐单 Perfect：在时限内交齐（now 不传时按"还在时限内"显示）
+    const perfect = o.set && (now === undefined || now <= o.perfectEnd) ? Math.round(base * C.eco.setOrder.bonusPct / 100) : 0;
     let recipe = 0;
     if (featureOn(C, s, 'recipes')) { const pct = o.needs.reduce((a, n) => a + recipeStars(C, s, n.chain, n.lvl) * C.RC.bonusPerStar, 0) / o.needs.length; recipe = Math.round(base * pct / 100); }
     let tip = 0; const r = C.regByAvatar[o.cust];
     if (r && regOn(C, s, r)) tip = Math.round(base * regPerks(C, regState(s, r.id).hearts).tip / 100);
-    return { base, recipe, tip, total: base + recipe + tip };
+    return { base, recipe, tip, perfect, total: base + recipe + tip + perfect };
   }
   /* 已经入座的熟客（UI 画在咖啡馆场景里）：按登场顺序依次占座，座位所在图层要已经装修 */
   function seatedRegulars(C, s) {
@@ -625,7 +689,9 @@ const Core = (() => {
     const p = unlockPrice(C, i);
     if (s.coins < p) return { ok: false, reason: 'coins', price: p };
     s.coins -= p; s.unlocked[i] = true; s.stats.unlocks = (s.stats.unlocks || 0) + 1; s.stats.coinsSpent.unlock += p;
-    return { ok: true, price: p };
+    let item = null; // 障碍开放后付金币开：埋着的物品原样送你；开放前开的格子是空的
+    if (s.hidden && s.hidden[i]) { if (featureOn(C, s, 'obstacles')) { item = { k: 'item', chain: s.hidden[i].chain, lvl: s.hidden[i].lvl }; s.cells[i] = item; } s.hidden[i] = null; }
+    return { ok: true, price: p, item, found: item ? markFound(C, s, item, 0) : null };
   }
 
   /* ---------- 存档 ---------- */
@@ -649,6 +715,7 @@ const Core = (() => {
       for (const c of o.cells || []) if (c && c.k === 'item') o.recipes[c.chain + c.lvl] = { f: 1, p: 0 };
       o.v = 7;
     }
+    if (o.v === 7) { o.v = 8; } // v7 → v8：棋盘障碍埋的物品（下面按当前锁格补）、百搭星格子
     if (o.v !== SAVE_VERSION) return null;
     if (!Array.isArray(o.cells) || o.cells.length !== C.n || !Array.isArray(o.unlocked) || o.unlocked.length !== C.n) return null;
     if (!o.gens || typeof o.gens !== 'object' || !Array.isArray(o.orders)) return null;
@@ -662,6 +729,7 @@ const Core = (() => {
     if (typeof o.area !== 'number' || !C.areas[o.area]) o.area = 0;
     if (!o.regs || typeof o.regs !== 'object') o.regs = {};
     if (!o.recipes || typeof o.recipes !== 'object') o.recipes = {};
+    if (!Array.isArray(o.hidden) || o.hidden.length !== C.n) o.hidden = rollHidden(C, o, rng || Math.random);
     if (!o.stats.maxLvl) for (const c of o.cells) if (c) o.stats.maxLvl = Math.max(o.stats.maxLvl, c.lvl);
     if (!o.tasks || !Array.isArray(o.tasks.active)) o.tasks = { next: 0, active: [] };
     o.tasks.active = o.tasks.active.filter((a) => taskDef(C, a.id));
@@ -677,6 +745,7 @@ const Core = (() => {
     // 配置改动后可能有删掉的生成器 / 越界等级 / 删掉的订单模板：清理掉而不是崩
     for (let i = 0; i < C.n; i++) {
       const c = o.cells[i];
+      if (c && c.k === 'tool') { if (c.id !== 'wild') o.cells[i] = null; continue; }
       if (c && ((c.k !== 'item' && c.k !== 'bubble') || !C.chains[c.chain] || c.lvl < 1 || c.lvl > C.maxLevel)) o.cells[i] = null;
     }
     for (const id in o.gens) if (!C.gens[id]) delete o.gens[id];
@@ -709,7 +778,7 @@ const Core = (() => {
     xpNeed, orderXp, addXp, openChest, unlockLevel, featureOn, nextUnlock, logEv, markDay, daysInFirstWeek, adOffer, adClick, grantEnergy, grantDouble, markInterstitial, cooldownSec,
     fillTasks, taskProgress, tasksClaimable, claimTask,
     genMaxCharges, upgradeCost, upgradeGen, refillPrice, buyRefill, energyPrice, buyEnergy,
-    addCombo, sellPrice, sellItem, findMergePair, stuckHint,
+    addCombo, sellPrice, sellItem, findMergePair, stuckHint, rollHidden, obstacleAt, canDig, maybeWildStar, giveWildStar, setOrderFields,
     regState, regOn, heartsFor, regPerks, addAffinity, recipeStars, recState, markFound, addMastery, orderCoins, seatedRegulars, rollRegularOrder,
     maybeBubble, settleBubbles, bubblePrice, popBubble, canSwap, swapOrder, daily,
     unlockPrice, canUnlockHere, unlock, serialize, deserialize, itemDef,

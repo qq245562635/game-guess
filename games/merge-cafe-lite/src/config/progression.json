@@ -53,7 +53,7 @@
       "level": 4,
       "feature": "setOrders",
       "name": "unlock.setOrders",
-      "ready": false
+      "ready": true
     },
     {
       "level": 5,
@@ -72,13 +72,13 @@
       "level": 6,
       "feature": "obstacles",
       "name": "unlock.obstacles",
-      "ready": false
+      "ready": true
     },
     {
       "level": 7,
       "feature": "wildStar",
       "name": "unlock.wildStar",
-      "ready": false
+      "ready": true
     },
     {
       "level": 7,

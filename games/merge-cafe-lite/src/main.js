@@ -41,7 +41,11 @@
 
   /* 音效：第一次触摸时解锁 WebAudio；右上角喇叭按钮切换静音（存档里记住） */
   addEventListener('pointerdown', () => Sfx.unlock(), { capture: true });
-  function updateSndBtn() { $('snd').textContent = S.settings.mute ? '🔇' : '🔊'; }
+  function updateSndBtn() { // F 批喇叭图到了用图，没到用 emoji
+    const id = S.settings.mute ? 'icon_sound_off' : 'icon_sound_on', src = Art.src(id), el = $('snd');
+    if (src) el.innerHTML = `<img src="${src}" alt="" style="width:22px;height:22px">`; else el.textContent = S.settings.mute ? '🔇' : '🔊';
+    el.dataset.mute = S.settings.mute ? '1' : '0';
+  }
   $('snd').onclick = () => { S.settings.mute = !S.settings.mute; Sfx.setMuted(S.settings.mute); updateSndBtn(); markDirty(); save(); if (!S.settings.mute) Sfx.tap(); };
 
   /* ---------- WebGL ---------- */
@@ -376,6 +380,9 @@
   const esc2 = (t) => String(t).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
   const BOLT_SVG = '<svg viewBox="0 0 30 30"><path d="M18 1.5 5.5 17h8l-3 11.5L24.5 12h-8.2z" fill="#f5c03a" stroke="#c4851a" stroke-width="2" stroke-linejoin="round"/></svg>';
   const STAR_SVG = '<svg viewBox="0 0 30 30"><path d="M15 2l3.8 8 8.7 1-6.4 6 1.7 8.6L15 21.3l-7.8 4.3 1.7-8.6-6.4-6 8.7-1z" fill="#f5c03a" stroke="#c4851a" stroke-width="2" stroke-linejoin="round"/></svg>';
+  /* F 批小图标：有正式图用 <img>，没有退回 emoji / 文字 */
+  const ico = (id, fb, px) => { const s = Art.src(id); return s ? `<img src="${esc2(s)}" alt="" style="width:${px || 20}px;height:${px || 20}px;vertical-align:-0.2em">` : fb; };
+  const heartsHTML = (n, px) => Art.src('icon_heart') ? ico('icon_heart', '♥', px).repeat(n) + ico('icon_heart_empty', '♡', px).repeat(5 - n) : '♥'.repeat(n) + '♡'.repeat(5 - n);
   const icon = (id, svg) => { const s = Art.src(id); return s ? `<img src="${esc2(s)}" alt="">` : svg; };
   /* 奖励条：体力 / 金币 / 星星，delay 秒起逐个弹出（宝箱用） */
   function rewardChips(r, delay) {
@@ -401,8 +408,8 @@
     const unlocks = [].concat(...ups.map((u) => u.unlocks));
     const art = Art.src('badge_level');
     const html = `<div class="lvup"><div class="big${art ? ' art' : ''}"${art ? ` style="--badge:url('${esc2(art)}')"` : ''}><b>${top}</b></div>` + rewardChips(lv) +
-      (chests.length ? `<div style="font-weight:800">🎁 ${esc2(L.t('ui.chest'))}</div>` : '') +
-      unlocks.map((u) => `<div style="font-weight:900;color:#1d5f5a">✨ ${esc2(u.regular ? L.t('ui.newRegular', { name: L.t(u.name) }) : L.t(u.name))}</div>`).join('') + `</div>`;
+      (chests.length ? `<div style="font-weight:800">${ico('icon_gift', '🎁', 24)} ${esc2(L.t('ui.chest'))}</div>` : '') +
+      unlocks.map((u) => `<div style="font-weight:900;color:#1d5f5a">${ico('icon_unlock', '✨', 22)} ${esc2(u.regular ? L.t('ui.newRegular', { name: L.t(u.name) }) : L.t(u.name))}</div>`).join('') + `</div>`;
     sfxBurst(); Sfx.levelUp();
     modal(L.t('ui.levelUp', { n: top }), '', [{ label: L.t('ui.collect') }], null, html);
     modalOnClose = () => {
@@ -477,7 +484,9 @@
   }
   /* ---------- 弹窗队列（V1 M3）：升心、新菜谱等，排在升级庆典之后，没在拖拽、没有别的弹窗时依次弹 ---------- */
   const popups = [];
+  let obstacleTipShown = false;
   function tryPopups() {
+    if (!obstacleTipShown && Core.featureOn(C, S, 'obstacles') && mode === 'merge' && !modalOpen() && !lvQueue.length) { obstacleTipShown = true; if (!S.stats.dug) toast(L.t('ui.obstacleTip')); }
     if (!popups.length || lvQueue.length || down || drag || modalOpen() || Ads.busy || flies.length || Core.tutStep(C, S)) return;
     popups.shift()();
   }
@@ -500,8 +509,13 @@
     const src = Art.src(cu.id + '_happy') || Art.src(cu.id), line = u.line ? L.t(u.line) : '';
     Sfx.levelUp(); sfxBurst();
     modal(L.t('ui.heartUp', { name, n: u.heart }), '', [{ label: L.t('ui.continue') }], null,
-      `<div class="heartup">${src ? `<img src="${esc2(src)}" alt="">` : ''}<div class="hs">${'♥'.repeat(u.heart)}${'♡'.repeat(5 - u.heart)}</div>${line ? `<q>${esc2(line)}</q>` : ''}</div>`);
+      `<div class="heartup">${src ? `<img src="${esc2(src)}" alt="">` : ''}<div class="hs">${heartsHTML(u.heart, 28)}</div>${line ? `<q>${esc2(line)}</q>` : ''}</div>`);
     modalOnClose = () => { if (u.chest) setTimeout(() => showChest(u.chest), 350); };
+  }
+  /* 百搭星掉落：从合成点飞到空格，第一次掉落时提示怎么用 */
+  function dropStar(cell, x, y) {
+    flies.push({ cell, item: S.cells[cell], x0: x, y0: y, t0: clock() + 0.2, dur: 0.45, spawn: true }); Sfx.chestOpen();
+    if ((S.stats.wildGot || 0) <= 1) toast(L.t('ui.wildGot')); else floatText(x, y - LY.cs * 0.6, '★ ' + L.t('ui.wildStar'), '#d89a22');
   }
   /* 庆典彩带：屏幕上方几处撒粒子 */
   function sfxBurst() {
@@ -517,7 +531,7 @@
     if (modalOpen() || Ads.busy || Core.tutStep(C, S) || pendingLevels) return;
     const need = Core.xpNeed(C, S.level), nu = Core.nextUnlock(C, S);
     const html = `<div class="xp-line"><i style="width:${Math.min(100, S.xp / need * 100)}%"></i></div>` +
-      (nu ? `<div style="font-weight:900;color:#1d5f5a;margin-bottom:10px">✨ ${L.t('ui.nextUnlock', { n: nu.level, what: L.t(nu.name) }).replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]))}</div>` : '');
+      (nu ? `<div style="font-weight:900;color:#1d5f5a;margin-bottom:10px">${ico('icon_unlock', '✨', 22)} ${L.t('ui.nextUnlock', { n: nu.level, what: L.t(nu.name) }).replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]))}</div>` : '');
     modal(L.t('ui.levelTitle', { n: S.level }), L.t('ui.levelBody', { xp: S.xp, need, next: S.level + 1 }), [{ label: L.t('ui.ok') }], null, html);
   };
   /* 插屏：每 N 单一次，排队到"没在拖、没弹窗、没在引导、不在播别的广告"时才放 */
@@ -577,12 +591,12 @@
   function tapLocked(i) {
     if (Core.tutStep(C, S)) { shakes.set(i, clock()); return; }
     if (!Core.canUnlockHere(C, S, i)) { shakes.set(i, clock()); toast(L.t('ui.notAdjacent')); return; }
-    const p = Core.unlockPrice(C, i);
-    modal(L.t('ui.unlockTitle'), L.t('ui.unlockBody', { n: p }), [
+    const p = Core.unlockPrice(C, i), ob = Core.obstacleAt(C, S, i);
+    modal(L.t('ui.unlockTitle'), ob ? L.t('ui.unlockHidden', { n: p, item: itemName({ k: 'item', chain: ob.chain, lvl: ob.lvl }) }) : L.t('ui.unlockBody', { n: p }), [
       { label: L.t('ui.cancel'), alt: true },
       { label: L.t('ui.unlock'), on: () => {
         const r = Core.unlock(C, S, i);
-        if (r.ok) { pops.set(i, clock()); const [x, y] = cellXY(i); burst(x, y, '#f5c03a', 14); Sfx.unlock(); Sfx.pop(); markDirty(); hudCache = ''; }
+        if (r.ok) { pops.set(i, clock()); const [x, y] = cellXY(i); burst(x, y, '#f5c03a', 14); Sfx.unlock(); Sfx.pop(); if (r.found) queueFound(r.found, x, y); markDirty(); hudCache = ''; }
         else if (r.reason === 'coins') { shakes.set(i, clock()); toast(L.t('ui.noCoins')); }
       } },
     ]);
@@ -598,6 +612,7 @@
       flyRewards(R.x + R.w / 2, R.y + R.h / 2, r.coins, r.stars + r.bonusStar);
       if (r.xp) floatText(R.x + R.w / 2, R.y - 4, '+' + r.xp + ' XP', '#2e9a5a');
       queueLevelUps(r.levelUps); Sfx.deliver();
+      if (r.pay.perfect) { floatText(R.x + R.w / 2, R.y - 22, L.t('ui.perfect', { n: r.pay.perfect }), '#c4851a'); burst(R.x + R.w / 2, R.y + R.h / 2, '#ffd84a', 18); Sfx.chestOpen(); }
       for (const u of r.recipeUps) floatText(R.x + R.w * 0.62, R.y + R.h * 0.35, L.t('ui.recipeStar', { item: L.t(C.chains[u.chain].items[u.lvl - 1].name), n: u.stars }), '#d89a22');
       if (r.gift) setTimeout(() => { bump('pill-energy'); toast(L.t('ui.gift', { name: L.t(C.regById[r.reg].name), n: r.gift })); }, 700);
       if (r.reg && Core.regOn(C, S, C.regById[r.reg])) { const hx = R.x + R.h * 0.3, hy = R.y + R.h * 0.4; for (let k = 0; k < 4; k++) floatText(hx + (k - 1.5) * 10, hy, '♥', '#e2566f'); }
@@ -623,7 +638,7 @@
     if (!down || e.pointerId !== down.id) return;
     if (!drag) {
       const i = down.cell;
-      if (i < 0 || !S.unlocked[i] || !S.cells[i] || S.cells[i].k !== 'item' || flyingTo(i)) return;
+      if (i < 0 || !S.unlocked[i] || !S.cells[i] || (S.cells[i].k !== 'item' && S.cells[i].k !== 'tool') || flyingTo(i)) return;
       if (Math.hypot(e.clientX - down.x, e.clientY - down.y) < DRAG_PX) return;
       const [cx, cy] = cellXY(i);
       drag = { from: i, ox: down.x - cx, oy: down.y - cy, x: e.clientX, y: e.clientY };
@@ -660,12 +675,26 @@
           if (r.combo.coins) flyRewards(x, y, r.combo.coins, 0);
           if (r.combo.energy) { bump('pill-energy'); toast('+' + r.combo.energy + ' ⚡'); }
         }
+        if (r.star >= 0) dropStar(r.star, x, y);
         if (r.bubble >= 0) { selT = -10; /* 名字标签会压住泡泡，这次不显示 */ const [bx, by] = cellXY(r.bubble); flies.push({ cell: r.bubble, item: S.cells[r.bubble], x0: x, y0: y, t0: clock() + 0.15, dur: 0.4, spawn: true }); burst(bx, by, '#bfe8f2', 10); }
+        markDirty();
+      } else if (r.type === 'dig' || r.type === 'wild') { // 挖障碍 / 百搭星升级
+        pops.set(to, clock()); sel = to; selT = clock(); idleT = clock();
+        const [x, y] = cellXY(to); burst(x, y, r.type === 'dig' ? '#e6c98f' : '#ffd84a', 20); burst(x, y, Core.itemDef(C, S.cells[to]).color, 10);
+        Sfx.merge(r.lvl); if (r.type === 'wild') Sfx.chestOpen();
+        floatText(x, y - LY.cs * 0.5, r.type === 'dig' ? L.t('ui.dug', { item: itemName(S.cells[to]) }) : '★ ' + itemName(S.cells[to]), r.type === 'dig' ? '#8a5a32' : '#d89a22');
+        if (r.found) queueFound(r.found, x, y);
+        if (r.combo && r.combo.show) { Sfx.combo(r.combo.n); if (r.combo.coins) flyRewards(x, y, r.combo.coins, 0); }
+        if (r.star >= 0) dropStar(r.star, x, y);
         markDirty();
       } else if (r.type === 'move') { sel = to; selT = clock(); markDirty(); }
       else { // 回弹：从松手位置飞回原格，不吞物品
         flies.push({ cell: g.from, item: moving, x0: px, y0: py, t0: clock(), dur: 0.22 });
-        if (r.type === 'bounce') { shakes.set(to, clock()); Sfx.bounce(); if (r.reason === 'max') toast(L.t('ui.maxMerge')); }
+        if (r.type === 'bounce') {
+          shakes.set(to, clock()); Sfx.bounce();
+          if (r.reason === 'max') toast(L.t('ui.maxMerge'));
+          else if (r.reason === 'dig') { const h = Core.obstacleAt(C, S, to); toast(L.t('ui.digHint', { item: itemName({ k: 'item', chain: h.chain, lvl: h.lvl }) })); }
+        }
       }
       return;
     }
@@ -743,7 +772,7 @@
         const lines = C.RG.heartRewards.filter((R) => R.line && st.hearts >= R.heart);
         const line = lines.length ? L.t('line.' + r.id + '.' + lines.at(-1).line) : '';
         const prev = st.hearts ? H[st.hearts - 1] : 0, pct = next ? (st.pts - prev) / (next - prev) * 100 : 100;
-        html += on ? `<div class="reg">${custPic(r.avatar, st.hearts >= 1)}<div class="rt"><b>${esc2(L.t(r.name))}</b> <span class="hs">${'♥'.repeat(st.hearts)}${'♡'.repeat(5 - st.hearts)}</span>` +
+        html += on ? `<div class="reg">${custPic(r.avatar, st.hearts >= 1)}<div class="rt"><b>${esc2(L.t(r.name))}</b> <span class="hs">${heartsHTML(st.hearts, 14)}</span>` +
             `<div class="t-bar"><i style="width:${pct.toFixed(0)}%"></i><span>${next ? esc2(L.t('ui.toNextHeart', { n: next - st.pts, h: st.hearts + 1 })) : esc2(L.t('ui.maxHearts'))}</span></div>${line ? `<p>“${esc2(line)}”</p>` : ''}</div></div>`
           : `<div class="reg locked">${custPic(r.avatar)}<div class="rt"><b>?</b><p>${esc2(L.t('ui.level', { n: r.unlock }))}</p></div></div>`;
       }
@@ -928,7 +957,9 @@
       GL.circle(px + 2, py + d * 0.55, d * 0.42, [0.2, 0.12, 0.05, 0.18], { soft: d * 0.15 });
       GL.circle(px, py + bob, d * 0.56, [1, 0.96, 0.86, 1]);
       GL.img(Art.avatar(C, reg.avatar, Math.round(d), hearts >= 1), px, py + bob, d, d);
-      if (hearts) GL.text('♥' + hearts, px + d * 0.42, py + bob - d * 0.42, { size: Math.max(10, d * 0.28), weight: 900, fill: '#e2566f', outline: '#fff4db' });
+      if (hearts) { const hs2 = Math.max(12, d * 0.34), hi = Art.opt('icon_heart', Math.round(hs2)), hx2 = px + d * 0.36, hy2 = py + bob - d * 0.42;
+        if (hi) { GL.img(hi, hx2, hy2, hs2, hs2); GL.text(String(hearts), hx2 + hs2 * 0.55, hy2, { size: hs2 * 0.7, weight: 900, fill: '#3a2416', outline: '#fff4db', align: 'left' }); }
+        else GL.text('♥' + hearts, px + d * 0.42, py + bob - d * 0.42, { size: Math.max(10, d * 0.28), weight: 900, fill: '#e2566f', outline: '#fff4db' }); }
     }
     LY.artScene = { sc, ox, oy };
     return true;
@@ -1111,9 +1142,10 @@
   function drawItem(it, x, y, size, alpha) {
     if (alpha !== undefined) GL.alpha = alpha;
     GL.rect(x - size * 0.34, y + size * 0.3, size * 0.68, size * 0.15, size * 0.08, COL.shadow, { soft: size * 0.06 });
-    GL.img(Art.item(C, it, size), x, y, size, size);
+    GL.img(it.k === 'tool' ? Art.wild(size) : Art.item(C, it, size), x, y, size, size);
     GL.alpha = 1;
   }
+  const itemName = (it) => it.k === 'tool' ? L.t('ui.wildStar') : L.t(Core.itemDef(C, it).name);
   function needSet() { // 订单里还没交的需求，用来在棋盘上打勾
     const m = new Set();
     for (const o of S.orders) if (o) for (const n of o.needs) if (!n.done) m.add(n.chain + n.lvl);
@@ -1128,15 +1160,23 @@
     GL.rect(x + 1, y + 5, w, h, 14, COL.shadow, { soft: 6 });
     GL.rect(x, y, w, h, 14, COL.cream);
     const reg = C.regByAvatar[o.cust], regOn = reg && Core.regOn(C, S, reg);
+    const perfLeft = o.set ? o.perfectEnd - now() : 0;
     GL.rect(x, y, w, h, 14, o.regular ? hex('#e2566f') : o.rare ? COL.gold : COL.creamD, { stroke: o.regular || o.rare ? 4 : 3 });
     if (hl === 1) GL.rect(x, y, w, h, 14, COL.goodLine, { stroke: 4 });
+    if (o.set) { // 套餐单：左上角角标；Perfect 时限内顶边一条金色进度条
+      const bs2 = Math.max(18, h * 0.24), img = Art.opt('badge_set_order', Math.round(bs2));
+      if (perfLeft > 0) { const f = Math.min(1, perfLeft / (C.eco.setOrder.perfectSec * 1000)); GL.rect(x + 10, y + 3, (w - 20) * f, 4, 2, COL.gold); }
+      if (img) GL.img(img, x + bs2 * 0.3, y + bs2 * 0.3, bs2, bs2);
+      else { GL.circle(x + bs2 * 0.3, y + bs2 * 0.3, bs2 * 0.45, hex('#fff4db')); GL.circle(x + bs2 * 0.3, y + bs2 * 0.3, bs2 * 0.45, COL.goldD, { stroke: 2 }); GL.text('2', x + bs2 * 0.3, y + bs2 * 0.3, { size: bs2 * 0.5, weight: 900, fill: '#c4851a' }); }
+    }
     const pad = Math.max(5, h * 0.06), botH = h * 0.28, topH = h - botH - pad * 2;
     const av = Math.min(topH, w * 0.38);
     const hearts = regOn ? Core.regState(S, reg.id).hearts : 0;
     GL.img(Art.avatar(C, o.cust, av, hearts >= 1), x + pad + av / 2, y + pad + topH / 2, av, av);
     if (regOn) { // 熟客：头像右下角一个心 + 心数
       const hr = Math.max(8, av * 0.2), hx = x + pad + av - hr * 0.4, hy = y + pad + topH / 2 + av / 2 - hr * 0.4;
-      GL.circle(hx, hy, hr, hex('#fff4db')); GL.text('♥', hx, hy, { size: hr * 1.3, weight: 900, fill: '#e2566f' });
+      GL.circle(hx, hy, hr, hex('#fff4db'));
+      const hi = Art.opt('icon_heart', Math.round(hr * 1.8)); if (hi) GL.img(hi, hx, hy, hr * 1.8, hr * 1.8); else GL.text('♥', hx, hy, { size: hr * 1.3, weight: 900, fill: '#e2566f' });
       GL.text(String(hearts), hx + hr * 0.9, hy - hr * 0.7, { size: hr, weight: 900, fill: '#3a2416', outline: '#fff4db' });
     }
     const n = o.needs.length, areaX = x + pad * 1.5 + av, areaW = w - (areaX - x) - pad;
@@ -1151,7 +1191,7 @@
     GL.rect(x + pad, by - botH / 2, w - pad * 2, botH, botH / 2, hex('#f6e7c6'));
     let cx = x + pad * 1.6 + ic / 2;
     GL.img(Art.coin(ic), cx, by, ic, ic); cx += ic / 2 + 3;
-    const pay = Core.orderCoins(C, S, o);
+    const pay = Core.orderCoins(C, S, o, now());
     cx += GL.text(String(pay.total), cx, by, { size: fs, weight: 900, fill: pay.total > pay.base ? '#2e9a5a' : '#3a2416', align: 'left' }) + 4;
     if (o.stars) { GL.img(Art.star(ic), cx + ic / 2, by, ic, ic); GL.text(String(o.stars), cx + ic + 1, by, { size: fs * 0.85, weight: 900, fill: '#3a2416', align: 'left' }); }
     const left = o.needs.some((nd) => nd.done) ? null : o.expiresAt - now();
@@ -1230,6 +1270,19 @@
     const [r, c] = Core.rc(C, i), [x, y] = cellXY(i), cs = LY.cs, h = cs / 2 - 1.5;
     const sh = shakes.get(i), sx = sh !== undefined && t - sh < 0.3 ? Math.sin((t - sh) * 60) * cs * 0.05 * (1 - (t - sh) / 0.3) : 0;
     if (S.unlocked[i]) GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, (r + c) % 2 ? COL.cellB : COL.cellA);
+    else if (Core.obstacleAt(C, S, i)) { // 棋盘障碍（M4）：沙堆 / 木箱 + 埋着的物品剪影
+      const ob = Core.obstacleAt(C, S, i), next = Core.canUnlockHere(C, S, i), img = Art.opt('obstacle_' + ob.kind, Math.round(cs));
+      GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, (r + c) % 2 ? COL.cellB : COL.cellA);
+      if (img) GL.img(img, x + sx, y, cs, cs);
+      else if (ob.kind === 'sand') { GL.circle(x + sx, y + cs * 0.08, cs * 0.42, hex('#e6c98f')); GL.circle(x + sx - cs * 0.12, y - cs * 0.04, cs * 0.26, hex('#efd8a8')); }
+      else { GL.rect(x - h * 0.9 + sx, y - h * 0.9, h * 1.8, h * 1.8, cs * 0.08, hex('#b8743c')); GL.rect(x - h * 0.6 + sx, y - h * 0.6, h * 1.2, h * 1.2, cs * 0.05, hex('#e7c79a')); }
+      drawItem({ k: 'item', chain: ob.chain, lvl: ob.lvl }, x + sx, y - cs * 0.02, cs * 0.5, next ? 0.55 : 0.35);
+      if (next) {
+        const p = String(Core.unlockPrice(C, i)), fs = Math.max(8, cs * 0.17);
+        GL.img(Art.coin(fs), x - cs * 0.15 + sx, y + cs * 0.33, fs, fs);
+        GL.text(p, x - cs * 0.05 + sx, y + cs * 0.33, { size: fs, weight: 900, fill: '#6b4a2a', align: 'left', outline: 'rgba(255,248,230,0.9)' });
+      }
+    }
     else {
       const next = Core.canUnlockHere(C, S, i);
       GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, next ? COL.lockNext : (r + c) % 2 ? COL.lockB : COL.lockA);
@@ -1242,7 +1295,8 @@
       }
     }
     if (i === target && drag && i !== drag.from) {
-      const ok = Core.canMerge(C, S.cells[drag.from], S.cells[i]);
+      const A = S.cells[drag.from], B = S.cells[i];
+      const ok = Core.canMerge(C, A, B) || Core.canDig(C, S, A, i) || (A && A.k === 'tool' && B && B.k === 'item' && B.lvl < C.maxLevel);
       if (ok) GL.rect(x - h, y - h, h * 2, h * 2, cs * 0.14, COL.good);
       GL.rect(x - h, y - h, h * 2, h * 2, cs * 0.14, ok ? COL.goodLine : [0.4, 0.3, 0.2, 0.35], { stroke: 3 });
     }
@@ -1320,7 +1374,7 @@
     if (drag && dragIt) drawItem(dragIt, drag.x - drag.ox, drag.y - drag.oy - 4, cs * 1.0);
     // 选中物品的名字
     if (sel >= 0 && !drag && !spotlight && S.cells[sel] && t - selT < 1.6) {
-      const it = S.cells[sel], [x, y] = cellXY(sel), name = L.t(Core.itemDef(C, it).name) + ' · ' + L.t('ui.level', { n: it.lvl });
+      const it = S.cells[sel], [x, y] = cellXY(sel), name = itemName(it) + (it.k === 'tool' ? '' : ' · ' + L.t('ui.level', { n: it.lvl }));
       const fs = Math.max(12, cs * 0.24), tw = GL.measure(name, { size: fs, weight: 800 }) + 18, ly = y - cs * 0.78;
       const lx = Math.max(LY.bx + 4, Math.min(LY.bx + LY.bs - tw - 4, x - tw / 2));
       GL.alpha = Math.min(1, (1.6 - (t - selT)) * 4);
@@ -1426,6 +1480,7 @@
   /* 顶栏和底栏的图标是 DOM 里的 SVG 占位：正式图到了换成 <img> */
   const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg', nav_tasks: '#nav-tasks svg', nav_book: '#nav-book svg' };
   function swapDomIcon(id) {
+    if (id === 'icon_sound_on' || id === 'icon_sound_off') { updateSndBtn(); return; }
     if (id === 'badge_level') { const el = $('lvl'); el.style.setProperty('--badge', `url('${Art.src(id)}')`); el.classList.add('art'); return; }
     const old = DOM_ICONS[id] && document.querySelector(DOM_ICONS[id]); if (!old) return;
     const img = document.createElement('img'); img.src = Art.src(id); img.alt = ''; img.className = 'ico'; img.dataset.art = id;
@@ -1455,6 +1510,7 @@
     btn('bubble', () => { const e = S.cells.findIndex((c, i) => !c && S.unlocked[i]); if (e >= 0) S.cells[e] = { k: 'bubble', chain: 'coffee', lvl: 5, until: now() + C.eco.bubble.lifeSec * 1000 }; });
     btn('+5 stars', () => { S.stars += 5; decoKey = ''; });
     btn('+100 xp', () => { queueLevelUps(Core.addXp(C, S, 100, now())); });
+    btn('wild star', () => { Core.giveWildStar(C, S, 3, 3); });
     btn('+20 hearts', () => { for (const r of C.regs) if (Core.regOn(C, S, r)) { const st = Core.regState(S, r.id); st.pts += 20; } });
     btn('chest', () => { const r = Core.openChest(C, S, now()); pendingCoins += r.coins; pendingStars += r.stars; showChest(r); });
     btn('skip tutorial', () => Core.skipTutorial(S));

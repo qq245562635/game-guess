@@ -173,5 +173,12 @@
   "ui.chainDone": "{chain} collection complete!",
   "ui.toNextHeart": "{n} more to ♥{h}",
   "ui.favOrder": "Favorite order",
-  "ui.maxHearts": "Best friends!"
+  "ui.maxHearts": "Best friends!",
+  "ui.wildStar": "Wild Star",
+  "ui.wildGot": "Wild Star! Drop it on any item to level it up.",
+  "ui.digHint": "Drop a {item} here to dig it out!",
+  "ui.unlockHidden": "Open this tile for {n} coins? You'll get the {item} inside.",
+  "ui.dug": "Dug up! {item}",
+  "ui.perfect": "Perfect! +{n}",
+  "ui.obstacleTip": "Sand & crates hide items. Drop the same item on them to dig them out!"
 }
