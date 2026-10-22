@@ -531,7 +531,7 @@
       modal(L.t('ui.welcomeTitle'), L.t('ui.welcomeBody', { n: r.coins, t: hm(r.mins) }), [
         { label: L.t('ui.collect'), alt: true },
         { label: '▶ ' + L.t('ad.double') + ' +' + r.coins, ad: true, on: () => watchAd('offline', () => {
-          Core.grantDouble(S, r.coins); pendingCoins += r.coins; flyRewards(LY.W / 2, LY.H * 0.45, r.coins, 0); toast(L.t('ad.got', { n: r.coins }));
+          Core.grantDouble(S, r.coins); flyRewards(LY.W / 2, LY.H * 0.45, r.coins, 0); toast(L.t('ad.got', { n: r.coins }));
         }) },
       ], null, html);
       modalOnClose = () => landRewards({ coins: r.coins }, LY.W / 2, LY.H * 0.45);
