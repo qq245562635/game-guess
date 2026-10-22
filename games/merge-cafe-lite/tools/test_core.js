@@ -264,12 +264,12 @@ test('引导中刷新：存档能续上；棋盘不满足条件则自动结束�
 });
 
 /* ---------- M3 装修 / 星星 / 广告 ---------- */
-test('装修表（区域 1）：3 幕 15 节点；第一幕 6 星不变，二幕 24 星 + 8500 金币，三幕 44 星 + 12000 金币；漫画在第 1/8/15 节点', () => {
+test('装修表（区域 1）：3 幕 15 节点；第一幕 6 星不变，二幕 24 星 + 11900 金币，三幕 44 星 + 16800 金币（M6 校准）；漫画在第 1/8/15 节点', () => {
   assert.strictEqual(CN.areas.length, 1); assert.strictEqual(CN.deco.length, 15);
   const act = (a, k) => CN.deco.filter((d) => d.act === a).reduce((x, d) => x + (d[k] || 0), 0);
   assert.deepStrictEqual([0, 1, 2].map((a) => CN.deco.filter((d) => d.act === a).length), [5, 5, 5]);
   assert.deepStrictEqual([act(0, 'cost'), act(1, 'cost'), act(2, 'cost')], [6, 24, 44]);
-  assert.deepStrictEqual([act(0, 'coins'), act(1, 'coins'), act(2, 'coins')], [0, 8500, 12000]);
+  assert.deepStrictEqual([act(0, 'coins'), act(1, 'coins'), act(2, 'coins')], [0, 11900, 16800]);
   assert.deepStrictEqual(CN.deco.map((d, i) => CN.areas[0].comics[d.id] ? i + 1 : 0).filter(Boolean), [1, 8, 15]);
 });
 test('装修：按顺序解锁，扣星 + 扣金币；星或金币不够都不扣；全部完成后不能再装', () => {
@@ -283,10 +283,10 @@ test('装修：按顺序解锁，扣星 + 扣金币；星或金币不够都不�
     assert.strictEqual(!!r.comic, [0, 7, 14].includes(i)); assert.strictEqual(r.actDone, [4, 9, 14].includes(i));
     spent += nd.cost; coins += nd.coins || 0;
   }
-  assert.strictEqual(spent, 74); assert.strictEqual(coins, 20500); assert.strictEqual(s.stats.coinsSpent.deco, 20500);
+  assert.strictEqual(spent, 74); assert.strictEqual(coins, 28700); assert.strictEqual(s.stats.coinsSpent.deco, 28700);
   assert.strictEqual(Core.renovate(CN, s).reason, 'done');
   const t = fresh(); t.deco = 5; t.stars = 99; t.coins = 99;
-  const r = Core.renovate(CN, t); assert.strictEqual(r.reason, 'coins'); assert.strictEqual(r.need, 1201); assert.deepStrictEqual([t.stars, t.coins, t.deco], [99, 99, 5]);
+  const r = Core.renovate(CN, t); assert.strictEqual(r.reason, 'coins'); assert.strictEqual(r.need, 1701); assert.deepStrictEqual([t.stars, t.coins, t.deco], [99, 99, 5]);
 });
 test('装修图层：只有已解锁节点的图层生效', () => {
   const s = fresh(); s.deco = 2;
@@ -503,10 +503,10 @@ test('店铺经验：一单 = 需求等级之和，稀有单 ×2', () => {
   assert.strictEqual(Core.orderXp(CN, { needs: [{ lvl: 5 }, { lvl: 4 }], rare: false }), 9);
   assert.strictEqual(Core.orderXp(CN, { needs: [{ lvl: 6 }], rare: true }), 12);
 });
-test('等级曲线：1→8 级 20…75、8 级起 110…315（M3 校准）、20 级以后每级 330', () => {
-  assert.deepStrictEqual([1, 2, 3, 7, 8, 11, 12, 19, 20, 35].map((l) => Core.xpNeed(CN, l)), [20, 25, 35, 75, 110, 185, 215, 315, 330, 330]);
+test('等级曲线：1→8 级 20…75、8 级起 110…290（M3 / M6 校准）、20 级以后每级 300', () => {
+  assert.deepStrictEqual([1, 2, 3, 7, 8, 11, 12, 19, 20, 35].map((l) => Core.xpNeed(CN, l)), [20, 25, 35, 75, 110, 185, 215, 290, 300, 300]);
   const cum = (L) => { let x = 0; for (let l = 1; l < L; l++) x += Core.xpNeed(CN, l); return x; };
-  assert.deepStrictEqual([cum(8), cum(12), cum(16), cum(20)], [320, 875, 1875, 3075]);
+  assert.deepStrictEqual([cum(8), cum(12), cum(16), cum(20)], [320, 875, 1870, 3000]);
 });
 test('升级：可连升多级；每级 +20 体力（可超上限）+ 等级×10 金币；每 5 级开一个宝箱', () => {
   const s = fresh(); s.energy = 100; s.energyTs = T0; const c0 = s.coins, st0 = s.stars;
@@ -812,12 +812,12 @@ test('累计签到：2 级开放；每天领一格，同一天不重复；断签
   assert.strictEqual(r7.day, 7); assert(r7.chest); assert.strictEqual(s.stars - st0, 3 + r7.chest.stars);
   const r8 = Core.claimLogin(CN, s, T0 + 15 * DAY); assert.strictEqual(r8.day, 1); assert.strictEqual(r8.round, 2);
 });
-test('离线营业：每小时 10 + 3×等级 + 5×装修节点；不满 30 分钟不算；上限 4 / 6（9 级）/ 8（15 级）小时；引导中和时间倒退不算', () => {
+test('离线营业：每小时 6 + 2×等级 + 3×装修节点（M6 校准）；不满 30 分钟不算；上限 4 / 6（9 级）/ 8（15 级）小时；引导中和时间倒退不算', () => {
   const s = atLv(1); s.deco = 0; const c0 = s.coins;
   assert.strictEqual(Core.offlineEarn(CN, s, T0, T0 + 29 * 60e3), null);
-  const r = Core.offlineEarn(CN, s, T0, T0 + 2 * 3600e3); assert.strictEqual(r.coins, 26); assert.strictEqual(r.mins, 120); assert(!r.capped); assert.strictEqual(s.coins - c0, 26);
-  const a = atLv(5); a.deco = 4; assert.strictEqual(Core.offlineRate(CN, a), 45);
-  const r2 = Core.offlineEarn(CN, a, T0, T0 + 10 * 3600e3); assert.strictEqual(r2.coins, 180); assert(r2.capped); assert.strictEqual(r2.capH, 4);
+  const r = Core.offlineEarn(CN, s, T0, T0 + 2 * 3600e3); assert.strictEqual(r.coins, 16); assert.strictEqual(r.mins, 120); assert(!r.capped); assert.strictEqual(s.coins - c0, 16);
+  const a = atLv(5); a.deco = 4; assert.strictEqual(Core.offlineRate(CN, a), 28);
+  const r2 = Core.offlineEarn(CN, a, T0, T0 + 10 * 3600e3); assert.strictEqual(r2.coins, 112); assert(r2.capped); assert.strictEqual(r2.capH, 4);
   assert.strictEqual(Core.offlineCapH(CN, atLv(9)), 6); assert.strictEqual(Core.offlineCapH(CN, atLv(15)), 8);
   assert.strictEqual(Core.offlineEarn(CN, atLv(3), T0 + 3600e3, T0), null);
   const t = Core.newState(C, T0, lcg(1)); assert.strictEqual(Core.offlineEarn(C, t, T0, T0 + 3 * 3600e3), null);

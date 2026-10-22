@@ -40,6 +40,7 @@ function session(s, rng, t0, sec, opt) {
   while (t < sec) {
     Core.settleAll(C, s, now(), rng);
     for (let k = s.tasks.active.length - 1; k >= 0; k--) { const b = s.stars; if (Core.claimTask(C, s, k, now()).ok) { t += 2; countStars(b); } }
+    if (opt.daily) { const dp = Core.dailyProgress(C, s, now(), rng); if (dp && dp.ready) { const b = s.stars; Core.claimDailyChest(C, s, now(), rng); t += 4; countStars(b); } }
     if (opt.sinks) {
       const b = s.cells.findIndex((c) => c && c.k === 'bubble');
       if (b >= 0 && s.coins >= Core.bubblePrice(C, s.cells[b]) * 2) { Core.popBubble(C, s, b, 'coins', now()); t += 3; }
@@ -126,24 +127,30 @@ function play(seed, sessionSec, adEnergy) {
 
 /* 7 天金币曲线：每天 2 个会话（早 15 分钟 + 晚 15 分钟，中间离线体力回满），不看广告。
    对比"只有开格"（旧）和"全部金币消耗"（新）：每天结束时手里还剩多少金币、各项花了多少。 */
-function campaign(seed, days, sinks) {
+/* daily=true（M6）：再加上「每天回来」的全部来源——每次会话开头领离线营业（不看广告翻倍）和签到，会话中做完每日任务就开宝箱 */
+function campaign(seed, days, sinks, daily) {
   const rng = lcg(seed), T0 = 1e12, s = Core.newState(C, T0, rng);
   Core.skipTutorial(s);
-  const out = []; let stuckN = 0;
+  const out = []; let stuckN = 0, lastEnd = 0;
   for (let d = 0; d < days; d++) {
+    const m0 = s.level + s.deco + C.regs.reduce((a, r) => a + Core.regState(s, r.id).hearts, 0) + Object.keys(s.recipes || {}).reduce((a, k) => { const m = k.match(/^(\D+)(\d+)$/); return a + Core.recipeStars(C, s, m[1], +m[2]); }, 0);
     for (const [h, len] of [[9, 900], [21, 900]]) {
-      if (session(s, rng, T0 + d * 86400e3 + h * 3600e3, len, { sinks }).stuck) stuckN++;
+      const t0 = T0 + d * 86400e3 + h * 3600e3;
+      if (daily) { if (lastEnd) Core.offlineEarn(C, s, lastEnd, t0); Core.claimLogin(C, s, t0); }
+      const r = session(s, rng, t0, len, { sinks, daily });
+      if (r.stuck) stuckN++; lastEnd = r.endT;
       while (Core.renovate(C, s).ok) {} // 有星有钱就装修（玩家会第一时间装）
     }
-    out.push({ stuck: stuckN, dug: s.stats.dug || 0, wildGot: s.stats.wildGot || 0, perfects: s.stats.perfects || 0, mia: Core.regState(s, 'mia').hearts, regH: C.regs.map((r) => Core.regState(s, r.id).hearts), rec3: Object.keys(s.recipes || {}).filter((k) => { const m = k.match(/^(\D+)(\d+)$/); return Core.recipeStars(C, s, m[1], +m[2]) >= 3; }).length, found: Object.values(s.recipes || {}).filter((r) => r.f).length, mid: s.stats.ev.mid, coins: s.coins, earned: s.stats.coinsEarned, spent: Object.assign({}, s.stats.coinsSpent), unlocks: s.stats.unlocks, lv: C.genList.map((g) => s.gens[g.id].lv), level: s.level, deco: s.deco });
+    const ms = s.level + s.deco + C.regs.reduce((a, r) => a + Core.regState(s, r.id).hearts, 0) + Object.keys(s.recipes || {}).reduce((a, k) => { const m = k.match(/^(\D+)(\d+)$/); return a + Core.recipeStars(C, s, m[1], +m[2]); }, 0) - m0; // 当天里程碑：升级 + 装修节点 + 熟客心 + 菜谱星
+    out.push({ ms, offline: s.stats.offlineCoins || 0, dchest: s.stats.dailyChests || 0, login: s.login ? s.login.n : 0, stuck: stuckN, dug: s.stats.dug || 0, wildGot: s.stats.wildGot || 0, perfects: s.stats.perfects || 0, mia: Core.regState(s, 'mia').hearts, regH: C.regs.map((r) => Core.regState(s, r.id).hearts), rec3: Object.keys(s.recipes || {}).filter((k) => { const m = k.match(/^(\D+)(\d+)$/); return Core.recipeStars(C, s, m[1], +m[2]) >= 3; }).length, found: Object.values(s.recipes || {}).filter((r) => r.f).length, mid: s.stats.ev.mid, coins: s.coins, earned: s.stats.coinsEarned, spent: Object.assign({}, s.stats.coinsSpent), unlocks: s.stats.unlocks, lv: C.genList.map((g) => s.gens[g.id].lv), level: s.level, deco: s.deco });
   }
   return out;
 }
 function campaignReport(days, runs) {
   const pct = (xs, p) => xs.slice().sort((a, b) => a - b)[Math.floor((xs.length - 1) * p)];
-  for (const sinks of [false, true]) {
-    const all = []; for (let k = 1; k <= runs; k++) all.push(campaign(k, days, sinks));
-    console.log(`\n${sinks ? '新：全部金币消耗' : '旧：只有开格'}（每天 2×15 分钟，不看广告，${runs} 局中位数）`);
+  for (const [sinks, daily] of [[false, false], [true, false], [true, true]]) {
+    const all = []; for (let k = 1; k <= runs; k++) all.push(campaign(k, days, sinks, daily));
+    console.log(`\n${daily ? 'M6：全部金币消耗 + 每天回来（离线营业不翻倍、签到、每日宝箱）' : sinks ? 'M5 前：全部金币消耗' : '旧：只有开格'}（每天 2×15 分钟，不看广告，${runs} 局中位数）`);
     console.log('天  店铺等级  装修节点  累计赚   手里余额  开格数  生成器等级  累计花费（开格/升级/回满/体力/泡泡/装修）');
     for (let d = 0; d < days; d++) {
       const r = all.map((a) => a[d]), m = (f) => pct(r.map(f), 0.5);
@@ -156,6 +163,7 @@ function campaignReport(days, runs) {
       console.log(`M2 验收：每 3 分钟中奖励次数（升级 / 新等级物品 / 生成器升级 / 任务 / 泡泡 / 装修 / 回收桶满；机器人不卖东西，真人更多）：D1 ${midRate(1, 1)}、D2–D7 ${midRate(2, 7)}、D8–D14 ${midRate(8, 14)}`);
       console.log(`M4 验收：14 天 ${all.length} 局 × 28 个会话里卡死 ${all.reduce((x, a) => x + a[13].stuck, 0)} 次；挖障碍 D7 ${pct(all.map((a) => a[6].dug), 0.5)} 格；百搭星 D14 ${pct(all.map((a) => a[13].wildGot), 0.5)} 颗；套餐 Perfect D7 ${pct(all.map((a) => a[6].perfects), 0.5)} 次`);
       console.log(`M3 验收：Mia 1–5 心 D${[1, 2, 3, 4, 5].map((h) => dayOf((x) => x.mia >= h)).join('/D')}；第 7 天各熟客心数 ${C.regs.map((r, i) => r.id + ' ' + pct(all.map((a) => a[6].regH[i]), 0.5)).join('、')}；菜谱满星 D4 ${pct(all.map((a) => a[3].rec3), 0.5)} 道、D7 ${pct(all.map((a) => a[6].rec3), 0.5)}、D14 ${pct(all.map((a) => a[13].rec3), 0.5)}；图鉴 D14 ${pct(all.map((a) => a[13].found), 0.5)}/16`);
+      if (daily) console.log(`M6 验收：每天至少 1 个里程碑（升级 / 装修节点 / 熟客升心 / 菜谱升星）的天数 ${days - all.reduce((mx, a) => Math.max(mx, a.filter((x) => x.ms < 1).length), 0)}/${days}（取最差一局；${all.length} 局里有空白天的 ${all.filter((a) => a.some((x) => x.ms < 1)).length} 局，空白天在 D${[...new Set([].concat(...all.map((a) => a.map((x, i) => x.ms < 1 ? i + 1 : 0).filter(Boolean))))].sort((x, y) => x - y).join('/D') || '-'}）；里程碑中位数 D1–D7 ${[0, 1, 2, 3, 4, 5, 6].map((d) => pct(all.map((a) => a[d].ms), 0.5)).join('/')}、D8–D14 ${[7, 8, 9, 10, 11, 12, 13].map((d) => pct(all.map((a) => a[d].ms), 0.5)).join('/')}；14 天离线营业 ${pct(all.map((a) => a[13].offline), 0.5)} 金币、每日宝箱 ${pct(all.map((a) => a[13].dchest), 0.5)} 个、签到 ${pct(all.map((a) => a[13].login), 0.5)} 格`);
       console.log(`M1 验收（中位数）：第一幕 D${dayOf((x) => x.deco >= 5)}、第二幕 D${dayOf((x) => x.deco >= 10)}、第三幕 D${dayOf((x) => x.deco >= 15)}；` +
         `店铺 8 级 D${dayOf((x) => x.level >= 8)}、12 级 D${dayOf((x) => x.level >= 12)}、16 级 D${dayOf((x) => x.level >= 16)}、20 级 D${dayOf((x) => x.level >= 20)}`);
     }

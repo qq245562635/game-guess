@@ -105,7 +105,13 @@
   "comics": [
     "comic_01",
     "comic_08",
-    "comic_15"
+    "comic_15",
+    "comic_reg_mia",
+    "comic_reg_kai",
+    "comic_reg_rose",
+    "comic_reg_leo",
+    "comic_reg_marcus",
+    "comic_reg_chloe"
   ],
   "uiWebp": [
     "welcome_back"
