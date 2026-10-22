@@ -1,40 +1,136 @@
 {
-  "_doc": "装修（策划案 §6 / Issue M3）：15 个节点分 3 幕，按顺序解锁，每节点耗 1–3 星，总计 34 星（构建时校验）。layer 是场景里切换的图层 id（占位图层在 main.js 的 DECO_LAYERS 里画，正式图到位后按同名替换）；comic=true 的节点解锁后弹一格漫画（第 1/8/15 节点）。第一幕压到 6 星：tools/sim.js 模拟首个会话（100 体力 + 10 分钟自然恢复）约 6–9 星，保证首会话能解锁第一幕。",
-  "acts": [
+  "_doc": "装修（策划案 §6 v0.4 / V1-plan.md）：按区域组织，每个区域若干幕、每幕若干节点，按顺序解锁。cost=星星价，coins=金币价（没有就是 0）。layer 是场景里打开的图层 id；comics 里的节点解锁后弹一格漫画。区域 1「海边咖啡摊」= 原来的 3 幕 15 节点：第一幕 6 星不变（首个会话就能装完），第二幕 24 星 + 1800 金币，第三幕 44 星 + 7000 金币（M1 校准：升级奖励让金币来得更快，原定 1000 / 3600 会让第三幕提前到 D5），tools/sim.js（每天 2×15 分钟）装完时间约 D1 / D4 / D7。区域 2、3 是 V2：加区域 = 在 areas 里追加一项 + 交场景图，unlockLevel 是进入该区域要求的店铺等级（且上一个区域要装完）。",
+  "areas": [
     {
-      "id": "act1", "name": "act.1",
-      "nodes": [
-        { "id": "a1_tables",  "name": "deco.a1_tables",  "cost": 1, "layer": "tables", "comic": true },
-        { "id": "a1_parasol", "name": "deco.a1_parasol", "cost": 1, "layer": "parasol" },
-        { "id": "a1_sign",    "name": "deco.a1_sign",    "cost": 1, "layer": "sign" },
-        { "id": "a1_counter", "name": "deco.a1_counter", "cost": 1, "layer": "counter" },
-        { "id": "a1_light",   "name": "deco.a1_light",   "cost": 2, "layer": "lightbox" }
-      ]
-    },
-    {
-      "id": "act2", "name": "act.2",
-      "nodes": [
-        { "id": "a2_deck",    "name": "deco.a2_deck",    "cost": 2, "layer": "deck" },
-        { "id": "a2_flowers", "name": "deco.a2_flowers", "cost": 2, "layer": "flowers" },
-        { "id": "a2_bar",     "name": "deco.a2_bar",     "cost": 3, "layer": "bar", "comic": true },
-        { "id": "a2_menu",    "name": "deco.a2_menu",    "cost": 3, "layer": "menu" },
-        { "id": "a2_speaker", "name": "deco.a2_speaker", "cost": 3, "layer": "speakers" }
-      ]
-    },
-    {
-      "id": "act3", "name": "act.3",
-      "nodes": [
-        { "id": "a3_neon",    "name": "deco.a3_neon",    "cost": 3, "layer": "neon" },
-        { "id": "a3_terrace", "name": "deco.a3_terrace", "cost": 3, "layer": "terrace" },
-        { "id": "a3_tower",   "name": "deco.a3_tower",   "cost": 3, "layer": "tower" },
-        { "id": "a3_photo",   "name": "deco.a3_photo",   "cost": 3, "layer": "photo" },
-        { "id": "a3_lights",  "name": "deco.a3_lights",  "cost": 3, "layer": "lights", "comic": true }
-      ]
+      "id": "seaside",
+      "name": "area.seaside",
+      "unlockLevel": 1,
+      "scene": "seaside",
+      "acts": [
+        {
+          "id": "act1",
+          "name": "act.1",
+          "nodes": [
+            {
+              "id": "a1_tables",
+              "name": "deco.a1_tables",
+              "cost": 1,
+              "layer": "tables"
+            },
+            {
+              "id": "a1_parasol",
+              "name": "deco.a1_parasol",
+              "cost": 1,
+              "layer": "parasol"
+            },
+            {
+              "id": "a1_sign",
+              "name": "deco.a1_sign",
+              "cost": 1,
+              "layer": "sign"
+            },
+            {
+              "id": "a1_counter",
+              "name": "deco.a1_counter",
+              "cost": 1,
+              "layer": "counter"
+            },
+            {
+              "id": "a1_light",
+              "name": "deco.a1_light",
+              "cost": 2,
+              "layer": "lightbox"
+            }
+          ]
+        },
+        {
+          "id": "act2",
+          "name": "act.2",
+          "nodes": [
+            {
+              "id": "a2_deck",
+              "name": "deco.a2_deck",
+              "cost": 4,
+              "layer": "deck",
+              "coins": 200
+            },
+            {
+              "id": "a2_flowers",
+              "name": "deco.a2_flowers",
+              "cost": 4,
+              "layer": "flowers",
+              "coins": 300
+            },
+            {
+              "id": "a2_bar",
+              "name": "deco.a2_bar",
+              "cost": 5,
+              "layer": "bar",
+              "coins": 350
+            },
+            {
+              "id": "a2_menu",
+              "name": "deco.a2_menu",
+              "cost": 5,
+              "layer": "menu",
+              "coins": 450
+            },
+            {
+              "id": "a2_speaker",
+              "name": "deco.a2_speaker",
+              "cost": 6,
+              "layer": "speakers",
+              "coins": 500
+            }
+          ]
+        },
+        {
+          "id": "act3",
+          "name": "act.3",
+          "nodes": [
+            {
+              "id": "a3_neon",
+              "name": "deco.a3_neon",
+              "cost": 8,
+              "layer": "neon",
+              "coins": 900
+            },
+            {
+              "id": "a3_terrace",
+              "name": "deco.a3_terrace",
+              "cost": 8,
+              "layer": "terrace",
+              "coins": 1200
+            },
+            {
+              "id": "a3_tower",
+              "name": "deco.a3_tower",
+              "cost": 9,
+              "layer": "tower",
+              "coins": 1400
+            },
+            {
+              "id": "a3_photo",
+              "name": "deco.a3_photo",
+              "cost": 9,
+              "layer": "photo",
+              "coins": 1600
+            },
+            {
+              "id": "a3_lights",
+              "name": "deco.a3_lights",
+              "cost": 10,
+              "layer": "lights",
+              "coins": 1900
+            }
+          ]
+        }
+      ],
+      "comics": {
+        "a1_tables": "comic.1",
+        "a2_bar": "comic.8",
+        "a3_lights": "comic.15"
+      }
     }
-  ],
-  "comics": {
-    "a1_tables": "comic.1",
-    "a2_bar": "comic.8",
-    "a3_lights": "comic.15"
-  }
+  ]
 }

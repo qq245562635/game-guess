@@ -7,9 +7,9 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
 src = root / 'src'
-CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art']
+CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression']
 JS = ['l10n.js', 'core.js', 'gl.js', 'art.js', 'ads.js', 'main.js']
-MAX_STRINGS = 120
+MAX_STRINGS = 180  # 策划案 v0.4：V1 新系统文案，上限由 120 提到 180
 
 config = {name: json.loads((src / 'config' / f'{name}.json').read_text(encoding='utf-8')) for name in CONFIG_FILES}
 locale = json.loads((src / 'locale' / 'en.json').read_text(encoding='utf-8'))
@@ -39,19 +39,27 @@ for t in O['templates']:
     for ch, l in t['needs']:
         assert ch in config['chains']['chains'] and 1 <= l <= config['chains']['maxLevel'], f'订单 {t["id"]} 需求不合法'
 D = config['deco']
-nodes = [n for a in D['acts'] for n in a['nodes']]
-assert len(D['acts']) == 3 and len(nodes) == 15, '装修应为 3 幕 15 节点'
-assert all(1 <= n['cost'] <= 3 for n in nodes), '每节点 1–3 星'
-assert sum(n['cost'] for n in nodes) == 34, f'装修总星数 {sum(n["cost"] for n in nodes)}，应为 34'
-for a in D['acts']:
-    assert a['name'] in locale, f'缺本地化：{a["name"]}'
-for n in nodes:
-    assert n['name'] in locale, f'缺本地化：{n["name"]}'
-comic_idx = [i + 1 for i, n in enumerate(nodes) if n['id'] in D['comics']]
-assert comic_idx == [1, 8, 15], f'漫画节点应为第 1/8/15，现在 {comic_idx}'
-for k in D['comics'].values():
-    assert k in locale, f'缺本地化：{k}'
-UI_IDS = {'icon_energy', 'icon_coin', 'icon_star', 'logo_merge_cafe_lite', 'icon_lock', 'icon_check', 'icon_clock', 'icon_hand', 'nav_cafe', 'nav_merge', 'nav_tasks', 'deco_plant_pot', 'deco_plant_fern', 'deco_plant_bush', 'fx_bubble', 'icon_upgrade'}
+assert D['areas'], '装修至少要有 1 个区域'
+for ar in D['areas']:
+    assert ar['name'] in locale, f'缺本地化：{ar["name"]}'
+    for a in ar['acts']:
+        assert a['name'] in locale, f'缺本地化：{a["name"]}'
+    nodes = [n for a in ar['acts'] for n in a['nodes']]
+    for n in nodes:
+        assert n['name'] in locale, f'缺本地化：{n["name"]}'
+        assert n['cost'] >= 1 and n.get('coins', 0) >= 0, f'装修节点 {n["id"]} 价格不合法'
+    for k in ar.get('comics', {}).values():
+        assert k in locale, f'缺本地化：{k}'
+# 区域 1（海边咖啡摊）：3 幕 15 节点，第一幕 6 星不变（首会话能装完），漫画在第 1 / 8 / 15 节点
+A1 = D['areas'][0]; n1 = [n for a in A1['acts'] for n in a['nodes']]
+assert len(A1['acts']) == 3 and len(n1) == 15, '区域 1 应为 3 幕 15 节点'
+assert sum(n['cost'] for n in A1['acts'][0]['nodes']) == 6, '第一幕应为 6 星'
+assert [i + 1 for i, n in enumerate(n1) if n['id'] in A1['comics']] == [1, 8, 15], '漫画节点应为第 1/8/15'
+P = config['progression']
+assert all(x > 0 for x in P['levelNeed']) and P['after'] > 0, '店铺等级经验表不合法'
+for u in P['unlocks']:
+    assert u['name'] in locale, f'缺本地化：{u["name"]}'
+UI_IDS = {'icon_energy', 'icon_coin', 'icon_star', 'logo_merge_cafe_lite', 'icon_lock', 'icon_check', 'icon_clock', 'icon_hand', 'nav_cafe', 'nav_merge', 'nav_tasks', 'deco_plant_pot', 'deco_plant_fern', 'deco_plant_bush', 'fx_bubble', 'icon_upgrade', 'badge_level', 'chest_closed', 'chest_open', 'obstacle_sand', 'obstacle_crate', 'nav_book'}
 item_ids = {it['id'] for d in config['chains']['chains'].values() for it in d['items']} | {g['id'] for g in config['generators']['generators']}
 avatar_ids = {c['id'] for c in config['orders']['customers']}
 for key, ids, folder in [('items', item_ids, 'items'), ('avatars', avatar_ids, 'avatars'), ('ui', UI_IDS, 'ui')]:
