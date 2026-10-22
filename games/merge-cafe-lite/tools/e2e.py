@@ -392,7 +392,14 @@ with sync_playwright() as p:
     pg.screenshot(path=str(out / 'm1-level-info.png')); pg.click('#m-btns .btn'); pg.wait_for_timeout(200)
     pg.evaluate('MCL.S.xp = 5; [...document.querySelectorAll("#dbg button")].find(b => b.textContent === "+100 xp").click()'); pg.wait_for_timeout(900)  # 5 + 100 = 25 + 35 + 45 → 正好 5 级
     check('一次连升多级合成一个庆典（2 → 5 级，5 级送宝箱）', pg.is_visible('#modal.show') and 'Level 5' in pg.inner_text('#m-title') and 'chest' in pg.inner_text('#m-comic').lower(), pg.inner_text('#m-comic') if pg.is_visible('#modal.show') else '')
+    c5 = S(pg, 'coins'); pg.click('#m-btns .btn')
+    try: pg.wait_for_selector('#chest-box', timeout=3000)
+    except Exception: pass
+    pg.wait_for_timeout(1300)
+    check('M2 宝箱：5 级庆典之后单独开宝箱，抖完自动打开、奖励逐个弹出', pg.is_visible('#chest-box.open') and pg.locator('#chest-rw .rw-row span').count() == 3, pg.inner_text('#modal') if pg.is_visible('#modal.show') else 'no modal')
+    pg.screenshot(path=str(out / 'm2-chest.png'))
     pg.click('#m-btns .btn'); settle_rewards(pg)
+    check('宝箱 Collect 后金币落地，顶栏和存档一致', pg.inner_text('#coins').replace(',', '') == str(S(pg, 'coins')) and S(pg, 'coins') == c5)
     # 装修：第二幕节点要星 + 金币
     pg.evaluate('MCL.S.deco=5; MCL.S.stars=10; MCL.S.coins=150'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)
     check('装修第二幕：按钮显示 ★4 + 200 金币', '4' in pg.inner_text('#deco-btn') and '200' in pg.inner_text('#deco-btn'), pg.inner_text('#deco-btn'))
@@ -405,6 +412,54 @@ with sync_playwright() as p:
     check('打点：今天已记上线、奖励事件有计数、游玩时长在涨', len(S(pg, 'stats.days')) == 1 and S(pg, 'stats.ev.small') >= 1 and S(pg, 'stats.ev.mid') >= 2 and S(pg, 'stats.playMs') > 1000, json.dumps(S(pg, 'stats.ev')))
     reload(pg, levels=True)
     check('刷新后等级、经验保留（存档 v6）', S(pg, 'v') == 6 and S(pg, 'level') == 5 and pg.inner_text('#level') == '5')
+    ctx.close()
+
+    # ================= V1 M2：连击、出售 + 回收桶、高级合成特写、满格提示、音效开关 =================
+    ctx = br.new_context(viewport={'width': 405, 'height': 720}, device_scale_factor=2)
+    pg = ctx.new_page(); watch(pg); boot(pg, '?reset=1&fastads&debug=1')
+    pg.evaluate('[...document.querySelectorAll("#dbg button")].find(b => b.textContent === "skip tutorial").click()'); pg.wait_for_timeout(300)
+    PAIRS = [(14, 15), (16, 17), (18, 19), (21, 22), (23, 24)]  # 第 3–4 行，避开调试面板
+    pg.evaluate("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; for(const i of [14,15,16,17,18,19,21,22,23,24]) s.cells[i]={k:'item',chain:'coffee',lvl:1}; s.combo={n:0,at:0};})()")
+    pg.wait_for_timeout(200); c0 = S(pg, 'coins')
+    for a, b in PAIRS: (x0, y0), (x1, y1) = cxy(pg, a), cxy(pg, b); pg.mouse.move(x0, y0); pg.mouse.down(); pg.mouse.move(x0 + (x1 - x0) / 2, y0, steps=2); pg.mouse.move(x1, y1, steps=2); pg.mouse.up(); pg.wait_for_timeout(60)
+    pg.wait_for_timeout(300)
+    check('M2 连击：5 次连续合成 → 连击 x5，第 3 次起飘"Combo x3!"，x5 送 5 金币', S(pg, 'combo.n') == 5 and S(pg, 'stats.bestCombo') == 5 and S(pg, 'coins') == c0 + 5, f"combo={S(pg, 'combo.n')}")
+    pg.wait_for_timeout(2700)  # 连击窗口过了
+    pg.evaluate("MCL.S.cells[28]={k:'item',chain:'bake',lvl:1}; MCL.S.cells[29]={k:'item',chain:'bake',lvl:1}; MCL.S.unlocked[28]=MCL.S.unlocked[29]=true"); pg.wait_for_timeout(150); drag(pg, 28, 29)
+    check('超过 2.5 秒再合成：连击从 1 重新数，不罚', S(pg, 'combo.n') == 1 and S(pg, 'coins') == c0 + 5)
+    # 出售
+    pg.evaluate("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; s.cells[15]={k:'item',chain:'bake',lvl:2}; s.cells[16]={k:'item',chain:'coffee',lvl:5}; s.recycle=0;})()"); pg.wait_for_timeout(200)
+    c0 = S(pg, 'coins'); tap_cell(pg, 15); pg.wait_for_timeout(250)
+    check('M2 出售：点选物品，下方出现 "Sell +2"', pg.is_visible('#sell.show') and 'Sell +2' in pg.inner_text('#sell'), pg.inner_text('#sell') if pg.is_visible('#sell') else '')
+    pg.screenshot(path=str(out / 'm2-sell.png'))
+    pg.click('#sell'); settle_rewards(pg)
+    check('卖掉 2 级物品：+2 金币、格子空出、回收桶 1/8', cell(pg, 15) is None and S(pg, 'coins') == c0 + 2 and S(pg, 'recycle') == 1 and '1/8' in pg.inner_text('#toast') and not pg.is_visible('#sell.show'))
+    tap_cell(pg, 16); pg.wait_for_timeout(250); pg.click('#sell'); pg.wait_for_timeout(200)
+    check('5 级以上要确认：弹窗、未确认前不卖', pg.is_visible('#modal.show') and 'Latte' in pg.inner_text('#m-title') and cell(pg, 16) is not None)
+    pg.click('#m-btns .btn.coin'); settle_rewards(pg)
+    check('确认后卖出：+16 金币', cell(pg, 16) is None and S(pg, 'coins') == c0 + 18)
+    pg.evaluate("MCL.S.recycle=7; MCL.S.cells[17]={k:'item',chain:'bake',lvl:1}; MCL.S.energy=40; MCL.S.energyTs=MCL.now()"); pg.wait_for_timeout(150)
+    tap_cell(pg, 17); pg.wait_for_timeout(250); pg.click('#sell'); pg.wait_for_timeout(300)
+    check('回收桶满 8 件：送 5 体力、桶清零', S(pg, 'energy') == 45 and S(pg, 'recycle') == 0 and 'Recycle bonus' in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    # 高级合成特写
+    pg.evaluate("MCL.S.cells[22]={k:'item',chain:'coffee',lvl:5}; MCL.S.cells[23]={k:'item',chain:'coffee',lvl:5}"); pg.wait_for_timeout(150)
+    drag(pg, 22, 23); sp = pg.evaluate('MCL.spotlight'); pg.screenshot(path=str(out / 'm2-spotlight.png'))
+    check('M2 高级合成特写：合出 6 级时物品放大到棋盘中央', sp and cell(pg, 23)['lvl'] == 6)
+    pg.wait_for_timeout(1000)
+    check('特写 0.9 秒后结束，物品回到格子', not pg.evaluate('MCL.spotlight') and cell(pg, 23)['lvl'] == 6)
+    # 满格且无可合：提示卖最低级的
+    # 填满：前 16 格是两条链 1–8 级各一个（两两不同），其余全是 8 级（满级同款也不能合）
+    pg.evaluate("(()=>{const s=MCL.S; let k=0; for(let i=0;i<49;i++) if(s.unlocked[i]) { s.cells[i]= k<16 ? {k:'item',chain:k%2?'coffee':'bake',lvl:1+Math.floor(k/2)} : {k:'item',chain:k%2?'coffee':'bake',lvl:8}; k++; } })()")
+    pg.wait_for_timeout(700)
+    stuck = pg.evaluate('Core.stuckHint(MCL.C, MCL.S)')
+    check('M2 永不卡死：满格无可合 → 自动选中最低级物品、提示卖掉、出现 Sell 按钮', stuck >= 0 and pg.evaluate('MCL.sel') == stuck and 'No matches' in pg.inner_text('#toast') and pg.is_visible('#sell.show'), f'stuck={stuck} sel={pg.evaluate("MCL.sel")}')
+    pg.screenshot(path=str(out / 'm2-stuck.png'))
+    # 音效开关
+    pg.evaluate("for(let i=0;i<49;i++) MCL.S.cells[i]=null"); pg.wait_for_timeout(200)
+    check('M2 音效：右上角喇叭按钮，默认开', pg.is_visible('#snd') and pg.inner_text('#snd') == '🔊' and pg.evaluate('Sfx.supported'))
+    pg.evaluate("document.getElementById('snd').click()"); pg.wait_for_timeout(100)  # 调试面板盖在右上角，用脚本点
+    check('点喇叭静音，再刷新仍是静音', S(pg, 'settings.mute') is True and pg.inner_text('#snd') == '🔇')
+    reload(pg); check('刷新后静音保留', S(pg, 'settings.mute') is True and pg.inner_text('#snd') == '🔇' and pg.evaluate('Sfx.muted'))
     ctx.close()
 
     # ================= 多分辨率布局 =================

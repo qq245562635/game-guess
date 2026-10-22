@@ -195,9 +195,12 @@ const Core = (() => {
   function maybeBubble(C, s, at, it, now, rng) {
     const B = C.eco.bubble; if (!B || it.lvl < B.minLevel || s.tut !== TUT_DONE) return -1;
     if (s.cells.filter((c) => c && c.k === 'bubble').length >= B.maxAtOnce) return -1;
-    if (rng() >= B.chance) return -1;
+    // 保底：连续 pity 次没冒，这次必冒（满格冒不出来时计数保留到下一次）
+    const forced = B.pity && (s.bubblePity || 0) >= B.pity;
+    if (!forced && rng() >= B.chance) { s.bubblePity = (s.bubblePity || 0) + 1; return -1; }
     const [r, c] = rc(C, at), to = nearestEmpty(C, s, r, c);
-    if (to < 0) return -1;
+    if (to < 0) { s.bubblePity = (s.bubblePity || 0) + 1; return -1; }
+    s.bubblePity = 0;
     s.cells[to] = { k: 'bubble', chain: it.chain, lvl: it.lvl, until: (now || 0) + B.lifeSec * 1000 };
     s.stats.bubbles = (s.stats.bubbles || 0) + 1;
     return to;
@@ -255,11 +258,58 @@ const Core = (() => {
       if (!s.stats.firstMergeAt) s.stats.firstMergeAt = now || 1;
       if (step === 'merge') s.tut++;
       const bubble = maybeBubble(C, s, to, s.cells[to], now, rng || Math.random);
-      return { type: 'merge', lvl: a.lvl + 1, bubble };
+      const combo = step ? null : addCombo(C, s, now);
+      return { type: 'merge', lvl: a.lvl + 1, bubble, combo };
     }
     let reason = 'mismatch';
     if (a.k === 'item' && b.k === 'item' && a.chain === b.chain && a.lvl === b.lvl) reason = 'max';
     return { type: 'bounce', reason };
+  }
+
+  /* ---------- 合成连击（V1 M2）：两次合成间隔 ≤ windowSec 算连击；断了只是从 1 重新数，不罚 ---------- */
+  function addCombo(C, s, now) {
+    const K = C.eco.combo; if (!K) return null;
+    const t = now || 0, c = s.combo || (s.combo = { n: 0, at: 0 });
+    c.n = c.at && t - c.at <= K.windowSec * 1000 ? c.n + 1 : 1; c.at = t;
+    const r = { n: c.n, show: c.n >= K.showFrom, coins: 0, energy: 0 };
+    if (K.coinsEvery && c.n % K.coinsEvery === 0) { r.coins = K.coins; s.coins += K.coins; s.stats.coinsEarned += K.coins; }
+    if (K.energyEvery && c.n % K.energyEvery === 0) { r.energy = K.energy; settleEnergy(C, s, t); s.energy += K.energy; }
+    if (r.coins || r.energy) logEv(s, 'small');
+    s.stats.bestCombo = Math.max(s.stats.bestCombo || 0, c.n);
+    return r;
+  }
+
+  /* ---------- 出售 + 回收桶（V1 M2） ---------- */
+  const sellPrice = (C, it) => Math.pow(2, it.lvl - 1);
+  function sellItem(C, s, i, now) {
+    const it = s.cells[i];
+    if (!it || it.k !== 'item') return { ok: false, reason: 'none' };
+    if (tutStep(C, s)) return { ok: false, reason: 'tutorial' };
+    const price = sellPrice(C, it), R = C.eco.recycle || { size: 0 };
+    s.cells[i] = null; s.coins += price; s.stats.coinsEarned += price; s.stats.sold = (s.stats.sold || 0) + 1;
+    s.recycle = (s.recycle || 0) + 1;
+    let energy = 0;
+    if (R.size && s.recycle >= R.size) { s.recycle = 0; energy = R.energy; settleEnergy(C, s, now || 0); s.energy += energy; logEv(s, 'mid'); }
+    else logEv(s, 'small');
+    return { ok: true, price, item: it, energy, bin: s.recycle, binSize: R.size || 0 };
+  }
+
+  /* ---------- 提示（V1 M2）：永不卡死 ---------- */
+  /* 棋盘上一对能合成的物品（优先低等级，引导中不提示），没有返回 null */
+  function findMergePair(C, s) {
+    let best = null;
+    for (let i = 0; i < C.n; i++) {
+      const a = s.cells[i]; if (!a || a.k !== 'item' || a.lvl >= C.maxLevel) continue;
+      for (let j = i + 1; j < C.n; j++) if (canMerge(C, a, s.cells[j]) && (!best || a.lvl < s.cells[best[0]].lvl)) { best = [i, j]; break; }
+    }
+    return best;
+  }
+  /* 满格且没有能合的：返回最低级物品的格子（提示卖掉它腾地方），否则 -1 */
+  function stuckHint(C, s) {
+    if (emptyCount(C, s) > 0 || findMergePair(C, s)) return -1;
+    let low = -1;
+    for (let i = 0; i < C.n; i++) { const c = s.cells[i]; if (c && c.k === 'item' && (low < 0 || c.lvl < s.cells[low].lvl)) low = i; }
+    return low;
   }
 
   /* ---------- 订单 ---------- */
@@ -553,6 +603,7 @@ const Core = (() => {
     xpNeed, orderXp, addXp, openChest, unlockLevel, featureOn, nextUnlock, logEv, markDay, daysInFirstWeek, adOffer, adClick, grantEnergy, grantDouble, markInterstitial, cooldownSec,
     fillTasks, taskProgress, tasksClaimable, claimTask,
     genMaxCharges, upgradeCost, upgradeGen, refillPrice, buyRefill, energyPrice, buyEnergy,
+    addCombo, sellPrice, sellItem, findMergePair, stuckHint,
     maybeBubble, settleBubbles, bubblePrice, popBubble, canSwap, swapOrder, daily,
     unlockPrice, canUnlockHere, unlock, serialize, deserialize, itemDef,
   };

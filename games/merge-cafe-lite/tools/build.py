@@ -8,7 +8,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parent.parent
 src = root / 'src'
 CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression']
-JS = ['l10n.js', 'core.js', 'gl.js', 'art.js', 'ads.js', 'main.js']
+JS = ['l10n.js', 'core.js', 'gl.js', 'art.js', 'sfx.js', 'ads.js', 'main.js']
 MAX_STRINGS = 180  # 策划案 v0.4：V1 新系统文案，上限由 120 提到 180
 
 config = {name: json.loads((src / 'config' / f'{name}.json').read_text(encoding='utf-8')) for name in CONFIG_FILES}

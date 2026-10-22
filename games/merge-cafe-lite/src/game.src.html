@@ -118,6 +118,22 @@ body.tasks #tasks { display: block; }
 .chip.todo { opacity: .55; }
 #deco-btn { width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 16px; padding-left: 10px; padding-right: 10px; }
 .cm { display: inline-block; width: .9em; height: .9em; margin: 0 2px -1px 0; border-radius: 50%; background: #f2b632; box-shadow: inset 0 0 0 2px #b97a12; }
+/* 出售按钮（选中物品时出现在它下方）、静音按钮 */
+#sell { position: fixed; z-index: 3; display: none; transform: translateX(-50%); border: 3px solid #b97a12; border-radius: 14px; padding: 4px 10px;
+  background: linear-gradient(#ffd866, #f2b632); color: #5a3a12; font: 900 14px var(--font); box-shadow: 0 3px 0 #b97a12; cursor: pointer; white-space: nowrap; }
+#sell.show { display: block; animation: x2 .25s cubic-bezier(.2,1.6,.4,1); }
+#snd { position: fixed; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: 3px solid #e9d2a6; background: var(--cream); box-shadow: 0 3px 0 rgba(120,80,40,.35);
+  font: 16px/1 sans-serif; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+body.cafe #snd, body.tasks #snd { display: none; }
+/* 宝箱 */
+.chest { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.chest .box { width: 150px; height: 150px; position: relative; }
+.chest .box img, .chest .box svg { width: 100%; height: 100%; display: block; }
+.chest .box.shake { animation: shake .3s ease-in-out 3; }
+@keyframes shake { 25% { transform: rotate(-8deg) scale(1.04); } 75% { transform: rotate(8deg) scale(1.04); } }
+.chest .box.open { animation: pop .35s cubic-bezier(.2,1.6,.4,1); }
+.chest .rw-row span { opacity: 0; animation: chip .35s cubic-bezier(.2,1.6,.4,1) forwards; }
+@keyframes chip { from { opacity: 0; transform: translateY(14px) scale(.6); } to { opacity: 1; transform: none; } }
 .floaty { position: fixed; z-index: 6; pointer-events: none; transform: translate(-50%, 0); font: 900 16px var(--font); text-shadow: 0 1px 0 #fff, 0 0 4px #fff;
   animation: floaty 1s ease-out forwards; white-space: nowrap; }
 @keyframes floaty { to { transform: translate(-50%, -34px); opacity: 0; } }
@@ -192,6 +208,8 @@ body.tasks #tasks { display: block; }
 <div id="tasks"><h3 data-l10n="ui.tasksTitle"></h3><div id="tasks-list"></div></div>
 <div id="deco"><div class="deco-head"><span id="deco-act"></span><span id="deco-prog"></span></div><div id="deco-list"></div><button class="btn" id="deco-btn"></button></div>
 <button id="x2">▶ <span></span></button>
+<button id="sell"></button>
+<button id="snd" aria-label="Sound">🔊</button>
 <div id="ad"><div id="ad-label"></div><div id="ad-count"></div></div>
 <div id="modal"><div class="card"><h2 id="m-title"></h2><div id="m-comic"></div><p id="m-body"></p><div class="btns" id="m-btns"></div></div></div>
 <div id="err"></div>

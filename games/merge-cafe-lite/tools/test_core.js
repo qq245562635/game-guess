@@ -559,6 +559,49 @@ test('v5 存档迁移到 v6：按已完成订单数估店铺等级（老玩家�
   assert.deepStrictEqual(back.stats.ev, { small: 0, mid: 0, big: 0 }); assert(Array.isArray(back.stats.days));
 });
 
+/* ---------- V1 M2：连击、出售 + 回收桶、泡泡保底、提示 ---------- */
+test('连击：2.5 秒内连续合成累计；x5 给 5 金币、x10 给 1 体力；超时从 1 重数；引导中不算', () => {
+  const s = fresh(); clearBoard(s); s.energy = 50; s.energyTs = T0; const c0 = s.coins;
+  const res = [];
+  for (let k = 0; k < 10; k++) { put(s, 0, 0, 'coffee', 1); put(s, 0, 1, 'coffee', 1); res.push(Core.drop(CN, s, 0, 1, T0 + k * 2000, () => 0.99).combo); s.cells[1] = null; }
+  assert.deepStrictEqual(res.map((r) => r.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.deepStrictEqual(res.map((r) => r.show), [false, false, true, true, true, true, true, true, true, true]);
+  assert.strictEqual(s.coins, c0 + 10); assert.strictEqual(s.energy, 51); assert.strictEqual(s.stats.bestCombo, 10);
+  put(s, 0, 0, 'coffee', 1); put(s, 0, 1, 'coffee', 1);
+  assert.strictEqual(Core.drop(CN, s, 0, 1, T0 + 18000 + 2600, () => 0.99).combo.n, 1, '间隔 2.6 秒断开');
+  const g = Core.newState(C, T0, lcg(1)); Core.tapGen(C, g, GC, T0, lcg(2));
+  const ones = g.cells.map((c, i) => (c && c.lvl === 1 ? i : -1)).filter((i) => i >= 0);
+  assert.strictEqual(Core.drop(C, g, ones[0], ones[1], T0).combo, null, '引导里的合成不算连击');
+});
+test('出售：价格 2^(等级−1)；回收桶满 8 件送 5 体力并清零；泡泡和引导中不能卖', () => {
+  const s = fresh(); clearBoard(s); s.energy = 10; s.energyTs = T0; const c0 = s.coins;
+  assert.deepStrictEqual([1, 2, 5, 8].map((l) => Core.sellPrice(CN, { lvl: l })), [1, 2, 16, 128]);
+  for (let k = 0; k < 7; k++) { put(s, 0, 0, 'bake', 3); const r = Core.sellItem(CN, s, 0, T0); assert(r.ok); assert.strictEqual(r.energy, 0); assert.strictEqual(r.bin, k + 1); }
+  assert.strictEqual(s.coins, c0 + 28); assert.strictEqual(s.cells[0], null);
+  put(s, 0, 0, 'bake', 1); const r = Core.sellItem(CN, s, 0, T0); assert.strictEqual(r.energy, 5); assert.strictEqual(s.recycle, 0); assert.strictEqual(s.energy, 15);
+  s.cells[3] = { k: 'bubble', chain: 'coffee', lvl: 5, until: T0 + 1e5 }; assert.strictEqual(Core.sellItem(CN, s, 3, T0).reason, 'none');
+  const g = Core.newState(C, T0, lcg(1)); assert.strictEqual(Core.sellItem(C, g, 24, T0).reason, 'tutorial');
+});
+test('泡泡保底：连续 20 次 4 级以上合成没冒，第 21 次必冒；冒了计数清零', () => {
+  const s = fresh(); clearBoard(s);
+  for (let k = 0; k < 20; k++) { put(s, 0, 0, 'coffee', 3); put(s, 0, 1, 'coffee', 3); assert.strictEqual(Core.drop(CN, s, 0, 1, T0, () => 0.99).bubble, -1); s.cells[1] = null; }
+  assert.strictEqual(s.bubblePity, 20);
+  put(s, 0, 0, 'coffee', 3); put(s, 0, 1, 'coffee', 3);
+  assert(Core.drop(CN, s, 0, 1, T0, () => 0.99).bubble >= 0, '保底必冒'); assert.strictEqual(s.bubblePity, 0);
+});
+test('提示：找最低级的一对可合成物品；满格且无可合时返回最低级物品，否则 -1', () => {
+  const s = fresh(); clearBoard(s);
+  put(s, 0, 0, 'bake', 4); put(s, 0, 1, 'bake', 4); put(s, 2, 2, 'coffee', 2); put(s, 3, 3, 'coffee', 2);
+  assert.deepStrictEqual(Core.findMergePair(CN, s), [16, 24]);
+  assert.strictEqual(Core.stuckHint(CN, s), -1, '有空格不算卡死');
+  clearBoard(s); let k = 0;
+  for (let i = 0; i < 28; i++) s.cells[i] = { k: 'item', chain: i % 2 ? 'coffee' : 'bake', lvl: 1 + (Math.floor(i / 2) % 8) };
+  s.cells[26] = { k: 'item', chain: 'bake', lvl: 8 }; s.cells[27] = { k: 'item', chain: 'coffee', lvl: 8 }; // 8 级同款不能合
+  for (let i = 0; i < 28; i++) if (Core.findMergePair(CN, s)) { const p = Core.findMergePair(CN, s); s.cells[p[1]] = { k: 'item', chain: 'coffee', lvl: 8 }; k++; }
+  assert.strictEqual(Core.findMergePair(CN, s), null);
+  const low = Core.stuckHint(CN, s); assert(low >= 0 && s.cells[low].lvl === Math.min(...s.cells.filter(Boolean).map((c) => c.lvl)));
+});
+
 for (const [st, n] of results) console.log(st === 'PASS' ? '  ✓' : '  ✗', n);
 console.log(`\n${pass}/${results.length} passed`);
 process.exit(pass === results.length ? 0 : 1);

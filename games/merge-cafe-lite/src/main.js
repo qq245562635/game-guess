@@ -28,6 +28,8 @@
   if (S) welcomeGain = Core.settleAll(C, S, now());
   else S = Core.newState(C, now());
   Core.markDay(S, now()); // 留存打点：今天来过
+  if (!S.settings) S.settings = { mute: false };
+  Sfx.setMuted(S.settings.mute);
   let dirty = true, saveTimer = 0;
   function save() { const ls = store(); if (!ls) return; try { ls.setItem(SAVE_KEY, Core.serialize(S, now())); dirty = false; } catch (e) {} }
   const markDirty = () => { dirty = true; };
@@ -36,6 +38,11 @@
     if (document.hidden) save();
     else { Core.markDay(S, now()); const g = Core.settleAll(C, S, now()); if (g > 0) toast(L.t('ui.welcomeBack', { n: g })); }
   });
+
+  /* 音效：第一次触摸时解锁 WebAudio；右上角喇叭按钮切换静音（存档里记住） */
+  addEventListener('pointerdown', () => Sfx.unlock(), { capture: true });
+  function updateSndBtn() { $('snd').textContent = S.settings.mute ? '🔇' : '🔊'; }
+  $('snd').onclick = () => { S.settings.mute = !S.settings.mute; Sfx.setMuted(S.settings.mute); updateSndBtn(); markDirty(); save(); if (!S.settings.mute) Sfx.tap(); };
 
   /* ---------- WebGL ---------- */
   const cv = $('cv');
@@ -111,6 +118,7 @@
     LY.hudBottom = Math.max(...[...document.querySelectorAll('.pill')].map((e) => e.getBoundingClientRect().bottom)) + 4; LY.navH = navH;
     const pc = $('pill-coins').getBoundingClientRect(), ps = $('pill-stars').getBoundingClientRect();
     LY.coinTarget = [pc.left + 18, pc.top + pc.height / 2]; LY.starTarget = [ps.left + 18, ps.top + ps.height / 2];
+    const sd = $('snd').style; sd.right = (Math.max(8, (W - Math.min(W - 16, 620)) / 2) + 2) + 'px'; sd.top = (LY.hudBottom + 6) + 'px'; // 头图右上角，不压顶栏
   }
   function placeNav(x, y, w, h) {
     const s = $('nav').style; s.left = x + 'px'; s.top = y + 'px'; s.width = w + 'px'; s.height = h + 'px';
@@ -134,7 +142,8 @@
   /* ---------- 动画 ---------- */
   const pops = new Map(), shakes = new Map(), cardPops = new Map(), genPress = new Map();
   const flies = [], parts = [], coinsFly = [];
-  let pendingCoins = 0, pendingStars = 0;
+  let pendingCoins = 0, pendingStars = 0, lastCoinSfx = 0, spotlight = null, idleT = 0, stuckShown = -1;
+  const SPOT_LVL = 6, SPOT_DUR = 0.9;
   const easeOut = (t) => 1 - Math.pow(1 - t, 3);
   function popScale(t) {
     if (t >= 0.42 || t < 0) return 1;
@@ -256,9 +265,9 @@
     if (r.ok) {
       const R = genRect(id);
       flies.push({ cell: r.to, item: r.item, x0: R.x + R.h * 0.55, y0: R.y + R.h / 2, t0: clock(), dur: 0.32, spawn: true });
-      markDirty(); return;
+      Sfx.spawn(); markDirty(); return;
     }
-    shakes.set('g' + id, clock());
+    shakes.set('g' + id, clock()); Sfx.bounce();
     if (r.reason === 'full') toast(L.t('ui.full'));
     else if (r.reason === 'cooldown') showRefill(id);
     else if (r.reason === 'energy') showNoEnergy();
@@ -357,36 +366,113 @@
   function queueLevelUps(ups) {
     if (!ups || !ups.length) return;
     for (const u of ups) {
-      const coins = u.coins + (u.chest ? u.chest.coins : 0), stars = u.chest ? u.chest.stars : 0;
-      pendingCoins += coins; pendingStars += stars; pendingLevels++;
-      lvQueue.push(Object.assign({ totalCoins: coins, totalStars: stars, totalEnergy: u.energy + (u.chest ? u.chest.energy : 0) }, u));
+      const ch = u.chest || { coins: 0, stars: 0, energy: 0 };
+      pendingCoins += u.coins + ch.coins; pendingStars += ch.stars; pendingLevels++;
+      lvQueue.push(u);
     }
     lvlKey = ''; updateLevel();
   }
+  const esc2 = (t) => String(t).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+  const BOLT_SVG = '<svg viewBox="0 0 30 30"><path d="M18 1.5 5.5 17h8l-3 11.5L24.5 12h-8.2z" fill="#f5c03a" stroke="#c4851a" stroke-width="2" stroke-linejoin="round"/></svg>';
+  const STAR_SVG = '<svg viewBox="0 0 30 30"><path d="M15 2l3.8 8 8.7 1-6.4 6 1.7 8.6L15 21.3l-7.8 4.3 1.7-8.6-6.4-6 8.7-1z" fill="#f5c03a" stroke="#c4851a" stroke-width="2" stroke-linejoin="round"/></svg>';
+  const icon = (id, svg) => { const s = Art.src(id); return s ? `<img src="${esc2(s)}" alt="">` : svg; };
+  /* 奖励条：体力 / 金币 / 星星，delay 秒起逐个弹出（宝箱用） */
+  function rewardChips(r, delay) {
+    const out = [];
+    if (r.energy) out.push(['energy', icon('icon_energy', BOLT_SVG), r.energy]);
+    if (r.coins) out.push(['coins', coinIcon(), r.coins]);
+    if (r.stars) out.push(['stars', icon('icon_star', STAR_SVG), r.stars]);
+    return `<div class="rw-row">${out.map(([k, ic, n], i) => `<span data-rw="${k}"${delay !== undefined ? ` style="animation-delay:${(delay + i * 0.15).toFixed(2)}s"` : ''}>${ic}+${n}</span>`).join('')}</div>`;
+  }
+  /* 奖励落地：金币 / 星星飞进顶栏（core 里早已发到存档，这里只做"待落地"的显示），体力直接跳 */
+  function landRewards(r, x, y) {
+    pendingCoins -= r.coins || 0; pendingStars -= r.stars || 0;
+    if (r.coins || r.stars) flyRewards(x, y, r.coins || 0, r.stars || 0);
+    if (r.energy) { bump('pill-energy'); toast('+' + r.energy + ' ⚡'); }
+    hudCache = ''; updateHud();
+  }
   function tryLevelUp() {
     if (!lvQueue.length || down || drag || modalOpen() || Ads.busy || flies.length || coinsFly.length || Core.tutStep(C, S)) return;
-    // 一次连升多级合成一个庆典：显示最高等级，奖励合计
-    const ups = lvQueue.splice(0), top = ups.at(-1).level, sum = (k) => ups.reduce((a, u) => a + u[k], 0);
-    const coins = sum('totalCoins'), stars = sum('totalStars'), energy = sum('totalEnergy'), chest = ups.some((u) => u.chest);
+    // 一次连升多级合成一个庆典：显示最高等级，等级奖励合计；宝箱在庆典之后单独开
+    const ups = lvQueue.splice(0), top = ups.at(-1).level;
+    const lv = { coins: ups.reduce((a, u) => a + u.coins, 0), energy: ups.reduce((a, u) => a + u.energy, 0), stars: 0 };
+    const chests = ups.filter((u) => u.chest).map((u) => u.chest);
     const unlocks = [].concat(...ups.map((u) => u.unlocks));
-    const art = Art.src('badge_level'), esc2 = (t) => String(t).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
-    const chip = (icon, n) => `<span>${icon}+${n}</span>`;
-    const ic = (id, svg) => { const s = Art.src(id); return s ? `<img src="${esc2(s)}" alt="">` : svg; };
-    const boltSvg = '<svg viewBox="0 0 30 30"><path d="M18 1.5 5.5 17h8l-3 11.5L24.5 12h-8.2z" fill="#f5c03a" stroke="#c4851a" stroke-width="2" stroke-linejoin="round"/></svg>';
-    const starSvg = '<svg viewBox="0 0 30 30"><path d="M15 2l3.8 8 8.7 1-6.4 6 1.7 8.6L15 21.3l-7.8 4.3 1.7-8.6-6.4-6 8.7-1z" fill="#f5c03a" stroke="#c4851a" stroke-width="2" stroke-linejoin="round"/></svg>';
-    let html = `<div class="lvup"><div class="big${art ? ' art' : ''}"${art ? ` style="--badge:url('${esc2(art)}')"` : ''}><b>${top}</b></div><div class="rw-row">` +
-      (energy ? chip(ic('icon_energy', boltSvg), energy) : '') + (coins ? chip(coinIcon(), coins) : '') + (stars ? chip(ic('icon_star', starSvg), stars) : '') + `</div>` +
-      (chest ? `<div style="font-weight:800">🎁 ${esc2(L.t('ui.chest'))}</div>` : '') +
+    const art = Art.src('badge_level');
+    const html = `<div class="lvup"><div class="big${art ? ' art' : ''}"${art ? ` style="--badge:url('${esc2(art)}')"` : ''}><b>${top}</b></div>` + rewardChips(lv) +
+      (chests.length ? `<div style="font-weight:800">🎁 ${esc2(L.t('ui.chest'))}</div>` : '') +
       unlocks.map((u) => `<div style="font-weight:900;color:#1d5f5a">✨ ${esc2(L.t(u.name))}</div>`).join('') + `</div>`;
-    sfxBurst();
+    sfxBurst(); Sfx.levelUp();
     modal(L.t('ui.levelUp', { n: top }), '', [{ label: L.t('ui.collect') }], null, html);
     modalOnClose = () => {
       pendingLevels -= ups.length; lvlKey = ''; updateLevel(); bump('lvl');
-      pendingCoins -= coins; pendingStars -= stars; // 换成飞行中的待落地，飞到了再加到顶栏
-      if (coins || stars) flyRewards(LY.W / 2, LY.H / 2, coins, stars);
-      if (energy) { bump('pill-energy'); toast('+' + energy + ' ⚡'); }
-      hudCache = ''; updateHud();
+      landRewards(lv, LY.W / 2, LY.H / 2);
+      if (chests.length) { // 多个宝箱合成一个开
+        const sum = (k) => chests.reduce((a, c) => a + c[k], 0);
+        setTimeout(() => showChest({ coins: sum('coins'), stars: sum('stars'), energy: sum('energy') }), 350);
+      }
     };
+  }
+  /* 宝箱组件：抖三下 → 打开 → 奖励逐个弹出 → Collect 飞进顶栏。奖励在 core 已入账，这里是演出。
+     正式图 chest_closed / chest_open（E 批）到了就用图，否则用内联 SVG。 */
+  function chestSVG(open) {
+    return `<svg viewBox="0 0 160 160"><ellipse cx="80" cy="146" rx="58" ry="8" fill="rgba(60,35,20,.18)"/>` +
+      (open ? `<path d="M26 70 L40 22 H120 L134 70 Z" fill="#b8743c" stroke="#3a2416" stroke-width="5" stroke-linejoin="round"/><path d="M48 60 L58 30 H102 L112 60 Z" fill="#7a4a24"/>
+        <ellipse cx="80" cy="72" rx="48" ry="12" fill="#ffe08a"/><circle cx="64" cy="68" r="8" fill="#f2b632" stroke="#b97a12" stroke-width="3"/><circle cx="92" cy="66" r="8" fill="#f2b632" stroke="#b97a12" stroke-width="3"/>`
+        : `<path d="M24 74 Q24 40 80 40 Q136 40 136 74 Z" fill="#c98a4b" stroke="#3a2416" stroke-width="5" stroke-linejoin="round"/>`) +
+      `<rect x="24" y="72" width="112" height="66" rx="8" fill="#c98a4b" stroke="#3a2416" stroke-width="5"/><rect x="24" y="72" width="112" height="12" fill="#f2b632" stroke="#3a2416" stroke-width="4"/>
+      <rect x="70" y="${open ? 86 : 64}" width="20" height="26" rx="4" fill="#f2b632" stroke="#3a2416" stroke-width="4"/><path d="M40 92 v38 M120 92 v38" stroke="#8a5a32" stroke-width="4"/></svg>`;
+  }
+  function chestPic(open) { const s = Art.src(open ? 'chest_open' : 'chest_closed'); return s ? `<img src="${esc2(s)}" alt="">` : chestSVG(open); }
+  function showChest(r, title) {
+    let opened = false;
+    modal(title || L.t('ui.chest'), '', [{ label: L.t('ui.collect') }], null, `<div class="chest"><div class="box shake" id="chest-box">${chestPic(false)}</div><div id="chest-rw" style="min-height:36px"></div></div>`);
+    [0, 0.3, 0.6].forEach((d) => setTimeout(() => { if (!opened) Sfx.chestShake(); }, d * 1000));
+    const open = () => {
+      if (opened) return; opened = true;
+      const box = $('chest-box'); if (!box) return;
+      box.className = 'box open'; box.innerHTML = chestPic(true); $('chest-rw').innerHTML = rewardChips(r, 0.1);
+      const b = box.getBoundingClientRect(); burst(b.left + b.width / 2, b.top + b.height * 0.4, '#f5c03a', 24); Sfx.chestOpen();
+    };
+    const timer = setTimeout(open, 950);
+    modalOnClose = () => { clearTimeout(timer); open(); landRewards(r, LY.W / 2, LY.H * 0.45); };
+  }
+  /* ---------- 出售（V1 M2）：选中物品时它下方出现 Sell +N；高等级的要确认 ---------- */
+  let sellKey = ''; const SELL_SEC = 4;
+  function updateSellBtn() {
+    const it = sel >= 0 ? S.cells[sel] : null, on = !!(it && it.k === 'item' && !drag && !down && mode === 'merge' && !Core.tutStep(C, S) && !modalOpen() && !flyingTo(sel) && !spotlight && clock() - selT < SELL_SEC); // 4 秒后自动收起，少挡格子
+    const key = on ? sel + '|' + it.chain + it.lvl + '|' + LY.cs : '';
+    if (key === sellKey) return; sellKey = key;
+    const el = $('sell'); el.classList.toggle('show', on); if (!on) return;
+    const [x, y] = cellXY(sel), below = y + LY.cs * 0.55, up = below + 30 > LY.by + LY.bs;
+    el.textContent = L.t('ui.sell', { n: Core.sellPrice(C, it) });
+    el.style.left = Math.max(40, Math.min(LY.W - 40, x)) + 'px'; el.style.top = (up ? y - LY.cs * 0.55 - 30 : below) + 'px';
+  }
+  function doSell(i) {
+    const r = Core.sellItem(C, S, i, now()); if (!r.ok) return;
+    const [x, y] = cellXY(i); burst(x, y, '#f5c03a', 10); Sfx.sell();
+    flyRewards(x, y, r.price, 0); // core 已入账；flyRewards 记成待落地，飞到顶栏再跳数字
+    if (r.energy) { bump('pill-energy'); toast(L.t('ui.recycleFull', { n: r.energy })); }
+    else toast(L.t('ui.recycle', { n: r.bin, max: r.binSize }));
+    sel = -1; stuckShown = -1; markDirty();
+  }
+  $('sell').onclick = () => {
+    const i = sel, it = S.cells[i]; if (!it || it.k !== 'item') return;
+    const name = L.t(Core.itemDef(C, it).name), price = Core.sellPrice(C, it);
+    if (it.lvl >= (C.eco.sell.confirmFrom || 99)) modal(L.t('ui.sellTitle', { item: name }), L.t('ui.sellBody', { n: price }), [{ label: L.t('ui.cancel'), alt: true }, { label: L.t('ui.sell', { n: price }), price, on: () => doSell(i) }]);
+    else doSell(i);
+  };
+  /* ---------- 永不卡死（V1 M2）：满格无可合 → 选中最低级物品并提示卖掉；idleSec 秒没操作 → 轻晃一对能合的 ---------- */
+  function updateHints(t) {
+    if (mode !== 'merge' || Core.tutStep(C, S) || modalOpen() || down || drag) { idleT = t; return; }
+    const low = Core.stuckHint(C, S);
+    if (low >= 0 && stuckShown !== low) { stuckShown = low; sel = low; selT = t; pops.set(low, t); toast(L.t('ui.stuck')); }
+    if (low < 0) stuckShown = -1;
+    if (t - idleT >= C.eco.hints.idleSec) {
+      const p = Core.findMergePair(C, S);
+      if (p) { shakes.set(p[0], t); shakes.set(p[1], t); }
+      idleT = t - C.eco.hints.idleSec + 2.2; // 之后每 2.2 秒晃一次，直到玩家动手
+    }
   }
   /* 庆典彩带：屏幕上方几处撒粒子 */
   function sfxBurst() {
@@ -467,7 +553,7 @@
       { label: L.t('ui.cancel'), alt: true },
       { label: L.t('ui.unlock'), on: () => {
         const r = Core.unlock(C, S, i);
-        if (r.ok) { pops.set(i, clock()); const [x, y] = cellXY(i); burst(x, y, '#f5c03a', 14); markDirty(); hudCache = ''; }
+        if (r.ok) { pops.set(i, clock()); const [x, y] = cellXY(i); burst(x, y, '#f5c03a', 14); Sfx.unlock(); Sfx.pop(); markDirty(); hudCache = ''; }
         else if (r.reason === 'coins') { shakes.set(i, clock()); toast(L.t('ui.noCoins')); }
       } },
     ]);
@@ -482,7 +568,7 @@
       cardPops.set(k, clock() + 0.2);
       flyRewards(R.x + R.w / 2, R.y + R.h / 2, r.coins, r.stars + r.bonusStar);
       if (r.xp) floatText(R.x + R.w / 2, R.y - 4, '+' + r.xp + ' XP', '#2e9a5a');
-      queueLevelUps(r.levelUps);
+      queueLevelUps(r.levelUps); Sfx.deliver();
       toast(r.bonusStar ? L.t('ui.starBonus') : L.t('ui.orderDone'));
       if (!Core.tutStep(C, S) && S.stats.ordersDone > 1 && r.offerDouble) offerDouble(r.coins);
       if (r.interstitial) interQueued = true;
@@ -495,6 +581,7 @@
   let down = null, drag = null, sel = -1, selT = 0;
   const DRAG_PX = 8;
   cv.addEventListener('pointerdown', (e) => {
+    idleT = clock();
     if (modalOpen() || down || mode !== 'merge' || Ads.busy) return;
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
     down = { id: e.pointerId, x: e.clientX, y: e.clientY, cell: cellAt(e.clientX, e.clientY), gen: genAt(e.clientX, e.clientY), up: upgradeAt(e.clientX, e.clientY) };
@@ -533,12 +620,19 @@
       if (r.type === 'merge') {
         pops.set(to, clock()); sel = to; selT = clock();
         const [x, y] = cellXY(to); burst(x, y, Core.itemDef(C, S.cells[to]).color, 18);
+        Sfx.merge(r.lvl); idleT = clock();
+        if (r.lvl >= SPOT_LVL) { spotlight = { cell: to, item: S.cells[to], t0: clock() }; selT = clock() + SPOT_DUR; } // 高级合成特写；名字和 Sell 等特写结束再出
+        if (r.combo && r.combo.show) {
+          floatText(x, y - LY.cs * 0.5, L.t('ui.combo', { n: r.combo.n }), '#c4553c'); Sfx.combo(r.combo.n);
+          if (r.combo.coins) flyRewards(x, y, r.combo.coins, 0);
+          if (r.combo.energy) { bump('pill-energy'); toast('+' + r.combo.energy + ' ⚡'); }
+        }
         if (r.bubble >= 0) { selT = -10; /* 名字标签会压住泡泡，这次不显示 */ const [bx, by] = cellXY(r.bubble); flies.push({ cell: r.bubble, item: S.cells[r.bubble], x0: x, y0: y, t0: clock() + 0.15, dur: 0.4, spawn: true }); burst(bx, by, '#bfe8f2', 10); }
         markDirty();
       } else if (r.type === 'move') { sel = to; selT = clock(); markDirty(); }
       else { // 回弹：从松手位置飞回原格，不吞物品
         flies.push({ cell: g.from, item: moving, x0: px, y0: py, t0: clock(), dur: 0.22 });
-        if (r.type === 'bounce') { shakes.set(to, clock()); if (r.reason === 'max') toast(L.t('ui.maxMerge')); }
+        if (r.type === 'bounce') { shakes.set(to, clock()); Sfx.bounce(); if (r.reason === 'max') toast(L.t('ui.maxMerge')); }
       }
       return;
     }
@@ -556,8 +650,8 @@
     if (i < 0 || i !== d.cell) { sel = -1; return; }
     if (!S.unlocked[i]) { tapLocked(i); return; }
     if (S.cells[i] && S.cells[i].k === 'bubble') { showBubble(i); return; }
-    sel = S.cells[i] ? i : -1; selT = clock();
-    if (S.cells[i]) pops.set(i, clock() - 0.18);
+    sel = S.cells[i] ? i : -1; selT = clock(); idleT = clock();
+    if (S.cells[i]) { pops.set(i, clock() - 0.18); Sfx.tap(); }
   }
   cv.addEventListener('pointerup', (e) => release(e, false));
   cv.addEventListener('pointercancel', (e) => release(e, true));
@@ -1061,7 +1155,7 @@
     if (i === sel && !drag) GL.rect(x - h - 1, y - h - 1, h * 2 + 2, h * 2 + 2, cs * 0.16, COL.sel, { stroke: 3 });
   }
   function drawCellItem(i, t, needs) {
-    const it = S.cells[i]; if (!it || (drag && drag.from === i) || flyingTo(i)) return;
+    const it = S.cells[i]; if (!it || (drag && drag.from === i) || flyingTo(i) || (spotlight && spotlight.cell === i)) return;
     const [x, y] = cellXY(i), cs = LY.cs, isz = cs * 0.9;
     const p = pops.get(i), s = p !== undefined ? popScale(t - p) : 1;
     if (p !== undefined && t - p > 0.5) pops.delete(i);
@@ -1131,7 +1225,7 @@
     // 拖拽中的物品（最上层，放大一点跟手）
     if (drag && dragIt) drawItem(dragIt, drag.x - drag.ox, drag.y - drag.oy - 4, cs * 1.0);
     // 选中物品的名字
-    if (sel >= 0 && !drag && S.cells[sel] && t - selT < 1.6) {
+    if (sel >= 0 && !drag && !spotlight && S.cells[sel] && t - selT < 1.6) {
       const it = S.cells[sel], [x, y] = cellXY(sel), name = L.t(Core.itemDef(C, it).name) + ' · ' + L.t('ui.level', { n: it.lvl });
       const fs = Math.max(12, cs * 0.24), tw = GL.measure(name, { size: fs, weight: 800 }) + 18, ly = y - cs * 0.78;
       const lx = Math.max(LY.bx + 4, Math.min(LY.bx + LY.bs - tw - 4, x - tw / 2));
@@ -1140,9 +1234,23 @@
       GL.text(name, lx + tw / 2, ly, { size: fs, weight: 800, fill: '#fff4db' });
       GL.alpha = 1;
     }
+    drawSpotlight(t);
     drawFx(t, true);
     T = t;
     return GL.end();
+  }
+  /* 高级合成特写：物品放大飘到棋盘中央，光晕 + 名字，SPOT_DUR 秒后回到格子（不挡操作） */
+  function drawSpotlight(t) {
+    if (!spotlight) return;
+    const u = (t - spotlight.t0) / SPOT_DUR; if (u >= 1 || !S.cells[spotlight.cell]) { spotlight = null; return; }
+    const [cx, cy] = cellXY(spotlight.cell), mx = LY.bx + LY.bs / 2, my = LY.by + LY.bs * 0.42;
+    const k = u < 0.25 ? easeOut(u / 0.25) : u > 0.75 ? easeOut((1 - u) / 0.25) : 1;
+    const x = cx + (mx - cx) * k, y = cy + (my - cy) * k, sz = LY.cs * (0.9 + 1.5 * k);
+    GL.alpha = k; GL.circle(x, y, sz * 0.75, [1, 0.94, 0.6, 0.35]); GL.circle(x, y, sz * 0.58, [1, 1, 0.85, 0.45]);
+    for (let r = 0; r < 8; r++) { const a = r / 8 * Math.PI * 2 + t * 1.5; GL.circle(x + Math.cos(a) * sz * 0.72, y + Math.sin(a) * sz * 0.72, sz * 0.05, [1, 0.9, 0.4, 0.9]); }
+    GL.alpha = 1;
+    drawItem(spotlight.item, x, y, sz);
+    if (k > 0.6) { GL.alpha = (k - 0.6) / 0.4; GL.text(L.t(Core.itemDef(C, spotlight.item).name), x, y + sz * 0.62, { size: Math.max(14, LY.cs * 0.32), weight: 900, fill: '#fff4db', outline: 'rgba(58,36,22,0.9)' }); GL.alpha = 1; }
   }
   function drawParticles(t) {
     const dt = Math.min(0.05, t - T), g = LY.cs * 9;
@@ -1163,7 +1271,7 @@
       GL.img(f.kind === 'coin' ? Art.coin(26) : Art.star(26), x, y, sz, sz);
       if (u >= 1) {
         coinsFly.splice(k, 1);
-        if (f.kind === 'coin') { pendingCoins -= f.val; bump('pill-coins'); } else { pendingStars -= f.val; bump('pill-stars'); }
+        if (f.kind === 'coin') { pendingCoins -= f.val; bump('pill-coins'); if (t - lastCoinSfx > 0.09) { Sfx.coin(); lastCoinSfx = t; } } else { pendingStars -= f.val; bump('pill-stars'); }
         hudCache = ''; updateHud(); updateDeco(); // 落地这一帧就跳数字
       }
     }
@@ -1196,12 +1304,12 @@
       const ref = Core.settleOrders(C, S, now());
       for (const k of ref) { cardPops.set(k, clock()); markDirty(); }
       for (const i of Core.settleBubbles(C, S, now())) { const [x, y] = cellXY(i); burst(x, y, '#bfe8f2', 12); markDirty(); if (mode === 'merge') toast(L.t('ui.bubblePopped')); }
-      updateHud(); updateTutorial(); updateDeco(); updateTasks(); tryLevelUp(); tryInterstitial();
+      updateHud(); updateTutorial(); updateDeco(); updateTasks(); tryLevelUp(); tryInterstitial(); updateHints(clock());
       if (!document.hidden) { const dt = Math.min(1000, tn - (lastPlayTick || tn)); S.stats.playMs += dt; } lastPlayTick = tn; // 有效游玩时长（页面在前台）
       if (dirty) { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); }
       if (DEBUG) debugStats();
     }
-    const r0 = performance.now(); render(); renderMs = renderMs * 0.9 + (performance.now() - r0) * 0.1;
+    const r0 = performance.now(); render(); renderMs = renderMs * 0.9 + (performance.now() - r0) * 0.1; updateSellBtn();
     fpsN++; if (tn - fpsT >= 1000) { fps = Math.round(fpsN * 1000 / (tn - fpsT)); fpsN = 0; fpsT = tn; }
     requestAnimationFrame(frame);
   }
@@ -1211,7 +1319,7 @@
     Art.load(CONFIG.art.cafe || [], 'assets/scene/', () => {}, 'webp');
     Art.load(CONFIG.art.comics || [], 'assets/comics/', () => {}, 'webp');
     if (welcomeGain > 0) setTimeout(() => toast(L.t('ui.welcomeBack', { n: welcomeGain })), 300);
-    updateHud(); updateTutorial();
+    updateHud(); updateTutorial(); updateSndBtn();
     requestAnimationFrame(frame);
   }
   /* 正式图和字体一起预加载：都到了（或 2.5 秒超时）才开画，避免占位图闪一下再换。没到的图之后到了照样自动替换 */
@@ -1253,6 +1361,7 @@
     btn('bubble', () => { const e = S.cells.findIndex((c, i) => !c && S.unlocked[i]); if (e >= 0) S.cells[e] = { k: 'bubble', chain: 'coffee', lvl: 5, until: now() + C.eco.bubble.lifeSec * 1000 }; });
     btn('+5 stars', () => { S.stars += 5; decoKey = ''; });
     btn('+100 xp', () => { queueLevelUps(Core.addXp(C, S, 100, now())); });
+    btn('chest', () => { const r = Core.openChest(C, S, now()); pendingCoins += r.coins; pendingStars += r.stars; showChest(r); });
     btn('skip tutorial', () => Core.skipTutorial(S));
     btn('fill board', () => { for (let i = 0; i < C.n; i++) if (S.unlocked[i] && !S.cells[i]) S.cells[i] = { k: 'item', chain: i % 2 ? 'coffee' : 'bake', lvl: 1 + (i % 7) }; });
     btn('serve-ready', () => { // 把三个订单要的东西都放到棋盘上
@@ -1263,6 +1372,6 @@
   // 自动化测试 / 调试入口
   window.MCL = {
     C, get S() { return S; }, get pendingLevels() { return pendingLevels; }, cellXY, cellAt, layout: LY, save, now, genRect, upgradeBadge: (id) => upgradeBadge(genRect(id)), orderRect: (k) => LY.orders[k], get mode() { return mode; }, needAt,
-    get fps() { return fps; }, get renderMs() { return renderMs; }, get pending() { return pendingCoins + pendingStars; },
+    get fps() { return fps; }, get sel() { return sel; }, get spotlight() { return !!spotlight; }, get renderMs() { return renderMs; }, get pending() { return pendingCoins + pendingStars; },
   };
 })();

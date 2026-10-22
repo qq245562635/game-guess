@@ -129,5 +129,13 @@
   "unlock.wildStar": "Wild Star",
   "unlock.offline": "Longer Café Hours",
   "ui.collect": "Collect",
-  "ui.levelRewards": "Level-up rewards"
+  "ui.levelRewards": "Level-up rewards",
+  "ui.combo": "Combo x{n}!",
+  "ui.sell": "Sell +{n}",
+  "ui.sellTitle": "Sell {item}?",
+  "ui.sellBody": "You'll get {n} coins.",
+  "ui.recycle": "Recycle bin {n}/{max}",
+  "ui.recycleFull": "Recycle bonus! +{n} energy",
+  "ui.stuck": "No matches left. Sell an item to make room!",
+  "ui.open": "Open"
 }
