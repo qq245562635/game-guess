@@ -1,0 +1,5 @@
+original_bytes=48048
+candidate_bytes=34788
+quality=61
+width=1200
+height=600

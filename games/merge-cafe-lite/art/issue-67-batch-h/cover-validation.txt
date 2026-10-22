@@ -1,0 +1,32 @@
+[
+  {
+    "file": "cover_landscape.jpg",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "quality": 95,
+    "bytes": 899377,
+    "sha256": "d6327558a581dc523528784815f5a38cbc8a3487d0884f82b73e764367aacc5c"
+  },
+  {
+    "file": "cover_portrait.jpg",
+    "dimensions": [
+      800,
+      1200
+    ],
+    "quality": 95,
+    "bytes": 562496,
+    "sha256": "f7fe8c2b58adc4cb0a985a2b7e1ba7ea34dd200e6d2b74a2892618179f11b521"
+  },
+  {
+    "file": "cover_square.jpg",
+    "dimensions": [
+      800,
+      800
+    ],
+    "quality": 95,
+    "bytes": 442850,
+    "sha256": "01844cb6f38e00901c52b7ea19a7a7b30bcada061e311be3eab7c756fe09c2d1"
+  }
+]
