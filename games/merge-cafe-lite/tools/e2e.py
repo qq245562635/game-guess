@@ -651,6 +651,64 @@ with sync_playwright() as p:
     close_all(pg); settle_rewards(pg)
     ctx.close()
 
+    # ================= CrazyGames SDK：广告 + 云存档（用假 SDK，tools/fake-crazygames-sdk.js） =================
+    import subprocess
+    subprocess.run([sys.executable, str(root / 'tools' / 'build.py'), '--crazygames'], check=True, capture_output=True)
+    CG_URL = URL.replace('index.html', 'dist/crazygames/index.html')
+    FAKE = (root / 'tools' / 'fake-crazygames-sdk.js').read_text(encoding='utf-8')
+    def cg_ctx(cfg=None):
+        c = br.new_context(viewport={'width': 405, 'height': 720}, device_scale_factor=2)
+        c.route('https://sdk.crazygames.com/**', lambda r: r.fulfill(status=200, content_type='application/javascript', body='/* fake */'))
+        if cfg: c.add_init_script("if (!sessionStorage.getItem('cg.cfg')) sessionStorage.setItem('cg.cfg', " + json.dumps(json.dumps(cfg)) + ")")
+        c.add_init_script(FAKE)
+        p = c.new_page(); watch(p); return c, p
+    def cg_boot(p, q=''):
+        p.goto(CG_URL + q); p.wait_for_function('window.MCL && MCL.layout.bs > 0'); p.wait_for_function("__cg.calls.includes('gameplayStart')", timeout=8000)
+    calls = lambda p: p.evaluate('__cg.calls')
+    def no_energy_modal(p):
+        p.evaluate("MCL.S.energy = 0; MCL.S.energyTs = MCL.now()"); pg_ = p; pg_.wait_for_timeout(300); tap_gen(pg_, GC)
+        pg_.wait_for_selector('#modal.show', timeout=4000)
+    ctx, pg = cg_ctx(); cg_boot(pg, '?reset=1&fastads')
+    cl = calls(pg)
+    check('CrazyGames：init → loadingStart → loadingStop → gameplayStart，广告走 SDK',
+          cl.index('init') < cl.index('loadingStart') < cl.index('loadingStop') < cl.index('gameplayStart') and pg.evaluate('Platform.adsMode') == 'sdk', str(cl[:8]))
+    pg.evaluate("Core.skipTutorial(MCL.S); MCL.C.prog.levelNeed=[]; MCL.C.prog.after=1e12; MCL.S.coins = 777; MCL.save()")
+    saved = pg.evaluate("JSON.parse(JSON.parse(sessionStorage.getItem('cg.data') || '{}')['merge-cafe-lite.save'] || 'null')")
+    check('存档写进 SDK Data 模块（云存档），不再写 localStorage', saved and saved['coins'] == 777 and pg.evaluate("localStorage.getItem('merge-cafe-lite.save')") is None)
+    pg.evaluate('localStorage.clear()'); pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0'); pg.wait_for_timeout(500)
+    check('清掉本地数据再进：从 Data 模块读回进度（金币 777）', S(pg, 'coins') == 777, f"coins={S(pg, 'coins')}")
+    no_energy_modal(pg)
+    check('体力见底弹窗：有看广告按钮', pg.is_visible('#m-btns .btn.ad'))
+    e0 = S(pg, 'energy'); pg.evaluate('__cg.calls.length = 0'); pg.click('#m-btns .btn.ad')
+    pg.wait_for_function("__cg.calls.includes('adFinished')", timeout=6000); pg.wait_for_timeout(400)
+    cl = calls(pg)
+    check('激励视频：gameplayStop → 请求 rewarded → 播完发 30 体力 → gameplayStart', S(pg, 'energy') - e0 == 30 and cl.index('gameplayStop') < cl.index('ad:rewarded') < cl.index('adFinished') < len(cl) and 'gameplayStart' in cl[cl.index('adFinished'):], str(cl))
+    pg.evaluate("sessionStorage.setItem('cg.cfg', JSON.stringify({adMode:'unfilled'}))")
+    no_energy_modal(pg); pg.click('#m-btns .btn.ad'); pg.wait_for_function("__cg.calls.includes('adError:unfilled')", timeout=6000); pg.wait_for_timeout(400)
+    check('没有广告可播（unfilled）：不发奖、提示稍后再试、按钮下次还在', S(pg, 'energy') == 0 and 'No video' in pg.inner_text('#toast') and pg.evaluate('Ads.available'), pg.inner_text('#toast'))
+    pg.evaluate("sessionStorage.setItem('cg.cfg', JSON.stringify({adMode:'adsDisabledBasicLaunch'}))")
+    no_energy_modal(pg); pg.click('#m-btns .btn.ad'); pg.wait_for_function("__cg.calls.includes('adError:adsDisabledBasicLaunch')", timeout=6000); pg.wait_for_timeout(400)
+    no_energy_modal(pg)
+    check('门户关了广告（Basic Launch）：之后不再出现看广告按钮，金币买体力还在', not pg.is_visible('#m-btns .btn.ad') and pg.is_visible('#m-btns .btn.coin'))
+    pg.screenshot(path=str(out / 'cg-no-ads.png')); close_all(pg)
+    ctx.close()
+    ctx, pg = cg_ctx({'adblock': True}); cg_boot(pg, '?reset=1&fastads')
+    pg.evaluate("Core.skipTutorial(MCL.S); MCL.C.prog.levelNeed=[]; MCL.C.prog.after=1e12"); no_energy_modal(pg)
+    check('检测到广告拦截：照常能玩，不出看广告按钮，弹窗里写明原因', not pg.is_visible('#m-btns .btn.ad') and 'ad blocker' in pg.inner_text('#m-body'), pg.inner_text('#m-body'))
+    pg.screenshot(path=str(out / 'cg-adblock.png')); close_all(pg)
+    ctx.close()
+    # 本地老存档迁进 Data 模块 + 门户静音 + 插屏
+    ctx, pg = cg_ctx(); boot(pg); pg.evaluate("Core.skipTutorial(MCL.S); MCL.S.coins = 555; MCL.save()")
+    cg_boot(pg)
+    check('老玩家：本地存档自动迁进 Data 模块，进度不丢（金币 555）', S(pg, 'coins') == 555 and 'merge-cafe-lite.save' in pg.evaluate("JSON.parse(sessionStorage.getItem('cg.data') || '{}')"), f"coins={S(pg, 'coins')}")
+    pg.evaluate('__cg.setMute(true)')
+    check('门户静音（settings.muteAudio）：游戏内喇叭开着也静音', pg.evaluate('Sfx.muted') and S(pg, 'settings.mute') is False)
+    pg.evaluate('__cg.setMute(false)')
+    check('门户取消静音：恢复喇叭设置', pg.evaluate('Sfx.muted') is False)
+    pg.evaluate('__cg.calls.length = 0; Ads.interstitial()'); pg.wait_for_function("__cg.calls.includes('adFinished')", timeout=6000)
+    check('插屏走 SDK midgame', 'ad:midgame' in calls(pg), str(calls(pg)))
+    ctx.close()
+
     # ================= 多分辨率布局 =================
     for name, vw, vh in [('portrait-9x16', 405, 720), ('portrait-tall', 390, 844), ('portrait-short', 375, 667),
                          ('landscape-16x9', 1280, 720), ('landscape-phone', 844, 390), ('tablet', 820, 1180)]:

@@ -1,8 +1,9 @@
 /* Merge Café Lite · 主循环：布局、绘制、输入、HUD、订单、新手引导、存档
    场景 / 订单卡 / 棋盘 / 生成器按钮全部用 GL（原生 WebGL）画；顶栏、底部导航、弹窗、提示、引导气泡是 DOM。
    布局按 #38 效果图：竖屏 顶栏 → 场景+Logo → 3 张订单卡 → 棋盘 → 生成器 → 底栏；横屏 左场景+底栏 / 中棋盘 / 右订单+生成器。 */
-(() => {
+(async () => {
   'use strict';
+  await Platform.ready; // CrazyGames 构建：先等 SDK init（Data 模块要先 init 才能读档）；普通构建立即返回
   const C = Core.index(CONFIG);
   const $ = (id) => document.getElementById(id);
   const SAVE_KEY = 'merge-cafe-lite.save';
@@ -16,23 +17,25 @@
   const clock = () => performance.now() / 1000;
 
   /* ---------- 存档 ---------- */
-  function store() { try { return window.localStorage; } catch (e) { return null; } }
+  /* 存档读写走 Platform.storage：CrazyGames 构建用 SDK Data 模块（登录后跨设备同步），否则 localStorage */
   if (params.has('reset')) { // 清档后把 ?reset 从地址栏去掉，免得 QA 刷新时又清一次
-    const ls = store(); if (ls) ls.removeItem(SAVE_KEY);
+    Platform.storage.remove(SAVE_KEY);
     try { sessionStorage.removeItem('mcl.timeOffset'); } catch (e) {} timeOffset = 0;
     params.delete('reset'); const q = params.toString();
     try { history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + location.hash); } catch (e) {}
   }
   let S = null, welcomeGain = 0;
-  { const ls = store(), raw = ls && ls.getItem(SAVE_KEY); if (raw) S = Core.deserialize(C, raw, now()); }
+  { const raw = Platform.storage.get(SAVE_KEY); if (raw) S = Core.deserialize(C, raw, now()); }
   let awayFrom = 0; // 上次存档时间：开画后算离线营业（M5）
   if (S) { awayFrom = S.lastSeen || 0; delete S.lastSeen; welcomeGain = Core.settleAll(C, S, now()); }
   else S = Core.newState(C, now());
   Core.markDay(S, now()); // 留存打点：今天来过
   if (!S.settings) S.settings = { mute: false };
-  Sfx.setMuted(S.settings.mute);
+  /* 门户静音设置（CrazyGames settings.muteAudio）优先于游戏内喇叭：门户静音时喇叭开着也不出声 */
+  const applyMute = () => Sfx.setMuted(S.settings.mute || Platform.muted);
+  applyMute(); Platform.onMute(applyMute);
   let dirty = true, saveTimer = 0, hiddenAt = 0;
-  function save() { const ls = store(); if (!ls) return; try { ls.setItem(SAVE_KEY, Core.serialize(S, now())); dirty = false; } catch (e) {} }
+  function save() { if (Platform.storage.set(SAVE_KEY, Core.serialize(S, now()))) dirty = false; }
   const markDirty = () => { dirty = true; };
   addEventListener('pagehide', save);
   document.addEventListener('visibilitychange', () => {
@@ -45,12 +48,14 @@
 
   /* 音效：第一次触摸时解锁 WebAudio；右上角喇叭按钮切换静音（存档里记住） */
   addEventListener('pointerdown', () => Sfx.unlock(), { capture: true });
+  addEventListener('touchend', () => Sfx.unlock(), { capture: true }); // iOS 打断音频后要在 touchend / click 里 resume（CrazyGames 技术要求）
+  addEventListener('click', () => Sfx.unlock(), { capture: true });
   function updateSndBtn() { // F 批喇叭图到了用图，没到用 emoji
     const id = S.settings.mute ? 'icon_sound_off' : 'icon_sound_on', src = Art.src(id), el = $('snd');
     if (src) el.innerHTML = `<img src="${src}" alt="" style="width:22px;height:22px">`; else el.textContent = S.settings.mute ? '🔇' : '🔊';
     el.dataset.mute = S.settings.mute ? '1' : '0';
   }
-  $('snd').onclick = () => { S.settings.mute = !S.settings.mute; Sfx.setMuted(S.settings.mute); updateSndBtn(); markDirty(); save(); if (!S.settings.mute) Sfx.tap(); };
+  $('snd').onclick = () => { S.settings.mute = !S.settings.mute; applyMute(); updateSndBtn(); markDirty(); save(); if (!S.settings.mute) Sfx.tap(); };
 
   /* ---------- WebGL ---------- */
   const cv = $('cv');
@@ -193,6 +198,10 @@
       $('m-comic').innerHTML = src ? `<img src="${src}" alt="" style="width:100%;height:auto;display:block;border-radius:10px;border:3px solid #3a2416">` : comicSVG(comic);
     }
     else if (html) $('m-comic').innerHTML = html;
+    const hadAd = buttons.some((b) => b.ad);
+    if (!Ads.available) buttons = buttons.filter((b) => !b.ad); // 没有广告时不留点了没反应的激励按钮
+    if (hadAd && Ads.blocked) $('m-body').textContent = (body ? body + ' ' : '') + L.t('ad.blocked'); // 广告拦截：说明为什么没有看广告的选项
+    Platform.game.gameplayStop(); // 弹窗 = 一次中断（门户 gameplayStop / Start 事件）
     const box = $('m-btns'); box.textContent = '';
     box.classList.toggle('col', buttons.length > 2); // 三个按钮（广告 / 金币 / 取消）竖排，卡片放不下横排
     for (const b of buttons) {
@@ -213,7 +222,7 @@
   }
   /* 金币花掉：顶栏数字立即刷新 + 跳一下 */
   function spent() { markDirty(); save(); hudCache = ''; updateHud(); bump('pill-coins'); }
-  function closeModal() { $('modal').classList.remove('show'); if (modalOnClose) { const f = modalOnClose; modalOnClose = null; f(); } }
+  function closeModal() { $('modal').classList.remove('show'); if (!Ads.busy) Platform.game.gameplayStart(); if (modalOnClose) { const f = modalOnClose; modalOnClose = null; f(); } }
   const modalOpen = () => $('modal').classList.contains('show');
   const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
@@ -313,10 +322,11 @@
     if (!noStat) { Core.adClick(S, kind); markDirty(); } // 没计展示的入口也不计点击，点击率分子分母同口径
     const ok = await Ads.rewarded(kind);
     if (ok) { grant(); markDirty(); save(); hudCache = ''; updateHud(); }
+    else if (Platform.adsMode === 'sdk') toast(L.t(Ads.blocked ? 'ad.blocked' : 'ad.failed')); // 没看完 / 没有广告：不发奖，提示稍后再试
   }
   function showNoEnergy(fromPill) { // 激励视频点位 1：+30 体力；金币买体力（每天限次涨价）作兜底，广告永远免费、放在最上面
     const body = () => L.t('ui.noEnergyBody', { t: mmss(Core.energyNextIn(C, S, now())) });
-    if (!fromPill) { Core.adOffer(S, 'energy'); markDirty(); } // 点顶栏体力主动打开的不计展示（§11 点击率口径只算体力见底弹窗）
+    if (!fromPill && Ads.available) { Core.adOffer(S, 'energy'); markDirty(); } // 点顶栏体力主动打开的不计展示（§11 点击率口径只算体力见底弹窗）
     const price = Core.energyPrice(C, S, now()), btns = [
       { label: '▶ ' + L.t('ad.energy', { n: C.ads.rewarded.energy.amount }), ad: true, on: () => watchAd('energy', () => {
         const n = Core.grantEnergy(C, S, now()); bump('pill-energy'); toast('+' + n + ' ⚡');
@@ -335,7 +345,7 @@
   }
   function showRefill(id) { // 激励视频点位 2：生成器立即回满（广告免费；金币回满当天逐次涨价）
     const g = S.gens[id], body = () => L.t('ui.genEmptyBody', { t: mmss(g.cdEnd - now()) });
-    Core.adOffer(S, 'refill'); markDirty();
+    if (Ads.available) { Core.adOffer(S, 'refill'); markDirty(); }
     const fx = () => { genPress.set(id, clock()); const R = genRect(id); burst(R.x + R.h / 2, R.y + R.h / 2, '#f5c03a', 14); };
     modal(L.t('ui.genEmptyTitle'), body(), [
       { label: '▶ ' + L.t('ad.refill'), ad: true, on: () => watchAd('refill', () => { Core.refillGen(C, S, id); fx(); }) },
@@ -351,6 +361,7 @@
   /* 激励视频点位 3：订单完成后顶栏金币旁出现"翻倍"按钮，几秒后消失（不打断操作） */
   let x2Timer = 0, x2Coins = 0;
   function offerDouble(coins) {
+    if (!Ads.available) return; // 没有广告：不出翻倍按钮
     x2Coins = coins; Core.adOffer(S, 'double'); markDirty();
     const el = $('x2'); el.querySelector('span').textContent = L.t('ad.double') + ' +' + coins;
     const pc = $('pill-coins').getBoundingClientRect();
@@ -527,7 +538,7 @@
     const show = () => {
       if (!Art.src('welcome_back') && clock() - startedAt < 2) { popups.unshift(show); return; } // 插画后台加载，最多等 2 秒
       const pic = Art.src('welcome_back');
-      Core.adOffer(S, 'offline'); markDirty();
+      if (Ads.available) { Core.adOffer(S, 'offline'); markDirty(); }
       const html = `<div class="welcome">${pic ? `<img class="pic" src="${esc2(pic)}" alt="">` : ''}<div class="amt">${coinIcon()}+${r.coins}</div>${r.capped ? `<div style="font:800 13px var(--font);color:#7a5a3a">${esc2(L.t('ui.offlineCap', { h: r.capH }))}</div>` : ''}</div>`;
       Sfx.coin();
       modal(L.t('ui.welcomeTitle'), L.t('ui.welcomeBody', { n: r.coins, t: hm(r.mins) }), [
@@ -559,6 +570,7 @@
     const src = Art.src(cu.id + '_happy') || Art.src(cu.id), line = u.line ? L.t(u.line) : '';
     /* 熟客漫画（G 批）：满 5 心 comic_reg_<id>；以后补 1 / 3 心用 comic_reg_<id>_<心>。图没到就用开心头像 */
     const comic = Art.src(u.heart === 5 ? 'comic_reg_' + u.reg : 'comic_reg_' + u.reg + '_' + u.heart);
+    if (u.heart === 5) Platform.game.happytime();
     Sfx.levelUp(); sfxBurst();
     modal(L.t('ui.heartUp', { name, n: u.heart }), '', [{ label: L.t('ui.continue') }], null,
       `<div class="heartup">${comic ? `<img class="comic" src="${esc2(comic)}" alt="">` : src ? `<img src="${esc2(src)}" alt="">` : ''}<div class="hs">${heartsHTML(u.heart, 28)}</div>${line ? `<q>${esc2(line)}</q>` : ''}</div>`);
@@ -623,7 +635,7 @@
   function showBubble(i) {
     const b = S.cells[i]; if (!b || b.k !== 'bubble') return;
     const name = L.t(Core.itemDef(C, b).name), body = () => L.t('ui.bubbleBody', { item: name, t: mmss(b.until - now()) });
-    Core.adOffer(S, 'bubble'); markDirty();
+    if (Ads.available) { Core.adOffer(S, 'bubble'); markDirty(); }
     const got = (fr) => { pops.set(i, clock()); const [x, y] = cellXY(i); burst(x, y, '#bfe8f2', 16); burst(x, y, Core.itemDef(C, S.cells[i]).color, 10); if (fr) queueFound(fr, x, y); };
     modal(L.t('ui.bubbleTitle'), body(), [
       { label: '▶ ' + L.t('ad.free'), ad: true, on: async () => {
@@ -939,6 +951,7 @@
     const a = layerAnchor(r.node.layer);
     burst(a[0], a[1], '#f5c03a', 24); burst(a[0], a[1], '#ef7965', 12);
     decoKey = ''; updateDeco();
+    if (r.actDone) Platform.game.happytime(); // 门户「高光时刻」：只在装完一整幕、熟客满 5 心时用（官方要求少用）
     const after = () => { if (r.actDone) toast(r.allDone ? L.t('ui.allDone') : L.t('ui.actDone', { act: L.t(Core.areaOf(C, S).acts[r.node.act].name) })); };
     if (r.comic) setTimeout(() => { modal(L.t(r.node.name), L.t(r.comic), [{ label: L.t('ui.continue') }], r.comic); modalOnClose = after; }, 900);
     else after();
@@ -1559,6 +1572,7 @@
     startedAt = clock();
     updateHud(); updateTutorial(); updateSndBtn();
     requestAnimationFrame(frame);
+    requestAnimationFrame(() => { Platform.game.loadingStop(); if (!modalOpen()) Platform.game.gameplayStart(); }); // 首帧画出来 = 可以玩了
   }
   /* 正式图和字体一起预加载：都到了（或 2.5 秒超时）才开画，避免占位图闪一下再换。没到的图之后到了照样自动替换 */
   const artReady = Promise.all([
@@ -1587,7 +1601,7 @@
   /* ---------- 调试面板（?debug=1，给 QA 用，文案不进本地化表） ---------- */
   function debugStats() {
     const st = S.stats, c = st.createdAt;
-    $('dbg-fps').textContent = `${fps} fps · ${renderMs.toFixed(2)} ms/frame\norders ${st.ordersDone} · merges ${st.merges}\n1st merge ${st.firstMergeAt ? ((st.firstMergeAt - c) / 1000).toFixed(1) + 's' : '-'} · 1st order ${st.firstOrderAt ? ((st.firstOrderAt - c) / 1000).toFixed(1) + 's' : '-'}\nads ${['energy', 'refill', 'double', 'bubble', 'offline'].map((k) => k + ' ' + S.ads.clicks[k] + '/' + S.ads.offers[k]).join(' · ')} · inter ${S.ads.interstitials}\nLv ${S.level} (${S.xp}/${Core.xpNeed(C, S.level)}) · ev ${st.ev.small}/${st.ev.mid}/${st.ev.big} · mid/3min ${st.playMs > 60e3 ? (st.ev.mid / (st.playMs / 180e3)).toFixed(1) : '-'} · days ${Core.daysInFirstWeek(S)} · play ${Math.round(st.playMs / 60e3)}m\ndeco ${S.deco}/${Core.areaNodes(C, S).length} · gens ${C.genList.map((g) => 'Lv' + (S.gens[g.id].lv || 1)).join('/')}\nspent ${Object.entries(st.coinsSpent).filter(([, v]) => v).map(([k, v]) => k + ' ' + v).join(' · ') || '-'} · earned ${st.coinsEarned}`;
+    $('dbg-fps').textContent = `${fps} fps · ${renderMs.toFixed(2)} ms/frame\norders ${st.ordersDone} · merges ${st.merges}\n1st merge ${st.firstMergeAt ? ((st.firstMergeAt - c) / 1000).toFixed(1) + 's' : '-'} · 1st order ${st.firstOrderAt ? ((st.firstOrderAt - c) / 1000).toFixed(1) + 's' : '-'}\nads[${Platform.adsMode}${Platform.adblock ? ' adblock' : ''}${Ads.available ? '' : ' off'}] ${['energy', 'refill', 'double', 'bubble', 'offline'].map((k) => k + ' ' + S.ads.clicks[k] + '/' + S.ads.offers[k]).join(' · ')} · inter ${S.ads.interstitials}\nLv ${S.level} (${S.xp}/${Core.xpNeed(C, S.level)}) · ev ${st.ev.small}/${st.ev.mid}/${st.ev.big} · mid/3min ${st.playMs > 60e3 ? (st.ev.mid / (st.playMs / 180e3)).toFixed(1) : '-'} · days ${Core.daysInFirstWeek(S)} · play ${Math.round(st.playMs / 60e3)}m\ndeco ${S.deco}/${Core.areaNodes(C, S).length} · gens ${C.genList.map((g) => 'Lv' + (S.gens[g.id].lv || 1)).join('/')}\nspent ${Object.entries(st.coinsSpent).filter(([, v]) => v).map(([k, v]) => k + ' ' + v).join(' · ') || '-'} · earned ${st.coinsEarned}`;
   }
   if (DEBUG) {
     const box = $('dbg'); box.classList.add('show');
@@ -1611,7 +1625,7 @@
     btn('serve-ready', () => { // 把三个订单要的东西都放到棋盘上
       for (const o of S.orders) for (const n of o.needs) if (!n.done) { const e = S.cells.findIndex((c, i) => !c && S.unlocked[i]); if (e >= 0) S.cells[e] = { k: 'item', chain: n.chain, lvl: n.lvl }; }
     });
-    btn('reset', () => { const ls = store(); if (ls) ls.removeItem(SAVE_KEY); try { sessionStorage.removeItem('mcl.timeOffset'); } catch (e) {} timeOffset = 0; S = Core.newState(C, now()); sel = -1; pendingCoins = pendingStars = 0; decoKey = ''; });
+    btn('reset', () => { Platform.storage.remove(SAVE_KEY); try { sessionStorage.removeItem('mcl.timeOffset'); } catch (e) {} timeOffset = 0; S = Core.newState(C, now()); sel = -1; pendingCoins = pendingStars = 0; decoKey = ''; });
   }
   // 自动化测试 / 调试入口
   window.MCL = {
