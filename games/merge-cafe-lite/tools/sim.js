@@ -128,7 +128,7 @@ function campaign(seed, days, sinks) {
       session(s, rng, T0 + d * 86400e3 + h * 3600e3, len, { sinks });
       while (Core.renovate(C, s).ok) {} // 有星有钱就装修（玩家会第一时间装）
     }
-    out.push({ coins: s.coins, earned: s.stats.coinsEarned, spent: Object.assign({}, s.stats.coinsSpent), unlocks: s.stats.unlocks, lv: C.genList.map((g) => s.gens[g.id].lv), level: s.level, deco: s.deco });
+    out.push({ mid: s.stats.ev.mid, coins: s.coins, earned: s.stats.coinsEarned, spent: Object.assign({}, s.stats.coinsSpent), unlocks: s.stats.unlocks, lv: C.genList.map((g) => s.gens[g.id].lv), level: s.level, deco: s.deco });
   }
   return out;
 }
@@ -145,6 +145,8 @@ function campaignReport(days, runs) {
     }
     if (sinks) {
       const dayOf = (f) => { const v = all.map((a) => { const i = a.findIndex(f); return i < 0 ? 99 : i + 1; }).sort((a, b) => a - b); return v[v.length >> 1]; };
+      const midRate = (d0, d1) => { const v = all.map((a) => (a[d1 - 1].mid - (d0 > 1 ? a[d0 - 2].mid : 0)) / ((d1 - d0 + 1) * 30 / 3)).sort((x, y) => x - y); return v[v.length >> 1].toFixed(1); };
+      console.log(`M2 验收：每 3 分钟中奖励次数（升级 / 新等级物品 / 生成器升级 / 任务 / 泡泡 / 装修 / 回收桶满；机器人不卖东西，真人更多）：D1 ${midRate(1, 1)}、D2–D7 ${midRate(2, 7)}、D8–D14 ${midRate(8, 14)}`);
       console.log(`M1 验收（中位数）：第一幕 D${dayOf((x) => x.deco >= 5)}、第二幕 D${dayOf((x) => x.deco >= 10)}、第三幕 D${dayOf((x) => x.deco >= 15)}；` +
         `店铺 8 级 D${dayOf((x) => x.level >= 8)}、12 级 D${dayOf((x) => x.level >= 12)}、16 级 D${dayOf((x) => x.level >= 16)}、20 级 D${dayOf((x) => x.level >= 20)}`);
     }

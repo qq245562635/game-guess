@@ -15,11 +15,11 @@ const Ads = (() => {
     return new Promise((resolve) => {
       const box = document.getElementById('ad'), txt = document.getElementById('ad-count');
       document.getElementById('ad-label').textContent = label;
-      box.classList.add('show');
+      box.classList.add('show'); Sfx.duck(true); // 广告期间游戏静音（门户 SDK 要求）
       let n = sec;
       const tick = () => {
         txt.textContent = L.t('ad.playing', { n });
-        if (n-- <= 0) { box.classList.remove('show'); resolve(true); return; }
+        if (n-- <= 0) { box.classList.remove('show'); Sfx.duck(false); resolve(true); return; }
         setTimeout(tick, 1000);
       };
       tick();
