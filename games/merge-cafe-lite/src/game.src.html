@@ -146,6 +146,28 @@ body.book #book { display: block; }
 .reg.locked { opacity: .55; }
 .reg .t-bar { margin-top: 3px; }
 /* 熟客升心 / 新菜谱卡 */
+/* 每天回来（M5）：每日任务、签到日历、欢迎回来卡 */
+#daily { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 2px dashed #e3cfa8; }
+#daily h3 { display: flex; align-items: center; gap: 6px; }
+#daily-ico img { width: 26px; height: 26px; display: block; }
+#daily .task.ok { background: #e2f3ec; }
+#daily .t-ok { font: 900 18px var(--font); color: #3bb36a; width: 22px; text-align: center; }
+#daily-chest { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 4px; }
+#daily-chest img, #daily-chest svg { width: 30px; height: 30px; }
+#daily-chest.wait { background: #e3cfa8; color: #7a5a3a; box-shadow: none; }
+#daily-chest.ready { animation: pulse 1.1s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.04); } }
+.cal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 4px 0 10px; }
+.cal div { position: relative; padding: 6px 2px 5px; border-radius: 10px; background: #f6e7c6; font: 800 11px var(--font); color: #7a5a3a; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.cal div img, .cal div svg { width: 22px; height: 22px; }
+.cal div b { font: 900 13px var(--font); color: #3a2416; }
+.cal .got { opacity: .55; } .cal .got::after { content: '✓'; position: absolute; top: 2px; right: 5px; color: #3bb36a; font: 900 14px var(--font); }
+.cal .now { background: #fff; outline: 3px solid var(--gold); animation: pop .4s cubic-bezier(.2,1.6,.4,1); }
+.cal .big { grid-column: span 2; background: #ffeec2; }
+.cal-top { display: flex; justify-content: center; } .cal-top img { width: 56px; height: 56px; }
+.welcome img.pic { width: 100%; height: auto; display: block; border-radius: 12px; margin-bottom: 8px; }
+.welcome .amt { font: 900 30px var(--font); color: #3a2416; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px; }
+.welcome .amt img, .welcome .amt svg { width: 32px; height: 32px; }
 .heartup { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .heartup img { width: 128px; height: 128px; border-radius: 22px; animation: pop .4s cubic-bezier(.2,1.6,.4,1); }
 .heartup .hs { color: #e2566f; font-size: 24px; letter-spacing: 3px; }
@@ -232,7 +254,7 @@ body.book #book { display: block; }
 </div>
 <div id="tip"></div>
 <div id="toast"></div>
-<div id="tasks"><h3 data-l10n="ui.tasksTitle"></h3><div id="tasks-list"></div></div>
+<div id="tasks"><div id="daily" style="display:none"><h3><span id="daily-ico"></span><span data-l10n="unlock.daily"></span></h3><div id="daily-list"></div><button class="btn" id="daily-chest"></button></div><h3 data-l10n="ui.tasksTitle"></h3><div id="tasks-list"></div></div>
 <div id="book"><div class="btabs"><button id="bt-rec" class="on" data-l10n="ui.bookRecipes"></button><button id="bt-reg" data-l10n="ui.bookRegulars"></button></div><div id="book-body"></div></div>
 <div id="deco"><div class="deco-head"><span id="deco-act"></span><span id="deco-prog"></span></div><div id="deco-list"></div><button class="btn" id="deco-btn"></button></div>
 <button id="x2">▶ <span></span></button>

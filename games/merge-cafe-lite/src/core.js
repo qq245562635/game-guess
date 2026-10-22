@@ -3,7 +3,7 @@
    所有数值来自 CONFIG（src/config/*.json），这里不写死任何数。
    时间一律用毫秒时间戳 now 传入，随机数用 rng 传入，方便离线结算和测试。 */
 const Core = (() => {
-  const SAVE_VERSION = 8;
+  const SAVE_VERSION = 9;
   const TUT_DONE = -1;
 
   /* ---------- 配置索引 ---------- */
@@ -32,6 +32,7 @@ const Core = (() => {
       areas, deco: areas.length ? areas[0].nodes : [], prog: P,
       RG, regs, regById, regByAvatar, RC: cfg.recipes || { coinsPerLevel: 0, stars: [], bonusPerStar: 0 },
       ads: cfg.ads || {}, tasks: cfg.tasks || { active: 0, list: [] },
+      DY: cfg.daily || { tasks: { count: 0, fixed: [], extra: [] }, chest: {}, login: { rewards: [] }, offline: { capH: 0 } },
       cfg, cols: b.cols, rows: b.rows, n: b.cols * b.rows,
       maxLevel: cfg.chains.maxLevel, chains: cfg.chains.chains, gens, genList: cfg.generators.generators,
       eco: cfg.economy, O, tpl, tut: cfg.tutorial || { enabled: false }, ups: cfg.generators.upgrades || [],
@@ -62,6 +63,7 @@ const Core = (() => {
       recipes: {},             // 菜谱：chain+lvl → { f: 1 做出过, p: 熟练度点数 }
       ads: newAdStats(),
       tasks: { next: 0, active: [] },
+      login: { n: 0, day: -1 }, // 累计签到：领过几格、最后领的 UTC 日
       daily: newDaily(now),    // 每日限次的金币消耗（UTC 0 点重置）
       stats: newStats(now),
     };
@@ -341,6 +343,7 @@ const Core = (() => {
     if (K.energyEvery && c.n % K.energyEvery === 0) { r.energy = K.energy; settleEnergy(C, s, t); s.energy += K.energy; }
     if (r.coins || r.energy) logEv(s, 'small');
     s.stats.bestCombo = Math.max(s.stats.bestCombo || 0, c.n);
+    if (c.n === 5) s.stats.combo5 = (s.stats.combo5 || 0) + 1; // 每日任务「打出 x5 连击」
     return r;
   }
 
@@ -463,6 +466,8 @@ const Core = (() => {
     s.stats.ordersDone++; s.stats.coinsEarned += pay.total;
     logEv(s, 'small');
     const recipeUps = addMastery(C, s, o), aff = addAffinity(C, s, o, now);
+    if (o.set) s.stats.setDone = (s.stats.setDone || 0) + 1;
+    if (aff.reg) s.stats.regServed = (s.stats.regServed || 0) + 1;
     const xp = orderXp(C, o), levelUps = addXp(C, s, xp, now);
     const every = C.eco.starEveryOrders || 0, bonusStar = every && s.stats.ordersDone % every === 0 ? 1 : 0;
     s.stars += bonusStar;
@@ -626,6 +631,8 @@ const Core = (() => {
       case 'merges': return s.stats.merges; case 'orders': return s.stats.ordersDone; case 'spawns': return s.stats.spawns;
       case 'unlocks': return s.stats.unlocks || 0; case 'renovate': return s.deco; case 'coins': return s.stats.coinsEarned;
       case 'level': return s.stats.maxLvl || 0;
+      case 'regulars': return s.stats.regServed || 0; case 'combo5': return s.stats.combo5 || 0;
+      case 'setOrders': return s.stats.setDone || 0; case 'digs': return s.stats.dug || 0;
     }
     return 0;
   }
@@ -657,8 +664,70 @@ const Core = (() => {
     return { ok: true, reward: r, task: p.def };
   }
 
+  /* ---------- 每天回来（V1 M5）：每日任务 + 宝箱、累计签到、离线营业 ---------- */
+  const dailyN = (C, s, d) => Math.max(1, Math.min(d.max || 1e9, Math.round(d.n[0] + d.n[1] * s.level)));
+  function rollDailyTasks(C, s, now, rng) {
+    const T = C.DY.tasks, extra = T.extra.filter((d) => !d.feature || featureOn(C, s, d.feature));
+    const defs = T.fixed.slice(0, T.count);
+    while (defs.length < T.count && extra.length) defs.push(extra.splice(Math.floor(rng() * extra.length), 1)[0]);
+    return defs.map((d) => ({ type: d.type, n: dailyN(C, s, d), base: taskStat(s, d.type) }));
+  }
+  /* 今天的每日任务；跨天自动换新。昨天全做完没领的宝箱记 owed，今天照样能领 */
+  function dailyTasks(C, s, now, rng) {
+    if (!featureOn(C, s, 'daily') || tutStep(C, s)) return null;
+    const today = dayOf(now), cur = s.dtasks;
+    if (!cur || cur.day !== today) {
+      const owed = !!(cur && ((cur.owed) || (!cur.claimed && cur.list.every((t) => taskStat(s, t.type) - t.base >= t.n))));
+      s.dtasks = { day: today, list: rollDailyTasks(C, s, now, rng || Math.random), claimed: false, owed };
+    }
+    return s.dtasks;
+  }
+  function dailyProgress(C, s, now, rng) {
+    const d = dailyTasks(C, s, now, rng); if (!d) return null;
+    const list = d.list.map((t) => { const cur = Math.min(t.n, Math.max(0, taskStat(s, t.type) - t.base)); return { type: t.type, n: t.n, cur, done: cur >= t.n }; });
+    const allDone = list.every((t) => t.done);
+    return { list, allDone, claimed: d.claimed, owed: d.owed, ready: d.owed || (allDone && !d.claimed) };
+  }
+  /* 开每日宝箱：体力 / 金币 / 星星直接入账；wildChance 概率在棋盘上放一颗百搭星（满了改给体力） */
+  function claimDailyChest(C, s, now, rng) {
+    const p = dailyProgress(C, s, now, rng); if (!p) return { ok: false, reason: 'locked' };
+    if (!p.ready) return { ok: false, reason: p.claimed ? 'claimed' : 'notDone' };
+    if (s.dtasks.owed) s.dtasks.owed = false; else s.dtasks.claimed = true;
+    const K = C.DY.chest, r = { energy: K.energy || 0, coins: K.coins || 0, stars: K.stars || 0, wild: -1 };
+    if ((rng || Math.random)() < (K.wildChance || 0)) { r.wild = giveWildStar(C, s, 3, 3); if (r.wild < 0) r.energy += K.wildFallbackEnergy || 0; }
+    settleEnergy(C, s, now); s.energy += r.energy; s.coins += r.coins; s.stars += r.stars; s.stats.coinsEarned += r.coins;
+    s.stats.dailyChests = (s.stats.dailyChests || 0) + 1; logEv(s, 'big');
+    return Object.assign({ ok: true }, r);
+  }
+  /* 累计签到：今天还没领就领下一格（断了不清零），7 格一轮；第 7 格另开升级宝箱 */
+  function loginDue(C, s, now) { return featureOn(C, s, 'daily') && !tutStep(C, s) && (!s.login || s.login.day !== dayOf(now)); }
+  function claimLogin(C, s, now) {
+    if (!loginDue(C, s, now)) return { ok: false };
+    const L = s.login || (s.login = { n: 0, day: -1 }), R = C.DY.login.rewards;
+    const idx = L.n % R.length, rw = R[idx];
+    L.n++; L.day = dayOf(now);
+    const r = { energy: rw.energy || 0, coins: rw.coins || 0, stars: rw.stars || 0 };
+    settleEnergy(C, s, now); s.energy += r.energy; s.coins += r.coins; s.stars += r.stars; s.stats.coinsEarned += r.coins;
+    const chest = rw.chest ? openChest(C, s, now) : null;
+    logEv(s, rw.chest ? 'big' : 'mid');
+    return { ok: true, day: idx + 1, of: R.length, round: Math.floor((L.n - 1) / R.length) + 1, reward: r, chest };
+  }
+  /* 离线营业：from → now 之间（最多 capH 小时）按每小时收入发金币；不满 minMin 分钟返回 null */
+  function offlineCapH(C, s) { const O = C.DY.offline; let h = O.capH || 0; for (const c of O.caps || []) if (featureOn(C, s, c.feature)) h = Math.max(h, c.h); return h; }
+  function offlineRate(C, s) { const O = C.DY.offline; return (O.base || 0) + (O.perLevel || 0) * s.level + (O.perDeco || 0) * decoTotal(C, s); }
+  function decoTotal(C, s) { let n = s.deco; for (let a = 0; a < s.area; a++) n += C.areas[a].nodes.length; return n; }
+  function offlineEarn(C, s, from, now) {
+    const O = C.DY.offline; if (!from || !O.capH || tutStep(C, s)) return null;
+    const ms = Math.min(now - from, offlineCapH(C, s) * 3600e3);
+    if (!(ms >= (O.minMin || 0) * 60e3)) return null;
+    const coins = Math.floor(offlineRate(C, s) * ms / 3600e3);
+    if (coins <= 0) return null;
+    s.coins += coins; s.stats.coinsEarned += coins; s.stats.offlineCoins = (s.stats.offlineCoins || 0) + coins; logEv(s, 'mid');
+    return { coins, mins: Math.round(ms / 60e3), capped: now - from >= offlineCapH(C, s) * 3600e3, capH: offlineCapH(C, s) };
+  }
+
   /* ---------- 广告奖励（激励视频发奖，Mock 和正式 SDK 共用这些入口） ---------- */
-  const AD_KINDS = ['energy', 'refill', 'double', 'bubble'];
+  const AD_KINDS = ['energy', 'refill', 'double', 'bubble', 'offline'];
   const zeros = () => { const o = {}; for (const k of AD_KINDS) o[k] = 0; return o; };
   function newAdStats() { return { offers: zeros(), clicks: zeros(), rewards: 0, interstitials: 0, lastInterAt: 0 }; }
   function adOffer(s, kind) { s.ads.offers[kind]++; }
@@ -715,7 +784,8 @@ const Core = (() => {
       for (const c of o.cells || []) if (c && c.k === 'item') o.recipes[c.chain + c.lvl] = { f: 1, p: 0 };
       o.v = 7;
     }
-    if (o.v === 7) { o.v = 8; } // v7 → v8：棋盘障碍埋的物品（下面按当前锁格补）、百搭星格子
+    if (o.v === 7) { o.v = 8; }
+    if (o.v === 8) { o.v = 9; } // v8 → v9：每日任务 dtasks、签到 login（都由下面的默认值补齐）；lastSeen 记上次存档时间算离线营业 // v7 → v8：棋盘障碍埋的物品（下面按当前锁格补）、百搭星格子
     if (o.v !== SAVE_VERSION) return null;
     if (!Array.isArray(o.cells) || o.cells.length !== C.n || !Array.isArray(o.unlocked) || o.unlocked.length !== C.n) return null;
     if (!o.gens || typeof o.gens !== 'object' || !Array.isArray(o.orders)) return null;
@@ -756,6 +826,9 @@ const Core = (() => {
     for (let k = 0; k < C.O.slots; k++) if (!o.orders[k] || !C.tpl[o.orders[k].tid]) { o.orders[k] = null; o.orders[k] = rollOrder(C, o, t, rng || Math.random); }
     // 引导中途刷新：棋盘上已经没有能继续的东西了就直接结束引导，不卡死
     if (o.tut !== TUT_DONE && !tutViable(C, o)) o.tut = TUT_DONE;
+    o.lastSeen = typeof o.savedAt === 'number' ? o.savedAt : 0;
+    if (!o.login || typeof o.login.n !== 'number') o.login = { n: 0, day: -1 };
+    if (o.dtasks && !(Array.isArray(o.dtasks.list) && typeof o.dtasks.day === 'number')) delete o.dtasks;
     delete o.savedAt;
     return o;
   }
@@ -777,6 +850,7 @@ const Core = (() => {
     decoNext, renovate, decoDone, areaOf, areaNodes,
     xpNeed, orderXp, addXp, openChest, unlockLevel, featureOn, nextUnlock, logEv, markDay, daysInFirstWeek, adOffer, adClick, grantEnergy, grantDouble, markInterstitial, cooldownSec,
     fillTasks, taskProgress, tasksClaimable, claimTask,
+    dailyTasks, dailyProgress, claimDailyChest, loginDue, claimLogin, offlineEarn, offlineRate, offlineCapH, dayOf,
     genMaxCharges, upgradeCost, upgradeGen, refillPrice, buyRefill, energyPrice, buyEnergy,
     addCombo, sellPrice, sellItem, findMergePair, stuckHint, rollHidden, obstacleAt, canDig, maybeWildStar, giveWildStar, setOrderFields,
     regState, regOn, heartsFor, regPerks, addAffinity, recipeStars, recState, markFound, addMastery, orderCoins, seatedRegulars, rollRegularOrder,

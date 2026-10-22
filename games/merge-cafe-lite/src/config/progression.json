@@ -41,7 +41,7 @@
       "level": 2,
       "feature": "daily",
       "name": "unlock.daily",
-      "ready": false
+      "ready": true
     },
     {
       "level": 3,
@@ -91,7 +91,7 @@
       "level": 9,
       "feature": "offline6h",
       "name": "unlock.offline",
-      "ready": false
+      "ready": true
     },
     {
       "level": 9,
@@ -118,7 +118,7 @@
       "level": 15,
       "feature": "offline8h",
       "name": "unlock.offline",
-      "ready": false
+      "ready": true
     }
   ]
 }

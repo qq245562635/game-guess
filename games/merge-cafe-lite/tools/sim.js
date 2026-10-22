@@ -10,7 +10,7 @@ const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 const Core = require(path.join(root, 'src/core.js'));
 const cfg = {};
-for (const n of ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression', 'regulars', 'recipes'])
+for (const n of ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression', 'regulars', 'recipes', 'daily'])
   cfg[n] = JSON.parse(fs.readFileSync(path.join(root, 'src/config', n + '.json'), 'utf8'));
 const C = Core.index(cfg);
 const T = { tap: 1.0, merge: 1.6, deliver: 1.8 };

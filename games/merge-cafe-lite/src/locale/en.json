@@ -180,5 +180,16 @@
   "ui.unlockHidden": "Open this tile for {n} coins? You'll get the {item} inside.",
   "ui.dug": "Dug up! {item}",
   "ui.perfect": "Perfect! +{n}",
-  "ui.obstacleTip": "Sand & crates hide items. Drop the same item on them to dig them out!"
+  "ui.obstacleTip": "Sand & crates hide items. Drop the same item on them to dig them out!",
+  "task.regulars": "Serve regulars {n} times",
+  "task.combo5": "Hit a x5 combo {n} times",
+  "task.setOrders": "Finish {n} combo orders",
+  "task.digs": "Clear {n} sand or crates",
+  "ui.dailyChest": "Open Daily Chest",
+  "ui.dailyDone": "All done! New daily tasks tomorrow.",
+  "ui.loginTitle": "Day {n} Reward",
+  "ui.loginBody": "Come back every day. Missed days never reset your progress.",
+  "ui.welcomeTitle": "Welcome Back!",
+  "ui.welcomeBody": "Your café earned {n} coins while you were away ({t}).",
+  "ui.offlineCap": "Earnings cap at {h} hours. Come back sooner for more!"
 }

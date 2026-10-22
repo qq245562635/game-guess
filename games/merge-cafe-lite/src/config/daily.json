@@ -1,0 +1,27 @@
+{
+  "_doc": "每天回来（V1 M5，docs/V1-plan.md「每天回来」）。全部按 UTC 0 点算一天。tasks：店铺 2 级（progression.unlocks 的 daily）开放，每天 3 条，前两条固定是合成 / 做单，第三条从 extra 里随机（功能没开的类型不出）；数量 = min(max, round(n[0] + n[1] × 店铺等级))，从接到任务那一刻起算。3 条全完成开每日宝箱 chest，wildChance 概率多给一颗百搭星（棋盘满了改给 wildFallbackEnergy 体力）；当天没领、第二天还能领（不惩罚）。login：累计签到，同样店铺 2 级开放，每天第一次进游戏领一格，7 天一轮，断了不清零；第 7 格给星星 + 一个升级宝箱（progression.chest）。offline：离线营业，每小时 base + perLevel × 店铺等级 + perDeco × 已装修节点数 金币，最多算 capH 小时（店铺 9 级 6 小时、15 级 8 小时，见 caps）；离开不满 minMin 分钟不算；回来弹「欢迎回来」卡，可看广告翻倍（第 5 个激励视频点位）。",
+  "tasks": {
+    "count": 3,
+    "fixed": [
+      { "type": "merges", "n": [12, 2], "max": 60 },
+      { "type": "orders", "n": [3, 0.5], "max": 15 }
+    ],
+    "extra": [
+      { "type": "spawns", "n": [15, 2.5], "max": 70 },
+      { "type": "regulars", "n": [2, 0.2], "max": 5, "feature": "regulars" },
+      { "type": "combo5", "n": [1, 0.1], "max": 3 },
+      { "type": "setOrders", "n": [1, 0.15], "max": 4, "feature": "setOrders" },
+      { "type": "digs", "n": [1, 0.2], "max": 5, "feature": "obstacles" }
+    ]
+  },
+  "chest": { "energy": 30, "coins": 100, "stars": 1, "wildChance": 0.25, "wildFallbackEnergy": 20 },
+  "login": {
+    "rewards": [
+      { "coins": 50 }, { "energy": 20 }, { "coins": 100 }, { "energy": 30 }, { "coins": 150 }, { "energy": 40 }, { "stars": 3, "chest": true }
+    ]
+  },
+  "offline": {
+    "base": 10, "perLevel": 3, "perDeco": 5, "capH": 4, "minMin": 30,
+    "caps": [ { "feature": "offline6h", "h": 6 }, { "feature": "offline8h", "h": 8 } ]
+  }
+}
