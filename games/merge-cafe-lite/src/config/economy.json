@@ -41,7 +41,9 @@
     "energy": 1
   },
   "sell": {
-    "confirmFrom": 5
+    "_doc": "出售。onlyWhenStuck=true：平时点选物品不出 Sell 按钮（贴着下一格太容易误点），只在满格无可合时出现；confirmFrom=1：任何等级卖之前都弹确认",
+    "onlyWhenStuck": true,
+    "confirmFrom": 1
   },
   "recycle": {
     "size": 8,
