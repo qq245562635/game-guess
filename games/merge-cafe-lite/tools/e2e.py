@@ -260,7 +260,7 @@ with sync_playwright() as p:
     pg.screenshot(path=str(out / 'cafe-act1-done.png'))
     reload(pg)
     check('刷新后装修进度保留', S(pg, 'deco') == 5 and S(pg, 'v') == 9)
-    pg.evaluate('MCL.S.stars=68; MCL.S.coins=20500'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)  # 二、三幕共 68 星 + 20500 金币
+    pg.evaluate('MCL.S.stars=68; MCL.S.coins=28700'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)  # 二、三幕共 68 星 + 28700 金币
     comics = 0
     for _ in range(20):
         if S(pg, 'deco') >= 15: break
@@ -422,12 +422,12 @@ with sync_playwright() as p:
     check('宝箱 Collect 后金币落地，顶栏和存档一致', pg.inner_text('#coins').replace(',', '') == str(S(pg, 'coins')) and S(pg, 'coins') == c5)
     # 装修：第二幕节点要星 + 金币
     pg.evaluate('MCL.S.deco=5; MCL.S.stars=10; MCL.S.coins=1250'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)
-    check('装修第二幕：按钮显示 ★4 + 1300 金币', '4' in pg.inner_text('#deco-btn') and '1300' in pg.inner_text('#deco-btn').replace(',', ''), pg.inner_text('#deco-btn'))
+    check('装修第二幕：按钮显示 ★4 + 1800 金币', '4' in pg.inner_text('#deco-btn') and '1800' in pg.inner_text('#deco-btn').replace(',', ''), pg.inner_text('#deco-btn'))
     pg.screenshot(path=str(out / 'm1-deco-coins.png'))
     pg.click('#deco-btn'); pg.wait_for_timeout(300)
     check('金币不够：不扣星不扣钱，提示还差 50 金币', S(pg, 'deco') == 5 and S(pg, 'stars') == 10 and S(pg, 'coins') == 1250 and '50' in pg.inner_text('#toast'), pg.inner_text('#toast'))
-    pg.evaluate('MCL.S.coins=1350'); pg.wait_for_timeout(300); pg.click('#deco-btn'); pg.wait_for_timeout(1300)
-    check('金币够了：扣 4 星 + 1300 金币，装上木栈台', S(pg, 'deco') == 6 and S(pg, 'stars') == 6 and S(pg, 'coins') == 50)
+    pg.evaluate('MCL.S.coins=1850'); pg.wait_for_timeout(300); pg.click('#deco-btn'); pg.wait_for_timeout(1300)
+    check('金币够了：扣 4 星 + 1800 金币，装上木栈台', S(pg, 'deco') == 6 and S(pg, 'stars') == 6 and S(pg, 'coins') == 50)
     pg.click('#nav-merge'); pg.wait_for_timeout(300)
     check('打点：今天已记上线、奖励事件有计数、游玩时长在涨', len(S(pg, 'stats.days')) == 1 and S(pg, 'stats.ev.small') >= 1 and S(pg, 'stats.ev.mid') >= 2 and S(pg, 'stats.playMs') > 1000, json.dumps(S(pg, 'stats.ev')))
     reload(pg, levels=True)
@@ -621,19 +621,19 @@ with sync_playwright() as p:
     pg.evaluate("MCL.S.level = 9; MCL.S.deco = 5; MCL.S.login.day = Core.dayOf(MCL.now()); MCL.save()")  # 今天已签到（跳 3 小时若跨过 UTC 0 点会再弹签到，下面一并收掉）
     c0 = S(pg, 'coins'); skip_time(pg, 3 * 3600000); pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0')
     pg.wait_for_selector('#modal.show', timeout=6000)
-    check('离开 3 小时回来：欢迎回来卡，插画 + 186 金币（每小时 10+27+25）', 'Welcome' in pg.inner_text('#m-title') and pg.is_visible('.welcome img.pic') and '186' in pg.inner_text('.welcome .amt'),
+    check('离开 3 小时回来：欢迎回来卡，插画 + 117 金币（每小时 6+18+15）', 'Welcome' in pg.inner_text('#m-title') and pg.is_visible('.welcome img.pic') and '117' in pg.inner_text('.welcome .amt'),
           f"{pg.inner_text('#m-title')!r} {pg.inner_text('#m-comic')!r}")
     pg.wait_for_timeout(400); pg.screenshot(path=str(out / 'm5-welcome.png'))
     pg.click('#m-btns .btn.ad'); no_ad(pg); pg.wait_for_timeout(800)
     close_all(pg)
     settle_rewards(pg)
-    check('看广告翻倍：一共 +372，广告统计 offline 点 1 次 / 展示 2 次（含隔天那张）', S(pg, 'coins') - c0 >= 372 and S(pg, 'stats.offlineCoins') == 186 + 64 and S(pg, 'ads.offers.offline') == 2 and S(pg, 'ads.clicks.offline') == 1, f"+{S(pg, 'coins') - c0}")
+    check('看广告翻倍：一共 +234，广告统计 offline 点 1 次 / 展示 2 次（含隔天那张）', S(pg, 'coins') - c0 >= 234 and S(pg, 'stats.offlineCoins') == 117 + 40 and S(pg, 'ads.offers.offline') == 2 and S(pg, 'ads.clicks.offline') == 1, f"+{S(pg, 'coins') - c0}")
     pg.evaluate('MCL.save()'); skip_time(pg, 20 * 3600000); c0 = S(pg, 'coins'); pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0')
     pg.wait_for_selector('#modal.show', timeout=6000)
-    check('离开 20 小时：9 级封顶 6 小时（372），卡上提示上限', 'Welcome' in pg.inner_text('#m-title') and '372' in pg.inner_text('.welcome .amt') and '6 hours' in pg.inner_text('.welcome'), pg.inner_text('#m-comic'))
+    check('离开 20 小时：9 级封顶 6 小时（234），卡上提示上限', 'Welcome' in pg.inner_text('#m-title') and '234' in pg.inner_text('.welcome .amt') and '6 hours' in pg.inner_text('.welcome'), pg.inner_text('#m-comic'))
     close_all(pg)
     settle_rewards(pg)
-    check('不看广告直接 Collect：+372', S(pg, 'coins') - c0 >= 372, f"+{S(pg, 'coins') - c0}")
+    check('不看广告直接 Collect：+234', S(pg, 'coins') - c0 >= 234, f"+{S(pg, 'coins') - c0}")
     ctx.close()
 
     # ================= 多分辨率布局 =================

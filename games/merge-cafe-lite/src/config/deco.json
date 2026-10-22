@@ -52,35 +52,35 @@
               "name": "deco.a2_deck",
               "cost": 4,
               "layer": "deck",
-              "coins": 1300
+              "coins": 1800
             },
             {
               "id": "a2_flowers",
               "name": "deco.a2_flowers",
               "cost": 4,
               "layer": "flowers",
-              "coins": 1500
+              "coins": 2100
             },
             {
               "id": "a2_bar",
               "name": "deco.a2_bar",
               "cost": 5,
               "layer": "bar",
-              "coins": 1700
+              "coins": 2400
             },
             {
               "id": "a2_menu",
               "name": "deco.a2_menu",
               "cost": 5,
               "layer": "menu",
-              "coins": 1900
+              "coins": 2700
             },
             {
               "id": "a2_speaker",
               "name": "deco.a2_speaker",
               "cost": 6,
               "layer": "speakers",
-              "coins": 2100
+              "coins": 2900
             }
           ]
         },
@@ -93,35 +93,35 @@
               "name": "deco.a3_neon",
               "cost": 8,
               "layer": "neon",
-              "coins": 2100
+              "coins": 2900
             },
             {
               "id": "a3_terrace",
               "name": "deco.a3_terrace",
               "cost": 8,
               "layer": "terrace",
-              "coins": 2300
+              "coins": 3200
             },
             {
               "id": "a3_tower",
               "name": "deco.a3_tower",
               "cost": 9,
               "layer": "tower",
-              "coins": 2400
+              "coins": 3400
             },
             {
               "id": "a3_photo",
               "name": "deco.a3_photo",
               "cost": 9,
               "layer": "photo",
-              "coins": 2500
+              "coins": 3500
             },
             {
               "id": "a3_lights",
               "name": "deco.a3_lights",
               "cost": 10,
               "layer": "lights",
-              "coins": 2700
+              "coins": 3800
             }
           ]
         }
