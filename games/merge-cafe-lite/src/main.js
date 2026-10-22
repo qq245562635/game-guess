@@ -98,8 +98,8 @@
     LY.pad = Math.round(LY.bs * 0.022);
     LY.cs = (LY.bs - LY.pad * 2) / C.cols;
     if (mode !== 'merge') { // 装修 / 任务
-      const panel = $(mode === 'cafe' ? 'deco' : 'tasks'), ds = panel.style;
-      ds.maxHeight = '';
+      const panel = $({ cafe: 'deco', tasks: 'tasks', book: 'book' }[mode]), ds = panel.style;
+      ds.maxHeight = mode === 'book' && LY.portrait ? Math.round(H * 0.56) + 'px' : '';
       if (LY.portrait) { // 竖屏：场景在上，面板 + 底栏在下
         const cw = Math.min(W - 16, 620), cx = (W - cw) / 2;
         placeNav(cx, H - navH - safeB - 4, cw, navH);
@@ -122,7 +122,8 @@
   }
   function placeNav(x, y, w, h) {
     const s = $('nav').style; s.left = x + 'px'; s.top = y + 'px'; s.width = w + 'px'; s.height = h + 'px';
-    $('nav').classList.toggle('compact', (w - 20) / 3 < 128); // 三个按钮放不下"图标 + 文字"横排时改成图标在上、文字在下
+    const nb = [...$('nav').children].filter((b) => b.style.display !== 'none').length;
+    $('nav').classList.toggle('compact', (w - 10 * (nb - 1)) / nb < 120); // 按钮放不下"图标 + 文字"横排时改成图标在上、文字在下
   }
   function placeHud(x, y, w) { const s = $('hud').style; s.left = x + 'px'; s.top = y + 'px'; s.width = w + 'px'; }
   document.documentElement.style.setProperty('--sat', 'env(safe-area-inset-top)');
@@ -265,7 +266,7 @@
     if (r.ok) {
       const R = genRect(id);
       flies.push({ cell: r.to, item: r.item, x0: R.x + R.h * 0.55, y0: R.y + R.h / 2, t0: clock(), dur: 0.32, spawn: true });
-      Sfx.spawn(); markDirty(); return;
+      Sfx.spawn(); if (r.found) { const [fx, fy] = cellXY(r.to); queueFound(r.found, fx, fy); } markDirty(); return;
     }
     shakes.set('g' + id, clock()); Sfx.bounce();
     if (r.reason === 'full') toast(L.t('ui.full'));
@@ -401,7 +402,7 @@
     const art = Art.src('badge_level');
     const html = `<div class="lvup"><div class="big${art ? ' art' : ''}"${art ? ` style="--badge:url('${esc2(art)}')"` : ''}><b>${top}</b></div>` + rewardChips(lv) +
       (chests.length ? `<div style="font-weight:800">🎁 ${esc2(L.t('ui.chest'))}</div>` : '') +
-      unlocks.map((u) => `<div style="font-weight:900;color:#1d5f5a">✨ ${esc2(L.t(u.name))}</div>`).join('') + `</div>`;
+      unlocks.map((u) => `<div style="font-weight:900;color:#1d5f5a">✨ ${esc2(u.regular ? L.t('ui.newRegular', { name: L.t(u.name) }) : L.t(u.name))}</div>`).join('') + `</div>`;
     sfxBurst(); Sfx.levelUp();
     modal(L.t('ui.levelUp', { n: top }), '', [{ label: L.t('ui.collect') }], null, html);
     modalOnClose = () => {
@@ -474,6 +475,34 @@
       idleT = t - C.eco.hints.idleSec + 2.2; // 之后每 2.2 秒晃一次，直到玩家动手
     }
   }
+  /* ---------- 弹窗队列（V1 M3）：升心、新菜谱等，排在升级庆典之后，没在拖拽、没有别的弹窗时依次弹 ---------- */
+  const popups = [];
+  function tryPopups() {
+    if (!popups.length || lvQueue.length || down || drag || modalOpen() || Ads.busy || flies.length || Core.tutStep(C, S)) return;
+    popups.shift()();
+  }
+  /* 新菜谱：金币 core 已入账 → 记成待落地，卡片 Collect 时飞进顶栏；集齐一条链再开宝箱 */
+  function queueFound(f, x, y) {
+    pendingCoins += f.coins; if (f.chest) { pendingCoins += f.chest.coins; pendingStars += f.chest.stars; }
+    popups.push(() => {
+      const name = L.t(C.chains[f.item.chain].items[f.item.lvl - 1].name);
+      Sfx.unlock();
+      modal(L.t('ui.newRecipe'), '', [{ label: L.t('ui.collect') }], null, `<div class="newrec">${itemPic(f.item.chain, f.item.lvl)}<div style="font:900 18px var(--font);margin-bottom:8px">${esc2(name)} · ${esc2(L.t('ui.level', { n: f.item.lvl }))}</div>${rewardChips({ coins: f.coins })}</div>`);
+      modalOnClose = () => {
+        landRewards({ coins: f.coins }, x, y);
+        if (f.chainDone) { toast(L.t('ui.chainDone', { chain: L.t(C.chains[f.item.chain].name || 'chain.' + f.item.chain) })); if (f.chest) setTimeout(() => showChest(f.chest), 400); }
+      };
+    });
+  }
+  /* 熟客升心：大头像（开心表情）+ 心 + 这一心的台词；5 心之后开宝箱 */
+  function showHeartUp(u) {
+    const r = C.regById[u.reg], name = L.t(r.name), cu = C.O.customers[r.avatar];
+    const src = Art.src(cu.id + '_happy') || Art.src(cu.id), line = u.line ? L.t(u.line) : '';
+    Sfx.levelUp(); sfxBurst();
+    modal(L.t('ui.heartUp', { name, n: u.heart }), '', [{ label: L.t('ui.continue') }], null,
+      `<div class="heartup">${src ? `<img src="${esc2(src)}" alt="">` : ''}<div class="hs">${'♥'.repeat(u.heart)}${'♡'.repeat(5 - u.heart)}</div>${line ? `<q>${esc2(line)}</q>` : ''}</div>`);
+    modalOnClose = () => { if (u.chest) setTimeout(() => showChest(u.chest), 350); };
+  }
   /* 庆典彩带：屏幕上方几处撒粒子 */
   function sfxBurst() {
     const cols = ['#f5c03a', '#ef7965', '#48b8af', '#3bb36a', '#9a6fc0'];
@@ -494,7 +523,7 @@
   /* 插屏：每 N 单一次，排队到"没在拖、没弹窗、没在引导、不在播别的广告"时才放 */
   let interQueued = false;
   function tryInterstitial() {
-    if (!interQueued || lvQueue.length || down || drag || modalOpen() || Ads.busy || Core.tutStep(C, S) || flies.length) return; // 升级庆典优先
+    if (!interQueued || lvQueue.length || popups.length || down || drag || modalOpen() || Ads.busy || Core.tutStep(C, S) || flies.length) return; // 升级庆典优先
     interQueued = false; Core.markInterstitial(S, now()); markDirty();
     Ads.interstitial();
   }
@@ -529,16 +558,16 @@
     const b = S.cells[i]; if (!b || b.k !== 'bubble') return;
     const name = L.t(Core.itemDef(C, b).name), body = () => L.t('ui.bubbleBody', { item: name, t: mmss(b.until - now()) });
     Core.adOffer(S, 'bubble'); markDirty();
-    const got = () => { pops.set(i, clock()); const [x, y] = cellXY(i); burst(x, y, '#bfe8f2', 16); burst(x, y, Core.itemDef(C, S.cells[i]).color, 10); };
+    const got = (fr) => { pops.set(i, clock()); const [x, y] = cellXY(i); burst(x, y, '#bfe8f2', 16); burst(x, y, Core.itemDef(C, S.cells[i]).color, 10); if (fr) queueFound(fr, x, y); };
     modal(L.t('ui.bubbleTitle'), body(), [
       { label: '▶ ' + L.t('ad.free'), ad: true, on: async () => {
         b.hold = true; // 广告播放期间泡泡不过期
-        await watchAd('bubble', () => { if (Core.popBubble(C, S, i, 'ad', now()).ok) got(); });
+        await watchAd('bubble', () => { const pr = Core.popBubble(C, S, i, 'ad', now()); if (pr.ok) got(pr.found); });
         if (S.cells[i] === b) delete b.hold; // 没看完：恢复计时
       } },
       { label: L.t('ui.buy'), price: Core.bubblePrice(C, b), on: () => {
         const r = Core.popBubble(C, S, i, 'coins', now());
-        if (r.ok) { spent(); got(); } else if (r.reason === 'coins') toast(L.t('ui.noCoins')); else toast(L.t('ui.bubblePopped'));
+        if (r.ok) { spent(); got(r.found); } else if (r.reason === 'coins') toast(L.t('ui.noCoins')); else toast(L.t('ui.bubblePopped'));
       } },
       { label: L.t('ui.cancel'), alt: true },
     ]);
@@ -569,6 +598,10 @@
       flyRewards(R.x + R.w / 2, R.y + R.h / 2, r.coins, r.stars + r.bonusStar);
       if (r.xp) floatText(R.x + R.w / 2, R.y - 4, '+' + r.xp + ' XP', '#2e9a5a');
       queueLevelUps(r.levelUps); Sfx.deliver();
+      for (const u of r.recipeUps) floatText(R.x + R.w * 0.62, R.y + R.h * 0.35, L.t('ui.recipeStar', { item: L.t(C.chains[u.chain].items[u.lvl - 1].name), n: u.stars }), '#d89a22');
+      if (r.gift) setTimeout(() => { bump('pill-energy'); toast(L.t('ui.gift', { name: L.t(C.regById[r.reg].name), n: r.gift })); }, 700);
+      if (r.reg && Core.regOn(C, S, C.regById[r.reg])) { const hx = R.x + R.h * 0.3, hy = R.y + R.h * 0.4; for (let k = 0; k < 4; k++) floatText(hx + (k - 1.5) * 10, hy, '♥', '#e2566f'); }
+      for (const u of r.heartUps) { if (u.chest) { pendingCoins += u.chest.coins; pendingStars += u.chest.stars; } popups.push(() => showHeartUp(u)); }
       toast(r.bonusStar ? L.t('ui.starBonus') : L.t('ui.orderDone'));
       if (!Core.tutStep(C, S) && S.stats.ordersDone > 1 && r.offerDouble) offerDouble(r.coins);
       if (r.interstitial) interQueued = true;
@@ -620,7 +653,7 @@
       if (r.type === 'merge') {
         pops.set(to, clock()); sel = to; selT = clock();
         const [x, y] = cellXY(to); burst(x, y, Core.itemDef(C, S.cells[to]).color, 18);
-        Sfx.merge(r.lvl); idleT = clock();
+        Sfx.merge(r.lvl); idleT = clock(); if (r.found) queueFound(r.found, x, y);
         if (r.lvl >= SPOT_LVL) { spotlight = { cell: to, item: S.cells[to], t0: clock() }; selT = clock() + SPOT_DUR; } // 高级合成特写；名字和 Sell 等特写结束再出
         if (r.combo && r.combo.show) {
           floatText(x, y - LY.cs * 0.5, L.t('ui.combo', { n: r.combo.n }), '#c4553c'); Sfx.combo(r.combo.n);
@@ -665,14 +698,59 @@
   function setMode(m) {
     if (mode === m) return;
     mode = m; down = drag = null; sel = -1;
-    document.body.classList.toggle('cafe', m === 'cafe'); document.body.classList.toggle('tasks', m === 'tasks');
-    for (const k of ['cafe', 'merge', 'tasks']) $('nav-' + k).classList.toggle('on', m === k);
+    for (const k of ['cafe', 'tasks', 'book']) document.body.classList.toggle(k, m === k);
+    for (const k of ['cafe', 'merge', 'tasks', 'book']) $('nav-' + k).classList.toggle('on', m === k);
     $('x2').classList.remove('show');
-    updateDeco(); tasksKey = ''; updateTasks(); layout();
+    if (m === 'book') { bookSeen = bookSig(); $('nav-book').classList.remove('dot'); }
+    updateDeco(); tasksKey = ''; updateTasks(); bookKey = ''; updateBook(); layout();
   }
   $('nav-cafe').onclick = () => setMode('cafe');
   $('nav-merge').onclick = () => setMode('merge');
   $('nav-tasks').onclick = () => setMode('tasks');
+  $('nav-book').onclick = () => setMode('book');
+
+  /* ---------- Book：菜谱图鉴 + 熟客（V1 M3） ---------- */
+  let bookTab = 'rec', bookKey = '', bookSeen = '';
+  const bookOn = () => Core.featureOn(C, S, 'regulars') || Core.featureOn(C, S, 'recipes');
+  const bookSig = () => Object.values(S.recipes || {}).filter((r) => r.f).length + '|' + Object.values(S.regs || {}).reduce((a, r) => a + r.hearts, 0) + '|' + C.regs.filter((r) => Core.regOn(C, S, r)).length;
+  $('bt-rec').onclick = () => { bookTab = 'rec'; bookKey = ''; updateBook(); };
+  $('bt-reg').onclick = () => { bookTab = 'reg'; bookKey = ''; updateBook(); };
+  function itemPic(chain, lvl) {
+    const def = C.chains[chain].items[lvl - 1], src = Art.src(def.id);
+    return src ? `<img src="${esc2(src)}" alt="">` : `<i style="background:${def.color}">${lvl}</i>`;
+  }
+  function custPic(k, happy) { const cu = C.O.customers[k], src = Art.src(happy && Art.src(cu.id + '_happy') ? cu.id + '_happy' : cu.id); return src ? `<img src="${esc2(src)}" alt="">` : `<img alt="" style="background:${cu.color}">`; }
+  function updateBook() {
+    const show = bookOn() && !Core.tutStep(C, S);
+    if (($('nav-book').style.display !== 'none') !== show) { $('nav-book').style.display = show ? '' : 'none'; layout(); }
+    if (show && mode !== 'book' && bookSeen && bookSig() !== bookSeen) $('nav-book').classList.add('dot');
+    if (!bookSeen && show) bookSeen = bookSig();
+    if (mode !== 'book') return;
+    const key = bookTab + '|' + bookSig() + '|' + JSON.stringify(S.recipes) + '|' + JSON.stringify(S.regs) + '|' + S.level;
+    if (key === bookKey) return; bookKey = key;
+    $('bt-rec').classList.toggle('on', bookTab === 'rec'); $('bt-reg').classList.toggle('on', bookTab === 'reg');
+    let html = '';
+    if (bookTab === 'rec') {
+      for (const chain of Object.keys(C.chains)) {
+        const items = C.chains[chain].items, found = items.filter((_, i) => Core.recState(S, chain, i + 1).f).length;
+        html += `<div class="rchain"><h4><span>${esc2(L.t(C.chains[chain].name || 'chain.' + chain))}</span><span>${found}/${items.length}</span></h4><div class="rgrid">` +
+          items.map((_, i) => { const st = (S.recipes || {})[chain + (i + 1)], f = st && st.f, n = Core.recipeStars(C, S, chain, i + 1);
+            return `<div class="rc${f ? '' : ' no'}" title="${f ? esc2(L.t(items[i].name)) : '?'}">${itemPic(chain, i + 1)}<em>${f ? '★'.repeat(n) + '☆'.repeat(3 - n) : ''}</em></div>`; }).join('') + `</div></div>`;
+      }
+    } else {
+      for (const r of C.regs) {
+        const on = Core.regOn(C, S, r), st = Core.regState(S, r.id), H = C.RG.hearts, next = H[st.hearts];
+        const lines = C.RG.heartRewards.filter((R) => R.line && st.hearts >= R.heart);
+        const line = lines.length ? L.t('line.' + r.id + '.' + lines.at(-1).line) : '';
+        const prev = st.hearts ? H[st.hearts - 1] : 0, pct = next ? (st.pts - prev) / (next - prev) * 100 : 100;
+        html += on ? `<div class="reg">${custPic(r.avatar, st.hearts >= 1)}<div class="rt"><b>${esc2(L.t(r.name))}</b> <span class="hs">${'♥'.repeat(st.hearts)}${'♡'.repeat(5 - st.hearts)}</span>` +
+            `<div class="t-bar"><i style="width:${pct.toFixed(0)}%"></i><span>${next ? esc2(L.t('ui.toNextHeart', { n: next - st.pts, h: st.hearts + 1 })) : esc2(L.t('ui.maxHearts'))}</span></div>${line ? `<p>“${esc2(line)}”</p>` : ''}</div></div>`
+          : `<div class="reg locked">${custPic(r.avatar)}<div class="rt"><b>?</b><p>${esc2(L.t('ui.level', { n: r.unlock }))}</p></div></div>`;
+      }
+    }
+    $('book-body').innerHTML = html;
+    layout();
+  }
 
   /* ---------- 任务页 ---------- */
   let tasksKey = '';
@@ -843,6 +921,14 @@
       GL.save(); GL.scaleAt(x + w / 2, y + h, k);
       GL.text(L.t('game.title'), x + w * 0.4, y + h * 0.43, { size, weight: 1000, fill: '#fff4db', outline: '#6b3f1d' });
       GL.restore();
+    }
+    // 熟客坐在修好的桌椅 / 木栈台 / 露台上（V1 M3）：小头像 + 白边，轻轻晃
+    for (const { reg, seat, hearts } of Core.seatedRegulars(C, S)) {
+      const px = sx(seat.at[0]), py = sy(seat.at[1]), d = Math.max(22, 90 * sc), bob = Math.sin(t * 1.6 + reg.avatar) * d * 0.04;
+      GL.circle(px + 2, py + d * 0.55, d * 0.42, [0.2, 0.12, 0.05, 0.18], { soft: d * 0.15 });
+      GL.circle(px, py + bob, d * 0.56, [1, 0.96, 0.86, 1]);
+      GL.img(Art.avatar(C, reg.avatar, Math.round(d), hearts >= 1), px, py + bob, d, d);
+      if (hearts) GL.text('♥' + hearts, px + d * 0.42, py + bob - d * 0.42, { size: Math.max(10, d * 0.28), weight: 900, fill: '#e2566f', outline: '#fff4db' });
     }
     LY.artScene = { sc, ox, oy };
     return true;
@@ -1041,11 +1127,18 @@
     const x = R.x + sx, y = R.y, w = R.w, h = R.h;
     GL.rect(x + 1, y + 5, w, h, 14, COL.shadow, { soft: 6 });
     GL.rect(x, y, w, h, 14, COL.cream);
-    GL.rect(x, y, w, h, 14, o.rare ? COL.gold : COL.creamD, { stroke: o.rare ? 4 : 3 });
+    const reg = C.regByAvatar[o.cust], regOn = reg && Core.regOn(C, S, reg);
+    GL.rect(x, y, w, h, 14, o.regular ? hex('#e2566f') : o.rare ? COL.gold : COL.creamD, { stroke: o.regular || o.rare ? 4 : 3 });
     if (hl === 1) GL.rect(x, y, w, h, 14, COL.goodLine, { stroke: 4 });
     const pad = Math.max(5, h * 0.06), botH = h * 0.28, topH = h - botH - pad * 2;
     const av = Math.min(topH, w * 0.38);
-    GL.img(Art.avatar(C, o.cust, av), x + pad + av / 2, y + pad + topH / 2, av, av);
+    const hearts = regOn ? Core.regState(S, reg.id).hearts : 0;
+    GL.img(Art.avatar(C, o.cust, av, hearts >= 1), x + pad + av / 2, y + pad + topH / 2, av, av);
+    if (regOn) { // 熟客：头像右下角一个心 + 心数
+      const hr = Math.max(8, av * 0.2), hx = x + pad + av - hr * 0.4, hy = y + pad + topH / 2 + av / 2 - hr * 0.4;
+      GL.circle(hx, hy, hr, hex('#fff4db')); GL.text('♥', hx, hy, { size: hr * 1.3, weight: 900, fill: '#e2566f' });
+      GL.text(String(hearts), hx + hr * 0.9, hy - hr * 0.7, { size: hr, weight: 900, fill: '#3a2416', outline: '#fff4db' });
+    }
     const n = o.needs.length, areaX = x + pad * 1.5 + av, areaW = w - (areaX - x) - pad;
     const isz = Math.min(topH * 0.95, areaW / n);
     o.needs.forEach((nd, j) => {
@@ -1058,7 +1151,8 @@
     GL.rect(x + pad, by - botH / 2, w - pad * 2, botH, botH / 2, hex('#f6e7c6'));
     let cx = x + pad * 1.6 + ic / 2;
     GL.img(Art.coin(ic), cx, by, ic, ic); cx += ic / 2 + 3;
-    cx += GL.text(String(o.coins), cx, by, { size: fs, weight: 900, fill: '#3a2416', align: 'left' }) + 4;
+    const pay = Core.orderCoins(C, S, o);
+    cx += GL.text(String(pay.total), cx, by, { size: fs, weight: 900, fill: pay.total > pay.base ? '#2e9a5a' : '#3a2416', align: 'left' }) + 4;
     if (o.stars) { GL.img(Art.star(ic), cx + ic / 2, by, ic, ic); GL.text(String(o.stars), cx + ic + 1, by, { size: fs * 0.85, weight: 900, fill: '#3a2416', align: 'left' }); }
     const left = o.needs.some((nd) => nd.done) ? null : o.expiresAt - now();
     if (left !== null && (k !== 0 || !Core.tutStep(C, S)) && w > 100) {
@@ -1304,7 +1398,7 @@
       const ref = Core.settleOrders(C, S, now());
       for (const k of ref) { cardPops.set(k, clock()); markDirty(); }
       for (const i of Core.settleBubbles(C, S, now())) { const [x, y] = cellXY(i); burst(x, y, '#bfe8f2', 12); markDirty(); if (mode === 'merge') toast(L.t('ui.bubblePopped')); }
-      updateHud(); updateTutorial(); updateDeco(); updateTasks(); tryLevelUp(); tryInterstitial(); updateHints(clock());
+      updateHud(); updateTutorial(); updateDeco(); updateTasks(); updateBook(); tryLevelUp(); tryPopups(); tryInterstitial(); updateHints(clock());
       if (!document.hidden) { const dt = Math.min(1000, tn - (lastPlayTick || tn)); S.stats.playMs += dt; } lastPlayTick = tn; // 有效游玩时长（页面在前台）
       if (dirty) { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); }
       if (DEBUG) debugStats();
@@ -1330,7 +1424,7 @@
     Art.load(CONFIG.art.scene || [], 'assets/scene/', () => {}, 'webp'),
   ]);
   /* 顶栏和底栏的图标是 DOM 里的 SVG 占位：正式图到了换成 <img> */
-  const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg', nav_tasks: '#nav-tasks svg' };
+  const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg', nav_tasks: '#nav-tasks svg', nav_book: '#nav-book svg' };
   function swapDomIcon(id) {
     if (id === 'badge_level') { const el = $('lvl'); el.style.setProperty('--badge', `url('${Art.src(id)}')`); el.classList.add('art'); return; }
     const old = DOM_ICONS[id] && document.querySelector(DOM_ICONS[id]); if (!old) return;
@@ -1361,6 +1455,7 @@
     btn('bubble', () => { const e = S.cells.findIndex((c, i) => !c && S.unlocked[i]); if (e >= 0) S.cells[e] = { k: 'bubble', chain: 'coffee', lvl: 5, until: now() + C.eco.bubble.lifeSec * 1000 }; });
     btn('+5 stars', () => { S.stars += 5; decoKey = ''; });
     btn('+100 xp', () => { queueLevelUps(Core.addXp(C, S, 100, now())); });
+    btn('+20 hearts', () => { for (const r of C.regs) if (Core.regOn(C, S, r)) { const st = Core.regState(S, r.id); st.pts += 20; } });
     btn('chest', () => { const r = Core.openChest(C, S, now()); pendingCoins += r.coins; pendingStars += r.stars; showChest(r); });
     btn('skip tutorial', () => Core.skipTutorial(S));
     btn('fill board', () => { for (let i = 0; i < C.n; i++) if (S.unlocked[i] && !S.cells[i]) S.cells[i] = { k: 'item', chain: i % 2 ? 'coffee' : 'bake', lvl: 1 + (i % 7) }; });
@@ -1372,6 +1467,6 @@
   // 自动化测试 / 调试入口
   window.MCL = {
     C, get S() { return S; }, get pendingLevels() { return pendingLevels; }, cellXY, cellAt, layout: LY, save, now, genRect, upgradeBadge: (id) => upgradeBadge(genRect(id)), orderRect: (k) => LY.orders[k], get mode() { return mode; }, needAt,
-    get fps() { return fps; }, get sel() { return sel; }, get spotlight() { return !!spotlight; }, get renderMs() { return renderMs; }, get pending() { return pendingCoins + pendingStars; },
+    get fps() { return fps; }, get sel() { return sel; }, get popups() { return popups.length; }, setMode, get spotlight() { return !!spotlight; }, get renderMs() { return renderMs; }, get pending() { return pendingCoins + pendingStars; },
   };
 })();

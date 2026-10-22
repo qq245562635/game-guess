@@ -124,7 +124,33 @@ body.tasks #tasks { display: block; }
 #sell.show { display: block; animation: x2 .25s cubic-bezier(.2,1.6,.4,1); }
 #snd { position: fixed; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: 3px solid #e9d2a6; background: var(--cream); box-shadow: 0 3px 0 rgba(120,80,40,.35);
   font: 16px/1 sans-serif; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
-body.cafe #snd, body.tasks #snd { display: none; }
+body.cafe #snd, body.tasks #snd, body.book #snd { display: none; }
+/* Book（图鉴 + 熟客，V1 M3） */
+#book { position: fixed; z-index: 3; display: none; box-sizing: border-box; padding: 10px 12px 12px; background: var(--cream);
+  border: 3px solid #e9d2a6; border-radius: 20px; box-shadow: 0 5px 0 rgba(120,80,40,.35); overflow-y: auto; }
+body.book #book { display: block; }
+.btabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.btabs button { flex: 1; font: 900 15px var(--font); padding: 6px; border-radius: 12px; border: 2px solid #e9d2a6; background: #f6e7c6; color: var(--ink); cursor: pointer; }
+.btabs button.on { background: var(--teal); border-color: var(--teal-d); color: #fff; }
+.rchain { margin-bottom: 8px; } .rchain h4 { margin: 0 0 4px; font: 900 14px var(--font); color: var(--teal-d); display: flex; justify-content: space-between; }
+.rgrid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.rc { position: relative; aspect-ratio: 1 / 1.25; border-radius: 10px; background: #f6e7c6; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.rc img, .rc i { width: 82%; aspect-ratio: 1; object-fit: contain; display: block; }
+.rc i { border-radius: 50%; font: 900 13px/1 var(--font); color: #fff; display: flex; align-items: center; justify-content: center; font-style: normal; }
+.rc.no img, .rc.no i { filter: brightness(0) opacity(.18); }
+.rc em { font: 900 9px/1 var(--font); color: #d89a22; letter-spacing: -1px; font-style: normal; height: 10px; }
+.reg { display: flex; align-items: center; gap: 10px; padding: 6px 8px; margin-bottom: 6px; border-radius: 12px; background: #f6e7c6; }
+.reg img { width: 48px; height: 48px; border-radius: 10px; flex: none; }
+.reg .rt { flex: 1; min-width: 0; } .reg b { font-size: 15px; } .reg .hs { color: #e2566f; font-size: 14px; letter-spacing: 1px; }
+.reg p { margin: 2px 0 0; font: italic 700 12px/1.3 var(--font); color: #6b4a2a; }
+.reg.locked { opacity: .55; }
+.reg .t-bar { margin-top: 3px; }
+/* 熟客升心 / 新菜谱卡 */
+.heartup { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.heartup img { width: 128px; height: 128px; border-radius: 22px; animation: pop .4s cubic-bezier(.2,1.6,.4,1); }
+.heartup .hs { color: #e2566f; font-size: 24px; letter-spacing: 3px; }
+.heartup q { font: italic 800 16px/1.4 var(--font); color: #3a2416; }
+.newrec > img, .newrec > i { width: 120px; height: 120px; display: block; margin: 0 auto 6px; animation: lvspin .6s cubic-bezier(.2,1.6,.4,1); }
 /* 宝箱 */
 .chest { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .chest .box { width: 150px; height: 150px; position: relative; }
@@ -201,11 +227,13 @@ body.cafe #snd, body.tasks #snd { display: none; }
 <div id="nav">
   <button class="navb" id="nav-cafe"><svg viewBox="0 0 34 34"><rect x="5" y="14" width="24" height="16" rx="2" fill="#fff4db" stroke="#8a5a32" stroke-width="2"/><path d="M3 14l3-8h22l3 8z" fill="#ef7965" stroke="#c4553c" stroke-width="2" stroke-linejoin="round"/><rect x="14" y="20" width="7" height="10" fill="#48b8af"/></svg><span data-l10n="nav.cafe"></span></button>
   <button class="navb on" id="nav-merge"><svg viewBox="0 0 34 34"><path d="M8 26 24 8M10 8l16 18" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/></svg><span data-l10n="nav.merge"></span></button>
+  <button class="navb" id="nav-book" style="display:none"><svg viewBox="0 0 34 34"><path d="M5 8c4-2 8-2 12 1v19c-4-3-8-3-12-1z" fill="#fff4db" stroke="#8a5a32" stroke-width="2" stroke-linejoin="round"/><path d="M29 8c-4-2-8-2-12 1v19c4-3 8-3 12-1z" fill="#fff4db" stroke="#8a5a32" stroke-width="2" stroke-linejoin="round"/><path d="M23 5v9l2-2 2 2V5" fill="#ef7965" stroke="#c4553c" stroke-width="1.5" stroke-linejoin="round"/></svg><span data-l10n="nav.book"></span></button>
   <button class="navb" id="nav-tasks"><svg viewBox="0 0 34 34"><rect x="7" y="6" width="20" height="24" rx="3" fill="#fff4db" stroke="#8a5a32" stroke-width="2"/><rect x="12" y="3" width="10" height="6" rx="2" fill="#48b8af" stroke="#23807a" stroke-width="1.5"/><path d="M11 17l3 3 6-6" stroke="#3bb36a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 25h12" stroke="#c99a62" stroke-width="2" stroke-linecap="round"/></svg><span data-l10n="nav.tasks"></span></button>
 </div>
 <div id="tip"></div>
 <div id="toast"></div>
 <div id="tasks"><h3 data-l10n="ui.tasksTitle"></h3><div id="tasks-list"></div></div>
+<div id="book"><div class="btabs"><button id="bt-rec" class="on" data-l10n="ui.bookRecipes"></button><button id="bt-reg" data-l10n="ui.bookRegulars"></button></div><div id="book-body"></div></div>
 <div id="deco"><div class="deco-head"><span id="deco-act"></span><span id="deco-prog"></span></div><div id="deco-list"></div><button class="btn" id="deco-btn"></button></div>
 <button id="x2">▶ <span></span></button>
 <button id="sell"></button>

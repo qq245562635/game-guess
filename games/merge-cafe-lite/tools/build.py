@@ -7,7 +7,7 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
 src = root / 'src'
-CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression']
+CONFIG_FILES = ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression', 'regulars', 'recipes']
 JS = ['l10n.js', 'core.js', 'gl.js', 'art.js', 'sfx.js', 'ads.js', 'main.js']
 MAX_STRINGS = 180  # 策划案 v0.4：V1 新系统文案，上限由 120 提到 180
 
@@ -55,13 +55,22 @@ A1 = D['areas'][0]; n1 = [n for a in A1['acts'] for n in a['nodes']]
 assert len(A1['acts']) == 3 and len(n1) == 15, '区域 1 应为 3 幕 15 节点'
 assert sum(n['cost'] for n in A1['acts'][0]['nodes']) == 6, '第一幕应为 6 星'
 assert [i + 1 for i, n in enumerate(n1) if n['id'] in A1['comics']] == [1, 8, 15], '漫画节点应为第 1/8/15'
+RG = config['regulars']
+assert len({r['avatar'] for r in RG['regulars']}) == len(RG['regulars']), '熟客头像重复'
+for r in RG['regulars']:
+    assert 0 <= r['avatar'] < len(config['orders']['customers']), f'熟客 {r["id"]} 头像下标越界'
+    assert r['name'] in locale, f'缺本地化：{r["name"]}'
+    for R in RG['heartRewards']:
+        if R.get('line'): assert f'line.{r["id"]}.{R["line"]}' in locale, f'缺台词：line.{r["id"]}.{R["line"]}'
+    for ch, l in r['fav']: assert ch in config['chains']['chains'] and 1 <= l <= config['chains']['maxLevel'], f'熟客 {r["id"]} 最爱不合法'
+assert RG['hearts'] == sorted(RG['hearts']), '心门槛要递增'
 P = config['progression']
 assert all(x > 0 for x in P['levelNeed']) and P['after'] > 0, '店铺等级经验表不合法'
 for u in P['unlocks']:
     assert u['name'] in locale, f'缺本地化：{u["name"]}'
 UI_IDS = {'icon_energy', 'icon_coin', 'icon_star', 'logo_merge_cafe_lite', 'icon_lock', 'icon_check', 'icon_clock', 'icon_hand', 'nav_cafe', 'nav_merge', 'nav_tasks', 'deco_plant_pot', 'deco_plant_fern', 'deco_plant_bush', 'fx_bubble', 'icon_upgrade', 'badge_level', 'chest_closed', 'chest_open', 'obstacle_sand', 'obstacle_crate', 'nav_book'}
-item_ids = {it['id'] for d in config['chains']['chains'].values() for it in d['items']} | {g['id'] for g in config['generators']['generators']}
-avatar_ids = {c['id'] for c in config['orders']['customers']}
+item_ids = {it['id'] for d in config['chains']['chains'].values() for it in d['items']} | {g['id'] for g in config['generators']['generators']} | {'item_wild_star'}  # 百搭星（M4）
+avatar_ids = {c['id'] for c in config['orders']['customers']} | {c['id'] + '_happy' for c in config['orders']['customers']}
 for key, ids, folder in [('items', item_ids, 'items'), ('avatars', avatar_ids, 'avatars'), ('ui', UI_IDS, 'ui')]:
     for i in config['art'].get(key, []):
         assert i in ids, f'art.json {key} 里的 {i} 不是已知 id（见 ASSETS.md）'

@@ -152,8 +152,10 @@ const Art = (() => {
   }
 
   /* 顾客头像占位：圆底 + 肩膀 + 脸 + 发型（id 与正式图 avatar_customer_XX 一致，到图自动替换） */
-  function avatar(C, k, size) {
-    const cu = C.O.customers[k % C.O.customers.length];
+  /* happy = 熟客 1 心以上：有 <id>_happy 正式图（E 批）就用开心表情，没有就用原图 */
+  function avatar(C, k, size, happy) {
+    const cu = C.O.customers[k % C.O.customers.length], hid = cu.id + '_happy';
+    if (happy && loaded[hid]) return GL.sprite('I|' + hid + '|', size, size, (g, w) => g.drawImage(loaded[hid], 0, 0, w, w));
     return GL.sprite('I|' + cu.id + '|', size, size, (g, w) => {
       if (loaded[cu.id]) { g.drawImage(loaded[cu.id], 0, 0, w, w); return; }
       rr(g, 0, 0, w, w, w * 0.18); g.fillStyle = '#cfe9e6'; g.fill(); g.save(); g.clip();

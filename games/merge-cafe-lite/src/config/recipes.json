@@ -1,0 +1,10 @@
+{
+  "_doc": "菜谱熟练度与图鉴（V1 M3，V1-plan.md「菜谱熟练度 + 图鉴」）。图鉴：第一次做出某物品 → New Recipe 卡 + 等级×coinsPerLevel 金币；一条链 8 格集齐送一个宝箱。熟练度：每交一次得「等级」点，累计到 stars 的门槛升 1/2/3 星；订单金币按单里每道菜的星数加成 bonusPerStar%（多道菜取平均）。店铺等级达到 progression unlocks 的 recipes 才开始发奖和加成，之前做过的照常记录。",
+  "coinsPerLevel": 10,
+  "stars": [
+    10,
+    40,
+    120
+  ],
+  "bonusPerStar": 10
+}

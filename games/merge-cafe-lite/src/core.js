@@ -3,7 +3,7 @@
    所有数值来自 CONFIG（src/config/*.json），这里不写死任何数。
    时间一律用毫秒时间戳 now 传入，随机数用 rng 传入，方便离线结算和测试。 */
 const Core = (() => {
-  const SAVE_VERSION = 6;
+  const SAVE_VERSION = 7;
   const TUT_DONE = -1;
 
   /* ---------- 配置索引 ---------- */
@@ -20,8 +20,17 @@ const Core = (() => {
       return Object.assign({}, ar, { idx, nodes, comics: ar.comics || {} });
     });
     const P = cfg.progression || { xp: { rareMul: 1 }, levelNeed: [], after: 1e9, levelReward: {}, chest: {}, unlocks: [] };
+    // 熟客（V1 M3）：按 id 和头像下标索引；每位一个熟客单模板 reg_<id>
+    const RG = cfg.regulars || { regulars: [], hearts: [], heartRewards: [], points: {}, regularOrder: { chance: 0 }, seats: [] };
+    const regs = RG.regulars, regById = {}, regByAvatar = {};
+    for (const r of regs) {
+      regById[r.id] = r; regByAvatar[r.avatar] = r;
+      const lv = r.fav.reduce((a, [, l]) => a + l, 0), RO = RG.regularOrder;
+      tpl['reg_' + r.id] = { id: 'reg_' + r.id, needs: r.fav, regular: r.id, coins: [RO.coinsPerLevel * lv * RO.coinsMul, RO.coinsPerLevel * lv * RO.coinsMul], timeSec: RO.timeSec };
+    }
     return {
       areas, deco: areas.length ? areas[0].nodes : [], prog: P,
+      RG, regs, regById, regByAvatar, RC: cfg.recipes || { coinsPerLevel: 0, stars: [], bonusPerStar: 0 },
       ads: cfg.ads || {}, tasks: cfg.tasks || { active: 0, list: [] },
       cfg, cols: b.cols, rows: b.rows, n: b.cols * b.rows,
       maxLevel: cfg.chains.maxLevel, chains: cfg.chains.chains, gens, genList: cfg.generators.generators,
@@ -49,6 +58,8 @@ const Core = (() => {
       deco: 0,                 // 当前区域已完成的装修节点数（按顺序解锁）
       area: 0,                 // 当前装修区域（V1 只有区域 1）
       xp: 0, level: 1,         // 店铺等级：xp 是当前等级内的经验
+      regs: {},                // 熟客好感：id → { pts, hearts, regDay（今天出过熟客单的 UTC 日）, giftDay }
+      recipes: {},             // 菜谱：chain+lvl → { f: 1 做出过, p: 熟练度点数 }
       ads: newAdStats(),
       tasks: { next: 0, active: [] },
       daily: newDaily(now),    // 每日限次的金币消耗（UTC 0 点重置）
@@ -138,8 +149,9 @@ const Core = (() => {
     const item = { k: 'item', chain: def.chain, lvl };
     s.cells[to] = item;
     s.stats.spawns++; s.stats.maxLvl = Math.max(s.stats.maxLvl || 0, item.lvl);
+    const found = markFound(C, s, item, now);
     if (s.tut !== TUT_DONE) s.tut++;
-    return { ok: true, to, item };
+    return { ok: true, to, item, found };
   }
   /* 冷却时长：前期按已完成订单数走 cooldownRamp（15 → 30 秒），之后用生成器自己的 cooldownSec */
   function cooldownSec(C, s, id) {
@@ -221,7 +233,7 @@ const Core = (() => {
     s.coins -= p; s.stats.coinsSpent.bubble += p;
     if (pay === 'ad') s.ads.rewards++;
     s.cells[i] = { k: 'item', chain: b.chain, lvl: b.lvl }; logEv(s, 'mid');
-    return { ok: true, price: p, item: s.cells[i] };
+    return { ok: true, price: p, item: s.cells[i], found: markFound(C, s, s.cells[i], now) };
   }
   /* 换单：花金币把第 k 个订单换成别的（交过一部分的不能换，引导中不能换） */
   function canSwap(C, s, k) { const o = s.orders[k]; return !!(o && C.eco.swapOrder && !tutStep(C, s) && !o.needs.some((n) => n.done)); }
@@ -254,12 +266,13 @@ const Core = (() => {
       s.cells[to] = { k: 'item', chain: a.chain, lvl: a.lvl + 1 };
       s.cells[from] = null;
       s.stats.merges++;
-      if (a.lvl + 1 > (s.stats.maxLvl || 0)) { s.stats.maxLvl = a.lvl + 1; logEv(s, 'mid'); } // 第一次做出这个等级
+      const found = markFound(C, s, s.cells[to], now);
+      if (a.lvl + 1 > (s.stats.maxLvl || 0)) { s.stats.maxLvl = a.lvl + 1; if (!found) logEv(s, 'mid'); } // 第一次做出这个等级（图鉴已记中奖励的不重复记）
       if (!s.stats.firstMergeAt) s.stats.firstMergeAt = now || 1;
       if (step === 'merge') s.tut++;
       const bubble = maybeBubble(C, s, to, s.cells[to], now, rng || Math.random);
       const combo = step ? null : addCombo(C, s, now);
-      return { type: 'merge', lvl: a.lvl + 1, bubble, combo };
+      return { type: 'merge', lvl: a.lvl + 1, bubble, combo, found };
     }
     let reason = 'mismatch';
     if (a.k === 'item' && b.k === 'item' && a.chain === b.chain && a.lvl === b.lvl) reason = 'max';
@@ -326,8 +339,21 @@ const Core = (() => {
       start: now, expiresAt: now + sec * 1000,
     };
   }
+  /* 熟客单：2 心以上的熟客每人每天最多 1 张；新订单有 chance 概率出 */
+  function rollRegularOrder(C, s, now, rng) {
+    const RO = C.RG.regularOrder, today = dayOf(now);
+    if (!RO.chance || !featureOn(C, s, 'regulars') || s.tut !== TUT_DONE) return null;
+    const liveCust = new Set(s.orders.filter(Boolean).map((o) => o.cust));
+    const cand = C.regs.filter((r) => regOn(C, s, r) && regState(s, r.id).hearts >= 2 && regState(s, r.id).regDay !== today && !liveCust.has(r.avatar));
+    if (!cand.length || rng() >= RO.chance) return null;
+    const r = cand[Math.floor(rng() * cand.length)], t = C.tpl['reg_' + r.id];
+    const o = makeOrder(C, s, t, now, rng, r.avatar);
+    o.rare = false; o.stars = RO.stars; o.regular = r.id; regState(s, r.id).regDay = today;
+    return o;
+  }
   /* 按 minDone / 权重抽模板；同屏不重复模板、不出需求完全相同的单、稀有最多 maxRareAtOnce 个、顾客尽量不重复 */
   function rollOrder(C, s, now, rng) {
+    const reg = rollRegularOrder(C, s, now, rng); if (reg) return reg;
     const done = s.stats.ordersDone;
     const sig = (needs) => needs.map((n) => (n.chain || n[0]) + (n.lvl || n[1])).sort().join('+');
     const live = new Set(s.orders.filter(Boolean).map((o) => o.tid));
@@ -370,9 +396,11 @@ const Core = (() => {
     if (ni < 0) return { type: 'reject', reason: 'mismatch' };
     o.needs[ni].done = true; s.cells[from] = null;
     if (o.needs.some((n) => !n.done)) return { type: 'partial', need: ni };
-    s.coins += o.coins; s.stars += o.stars;
-    s.stats.ordersDone++; s.stats.coinsEarned += o.coins;
+    const pay = orderCoins(C, s, o);
+    s.coins += pay.total; s.stars += o.stars;
+    s.stats.ordersDone++; s.stats.coinsEarned += pay.total;
     logEv(s, 'small');
+    const recipeUps = addMastery(C, s, o), aff = addAffinity(C, s, o, now);
     const xp = orderXp(C, o), levelUps = addXp(C, s, xp, now);
     const every = C.eco.starEveryOrders || 0, bonusStar = every && s.stats.ordersDone % every === 0 ? 1 : 0;
     s.stars += bonusStar;
@@ -384,7 +412,78 @@ const Core = (() => {
     const interstitial = !!(ie && done % ie === 0 && done >= (A.interstitialFirstAtOrder || 0) &&
       (now || 0) - (s.ads.lastInterAt || 0) >= (A.interstitialMinGapSec || 0) * 1000);
     const de = (A.rewarded && A.rewarded.double && A.rewarded.double.everyOrders) || 1, offerDouble = done % de === 0;
-    return { type: 'complete', coins: doneOrder.coins, stars: doneOrder.stars, bonusStar, interstitial, offerDouble, order: doneOrder, xp, levelUps };
+    return { type: 'complete', coins: pay.total, pay, stars: doneOrder.stars, bonusStar, interstitial, offerDouble, order: doneOrder, xp, levelUps,
+      heartUps: aff.heartUps, gift: aff.gift, reg: aff.reg, recipeUps };
+  }
+
+  /* ---------- 熟客好感（V1 M3） ---------- */
+  function regState(s, id) { const r = s.regs || (s.regs = {}); return r[id] || (r[id] = { pts: 0, hearts: 0, regDay: -1, giftDay: -1 }); }
+  const regOn = (C, s, r) => featureOn(C, s, 'regulars') && s.level >= r.unlock;
+  function heartsFor(C, pts) { let h = 0; for (const t of C.RG.hearts) if (pts >= t) h++; return h; }
+  /* 当前心数对应的小费加成（%）和每日礼物（体力） */
+  function regPerks(C, hearts) {
+    let tip = 0, gift = 0;
+    for (const R of C.RG.heartRewards) if (hearts >= R.heart) { if (R.tip) tip = Math.max(tip, R.tip); if (R.gift) gift = R.gift; }
+    return { tip, gift };
+  }
+  /* 交单后加好感：返回升到的心（含台词 / 宝箱）和今天的礼物 */
+  function addAffinity(C, s, o, now) {
+    const r = C.regByAvatar[o.cust]; if (!r || !regOn(C, s, r)) return { heartUps: [], gift: 0, reg: null };
+    const st = regState(s, r.id), P = C.RG.points;
+    const fav = o.needs.some((n) => r.fav.some(([c, l]) => c === n.chain && l === n.lvl));
+    st.pts += (P.order || 0) + (fav ? P.fav || 0 : 0) + (o.regular === r.id ? P.regularOrder || 0 : 0);
+    const heartUps = [], h = heartsFor(C, st.pts);
+    while (st.hearts < h) {
+      st.hearts++;
+      const R = C.RG.heartRewards.find((x) => x.heart === st.hearts) || {}, up = { reg: r.id, heart: st.hearts, line: R.line ? 'line.' + r.id + '.' + R.line : null, chest: null };
+      if (R.chest) up.chest = openChest(C, s, now); // 宝箱内容已入账，UI 做开箱演出
+      logEv(s, 'mid'); heartUps.push(up);
+    }
+    let gift = 0; const today = dayOf(now), perks = regPerks(C, st.hearts);
+    if (perks.gift && st.giftDay !== today) { st.giftDay = today; gift = perks.gift; settleEnergy(C, s, now || 0); s.energy += gift; logEv(s, 'small'); }
+    return { heartUps, gift, reg: r.id };
+  }
+
+  /* ---------- 菜谱：图鉴 + 熟练度（V1 M3） ---------- */
+  const recKey = (chain, lvl) => chain + lvl;
+  function recState(s, chain, lvl) { const r = s.recipes || (s.recipes = {}); const k = recKey(chain, lvl); return r[k] || (r[k] = { f: 0, p: 0 }); }
+  function recipeStars(C, s, chain, lvl) { const st = (s.recipes || {})[recKey(chain, lvl)]; if (!st) return 0; let n = 0; for (const t of C.RC.stars) if (st.p >= t) n++; return n; }
+  /* 第一次做出某物品：记进图鉴；菜谱开放后发 等级×coinsPerLevel 金币，集齐一条链送宝箱。返回 null 或 { item, coins, chainDone, chest } */
+  function markFound(C, s, it, now) {
+    if (!it || it.k !== 'item') return null;
+    const st = recState(s, it.chain, it.lvl); if (st.f) return null;
+    st.f = 1;
+    if (!featureOn(C, s, 'recipes')) return null; // 没开放前做出的照常记录，不发奖
+    const coins = it.lvl * (C.RC.coinsPerLevel || 0); s.coins += coins; s.stats.coinsEarned += coins;
+    const chainDone = C.chains[it.chain].items.every((_, i) => recState(s, it.chain, i + 1).f);
+    const chest = chainDone ? openChest(C, s, now) : null;
+    logEv(s, 'mid');
+    return { item: { chain: it.chain, lvl: it.lvl }, coins, chainDone, chest };
+  }
+  /* 交单加熟练度：每道菜 +等级 点；返回升星列表 */
+  function addMastery(C, s, o) {
+    const ups = [];
+    for (const n of o.needs) {
+      const before = recipeStars(C, s, n.chain, n.lvl); recState(s, n.chain, n.lvl).p += n.lvl;
+      const after = recipeStars(C, s, n.chain, n.lvl);
+      if (after > before && featureOn(C, s, 'recipes')) { ups.push({ chain: n.chain, lvl: n.lvl, stars: after }); logEv(s, 'mid'); }
+    }
+    return ups;
+  }
+  /* 这张订单实际给多少金币：基础 + 菜谱星级加成（多道菜取平均）+ 熟客小费 */
+  function orderCoins(C, s, o) {
+    const base = o.coins;
+    let recipe = 0;
+    if (featureOn(C, s, 'recipes')) { const pct = o.needs.reduce((a, n) => a + recipeStars(C, s, n.chain, n.lvl) * C.RC.bonusPerStar, 0) / o.needs.length; recipe = Math.round(base * pct / 100); }
+    let tip = 0; const r = C.regByAvatar[o.cust];
+    if (r && regOn(C, s, r)) tip = Math.round(base * regPerks(C, regState(s, r.id).hearts).tip / 100);
+    return { base, recipe, tip, total: base + recipe + tip };
+  }
+  /* 已经入座的熟客（UI 画在咖啡馆场景里）：按登场顺序依次占座，座位所在图层要已经装修 */
+  function seatedRegulars(C, s) {
+    const out = [], seats = C.RG.seats.filter((st) => decoDone(C, s, st.layer, 0));
+    for (const r of C.regs) { if (!regOn(C, s, r) || out.length >= seats.length) continue; out.push({ reg: r, seat: seats[out.length], hearts: regState(s, r.id).hearts }); }
+    return out;
   }
 
   /* ---------- 装修：按区域、按顺序解锁，扣星 + 金币 ---------- */
@@ -411,7 +510,7 @@ const Core = (() => {
 
   /* ---------- 店铺等级（V1）：每单得经验，升级给体力 / 金币，每 N 级一个宝箱 ---------- */
   function xpNeed(C, level) { const t = C.prog.levelNeed; return level - 1 < t.length ? t[level - 1] : C.prog.after; }
-  function orderXp(C, o) { const base = o.needs.reduce((a, n) => a + n.lvl, 0); return base * (o.rare ? (C.prog.xp.rareMul || 1) : 1) * (o.regular ? (C.prog.xp.regularMul || 1) : 1); }
+  function orderXp(C, o) { const base = o.needs.reduce((a, n) => a + n.lvl, 0); return Math.round(base * (o.rare ? (C.prog.xp.rareMul || 1) : 1) * (o.regular ? (C.prog.xp.regularMul || 1) : 1)); }
   /* 加经验，返回这次升的每一级及其奖励（奖励已经发到 s 上） */
   function addXp(C, s, n, now) {
     const ups = []; s.xp += n; s.stats.xpEarned = (s.stats.xpEarned || 0) + n;
@@ -545,6 +644,11 @@ const Core = (() => {
       while (o.xp >= xpNeed(C, o.level)) { o.xp -= xpNeed(C, o.level); o.level++; }
       o.v = 6;
     }
+    if (o.v === 6) { // v6 → v7：熟客好感、菜谱图鉴。棋盘上已有的物品记为做出过（不发奖）
+      o.regs = {}; o.recipes = {};
+      for (const c of o.cells || []) if (c && c.k === 'item') o.recipes[c.chain + c.lvl] = { f: 1, p: 0 };
+      o.v = 7;
+    }
     if (o.v !== SAVE_VERSION) return null;
     if (!Array.isArray(o.cells) || o.cells.length !== C.n || !Array.isArray(o.unlocked) || o.unlocked.length !== C.n) return null;
     if (!o.gens || typeof o.gens !== 'object' || !Array.isArray(o.orders)) return null;
@@ -556,6 +660,8 @@ const Core = (() => {
     if (typeof o.level !== 'number' || o.level < 1) o.level = 1;
     if (typeof o.xp !== 'number' || o.xp < 0) o.xp = 0;
     if (typeof o.area !== 'number' || !C.areas[o.area]) o.area = 0;
+    if (!o.regs || typeof o.regs !== 'object') o.regs = {};
+    if (!o.recipes || typeof o.recipes !== 'object') o.recipes = {};
     if (!o.stats.maxLvl) for (const c of o.cells) if (c) o.stats.maxLvl = Math.max(o.stats.maxLvl, c.lvl);
     if (!o.tasks || !Array.isArray(o.tasks.active)) o.tasks = { next: 0, active: [] };
     o.tasks.active = o.tasks.active.filter((a) => taskDef(C, a.id));
@@ -604,6 +710,7 @@ const Core = (() => {
     fillTasks, taskProgress, tasksClaimable, claimTask,
     genMaxCharges, upgradeCost, upgradeGen, refillPrice, buyRefill, energyPrice, buyEnergy,
     addCombo, sellPrice, sellItem, findMergePair, stuckHint,
+    regState, regOn, heartsFor, regPerks, addAffinity, recipeStars, recState, markFound, addMastery, orderCoins, seatedRegulars, rollRegularOrder,
     maybeBubble, settleBubbles, bubblePrice, popBubble, canSwap, swapOrder, daily,
     unlockPrice, canUnlockHere, unlock, serialize, deserialize, itemDef,
   };

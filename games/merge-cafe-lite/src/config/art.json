@@ -18,7 +18,8 @@
     "item_coffee_05",
     "item_coffee_06",
     "item_coffee_07",
-    "item_coffee_08"
+    "item_coffee_08",
+    "item_wild_star"
   ],
   "avatars": [
     "avatar_customer_01",
@@ -26,7 +27,13 @@
     "avatar_customer_03",
     "avatar_customer_04",
     "avatar_customer_05",
-    "avatar_customer_06"
+    "avatar_customer_06",
+    "avatar_customer_01_happy",
+    "avatar_customer_02_happy",
+    "avatar_customer_03_happy",
+    "avatar_customer_04_happy",
+    "avatar_customer_05_happy",
+    "avatar_customer_06_happy"
   ],
   "ui": [
     "icon_coin",
@@ -42,7 +49,15 @@
     "nav_tasks",
     "deco_plant_pot",
     "deco_plant_fern",
-    "deco_plant_bush"
+    "deco_plant_bush",
+    "chest_closed",
+    "chest_open",
+    "obstacle_sand",
+    "obstacle_crate",
+    "badge_level",
+    "nav_book",
+    "fx_bubble",
+    "icon_upgrade"
   ],
   "scene": [
     "header_merge_p",

@@ -1,0 +1,635 @@
+{
+  "issue": 58,
+  "base": "d7aaded",
+  "spec": "ASSETS.md §9–10 (PR #59 merged)",
+  "assets": [
+    {
+      "id": "avatar_customer_01_happy",
+      "file": "assets/avatars/avatar_customer_01_happy.png",
+      "batch": "E",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 38577,
+      "budget": 40000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "5f4582ea8a3e9b017f51570426be3a334c82f8e1230411d0a00e3c062ab6b185",
+      "verification": {
+        "id": "avatar_customer_01_happy",
+        "file": "assets/avatars/avatar_customer_01_happy.png",
+        "bytes": 38577,
+        "paletteColors": 256,
+        "alphaIdenticalToOriginal": true,
+        "outsideExpressionIdenticalBeforeEncoding": true,
+        "outsideExpressionVisibleMeanRGBDeltaAfterQuantization": 3.0884315146930583,
+        "regions": [
+          [
+            109,
+            88,
+            140,
+            114
+          ],
+          [
+            143,
+            79,
+            170,
+            107
+          ],
+          [
+            116,
+            113,
+            168,
+            147
+          ]
+        ]
+      },
+      "originalFile": "assets/avatars/avatar_customer_01.png",
+      "originalSHA256": "f2c0d5400d91ed2d8b21fa7ce9abb2fbf2847e3cbdf17df367fa0c2659c620b3"
+    },
+    {
+      "id": "avatar_customer_02_happy",
+      "file": "assets/avatars/avatar_customer_02_happy.png",
+      "batch": "E",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 35573,
+      "budget": 40000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "be1dd2ccafaaf26fd4c7c67254a6744e4c3a296c8da2fc8432c834ec2d64a9c8",
+      "verification": {
+        "id": "avatar_customer_02_happy",
+        "file": "assets/avatars/avatar_customer_02_happy.png",
+        "bytes": 35573,
+        "paletteColors": 256,
+        "alphaIdenticalToOriginal": true,
+        "outsideExpressionIdenticalBeforeEncoding": true,
+        "outsideExpressionVisibleMeanRGBDeltaAfterQuantization": 2.223479016147499,
+        "regions": [
+          [
+            114,
+            101,
+            140,
+            118
+          ],
+          [
+            155,
+            95,
+            175,
+            112
+          ],
+          [
+            123,
+            125,
+            172,
+            156
+          ]
+        ]
+      },
+      "originalFile": "assets/avatars/avatar_customer_02.png",
+      "originalSHA256": "a2b65c8fec5f5e1f018fe75ebc4c28eb0acb447048bbeb6a258e159fb459a766"
+    },
+    {
+      "id": "avatar_customer_03_happy",
+      "file": "assets/avatars/avatar_customer_03_happy.png",
+      "batch": "E",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 37260,
+      "budget": 40000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "5fcc1f560340fa8fb710da8362892d92625f77f0a78d38291a2078ec77cc391b",
+      "verification": {
+        "id": "avatar_customer_03_happy",
+        "file": "assets/avatars/avatar_customer_03_happy.png",
+        "bytes": 37260,
+        "paletteColors": 256,
+        "alphaIdenticalToOriginal": true,
+        "outsideExpressionIdenticalBeforeEncoding": true,
+        "outsideExpressionVisibleMeanRGBDeltaAfterQuantization": 2.5555280323672696,
+        "regions": [
+          [
+            116,
+            92,
+            145,
+            115
+          ],
+          [
+            155,
+            84,
+            175,
+            107
+          ],
+          [
+            127,
+            115,
+            175,
+            147
+          ]
+        ]
+      },
+      "originalFile": "assets/avatars/avatar_customer_03.png",
+      "originalSHA256": "1be036dbcc44aecccfbf7441a5c4e292ca1b38d4aa2a05df3ddc8e3719ecac7d"
+    },
+    {
+      "id": "avatar_customer_04_happy",
+      "file": "assets/avatars/avatar_customer_04_happy.png",
+      "batch": "E",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 35863,
+      "budget": 40000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "e082cdb0d8eedaf267ac07467bc41537d2cce29f76e67ef939ee3c44e5b1cc22",
+      "verification": {
+        "id": "avatar_customer_04_happy",
+        "file": "assets/avatars/avatar_customer_04_happy.png",
+        "bytes": 35863,
+        "paletteColors": 256,
+        "alphaIdenticalToOriginal": true,
+        "outsideExpressionIdenticalBeforeEncoding": true,
+        "outsideExpressionVisibleMeanRGBDeltaAfterQuantization": 2.5189546091027095,
+        "regions": [
+          [
+            122,
+            73,
+            156,
+            94
+          ],
+          [
+            163,
+            82,
+            186,
+            103
+          ],
+          [
+            125,
+            106,
+            179,
+            144
+          ]
+        ]
+      },
+      "originalFile": "assets/avatars/avatar_customer_04.png",
+      "originalSHA256": "ace5d210192c3c73cc971f2070ece37a39f738052a8a75bcd1079876887bf616"
+    },
+    {
+      "id": "avatar_customer_05_happy",
+      "file": "assets/avatars/avatar_customer_05_happy.png",
+      "batch": "E",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 35934,
+      "budget": 40000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "63175e437322358c62fc0c8911e18c631ceaa70501fe6993613bfb98631581be",
+      "verification": {
+        "id": "avatar_customer_05_happy",
+        "file": "assets/avatars/avatar_customer_05_happy.png",
+        "bytes": 35934,
+        "paletteColors": 256,
+        "alphaIdenticalToOriginal": true,
+        "outsideExpressionIdenticalBeforeEncoding": true,
+        "outsideExpressionVisibleMeanRGBDeltaAfterQuantization": 2.5830506864281984,
+        "regions": [
+          [
+            123,
+            85,
+            150,
+            106
+          ],
+          [
+            159,
+            80,
+            180,
+            102
+          ],
+          [
+            132,
+            115,
+            178,
+            145
+          ]
+        ]
+      },
+      "originalFile": "assets/avatars/avatar_customer_05.png",
+      "originalSHA256": "2a8cd9a573c5c598353826ecb0c19a6ffadcd46327dd7991ba9bd73e021bb623"
+    },
+    {
+      "id": "avatar_customer_06_happy",
+      "file": "assets/avatars/avatar_customer_06_happy.png",
+      "batch": "E",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 37123,
+      "budget": 40000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "97f1662e5e19841f3667dea059f106bc399ca3729b5aecc58dcd83ee23e853b1",
+      "verification": {
+        "id": "avatar_customer_06_happy",
+        "file": "assets/avatars/avatar_customer_06_happy.png",
+        "bytes": 37123,
+        "paletteColors": 256,
+        "alphaIdenticalToOriginal": true,
+        "outsideExpressionIdenticalBeforeEncoding": true,
+        "outsideExpressionVisibleMeanRGBDeltaAfterQuantization": 2.7850897052756562,
+        "regions": [
+          [
+            119,
+            79,
+            146,
+            103
+          ],
+          [
+            155,
+            71,
+            179,
+            97
+          ],
+          [
+            132,
+            103,
+            176,
+            135
+          ]
+        ]
+      },
+      "originalFile": "assets/avatars/avatar_customer_06.png",
+      "originalSHA256": "a3d56999f96e134e61b540518a2af37974d1453ccace428bfdf4b8802b43f53c"
+    },
+    {
+      "id": "chest_closed",
+      "file": "assets/ui/chest_closed.png",
+      "batch": "E",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 19106,
+      "budget": 30000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "b39a15f4fbc7fc4a0b6da111887eb44062bb121eb774fbf071829de13a5cf148",
+      "verification": {
+        "id": "chest_closed",
+        "file": "assets/ui/chest_closed.png",
+        "bytes": 19106,
+        "paletteColors": null,
+        "boundsAlpha16": [
+          23,
+          113,
+          249,
+          246
+        ],
+        "batch": "E",
+        "channelQuantizationSteps": {
+          "RGB": 16,
+          "alpha": 17
+        }
+      }
+    },
+    {
+      "id": "chest_open",
+      "file": "assets/ui/chest_open.png",
+      "batch": "E",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 28099,
+      "budget": 30000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "8f9bb2830b98f4bd51aee49369c95ec6371493565d414edcc64ae1693d364815",
+      "verification": {
+        "id": "chest_open",
+        "file": "assets/ui/chest_open.png",
+        "bytes": 28099,
+        "paletteColors": null,
+        "boundsAlpha16": [
+          23,
+          78,
+          250,
+          246
+        ],
+        "batch": "E",
+        "channelQuantizationSteps": {
+          "RGB": 16,
+          "alpha": 17
+        }
+      }
+    },
+    {
+      "id": "obstacle_sand",
+      "file": "assets/ui/obstacle_sand.png",
+      "batch": "E",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 18618,
+      "budget": 25000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        253
+      ],
+      "sRGB": true,
+      "sha256": "bf942bfed5ef2fd5e0f4a9a6f4faa0d3e8dd8eb19612e3addddc5a563b3da0c9",
+      "verification": {
+        "id": "obstacle_sand",
+        "file": "assets/ui/obstacle_sand.png",
+        "bytes": 18618,
+        "paletteColors": 256,
+        "boundsAlpha16": [
+          8,
+          61,
+          248,
+          248
+        ],
+        "batch": "E",
+        "center120MeanRGB": [
+          236.68,
+          217.5,
+          172.37
+        ],
+        "center120MinAlpha": 0
+      },
+      "center120DiameterMinAlpha": 252,
+      "center120DiameterMeanRGB": [
+        251.0,
+        231.91,
+        184.43
+      ]
+    },
+    {
+      "id": "obstacle_crate",
+      "file": "assets/ui/obstacle_crate.png",
+      "batch": "E",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 22053,
+      "budget": 25000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        253
+      ],
+      "sRGB": true,
+      "sha256": "811ca23616489e7d8d6d63f1eef22e5e228d2f5182d8a558265fd24a10f55f75",
+      "verification": {
+        "id": "obstacle_crate",
+        "file": "assets/ui/obstacle_crate.png",
+        "bytes": 22053,
+        "paletteColors": 256,
+        "boundsAlpha16": [
+          8,
+          11,
+          248,
+          244
+        ],
+        "batch": "E",
+        "center120MeanRGB": [
+          247.0,
+          231.0,
+          203.0
+        ],
+        "center120MinAlpha": 253
+      },
+      "center120DiameterMinAlpha": 253,
+      "center120DiameterMeanRGB": [
+        247.0,
+        231.0,
+        203.0
+      ]
+    },
+    {
+      "id": "item_wild_star",
+      "file": "assets/items/item_wild_star.png",
+      "batch": "E",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 25507,
+      "budget": 30000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "sRGB": true,
+      "sha256": "f92b1665126d8871b73f3351f6d5482caba06f1203cf75aa77a986177225670d",
+      "verification": {
+        "id": "item_wild_star",
+        "file": "assets/items/item_wild_star.png",
+        "bytes": 25507,
+        "paletteColors": null,
+        "boundsAlpha16": [
+          16,
+          21,
+          240,
+          235
+        ],
+        "batch": "E",
+        "channelQuantizationSteps": {
+          "RGB": 9,
+          "alpha": 17
+        }
+      }
+    },
+    {
+      "id": "badge_level",
+      "file": "assets/ui/badge_level.png",
+      "batch": "E",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 24469,
+      "budget": 25000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        253
+      ],
+      "sRGB": true,
+      "sha256": "3621bbf85d6bf706c3638c969c1aacefc87b69b4f4fb6b983b74bb64da2bea15",
+      "verification": {
+        "id": "badge_level",
+        "file": "assets/ui/badge_level.png",
+        "bytes": 24469,
+        "paletteColors": 64,
+        "boundsAlpha16": [
+          16,
+          17,
+          240,
+          239
+        ],
+        "batch": "E"
+      }
+    },
+    {
+      "id": "nav_book",
+      "file": "assets/ui/nav_book.png",
+      "batch": "E",
+      "dimensions": [
+        96,
+        96
+      ],
+      "bytes": 7264,
+      "budget": 15000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        254
+      ],
+      "sRGB": true,
+      "sha256": "d44f6ed13bfc5ee9f05ddcdcd19af26d63caf59f9833ddff7931da87b3079cb6",
+      "verification": {
+        "id": "nav_book",
+        "file": "assets/ui/nav_book.png",
+        "bytes": 7264,
+        "paletteColors": 256,
+        "boundsAlpha16": [
+          7,
+          18,
+          88,
+          78
+        ],
+        "batch": "E"
+      }
+    },
+    {
+      "id": "fx_bubble",
+      "file": "assets/ui/fx_bubble.png",
+      "batch": "D",
+      "dimensions": [
+        256,
+        256
+      ],
+      "bytes": 17913,
+      "budget": 20000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        239
+      ],
+      "sRGB": true,
+      "sha256": "3a7a378f67a6ffd5658abb3a163860a3805383af9c1703461673c248a231ea78",
+      "verification": {
+        "id": "fx_bubble",
+        "file": "assets/ui/fx_bubble.png",
+        "bytes": 17913,
+        "paletteColors": 64,
+        "boundsAlpha16": [
+          10,
+          13,
+          246,
+          243
+        ],
+        "batch": "D",
+        "centerDiameter170MaxAlpha": 0,
+        "centerDiameter170MeanAlpha": 0.0
+      }
+    },
+    {
+      "id": "icon_upgrade",
+      "file": "assets/ui/icon_upgrade.png",
+      "batch": "D",
+      "dimensions": [
+        96,
+        96
+      ],
+      "bytes": 4435,
+      "budget": 8000,
+      "mode": "32-bit RGBA PNG",
+      "alphaRange": [
+        0,
+        254
+      ],
+      "sRGB": true,
+      "sha256": "ec4a9c4573e7b95617a4afaaeb12d422dfc0378c64845e91b3c3040151c21d25",
+      "verification": {
+        "id": "icon_upgrade",
+        "file": "assets/ui/icon_upgrade.png",
+        "bytes": 4435,
+        "paletteColors": 256,
+        "boundsAlpha16": [
+          10,
+          7,
+          85,
+          88
+        ],
+        "batch": "D"
+      }
+    }
+  ],
+  "pending": [],
+  "batchEBytes": 365446,
+  "batchDBytes": 22348,
+  "newRuntimeBytes": 387794,
+  "allImageBytes": 3495495,
+  "chestSharedBodyRegion": [
+    0,
+    176,
+    256,
+    256
+  ],
+  "chestOpenTransparentRewardRegion": [
+    68,
+    0,
+    188,
+    70
+  ]
+}
