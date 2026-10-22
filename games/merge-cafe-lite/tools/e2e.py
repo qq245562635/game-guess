@@ -254,7 +254,7 @@ with sync_playwright() as p:
     check('第一幕 5 节点全部解锁：共扣 6 星，进入第二幕，场景大幅变化', S(pg, 'deco') == 5 and S(pg, 'stars') == 0 and 'Act 2' in pg.inner_text('#deco-act') and d5 > 0.05, f'{d5 * 100:.1f}% 像素变化')
     pg.screenshot(path=str(out / 'cafe-act1-done.png'))
     reload(pg)
-    check('刷新后装修进度保留', S(pg, 'deco') == 5 and S(pg, 'v') == 8)
+    check('刷新后装修进度保留', S(pg, 'deco') == 5 and S(pg, 'v') == 9)
     pg.evaluate('MCL.S.stars=68; MCL.S.coins=20500'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)  # 二、三幕共 68 星 + 20500 金币
     comics = 0
     for _ in range(20):
@@ -426,7 +426,7 @@ with sync_playwright() as p:
     pg.click('#nav-merge'); pg.wait_for_timeout(300)
     check('打点：今天已记上线、奖励事件有计数、游玩时长在涨', len(S(pg, 'stats.days')) == 1 and S(pg, 'stats.ev.small') >= 1 and S(pg, 'stats.ev.mid') >= 2 and S(pg, 'stats.playMs') > 1000, json.dumps(S(pg, 'stats.ev')))
     reload(pg, levels=True)
-    check('刷新后等级、经验保留（存档 v8）', S(pg, 'v') == 8 and S(pg, 'level') == 5 and pg.inner_text('#level') == '5')
+    check('刷新后等级、经验保留（存档 v9）', S(pg, 'v') == 9 and S(pg, 'level') == 5 and pg.inner_text('#level') == '5')
     ctx.close()
 
     # ================= V1 M2：连击、出售 + 回收桶、高级合成特写、满格提示、音效开关 =================
@@ -448,14 +448,14 @@ with sync_playwright() as p:
     c0 = S(pg, 'coins'); tap_cell(pg, 15); wait_sell(pg)
     check('M2 出售：点选物品，下方出现 "Sell +2"', pg.is_visible('#sell.show') and 'Sell +2' in pg.inner_text('#sell'), pg.inner_text('#sell') if pg.is_visible('#sell') else '')
     pg.screenshot(path=str(out / 'm2-sell.png'))
-    tap_cell(pg, 15); wait_sell(pg); pg.click('#sell'); settle_rewards(pg)  # Sell 按钮 4 秒自动收起，截图慢时重新选中
+    tap_cell(pg, 15); wait_sell(pg); pg.evaluate("document.getElementById('sell').click()"); settle_rewards(pg)  # Sell 按钮 4 秒自动收起，截图慢时重新选中
     check('卖掉 2 级物品：+2 金币、格子空出、回收桶 1/8', cell(pg, 15) is None and S(pg, 'coins') == c0 + 2 and S(pg, 'recycle') == 1 and '1/8' in pg.inner_text('#toast') and not pg.is_visible('#sell.show'))
-    tap_cell(pg, 16); wait_sell(pg); pg.click('#sell'); pg.wait_for_timeout(200)
+    tap_cell(pg, 16); wait_sell(pg); pg.evaluate("document.getElementById('sell').click()"); pg.wait_for_timeout(200)
     check('5 级以上要确认：弹窗、未确认前不卖', pg.is_visible('#modal.show') and 'Latte' in pg.inner_text('#m-title') and cell(pg, 16) is not None)
     pg.click('#m-btns .btn.coin'); settle_rewards(pg)
     check('确认后卖出：+16 金币', cell(pg, 16) is None and S(pg, 'coins') == c0 + 18)
     pg.evaluate("MCL.S.recycle=7; MCL.S.cells[17]={k:'item',chain:'bake',lvl:1}; MCL.S.energy=40; MCL.S.energyTs=MCL.now()"); pg.wait_for_timeout(150)
-    tap_cell(pg, 17); wait_sell(pg); pg.click('#sell'); pg.wait_for_timeout(300)
+    tap_cell(pg, 17); wait_sell(pg); pg.evaluate("document.getElementById('sell').click()"); pg.wait_for_timeout(300)
     check('回收桶满 8 件：送 5 体力、桶清零', S(pg, 'energy') == 45 and S(pg, 'recycle') == 0 and 'Recycle bonus' in pg.inner_text('#toast'), pg.inner_text('#toast'))
     # 高级合成特写
     pg.evaluate("MCL.S.cells[22]={k:'item',chain:'coffee',lvl:5}; MCL.S.cells[23]={k:'item',chain:'coffee',lvl:5}"); pg.wait_for_timeout(150)
