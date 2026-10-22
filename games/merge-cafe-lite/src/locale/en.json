@@ -113,5 +113,21 @@
   "ui.bubblePopped": "The bubble popped!",
   "ui.swap": "Swap Order",
   "ad.free": "Free",
-  "ui.buy": "Buy"
+  "ui.buy": "Buy",
+  "area.seaside": "Seaside Café",
+  "ui.levelUp": "Café Level {n}!",
+  "ui.levelTitle": "Café Level {n}",
+  "ui.levelBody": "{xp} / {need} XP to level {next}. Every order earns XP.",
+  "ui.nextUnlock": "Lv {n}: {what}",
+  "ui.chest": "Bonus chest!",
+  "ui.decoCoins": "Need {n} more coins.",
+  "unlock.daily": "Daily Tasks",
+  "unlock.regulars": "Regular Customers",
+  "unlock.setOrders": "Combo Orders",
+  "unlock.recipes": "Recipe Book",
+  "unlock.obstacles": "Sand & Crates",
+  "unlock.wildStar": "Wild Star",
+  "unlock.offline": "Longer Café Hours",
+  "ui.collect": "Collect",
+  "ui.levelRewards": "Level-up rewards"
 }

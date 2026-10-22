@@ -1,5 +1,5 @@
 {
-  "_doc": "经济。体力上限100、每120秒自然恢复1点。首会话数值实验：初始体力从200调为150，让普通玩家更有机会在首会话遇到体力补充广告，但需通过真人测试验证；其余经济参数不变。 金币消耗（2026-10-21）：开格之外再加 5 种——生成器升级（见 generators.json upgrades）、coinRefill 金币立即回满生成器（当天第 n 次价格 base+step×n）、coinEnergy 金币买体力（每天按 prices 逐次涨价，买完当天不再出现；广告 +30 永远免费，金币只做兜底）、bubble 合成泡泡（合出 minLevel 级以上时按 chance 在旁边冒一个同款泡泡，lifeSec 秒内花 等级×pricePerLevel 金币或看广告拿下，否则消失）、swapOrder 花金币换掉不想做的订单（交过一部分的不能换）。每日次数按 UTC 0 点重置。",
+  "_doc": "经济。体力上限100、每120秒自然恢复1点。首会话数值实验：初始体力从200调为150，让普通玩家更有机会在首会话遇到体力补充广告，但需通过真人测试验证；其余经济参数不变。 金币消耗（2026-10-21）：开格之外再加 5 种——生成器升级（见 generators.json upgrades）、coinRefill 金币立即回满生成器（当天第 n 次价格 base+step×n）、coinEnergy 金币买体力（每天按 prices 逐次涨价，买完当天不再出现；广告 +30 永远免费，金币只做兜底）、bubble 合成泡泡（合出 minLevel 级以上时按 chance 在旁边冒一个同款泡泡，lifeSec 秒内花 等级×pricePerLevel 金币或看广告拿下，否则消失）、swapOrder 花金币换掉不想做的订单（交过一部分的不能换）。每日次数按 UTC 0 点重置。 v0.4：每完成 starEveryOrders 单奖 1 星，由 3 改为 5（装修拉长到 D1/D4/D7）。",
   "energy": {
     "max": 100,
     "start": 150,
@@ -8,7 +8,7 @@
   "startCoins": 100,
   "startStars": 0,
   "startGems": 0,
-  "starEveryOrders": 3,
+  "starEveryOrders": 5,
   "coinRefill": {
     "base": 20,
     "step": 10

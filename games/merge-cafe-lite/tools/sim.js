@@ -10,7 +10,7 @@ const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 const Core = require(path.join(root, 'src/core.js'));
 const cfg = {};
-for (const n of ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art'])
+for (const n of ['chains', 'board', 'generators', 'economy', 'orders', 'tutorial', 'deco', 'ads', 'tasks', 'art', 'progression'])
   cfg[n] = JSON.parse(fs.readFileSync(path.join(root, 'src/config', n + '.json'), 'utf8'));
 const C = Core.index(cfg);
 const T = { tap: 1.0, merge: 1.6, deliver: 1.8 };
@@ -124,8 +124,11 @@ function campaign(seed, days, sinks) {
   Core.skipTutorial(s);
   const out = [];
   for (let d = 0; d < days; d++) {
-    for (const [h, len] of [[9, 900], [21, 900]]) session(s, rng, T0 + d * 86400e3 + h * 3600e3, len, { sinks });
-    out.push({ coins: s.coins, earned: s.stats.coinsEarned, spent: Object.assign({}, s.stats.coinsSpent), unlocks: s.stats.unlocks, lv: C.genList.map((g) => s.gens[g.id].lv) });
+    for (const [h, len] of [[9, 900], [21, 900]]) {
+      session(s, rng, T0 + d * 86400e3 + h * 3600e3, len, { sinks });
+      while (Core.renovate(C, s).ok) {} // 有星有钱就装修（玩家会第一时间装）
+    }
+    out.push({ coins: s.coins, earned: s.stats.coinsEarned, spent: Object.assign({}, s.stats.coinsSpent), unlocks: s.stats.unlocks, lv: C.genList.map((g) => s.gens[g.id].lv), level: s.level, deco: s.deco });
   }
   return out;
 }
@@ -134,11 +137,16 @@ function campaignReport(days, runs) {
   for (const sinks of [false, true]) {
     const all = []; for (let k = 1; k <= runs; k++) all.push(campaign(k, days, sinks));
     console.log(`\n${sinks ? '新：全部金币消耗' : '旧：只有开格'}（每天 2×15 分钟，不看广告，${runs} 局中位数）`);
-    console.log('天  累计赚   手里余额  开格数  生成器等级  累计花费（开格/升级/回满/体力/泡泡）');
+    console.log('天  店铺等级  装修节点  累计赚   手里余额  开格数  生成器等级  累计花费（开格/升级/回满/体力/泡泡/装修）');
     for (let d = 0; d < days; d++) {
       const r = all.map((a) => a[d]), m = (f) => pct(r.map(f), 0.5);
-      console.log(`D${d + 1}  ${String(m((x) => x.earned)).padStart(6)}  ${String(m((x) => x.coins)).padStart(8)}  ${String(m((x) => x.unlocks)).padStart(6)}  ${(m((x) => x.lv[0]) + '/' + m((x) => x.lv[1])).padStart(10)}  ` +
-        ['unlock', 'upgrade', 'refill', 'energy', 'bubble'].map((k) => m((x) => x.spent[k])).join('/'));
+      console.log(`D${d + 1}  ${String(m((x) => x.level)).padStart(6)}  ${String(m((x) => x.deco)).padStart(6)}  ${String(m((x) => x.earned)).padStart(6)}  ${String(m((x) => x.coins)).padStart(8)}  ${String(m((x) => x.unlocks)).padStart(6)}  ${(m((x) => x.lv[0]) + '/' + m((x) => x.lv[1])).padStart(10)}  ` +
+        ['unlock', 'upgrade', 'refill', 'energy', 'bubble', 'deco'].map((k) => m((x) => x.spent[k])).join('/'));
+    }
+    if (sinks) {
+      const dayOf = (f) => { const v = all.map((a) => { const i = a.findIndex(f); return i < 0 ? 99 : i + 1; }).sort((a, b) => a - b); return v[v.length >> 1]; };
+      console.log(`M1 验收（中位数）：第一幕 D${dayOf((x) => x.deco >= 5)}、第二幕 D${dayOf((x) => x.deco >= 10)}、第三幕 D${dayOf((x) => x.deco >= 15)}；` +
+        `店铺 8 级 D${dayOf((x) => x.level >= 8)}、12 级 D${dayOf((x) => x.level >= 12)}、16 级 D${dayOf((x) => x.level >= 16)}、20 级 D${dayOf((x) => x.level >= 20)}`);
     }
   }
 }
@@ -156,4 +164,4 @@ for (const [label, sec, ad] of [['首会话 10 分钟（不看广告）', 600, f
     `解锁第一幕 ${(hit.length / N * 100).toFixed(0)}%` + (hit.length ? `（中位用时 ${(pct(at, .5) / 60).toFixed(1)} 分钟）` : '') +
     `，卡死 ${rs.filter((r) => r.stuck).length} 局`);
 }
-if (!process.argv.includes('--first')) campaignReport(7, Math.min(N, 60));
+if (!process.argv.includes('--first')) campaignReport(14, Math.min(N, 60));

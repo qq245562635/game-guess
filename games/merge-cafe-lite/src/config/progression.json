@@ -1,0 +1,89 @@
+{
+  "_doc": "店铺等级（V1-plan.md「店铺等级」）。每完成一单得经验 = 需求等级之和，稀有单 ×xp.rareMul（熟客单 M3 起 ×xp.regularMul）。levelNeed[i] = 从 i+1 级升到 i+2 级要的经验，超出表的等级每级 after。每次升级：+levelReward.energy 体力（可超上限）+ 等级×coinsPerLevel 金币；每 chestEvery 级额外给一个宝箱（内容 chest）。unlocks：按等级开放的系统，ready=false 的还没做，升级弹窗不提；feature 是程序里的开关名。 M1 校准（tools/sim.js，每天 2×15 分钟）：升级送体力和金币会加快后期升级，所以 11 级以后的经验需求比 V1-plan 初稿 ×1.2，20 级以后每级 360；结果 8 级 D1、12 级 D3、16 级 D6、20 级 D10。",
+  "xp": {
+    "rareMul": 2,
+    "regularMul": 2
+  },
+  "levelNeed": [
+    20,
+    25,
+    35,
+    45,
+    55,
+    65,
+    75,
+    90,
+    100,
+    115,
+    155,
+    180,
+    205,
+    230,
+    250,
+    275,
+    300,
+    325,
+    350
+  ],
+  "after": 360,
+  "levelReward": {
+    "energy": 20,
+    "coinsPerLevel": 10,
+    "chestEvery": 5
+  },
+  "chest": {
+    "energy": 30,
+    "coins": 100,
+    "stars": 1
+  },
+  "unlocks": [
+    {
+      "level": 2,
+      "feature": "daily",
+      "name": "unlock.daily",
+      "ready": false
+    },
+    {
+      "level": 3,
+      "feature": "regulars",
+      "name": "unlock.regulars",
+      "ready": false
+    },
+    {
+      "level": 4,
+      "feature": "setOrders",
+      "name": "unlock.setOrders",
+      "ready": false
+    },
+    {
+      "level": 5,
+      "feature": "recipes",
+      "name": "unlock.recipes",
+      "ready": false
+    },
+    {
+      "level": 6,
+      "feature": "obstacles",
+      "name": "unlock.obstacles",
+      "ready": false
+    },
+    {
+      "level": 7,
+      "feature": "wildStar",
+      "name": "unlock.wildStar",
+      "ready": false
+    },
+    {
+      "level": 9,
+      "feature": "offline6h",
+      "name": "unlock.offline",
+      "ready": false
+    },
+    {
+      "level": 15,
+      "feature": "offline8h",
+      "name": "unlock.offline",
+      "ready": false
+    }
+  ]
+}

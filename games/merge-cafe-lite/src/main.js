@@ -27,13 +27,14 @@
   { const ls = store(), raw = ls && ls.getItem(SAVE_KEY); if (raw) S = Core.deserialize(C, raw, now()); }
   if (S) welcomeGain = Core.settleAll(C, S, now());
   else S = Core.newState(C, now());
+  Core.markDay(S, now()); // 留存打点：今天来过
   let dirty = true, saveTimer = 0;
   function save() { const ls = store(); if (!ls) return; try { ls.setItem(SAVE_KEY, Core.serialize(S, now())); dirty = false; } catch (e) {} }
   const markDirty = () => { dirty = true; };
   addEventListener('pagehide', save);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) save();
-    else { const g = Core.settleAll(C, S, now()); if (g > 0) toast(L.t('ui.welcomeBack', { n: g })); }
+    else { Core.markDay(S, now()); const g = Core.settleAll(C, S, now()); if (g > 0) toast(L.t('ui.welcomeBack', { n: g })); }
   });
 
   /* ---------- WebGL ---------- */
@@ -207,6 +208,14 @@
     $('energy').textContent = S.energy; $('coins').textContent = (S.coins - pendingCoins).toLocaleString('en-US'); $('stars').textContent = S.stars - pendingStars;
     $('energy-timer').textContent = S.energy < E.max ? mmss(nx) : '';
     if (energyModalTick) energyModalTick();
+    updateLevel();
+  }
+  /* 店铺等级徽章：数字 + 外圈经验环。升级庆典还没放出来之前显示旧等级（和金币一样等"落地"再跳） */
+  let lvlKey = '';
+  function updateLevel() {
+    const lv = S.level - pendingLevels, key = lv + '|' + S.xp + '|' + pendingLevels; if (key === lvlKey) return; lvlKey = key;
+    $('level').textContent = lv;
+    $('lvl').style.setProperty('--xp', pendingLevels ? 1 : Math.min(1, S.xp / Core.xpNeed(C, S.level)));
   }
   function bump(id) { const el = $(id); el.classList.add('bump'); setTimeout(() => el.classList.remove('bump'), 120); }
 
@@ -341,10 +350,65 @@
       toast(L.t('ad.got', { n: coins }));
     });
   };
+  /* ---------- 店铺升级庆典（V1 M1） ----------
+     升级的奖励在 core 里已经发到存档；这里先把金币 / 星星 / 等级记成"待落地"，顶栏不提前跳，
+     等交单动画飞完、玩家没在拖、没有别的弹窗时弹庆典，点 Collect 奖励飞进顶栏。 */
+  let pendingLevels = 0; const lvQueue = [];
+  function queueLevelUps(ups) {
+    if (!ups || !ups.length) return;
+    for (const u of ups) {
+      const coins = u.coins + (u.chest ? u.chest.coins : 0), stars = u.chest ? u.chest.stars : 0;
+      pendingCoins += coins; pendingStars += stars; pendingLevels++;
+      lvQueue.push(Object.assign({ totalCoins: coins, totalStars: stars, totalEnergy: u.energy + (u.chest ? u.chest.energy : 0) }, u));
+    }
+    lvlKey = ''; updateLevel();
+  }
+  function tryLevelUp() {
+    if (!lvQueue.length || down || drag || modalOpen() || Ads.busy || flies.length || coinsFly.length || Core.tutStep(C, S)) return;
+    // 一次连升多级合成一个庆典：显示最高等级，奖励合计
+    const ups = lvQueue.splice(0), top = ups.at(-1).level, sum = (k) => ups.reduce((a, u) => a + u[k], 0);
+    const coins = sum('totalCoins'), stars = sum('totalStars'), energy = sum('totalEnergy'), chest = ups.some((u) => u.chest);
+    const unlocks = [].concat(...ups.map((u) => u.unlocks));
+    const art = Art.src('badge_level'), esc2 = (t) => String(t).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+    const chip = (icon, n) => `<span>${icon}+${n}</span>`;
+    const ic = (id, svg) => { const s = Art.src(id); return s ? `<img src="${esc2(s)}" alt="">` : svg; };
+    const boltSvg = '<svg viewBox="0 0 30 30"><path d="M18 1.5 5.5 17h8l-3 11.5L24.5 12h-8.2z" fill="#f5c03a" stroke="#c4851a" stroke-width="2" stroke-linejoin="round"/></svg>';
+    const starSvg = '<svg viewBox="0 0 30 30"><path d="M15 2l3.8 8 8.7 1-6.4 6 1.7 8.6L15 21.3l-7.8 4.3 1.7-8.6-6.4-6 8.7-1z" fill="#f5c03a" stroke="#c4851a" stroke-width="2" stroke-linejoin="round"/></svg>';
+    let html = `<div class="lvup"><div class="big${art ? ' art' : ''}"${art ? ` style="--badge:url('${esc2(art)}')"` : ''}><b>${top}</b></div><div class="rw-row">` +
+      (energy ? chip(ic('icon_energy', boltSvg), energy) : '') + (coins ? chip(coinIcon(), coins) : '') + (stars ? chip(ic('icon_star', starSvg), stars) : '') + `</div>` +
+      (chest ? `<div style="font-weight:800">🎁 ${esc2(L.t('ui.chest'))}</div>` : '') +
+      unlocks.map((u) => `<div style="font-weight:900;color:#1d5f5a">✨ ${esc2(L.t(u.name))}</div>`).join('') + `</div>`;
+    sfxBurst();
+    modal(L.t('ui.levelUp', { n: top }), '', [{ label: L.t('ui.collect') }], null, html);
+    modalOnClose = () => {
+      pendingLevels -= ups.length; lvlKey = ''; updateLevel(); bump('lvl');
+      pendingCoins -= coins; pendingStars -= stars; // 换成飞行中的待落地，飞到了再加到顶栏
+      if (coins || stars) flyRewards(LY.W / 2, LY.H / 2, coins, stars);
+      if (energy) { bump('pill-energy'); toast('+' + energy + ' ⚡'); }
+      hudCache = ''; updateHud();
+    };
+  }
+  /* 庆典彩带：屏幕上方几处撒粒子 */
+  function sfxBurst() {
+    const cols = ['#f5c03a', '#ef7965', '#48b8af', '#3bb36a', '#9a6fc0'];
+    for (let k = 0; k < 6; k++) burst(LY.W * (0.15 + k * 0.14), LY.H * 0.3, cols[k % cols.length], 16);
+  }
+  /* 浮字（+XP 等）：DOM 小标签往上飘后消失 */
+  function floatText(x, y, text, color) {
+    const el = document.createElement('div'); el.className = 'floaty'; el.textContent = text; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.color = color || '#3a2416';
+    document.body.appendChild(el); setTimeout(() => el.remove(), 1000);
+  }
+  $('lvl').onclick = () => { // 点徽章：当前等级、经验进度、下一个开放的功能
+    if (modalOpen() || Ads.busy || Core.tutStep(C, S) || pendingLevels) return;
+    const need = Core.xpNeed(C, S.level), nu = Core.nextUnlock(C, S);
+    const html = `<div class="xp-line"><i style="width:${Math.min(100, S.xp / need * 100)}%"></i></div>` +
+      (nu ? `<div style="font-weight:900;color:#1d5f5a;margin-bottom:10px">✨ ${L.t('ui.nextUnlock', { n: nu.level, what: L.t(nu.name) }).replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]))}</div>` : '');
+    modal(L.t('ui.levelTitle', { n: S.level }), L.t('ui.levelBody', { xp: S.xp, need, next: S.level + 1 }), [{ label: L.t('ui.ok') }], null, html);
+  };
   /* 插屏：每 N 单一次，排队到"没在拖、没弹窗、没在引导、不在播别的广告"时才放 */
   let interQueued = false;
   function tryInterstitial() {
-    if (!interQueued || down || drag || modalOpen() || Ads.busy || Core.tutStep(C, S) || flies.length) return;
+    if (!interQueued || lvQueue.length || down || drag || modalOpen() || Ads.busy || Core.tutStep(C, S) || flies.length) return; // 升级庆典优先
     interQueued = false; Core.markInterstitial(S, now()); markDirty();
     Ads.interstitial();
   }
@@ -417,6 +481,8 @@
     if (r.type === 'complete') {
       cardPops.set(k, clock() + 0.2);
       flyRewards(R.x + R.w / 2, R.y + R.h / 2, r.coins, r.stars + r.bonusStar);
+      if (r.xp) floatText(R.x + R.w / 2, R.y - 4, '+' + r.xp + ' XP', '#2e9a5a');
+      queueLevelUps(r.levelUps);
       toast(r.bonusStar ? L.t('ui.starBonus') : L.t('ui.orderDone'));
       if (!Core.tutStep(C, S) && S.stats.ordersDone > 1 && r.offerDouble) offerDouble(r.coins);
       if (r.interstitial) interQueued = true;
@@ -553,37 +619,39 @@
   }
   let decoKey = '';
   function updateDeco() {
-    const nd = Core.decoNext(C, S), afford = !!nd && S.stars - pendingStars >= nd.cost;
+    const nd = Core.decoNext(C, S), coinsNow = S.coins - pendingCoins;
+    const afford = !!nd && S.stars - pendingStars >= nd.cost && coinsNow >= (nd.coins || 0);
     $('nav-cafe').classList.toggle('dot', afford && mode !== 'cafe');
     if (mode !== 'cafe') return;
-    const key = S.deco + '|' + S.stars + '|' + pendingStars;
+    const key = S.area + '|' + S.deco + '|' + S.stars + '|' + pendingStars + '|' + (nd && nd.coins ? Math.min(coinsNow, nd.coins) : 0);
     if (key === decoKey) return; decoKey = key;
-    const act = nd ? nd.act : C.cfg.deco.acts.length - 1, A = C.cfg.deco.acts[act];
+    const AR = Core.areaOf(C, S), nodes = AR.nodes, act = nd ? nd.act : AR.acts.length - 1, A = AR.acts[act];
     $('deco-act').textContent = nd ? L.t(A.name) : L.t('ui.allDone');
-    const done = C.deco.filter((d) => d.act === act).filter((d) => C.deco.indexOf(d) < S.deco).length;
+    const done = nodes.filter((d) => d.act === act && nodes.indexOf(d) < S.deco).length;
     $('deco-prog').textContent = done + '/' + A.nodes.length;
     const list = $('deco-list'); list.textContent = '';
-    C.deco.filter((d) => d.act === act).forEach((d) => {
-      const i = C.deco.indexOf(d), st = i < S.deco ? 'done' : i === S.deco ? 'next' : 'todo';
+    const coinMark = (n) => `<i class="cm"></i>${n}`;
+    nodes.filter((d) => d.act === act).forEach((d) => {
+      const i = nodes.indexOf(d), st = i < S.deco ? 'done' : i === S.deco ? 'next' : 'todo';
       const el = document.createElement('div'); el.className = 'chip ' + st;
-      el.innerHTML = `<b></b><span>${st === 'done' ? '✓' : '★ ' + d.cost}</span>`; el.querySelector('b').textContent = L.t(d.name);
+      el.innerHTML = `<b></b><span>${st === 'done' ? '✓' : '★ ' + d.cost + (d.coins ? ' ' + coinMark(d.coins) : '')}</span>`; el.querySelector('b').textContent = L.t(d.name);
       list.appendChild(el);
     });
     const btn = $('deco-btn');
     btn.style.display = nd ? '' : 'none';
-    if (nd) { btn.innerHTML = `<span></span> ★ ${nd.cost}`; btn.querySelector('span').textContent = L.t('ui.renovate') + ' · ' + L.t(nd.name); btn.classList.toggle('dim', !afford); }
+    if (nd) { btn.innerHTML = `<span></span> ★ ${nd.cost}${nd.coins ? ' · ' + coinMark(nd.coins) : ''}`; btn.querySelector('span').textContent = L.t('ui.renovate') + ' · ' + L.t(nd.name); btn.classList.toggle('dim', !afford); }
     layout();
   }
   $('deco-btn').onclick = () => {
-    if (pendingStars) return; // 星星还在飞，等落地
+    if (pendingStars || pendingCoins) return; // 星星 / 金币还在飞，等落地
     const r = Core.renovate(C, S);
-    if (!r.ok) { if (r.reason === 'stars') toast(L.t('ui.needStars', { n: r.need })); return; }
-    markDirty(); save(); hudCache = ''; updateHud(); bump('pill-stars');
+    if (!r.ok) { if (r.reason === 'stars') toast(L.t('ui.needStars', { n: r.need })); else if (r.reason === 'coins') toast(L.t('ui.decoCoins', { n: r.need })); return; }
+    markDirty(); save(); hudCache = ''; updateHud(); bump('pill-stars'); if (r.price) bump('pill-coins');
     layerPop.set(r.node.layer, clock());
     const a = layerAnchor(r.node.layer);
     burst(a[0], a[1], '#f5c03a', 24); burst(a[0], a[1], '#ef7965', 12);
     decoKey = ''; updateDeco();
-    const after = () => { if (r.actDone) toast(r.allDone ? L.t('ui.allDone') : L.t('ui.actDone', { act: L.t(C.cfg.deco.acts[r.node.act].name) })); };
+    const after = () => { if (r.actDone) toast(r.allDone ? L.t('ui.allDone') : L.t('ui.actDone', { act: L.t(Core.areaOf(C, S).acts[r.node.act].name) })); };
     if (r.comic) setTimeout(() => { modal(L.t(r.node.name), L.t(r.comic), [{ label: L.t('ui.continue') }], r.comic); modalOnClose = after; }, 900);
     else after();
   };
@@ -1119,7 +1187,7 @@
   }
 
   /* ---------- 主循环 ---------- */
-  let fpsN = 0, fpsT = performance.now(), fps = 0, lastSettle = 0, renderMs = 0;
+  let fpsN = 0, fpsT = performance.now(), fps = 0, lastSettle = 0, renderMs = 0, lastPlayTick = 0;
   function frame() {
     const tn = performance.now();
     if (tn - lastSettle > 250) { // 冷却 / 体力 / 订单超时：每 0.25 秒结算一次
@@ -1128,7 +1196,8 @@
       const ref = Core.settleOrders(C, S, now());
       for (const k of ref) { cardPops.set(k, clock()); markDirty(); }
       for (const i of Core.settleBubbles(C, S, now())) { const [x, y] = cellXY(i); burst(x, y, '#bfe8f2', 12); markDirty(); if (mode === 'merge') toast(L.t('ui.bubblePopped')); }
-      updateHud(); updateTutorial(); updateDeco(); updateTasks(); tryInterstitial();
+      updateHud(); updateTutorial(); updateDeco(); updateTasks(); tryLevelUp(); tryInterstitial();
+      if (!document.hidden) { const dt = Math.min(1000, tn - (lastPlayTick || tn)); S.stats.playMs += dt; } lastPlayTick = tn; // 有效游玩时长（页面在前台）
       if (dirty) { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); }
       if (DEBUG) debugStats();
     }
@@ -1155,6 +1224,7 @@
   /* 顶栏和底栏的图标是 DOM 里的 SVG 占位：正式图到了换成 <img> */
   const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg', nav_tasks: '#nav-tasks svg' };
   function swapDomIcon(id) {
+    if (id === 'badge_level') { const el = $('lvl'); el.style.setProperty('--badge', `url('${Art.src(id)}')`); el.classList.add('art'); return; }
     const old = DOM_ICONS[id] && document.querySelector(DOM_ICONS[id]); if (!old) return;
     const img = document.createElement('img'); img.src = Art.src(id); img.alt = ''; img.className = 'ico'; img.dataset.art = id;
     old.replaceWith(img); layout();
@@ -1170,7 +1240,7 @@
   /* ---------- 调试面板（?debug=1，给 QA 用，文案不进本地化表） ---------- */
   function debugStats() {
     const st = S.stats, c = st.createdAt;
-    $('dbg-fps').textContent = `${fps} fps · ${renderMs.toFixed(2)} ms/frame\norders ${st.ordersDone} · merges ${st.merges}\n1st merge ${st.firstMergeAt ? ((st.firstMergeAt - c) / 1000).toFixed(1) + 's' : '-'} · 1st order ${st.firstOrderAt ? ((st.firstOrderAt - c) / 1000).toFixed(1) + 's' : '-'}\nads ${['energy', 'refill', 'double', 'bubble'].map((k) => k + ' ' + S.ads.clicks[k] + '/' + S.ads.offers[k]).join(' · ')} · inter ${S.ads.interstitials}\ndeco ${S.deco}/${C.deco.length} · gens ${C.genList.map((g) => 'Lv' + (S.gens[g.id].lv || 1)).join('/')}\nspent ${Object.entries(st.coinsSpent).filter(([, v]) => v).map(([k, v]) => k + ' ' + v).join(' · ') || '-'} · earned ${st.coinsEarned}`;
+    $('dbg-fps').textContent = `${fps} fps · ${renderMs.toFixed(2)} ms/frame\norders ${st.ordersDone} · merges ${st.merges}\n1st merge ${st.firstMergeAt ? ((st.firstMergeAt - c) / 1000).toFixed(1) + 's' : '-'} · 1st order ${st.firstOrderAt ? ((st.firstOrderAt - c) / 1000).toFixed(1) + 's' : '-'}\nads ${['energy', 'refill', 'double', 'bubble'].map((k) => k + ' ' + S.ads.clicks[k] + '/' + S.ads.offers[k]).join(' · ')} · inter ${S.ads.interstitials}\nLv ${S.level} (${S.xp}/${Core.xpNeed(C, S.level)}) · ev ${st.ev.small}/${st.ev.mid}/${st.ev.big} · mid/3min ${st.playMs > 60e3 ? (st.ev.mid / (st.playMs / 180e3)).toFixed(1) : '-'} · days ${Core.daysInFirstWeek(S)} · play ${Math.round(st.playMs / 60e3)}m\ndeco ${S.deco}/${Core.areaNodes(C, S).length} · gens ${C.genList.map((g) => 'Lv' + (S.gens[g.id].lv || 1)).join('/')}\nspent ${Object.entries(st.coinsSpent).filter(([, v]) => v).map(([k, v]) => k + ' ' + v).join(' · ') || '-'} · earned ${st.coinsEarned}`;
   }
   if (DEBUG) {
     const box = $('dbg'); box.classList.add('show');
@@ -1182,6 +1252,7 @@
     btn('+1000 coins', () => { S.coins += 1000; });
     btn('bubble', () => { const e = S.cells.findIndex((c, i) => !c && S.unlocked[i]); if (e >= 0) S.cells[e] = { k: 'bubble', chain: 'coffee', lvl: 5, until: now() + C.eco.bubble.lifeSec * 1000 }; });
     btn('+5 stars', () => { S.stars += 5; decoKey = ''; });
+    btn('+100 xp', () => { queueLevelUps(Core.addXp(C, S, 100, now())); });
     btn('skip tutorial', () => Core.skipTutorial(S));
     btn('fill board', () => { for (let i = 0; i < C.n; i++) if (S.unlocked[i] && !S.cells[i]) S.cells[i] = { k: 'item', chain: i % 2 ? 'coffee' : 'bake', lvl: 1 + (i % 7) }; });
     btn('serve-ready', () => { // 把三个订单要的东西都放到棋盘上
@@ -1191,7 +1262,7 @@
   }
   // 自动化测试 / 调试入口
   window.MCL = {
-    C, get S() { return S; }, cellXY, cellAt, layout: LY, save, now, genRect, upgradeBadge: (id) => upgradeBadge(genRect(id)), orderRect: (k) => LY.orders[k], get mode() { return mode; }, needAt,
+    C, get S() { return S; }, get pendingLevels() { return pendingLevels; }, cellXY, cellAt, layout: LY, save, now, genRect, upgradeBadge: (id) => upgradeBadge(genRect(id)), orderRect: (k) => LY.orders[k], get mode() { return mode; }, needAt,
     get fps() { return fps; }, get renderMs() { return renderMs; }, get pending() { return pendingCoins + pendingStars; },
   };
 })();
