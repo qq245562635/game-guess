@@ -634,6 +634,15 @@ with sync_playwright() as p:
     close_all(pg)
     settle_rewards(pg)
     check('不看广告直接 Collect：+234', S(pg, 'coins') - c0 >= 234, f"+{S(pg, 'coins') - c0}")
+    # G 批熟客漫画：Mia 升到 5 心时升心卡用漫画
+    pg.evaluate("(()=>{const s=MCL.S; for(let i=0;i<49;i++) if(s.unlocked[i]) s.cells[i]=null; Core.regState(s,'mia').pts=219; Core.regState(s,'mia').hearts=4; const t=MCL.now();"
+      "s.orders[0]={uid:970,tid:'n_c2',needs:[{chain:'coffee',lvl:1,done:false}],coins:10,stars:0,rare:false,cust:2,start:t,expiresAt:t+9e5}; s.cells[2]={k:'item',chain:'coffee',lvl:1};})()")
+    pg.wait_for_timeout(500); drag_to_order(pg, 2, 0)
+    pg.wait_for_selector('#modal.show', timeout=8000); pg.wait_for_timeout(600)
+    check('G 批：Mia 满 5 心，升心卡显示熟客漫画（comic_reg_mia）+ 5 颗心 + 台词', 'Mia' in pg.inner_text('#m-title') and pg.evaluate("(document.querySelector('.heartup img.comic')||{}).src||''").endswith('comic_reg_mia.webp') and pg.evaluate("document.querySelectorAll('.heartup .hs img').length") == 5,
+          pg.inner_text('#m-title'))
+    pg.screenshot(path=str(out / 'g-comic-mia.png'))
+    close_all(pg); settle_rewards(pg)
     ctx.close()
 
     # ================= 多分辨率布局 =================

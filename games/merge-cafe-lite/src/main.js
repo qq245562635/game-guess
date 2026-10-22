@@ -555,9 +555,11 @@
   function showHeartUp(u) {
     const r = C.regById[u.reg], name = L.t(r.name), cu = C.O.customers[r.avatar];
     const src = Art.src(cu.id + '_happy') || Art.src(cu.id), line = u.line ? L.t(u.line) : '';
+    /* 熟客漫画（G 批）：满 5 心 comic_reg_<id>；以后补 1 / 3 心用 comic_reg_<id>_<心>。图没到就用开心头像 */
+    const comic = Art.src(u.heart === 5 ? 'comic_reg_' + u.reg : 'comic_reg_' + u.reg + '_' + u.heart);
     Sfx.levelUp(); sfxBurst();
     modal(L.t('ui.heartUp', { name, n: u.heart }), '', [{ label: L.t('ui.continue') }], null,
-      `<div class="heartup">${src ? `<img src="${esc2(src)}" alt="">` : ''}<div class="hs">${heartsHTML(u.heart, 28)}</div>${line ? `<q>${esc2(line)}</q>` : ''}</div>`);
+      `<div class="heartup">${comic ? `<img class="comic" src="${esc2(comic)}" alt="">` : src ? `<img src="${esc2(src)}" alt="">` : ''}<div class="hs">${heartsHTML(u.heart, 28)}</div>${line ? `<q>${esc2(line)}</q>` : ''}</div>`);
     modalOnClose = () => { if (u.chest) setTimeout(() => showChest(u.chest), 350); };
   }
   /* 百搭星掉落：从合成点飞到空格，第一次掉落时提示怎么用 */
