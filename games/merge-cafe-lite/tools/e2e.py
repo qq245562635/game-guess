@@ -465,10 +465,10 @@ with sync_playwright() as p:
     pg.screenshot(path=str(out / 'm2-stuck.png'))
     # 音效开关
     pg.evaluate("for(let i=0;i<49;i++) MCL.S.cells[i]=null"); pg.wait_for_timeout(200)
-    check('M2 音效：右上角喇叭按钮，默认开', pg.is_visible('#snd') and pg.inner_text('#snd') == '🔊' and pg.evaluate('Sfx.supported'))
+    check('M2 音效：右上角喇叭按钮，默认开', pg.is_visible('#snd') and pg.get_attribute('#snd','data-mute') == '0' and pg.evaluate('Sfx.supported'))
     pg.evaluate("document.getElementById('snd').click()"); pg.wait_for_timeout(100)  # 调试面板盖在右上角，用脚本点
-    check('点喇叭静音，再刷新仍是静音', S(pg, 'settings.mute') is True and pg.inner_text('#snd') == '🔇')
-    reload(pg); check('刷新后静音保留', S(pg, 'settings.mute') is True and pg.inner_text('#snd') == '🔇' and pg.evaluate('Sfx.muted'))
+    check('点喇叭静音，再刷新仍是静音', S(pg, 'settings.mute') is True and pg.get_attribute('#snd','data-mute') == '1')
+    reload(pg); check('刷新后静音保留', S(pg, 'settings.mute') is True and pg.get_attribute('#snd','data-mute') == '1' and pg.evaluate('Sfx.muted'))
     ctx.close()
 
     # ================= V1 M3：熟客好感、熟客单、新菜谱、Book、入座 =================

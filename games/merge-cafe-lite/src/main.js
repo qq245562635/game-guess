@@ -41,7 +41,11 @@
 
   /* 音效：第一次触摸时解锁 WebAudio；右上角喇叭按钮切换静音（存档里记住） */
   addEventListener('pointerdown', () => Sfx.unlock(), { capture: true });
-  function updateSndBtn() { $('snd').textContent = S.settings.mute ? '🔇' : '🔊'; }
+  function updateSndBtn() { // F 批喇叭图到了用图，没到用 emoji
+    const id = S.settings.mute ? 'icon_sound_off' : 'icon_sound_on', src = Art.src(id), el = $('snd');
+    if (src) el.innerHTML = `<img src="${src}" alt="" style="width:22px;height:22px">`; else el.textContent = S.settings.mute ? '🔇' : '🔊';
+    el.dataset.mute = S.settings.mute ? '1' : '0';
+  }
   $('snd').onclick = () => { S.settings.mute = !S.settings.mute; Sfx.setMuted(S.settings.mute); updateSndBtn(); markDirty(); save(); if (!S.settings.mute) Sfx.tap(); };
 
   /* ---------- WebGL ---------- */
@@ -376,6 +380,9 @@
   const esc2 = (t) => String(t).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
   const BOLT_SVG = '<svg viewBox="0 0 30 30"><path d="M18 1.5 5.5 17h8l-3 11.5L24.5 12h-8.2z" fill="#f5c03a" stroke="#c4851a" stroke-width="2" stroke-linejoin="round"/></svg>';
   const STAR_SVG = '<svg viewBox="0 0 30 30"><path d="M15 2l3.8 8 8.7 1-6.4 6 1.7 8.6L15 21.3l-7.8 4.3 1.7-8.6-6.4-6 8.7-1z" fill="#f5c03a" stroke="#c4851a" stroke-width="2" stroke-linejoin="round"/></svg>';
+  /* F 批小图标：有正式图用 <img>，没有退回 emoji / 文字 */
+  const ico = (id, fb, px) => { const s = Art.src(id); return s ? `<img src="${esc2(s)}" alt="" style="width:${px || 20}px;height:${px || 20}px;vertical-align:-0.2em">` : fb; };
+  const heartsHTML = (n, px) => Art.src('icon_heart') ? ico('icon_heart', '♥', px).repeat(n) + ico('icon_heart_empty', '♡', px).repeat(5 - n) : '♥'.repeat(n) + '♡'.repeat(5 - n);
   const icon = (id, svg) => { const s = Art.src(id); return s ? `<img src="${esc2(s)}" alt="">` : svg; };
   /* 奖励条：体力 / 金币 / 星星，delay 秒起逐个弹出（宝箱用） */
   function rewardChips(r, delay) {
@@ -401,8 +408,8 @@
     const unlocks = [].concat(...ups.map((u) => u.unlocks));
     const art = Art.src('badge_level');
     const html = `<div class="lvup"><div class="big${art ? ' art' : ''}"${art ? ` style="--badge:url('${esc2(art)}')"` : ''}><b>${top}</b></div>` + rewardChips(lv) +
-      (chests.length ? `<div style="font-weight:800">🎁 ${esc2(L.t('ui.chest'))}</div>` : '') +
-      unlocks.map((u) => `<div style="font-weight:900;color:#1d5f5a">✨ ${esc2(u.regular ? L.t('ui.newRegular', { name: L.t(u.name) }) : L.t(u.name))}</div>`).join('') + `</div>`;
+      (chests.length ? `<div style="font-weight:800">${ico('icon_gift', '🎁', 24)} ${esc2(L.t('ui.chest'))}</div>` : '') +
+      unlocks.map((u) => `<div style="font-weight:900;color:#1d5f5a">${ico('icon_unlock', '✨', 22)} ${esc2(u.regular ? L.t('ui.newRegular', { name: L.t(u.name) }) : L.t(u.name))}</div>`).join('') + `</div>`;
     sfxBurst(); Sfx.levelUp();
     modal(L.t('ui.levelUp', { n: top }), '', [{ label: L.t('ui.collect') }], null, html);
     modalOnClose = () => {
@@ -502,7 +509,7 @@
     const src = Art.src(cu.id + '_happy') || Art.src(cu.id), line = u.line ? L.t(u.line) : '';
     Sfx.levelUp(); sfxBurst();
     modal(L.t('ui.heartUp', { name, n: u.heart }), '', [{ label: L.t('ui.continue') }], null,
-      `<div class="heartup">${src ? `<img src="${esc2(src)}" alt="">` : ''}<div class="hs">${'♥'.repeat(u.heart)}${'♡'.repeat(5 - u.heart)}</div>${line ? `<q>${esc2(line)}</q>` : ''}</div>`);
+      `<div class="heartup">${src ? `<img src="${esc2(src)}" alt="">` : ''}<div class="hs">${heartsHTML(u.heart, 28)}</div>${line ? `<q>${esc2(line)}</q>` : ''}</div>`);
     modalOnClose = () => { if (u.chest) setTimeout(() => showChest(u.chest), 350); };
   }
   /* 百搭星掉落：从合成点飞到空格，第一次掉落时提示怎么用 */
@@ -524,7 +531,7 @@
     if (modalOpen() || Ads.busy || Core.tutStep(C, S) || pendingLevels) return;
     const need = Core.xpNeed(C, S.level), nu = Core.nextUnlock(C, S);
     const html = `<div class="xp-line"><i style="width:${Math.min(100, S.xp / need * 100)}%"></i></div>` +
-      (nu ? `<div style="font-weight:900;color:#1d5f5a;margin-bottom:10px">✨ ${L.t('ui.nextUnlock', { n: nu.level, what: L.t(nu.name) }).replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]))}</div>` : '');
+      (nu ? `<div style="font-weight:900;color:#1d5f5a;margin-bottom:10px">${ico('icon_unlock', '✨', 22)} ${L.t('ui.nextUnlock', { n: nu.level, what: L.t(nu.name) }).replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]))}</div>` : '');
     modal(L.t('ui.levelTitle', { n: S.level }), L.t('ui.levelBody', { xp: S.xp, need, next: S.level + 1 }), [{ label: L.t('ui.ok') }], null, html);
   };
   /* 插屏：每 N 单一次，排队到"没在拖、没弹窗、没在引导、不在播别的广告"时才放 */
@@ -765,7 +772,7 @@
         const lines = C.RG.heartRewards.filter((R) => R.line && st.hearts >= R.heart);
         const line = lines.length ? L.t('line.' + r.id + '.' + lines.at(-1).line) : '';
         const prev = st.hearts ? H[st.hearts - 1] : 0, pct = next ? (st.pts - prev) / (next - prev) * 100 : 100;
-        html += on ? `<div class="reg">${custPic(r.avatar, st.hearts >= 1)}<div class="rt"><b>${esc2(L.t(r.name))}</b> <span class="hs">${'♥'.repeat(st.hearts)}${'♡'.repeat(5 - st.hearts)}</span>` +
+        html += on ? `<div class="reg">${custPic(r.avatar, st.hearts >= 1)}<div class="rt"><b>${esc2(L.t(r.name))}</b> <span class="hs">${heartsHTML(st.hearts, 14)}</span>` +
             `<div class="t-bar"><i style="width:${pct.toFixed(0)}%"></i><span>${next ? esc2(L.t('ui.toNextHeart', { n: next - st.pts, h: st.hearts + 1 })) : esc2(L.t('ui.maxHearts'))}</span></div>${line ? `<p>“${esc2(line)}”</p>` : ''}</div></div>`
           : `<div class="reg locked">${custPic(r.avatar)}<div class="rt"><b>?</b><p>${esc2(L.t('ui.level', { n: r.unlock }))}</p></div></div>`;
       }
@@ -950,7 +957,9 @@
       GL.circle(px + 2, py + d * 0.55, d * 0.42, [0.2, 0.12, 0.05, 0.18], { soft: d * 0.15 });
       GL.circle(px, py + bob, d * 0.56, [1, 0.96, 0.86, 1]);
       GL.img(Art.avatar(C, reg.avatar, Math.round(d), hearts >= 1), px, py + bob, d, d);
-      if (hearts) GL.text('♥' + hearts, px + d * 0.42, py + bob - d * 0.42, { size: Math.max(10, d * 0.28), weight: 900, fill: '#e2566f', outline: '#fff4db' });
+      if (hearts) { const hs2 = Math.max(12, d * 0.34), hi = Art.opt('icon_heart', Math.round(hs2)), hx2 = px + d * 0.36, hy2 = py + bob - d * 0.42;
+        if (hi) { GL.img(hi, hx2, hy2, hs2, hs2); GL.text(String(hearts), hx2 + hs2 * 0.55, hy2, { size: hs2 * 0.7, weight: 900, fill: '#3a2416', outline: '#fff4db', align: 'left' }); }
+        else GL.text('♥' + hearts, px + d * 0.42, py + bob - d * 0.42, { size: Math.max(10, d * 0.28), weight: 900, fill: '#e2566f', outline: '#fff4db' }); }
     }
     LY.artScene = { sc, ox, oy };
     return true;
@@ -1166,7 +1175,8 @@
     GL.img(Art.avatar(C, o.cust, av, hearts >= 1), x + pad + av / 2, y + pad + topH / 2, av, av);
     if (regOn) { // 熟客：头像右下角一个心 + 心数
       const hr = Math.max(8, av * 0.2), hx = x + pad + av - hr * 0.4, hy = y + pad + topH / 2 + av / 2 - hr * 0.4;
-      GL.circle(hx, hy, hr, hex('#fff4db')); GL.text('♥', hx, hy, { size: hr * 1.3, weight: 900, fill: '#e2566f' });
+      GL.circle(hx, hy, hr, hex('#fff4db'));
+      const hi = Art.opt('icon_heart', Math.round(hr * 1.8)); if (hi) GL.img(hi, hx, hy, hr * 1.8, hr * 1.8); else GL.text('♥', hx, hy, { size: hr * 1.3, weight: 900, fill: '#e2566f' });
       GL.text(String(hearts), hx + hr * 0.9, hy - hr * 0.7, { size: hr, weight: 900, fill: '#3a2416', outline: '#fff4db' });
     }
     const n = o.needs.length, areaX = x + pad * 1.5 + av, areaW = w - (areaX - x) - pad;
@@ -1470,6 +1480,7 @@
   /* 顶栏和底栏的图标是 DOM 里的 SVG 占位：正式图到了换成 <img> */
   const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg', nav_tasks: '#nav-tasks svg', nav_book: '#nav-book svg' };
   function swapDomIcon(id) {
+    if (id === 'icon_sound_on' || id === 'icon_sound_off') { updateSndBtn(); return; }
     if (id === 'badge_level') { const el = $('lvl'); el.style.setProperty('--badge', `url('${Art.src(id)}')`); el.classList.add('art'); return; }
     const old = DOM_ICONS[id] && document.querySelector(DOM_ICONS[id]); if (!old) return;
     const img = document.createElement('img'); img.src = Art.src(id); img.alt = ''; img.className = 'ico'; img.dataset.art = id;

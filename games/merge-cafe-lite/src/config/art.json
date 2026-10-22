@@ -57,7 +57,15 @@
     "badge_level",
     "nav_book",
     "fx_bubble",
-    "icon_upgrade"
+    "icon_upgrade",
+    "icon_heart",
+    "icon_heart_empty",
+    "icon_sound_on",
+    "icon_sound_off",
+    "icon_gift",
+    "icon_unlock",
+    "badge_set_order",
+    "icon_calendar"
   ],
   "scene": [
     "header_merge_p",
