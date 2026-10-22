@@ -1,0 +1,172 @@
+{
+  "_doc": "熟客（V1 M3，V1-plan.md「熟客好感」）。avatar = orders.json customers 的下标（03 号头像是下标 2）。unlock = 登场所需店铺等级。fav = 最爱的物品 [链, 等级]（可多个；熟客单就是要这些）。好感：做她的单 +points.order，单里有她最爱的 +points.fav，熟客单 +points.regularOrder；只涨不跌。hearts = 1–5 心的累计好感门槛。heartRewards：tip = 她的单金币加成（%，取当前最高）、gift = 每天第一次做她的单送体力、chest = 到这一心送一个宝箱、line = 这一心解锁的台词 key。regularOrder：2 心以上每位每天最多 1 张，新订单有 chance 概率出熟客单；金币 = coinsPerLevel × 需求等级和 × coinsMul，必给 stars 星，限时 timeSec。seats：咖啡馆场景里熟客坐的位置（2400×1600 母画布坐标），对应图层装修后才坐人，按熟客登场顺序依次入座。 M3 校准（tools/sim.js，每天 2×15 分钟）：Mia 1–5 心约 D1/D2/D4/D7/D11。",
+  "regulars": [
+    {
+      "id": "mia",
+      "name": "reg.mia",
+      "avatar": 2,
+      "unlock": 3,
+      "fav": [
+        [
+          "coffee",
+          5
+        ]
+      ]
+    },
+    {
+      "id": "kai",
+      "name": "reg.kai",
+      "avatar": 4,
+      "unlock": 5,
+      "fav": [
+        [
+          "coffee",
+          4
+        ],
+        [
+          "bake",
+          4
+        ]
+      ]
+    },
+    {
+      "id": "rose",
+      "name": "reg.rose",
+      "avatar": 0,
+      "unlock": 7,
+      "fav": [
+        [
+          "bake",
+          5
+        ]
+      ]
+    },
+    {
+      "id": "leo",
+      "name": "reg.leo",
+      "avatar": 1,
+      "unlock": 9,
+      "fav": [
+        [
+          "coffee",
+          7
+        ]
+      ]
+    },
+    {
+      "id": "marcus",
+      "name": "reg.marcus",
+      "avatar": 3,
+      "unlock": 11,
+      "fav": [
+        [
+          "bake",
+          6
+        ]
+      ]
+    },
+    {
+      "id": "chloe",
+      "name": "reg.chloe",
+      "avatar": 5,
+      "unlock": 13,
+      "fav": [
+        [
+          "bake",
+          7
+        ]
+      ]
+    }
+  ],
+  "points": {
+    "order": 1,
+    "fav": 3,
+    "regularOrder": 5
+  },
+  "hearts": [
+    5,
+    25,
+    70,
+    140,
+    220
+  ],
+  "heartRewards": [
+    {
+      "heart": 1,
+      "line": 1
+    },
+    {
+      "heart": 2,
+      "regularOrders": true
+    },
+    {
+      "heart": 3,
+      "line": 3,
+      "tip": 10
+    },
+    {
+      "heart": 4,
+      "gift": 10
+    },
+    {
+      "heart": 5,
+      "line": 5,
+      "tip": 20,
+      "chest": true
+    }
+  ],
+  "regularOrder": {
+    "chance": 0.35,
+    "coinsPerLevel": 12,
+    "coinsMul": 1.5,
+    "stars": 1,
+    "timeSec": [
+      600,
+      900
+    ]
+  },
+  "seats": [
+    {
+      "layer": "tables",
+      "at": [
+        1455,
+        1085
+      ]
+    },
+    {
+      "layer": "tables",
+      "at": [
+        1660,
+        1085
+      ]
+    },
+    {
+      "layer": "deck",
+      "at": [
+        780,
+        1190
+      ]
+    },
+    {
+      "layer": "terrace",
+      "at": [
+        950,
+        1330
+      ]
+    },
+    {
+      "layer": "terrace",
+      "at": [
+        1450,
+        1330
+      ]
+    },
+    {
+      "layer": "deck",
+      "at": [
+        1250,
+        1250
+      ]
+    }
+  ]
+}

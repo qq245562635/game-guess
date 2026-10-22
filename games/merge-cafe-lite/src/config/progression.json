@@ -1,8 +1,8 @@
 {
-  "_doc": "店铺等级（V1-plan.md「店铺等级」）。每完成一单得经验 = 需求等级之和，稀有单 ×xp.rareMul（熟客单 M3 起 ×xp.regularMul）。levelNeed[i] = 从 i+1 级升到 i+2 级要的经验，超出表的等级每级 after。每次升级：+levelReward.energy 体力（可超上限）+ 等级×coinsPerLevel 金币；每 chestEvery 级额外给一个宝箱（内容 chest）。unlocks：按等级开放的系统，ready=false 的还没做，升级弹窗不提；feature 是程序里的开关名。 M1 校准（tools/sim.js，每天 2×15 分钟）：升级送体力和金币会加快后期升级，所以 11 级以后的经验需求比 V1-plan 初稿 ×1.2，20 级以后每级 360；结果 8 级 D1、12 级 D3、16 级 D6、20 级 D10。",
+  "_doc": "店铺等级（V1-plan.md「店铺等级」）。每完成一单得经验 = 需求等级之和，稀有单 ×xp.rareMul（熟客单 M3 起 ×xp.regularMul）。levelNeed[i] = 从 i+1 级升到 i+2 级要的经验，超出表的等级每级 after。每次升级：+levelReward.energy 体力（可超上限）+ 等级×coinsPerLevel 金币；每 chestEvery 级额外给一个宝箱（内容 chest）。unlocks：按等级开放的系统，ready=false 的还没做，升级弹窗不提；feature 是程序里的开关名。 M1 校准（tools/sim.js，每天 2×15 分钟）：升级送体力和金币会加快后期升级，所以 11 级以后的经验需求比 V1-plan 初稿 ×1.2，20 级以后每级 360；结果 8 级 D1、12 级 D3、16 级 D6、20 级 D10。 M3 再校准：熟客单、菜谱加成、小费让经验和金币来得更快，8 级以后经验需求上调，20 级以后每级 330；熟客单经验 ×1.5。结果仍是 8 级 D1、12 级 D3、16 级 D6、20 级 D10。",
   "xp": {
     "rareMul": 2,
-    "regularMul": 2
+    "regularMul": 1.5
   },
   "levelNeed": [
     20,
@@ -12,20 +12,20 @@
     55,
     65,
     75,
-    90,
-    100,
-    115,
-    155,
-    180,
-    205,
-    230,
-    250,
+    110,
+    120,
+    140,
+    185,
+    215,
+    245,
+    265,
     275,
-    300,
-    325,
-    350
+    285,
+    295,
+    305,
+    315
   ],
-  "after": 360,
+  "after": 330,
   "levelReward": {
     "energy": 20,
     "coinsPerLevel": 10,
@@ -47,7 +47,7 @@
       "level": 3,
       "feature": "regulars",
       "name": "unlock.regulars",
-      "ready": false
+      "ready": true
     },
     {
       "level": 4,
@@ -59,7 +59,14 @@
       "level": 5,
       "feature": "recipes",
       "name": "unlock.recipes",
-      "ready": false
+      "ready": true
+    },
+    {
+      "level": 5,
+      "feature": "reg.kai",
+      "name": "reg.kai",
+      "ready": true,
+      "regular": true
     },
     {
       "level": 6,
@@ -74,10 +81,38 @@
       "ready": false
     },
     {
+      "level": 7,
+      "feature": "reg.rose",
+      "name": "reg.rose",
+      "ready": true,
+      "regular": true
+    },
+    {
       "level": 9,
       "feature": "offline6h",
       "name": "unlock.offline",
       "ready": false
+    },
+    {
+      "level": 9,
+      "feature": "reg.leo",
+      "name": "reg.leo",
+      "ready": true,
+      "regular": true
+    },
+    {
+      "level": 11,
+      "feature": "reg.marcus",
+      "name": "reg.marcus",
+      "ready": true,
+      "regular": true
+    },
+    {
+      "level": 13,
+      "feature": "reg.chloe",
+      "name": "reg.chloe",
+      "ready": true,
+      "regular": true
     },
     {
       "level": 15,

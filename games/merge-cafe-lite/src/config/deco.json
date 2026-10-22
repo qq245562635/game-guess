@@ -1,5 +1,5 @@
 {
-  "_doc": "装修（策划案 §6 v0.4 / V1-plan.md）：按区域组织，每个区域若干幕、每幕若干节点，按顺序解锁。cost=星星价，coins=金币价（没有就是 0）。layer 是场景里打开的图层 id；comics 里的节点解锁后弹一格漫画。区域 1「海边咖啡摊」= 原来的 3 幕 15 节点：第一幕 6 星不变（首个会话就能装完），第二幕 24 星 + 1800 金币，第三幕 44 星 + 7000 金币（M1 校准：升级奖励让金币来得更快，原定 1000 / 3600 会让第三幕提前到 D5），tools/sim.js（每天 2×15 分钟）装完时间约 D1 / D4 / D7。区域 2、3 是 V2：加区域 = 在 areas 里追加一项 + 交场景图，unlockLevel 是进入该区域要求的店铺等级（且上一个区域要装完）。",
+  "_doc": "装修（策划案 §6 v0.4 / V1-plan.md）：按区域组织，每个区域若干幕、每幕若干节点，按顺序解锁。cost=星星价，coins=金币价（没有就是 0）。layer 是场景里打开的图层 id；comics 里的节点解锁后弹一格漫画。区域 1「海边咖啡摊」= 原来的 3 幕 15 节点：第一幕 6 星不变（首个会话就能装完），第二幕 24 星 + 3500 金币，第三幕 44 星 + 10000 金币（M1 校准：升级奖励让金币来得更快，原定 1000 / 3600 会让第三幕提前到 D5），tools/sim.js（每天 2×15 分钟）装完时间约 D1 / D4 / D7。区域 2、3 是 V2：加区域 = 在 areas 里追加一项 + 交场景图，unlockLevel 是进入该区域要求的店铺等级（且上一个区域要装完）。 M3 再校准：熟客单、菜谱加成和小费让金币来得更快，二三幕金币价上调到 3500 / 10000，装完仍是 D1/D4/D7。",
   "areas": [
     {
       "id": "seaside",
@@ -52,35 +52,35 @@
               "name": "deco.a2_deck",
               "cost": 4,
               "layer": "deck",
-              "coins": 200
+              "coins": 500
             },
             {
               "id": "a2_flowers",
               "name": "deco.a2_flowers",
               "cost": 4,
               "layer": "flowers",
-              "coins": 300
+              "coins": 600
             },
             {
               "id": "a2_bar",
               "name": "deco.a2_bar",
               "cost": 5,
               "layer": "bar",
-              "coins": 350
+              "coins": 700
             },
             {
               "id": "a2_menu",
               "name": "deco.a2_menu",
               "cost": 5,
               "layer": "menu",
-              "coins": 450
+              "coins": 800
             },
             {
               "id": "a2_speaker",
               "name": "deco.a2_speaker",
               "cost": 6,
               "layer": "speakers",
-              "coins": 500
+              "coins": 900
             }
           ]
         },
@@ -93,35 +93,35 @@
               "name": "deco.a3_neon",
               "cost": 8,
               "layer": "neon",
-              "coins": 900
+              "coins": 1400
             },
             {
               "id": "a3_terrace",
               "name": "deco.a3_terrace",
               "cost": 8,
               "layer": "terrace",
-              "coins": 1200
+              "coins": 1800
             },
             {
               "id": "a3_tower",
               "name": "deco.a3_tower",
               "cost": 9,
               "layer": "tower",
-              "coins": 1400
+              "coins": 2000
             },
             {
               "id": "a3_photo",
               "name": "deco.a3_photo",
               "cost": 9,
               "layer": "photo",
-              "coins": 1600
+              "coins": 2200
             },
             {
               "id": "a3_lights",
               "name": "deco.a3_lights",
               "cost": 10,
               "layer": "lights",
-              "coins": 1900
+              "coins": 2600
             }
           ]
         }

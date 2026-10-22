@@ -244,8 +244,8 @@ with sync_playwright() as p:
     check('第一幕 5 节点全部解锁：共扣 6 星，进入第二幕，场景大幅变化', S(pg, 'deco') == 5 and S(pg, 'stars') == 0 and 'Act 2' in pg.inner_text('#deco-act') and d5 > 0.05, f'{d5 * 100:.1f}% 像素变化')
     pg.screenshot(path=str(out / 'cafe-act1-done.png'))
     reload(pg)
-    check('刷新后装修进度保留', S(pg, 'deco') == 5 and S(pg, 'v') == 6)
-    pg.evaluate('MCL.S.stars=68; MCL.S.coins=8800'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)  # 二、三幕共 68 星 + 8800 金币
+    check('刷新后装修进度保留', S(pg, 'deco') == 5 and S(pg, 'v') == 7)
+    pg.evaluate('MCL.S.stars=68; MCL.S.coins=13500'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)  # 二、三幕共 68 星 + 13500 金币
     comics = 0
     for _ in range(20):
         if S(pg, 'deco') >= 15: break
@@ -401,17 +401,17 @@ with sync_playwright() as p:
     pg.click('#m-btns .btn'); settle_rewards(pg)
     check('宝箱 Collect 后金币落地，顶栏和存档一致', pg.inner_text('#coins').replace(',', '') == str(S(pg, 'coins')) and S(pg, 'coins') == c5)
     # 装修：第二幕节点要星 + 金币
-    pg.evaluate('MCL.S.deco=5; MCL.S.stars=10; MCL.S.coins=150'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)
-    check('装修第二幕：按钮显示 ★4 + 200 金币', '4' in pg.inner_text('#deco-btn') and '200' in pg.inner_text('#deco-btn'), pg.inner_text('#deco-btn'))
+    pg.evaluate('MCL.S.deco=5; MCL.S.stars=10; MCL.S.coins=450'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)
+    check('装修第二幕：按钮显示 ★4 + 500 金币', '4' in pg.inner_text('#deco-btn') and '500' in pg.inner_text('#deco-btn'), pg.inner_text('#deco-btn'))
     pg.screenshot(path=str(out / 'm1-deco-coins.png'))
     pg.click('#deco-btn'); pg.wait_for_timeout(300)
-    check('金币不够：不扣星不扣钱，提示还差 50 金币', S(pg, 'deco') == 5 and S(pg, 'stars') == 10 and S(pg, 'coins') == 150 and '50' in pg.inner_text('#toast'), pg.inner_text('#toast'))
-    pg.evaluate('MCL.S.coins=250'); pg.wait_for_timeout(300); pg.click('#deco-btn'); pg.wait_for_timeout(1300)
-    check('金币够了：扣 4 星 + 200 金币，装上木栈台', S(pg, 'deco') == 6 and S(pg, 'stars') == 6 and S(pg, 'coins') == 50)
+    check('金币不够：不扣星不扣钱，提示还差 50 金币', S(pg, 'deco') == 5 and S(pg, 'stars') == 10 and S(pg, 'coins') == 450 and '50' in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    pg.evaluate('MCL.S.coins=550'); pg.wait_for_timeout(300); pg.click('#deco-btn'); pg.wait_for_timeout(1300)
+    check('金币够了：扣 4 星 + 500 金币，装上木栈台', S(pg, 'deco') == 6 and S(pg, 'stars') == 6 and S(pg, 'coins') == 50)
     pg.click('#nav-merge'); pg.wait_for_timeout(300)
     check('打点：今天已记上线、奖励事件有计数、游玩时长在涨', len(S(pg, 'stats.days')) == 1 and S(pg, 'stats.ev.small') >= 1 and S(pg, 'stats.ev.mid') >= 2 and S(pg, 'stats.playMs') > 1000, json.dumps(S(pg, 'stats.ev')))
     reload(pg, levels=True)
-    check('刷新后等级、经验保留（存档 v6）', S(pg, 'v') == 6 and S(pg, 'level') == 5 and pg.inner_text('#level') == '5')
+    check('刷新后等级、经验保留（存档 v7）', S(pg, 'v') == 7 and S(pg, 'level') == 5 and pg.inner_text('#level') == '5')
     ctx.close()
 
     # ================= V1 M2：连击、出售 + 回收桶、高级合成特写、满格提示、音效开关 =================
@@ -450,7 +450,7 @@ with sync_playwright() as p:
     # 满格且无可合：提示卖最低级的
     # 填满：前 16 格是两条链 1–8 级各一个（两两不同），其余全是 8 级（满级同款也不能合）
     pg.evaluate("(()=>{const s=MCL.S; let k=0; for(let i=0;i<49;i++) if(s.unlocked[i]) { s.cells[i]= k<16 ? {k:'item',chain:k%2?'coffee':'bake',lvl:1+Math.floor(k/2)} : {k:'item',chain:k%2?'coffee':'bake',lvl:8}; k++; } })()")
-    pg.wait_for_timeout(700)
+    pg.wait_for_timeout(1500)
     stuck = pg.evaluate('Core.stuckHint(MCL.C, MCL.S)')
     check('M2 永不卡死：满格无可合 → 自动选中最低级物品、提示卖掉、出现 Sell 按钮', stuck >= 0 and pg.evaluate('MCL.sel') == stuck and 'No matches' in pg.inner_text('#toast') and pg.is_visible('#sell.show'), f'stuck={stuck} sel={pg.evaluate("MCL.sel")}')
     pg.screenshot(path=str(out / 'm2-stuck.png'))
@@ -460,6 +460,58 @@ with sync_playwright() as p:
     pg.evaluate("document.getElementById('snd').click()"); pg.wait_for_timeout(100)  # 调试面板盖在右上角，用脚本点
     check('点喇叭静音，再刷新仍是静音', S(pg, 'settings.mute') is True and pg.inner_text('#snd') == '🔇')
     reload(pg); check('刷新后静音保留', S(pg, 'settings.mute') is True and pg.inner_text('#snd') == '🔇' and pg.evaluate('Sfx.muted'))
+    ctx.close()
+
+    # ================= V1 M3：熟客好感、熟客单、新菜谱、Book、入座 =================
+    ctx = br.new_context(viewport={'width': 405, 'height': 720}, device_scale_factor=2)
+    pg = ctx.new_page(); watch(pg); boot(pg, '?reset=1&fastads', levels=True)
+    pg.evaluate("Core.skipTutorial(MCL.S); MCL.C.prog.levelNeed=[]; MCL.C.prog.after=1e12"); pg.wait_for_timeout(300)
+    check('M3：店铺 3 级前没有 Book 按钮', not pg.is_visible('#nav-book'))
+    pg.evaluate("MCL.S.level = 3")
+    try: pg.wait_for_function("document.getElementById('nav-book').style.display !== 'none'", timeout=5000)  # 软件渲染下帧循环慢
+    except Exception: pass
+    check('3 级开放熟客：底栏出现 Book', pg.is_visible('#nav-book'), str(pg.evaluate("[MCL.S.level, MCL.S.tut, document.getElementById('nav-book').style.display, Core.featureOn(MCL.C, MCL.S, 'regulars'), MCL.mode, document.body.className]")))
+    # 熟客单（Mia 2 心）
+    REG = ("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; const st=Core.regState(s,'mia'); st.pts=25; st.hearts=2; st.regDay=-1;"
+      "s.orders=[null, {uid:1,tid:'n_c2',needs:[{chain:'coffee',lvl:2,done:false}],coins:20,stars:0,rare:false,cust:0,start:MCL.now(),expiresAt:MCL.now()+9e5},"
+      "{uid:2,tid:'n_b2',needs:[{chain:'bake',lvl:2,done:false}],coins:20,stars:0,rare:false,cust:1,start:MCL.now(),expiresAt:MCL.now()+9e5}];"
+      "s.orders[0]=Core.rollRegularOrder(MCL.C, s, MCL.now(), ()=>0); s.cells[24]={k:'item',chain:'coffee',lvl:5};})()")
+    pg.evaluate(REG); pg.wait_for_timeout(300)
+    check('熟客单：Mia 2 心后出现她的熟客单（要拿铁、90 金币、1 星）', S(pg, 'orders[0].regular') == 'mia' and S(pg, 'orders[0].coins') == 90 and S(pg, 'orders[0].stars') == 1)
+    pg.screenshot(path=str(out / 'm3-regular-order.png'))
+    c0, st0 = S(pg, 'coins'), S(pg, 'stars'); drag_to_order(pg, 24, 0); settle_rewards(pg)
+    check('交熟客单：+90 金币、+1 星以上、好感 25 → 34', S(pg, 'coins') == c0 + 90 and S(pg, 'stars') >= st0 + 1 and pg.evaluate("Core.regState(MCL.S,'mia').pts") == 34)
+    # 升心：49 → 交她一单 → 3 心，弹台词
+    pg.evaluate("(()=>{const s=MCL.S; Core.regState(s,'mia').pts=69; s.orders[0]={uid:3,tid:'n_c2',needs:[{chain:'coffee',lvl:2,done:false}],coins:20,stars:0,rare:false,cust:2,start:MCL.now(),expiresAt:MCL.now()+9e5}; s.cells[24]={k:'item',chain:'coffee',lvl:2};})()")
+    pg.wait_for_timeout(200); drag_to_order(pg, 24, 0)
+    try: pg.wait_for_selector('.heartup', timeout=5000)
+    except Exception: pass
+    check('Mia 升到 3 心：弹窗显示心和她的故事台词', pg.is_visible('.heartup') and 'Mia' in pg.inner_text('#m-title') and 'bookshop' not in pg.inner_text('#m-comic') and len(pg.inner_text('.heartup q')) > 20, pg.inner_text('#modal') if pg.is_visible('#modal.show') else '')
+    pg.screenshot(path=str(out / 'm3-heart-up.png'))
+    pg.click('#m-btns .btn'); settle_rewards(pg)
+    # 新菜谱（5 级开放）
+    pg.evaluate("(()=>{const s=MCL.S; s.level=5; delete s.recipes.coffee3; s.cells[30]={k:'item',chain:'coffee',lvl:2}; s.cells[31]={k:'item',chain:'coffee',lvl:2}; s.unlocked[30]=s.unlocked[31]=true;})()"); pg.wait_for_timeout(300)
+    c0 = S(pg, 'coins'); drag(pg, 30, 31)
+    try: pg.wait_for_selector('.newrec', timeout=5000)
+    except Exception: pass
+    check('M3 新菜谱：第一次做出浓缩液 → New Recipe 卡（+30 金币）', pg.is_visible('.newrec') and 'Espresso' in pg.inner_text('#m-comic') and '+30' in pg.inner_text('#m-comic'), pg.inner_text('#modal') if pg.is_visible('#modal.show') else '')
+    pg.screenshot(path=str(out / 'm3-new-recipe.png'))
+    pg.click('#m-btns .btn'); settle_rewards(pg)
+    check('Collect 后金币 +30 落地', S(pg, 'coins') == c0 + 30 and pg.inner_text('#coins').replace(',', '') == str(c0 + 30))
+    # Book
+    pg.click('#nav-book'); pg.wait_for_timeout(500)
+    check('Book · Recipes：两条链各 8 格，做出过的点亮、浓缩液在内', pg.locator('.rc').count() == 16 and pg.locator('.rc:not(.no)').count() >= 1 and 'Coffee' in pg.inner_text('#book-body'))
+    pg.screenshot(path=str(out / 'm3-book-recipes.png'))
+    pg.click('#bt-reg'); pg.wait_for_timeout(300)
+    check('Book · Regulars：店铺 5 级时 Mia（3 心 + 台词）、Kai 已登场，Rose 显示 "Lv 7"', 'Mia' in pg.inner_text('#book-body') and pg.locator('.reg:not(.locked)').count() == 2 and pg.locator('.reg p').count() >= 1 and 'Lv 7' in pg.inner_text('#book-body'), pg.inner_text('#book-body')[:200])
+    pg.screenshot(path=str(out / 'm3-book-regulars.png'))
+    # 入座
+    pg.evaluate("MCL.S.deco = 1; MCL.S.level = 7"); pg.click('#nav-cafe'); pg.wait_for_timeout(700)
+    check('M3 入座：桌椅修好后 Mia、Kai 坐在桌边', pg.evaluate("Core.seatedRegulars(MCL.C, MCL.S).map(x=>x.reg.id).join()") == 'mia,kai')
+    scene_png(pg, out / 'm3-seated.png')
+    pg.click('#nav-merge'); pg.wait_for_timeout(300)
+    reload(pg, levels=True)
+    check('刷新后好感、菜谱保留', pg.evaluate("Core.regState(MCL.S,'mia').hearts") == 3 and S(pg, 'recipes.coffee3.f') == 1)
     ctx.close()
 
     # ================= 多分辨率布局 =================
