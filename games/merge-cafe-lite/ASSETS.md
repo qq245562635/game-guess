@@ -17,6 +17,7 @@ Issue #38 的主界面效果图（`art/issue-38-main-screen/`）定了风格方�
 | D 批（2 张，金币消耗新增） | ✅ 已交付（`codex/merge-cafe-batch-e-art` @ `0271d25`，22 KB）并接入：泡泡外壳、升级箭头 |
 | E 批（13 张，V1） | ✅ 已交付（同上，365 KB）并接入：熟客开心表情 6、宝箱 2、等级徽章、Book 图标；沙堆 / 木箱 / 百搭星已登记，M4 用 |
 | F 批（9 张，V1） | ✅ 已交付（`codex/merge-cafe-batch-f-art` @ `fd090f8`，95.6 KB）并接入：心形满 / 空、喇叭开 / 关、礼物、解锁、套餐角标已替换 emoji；日历已登记、M5 用；欢迎回来插画是 webp，M5 做回归卡时随后台加载接入 |
+| G 批（6 张，熟客漫画试点） | ⏳ 已发需求 #65，见 §11 |
 
 ## 第二批待画清单（按优先级）
 
@@ -400,6 +401,41 @@ V1 加了店铺等级、熟客好感、图鉴、棋盘障碍、宝箱（计划�
 和 C 批 `nav_cafe` / `nav_merge` / `nav_tasks` 同一套：一本打开的菜谱书，夹一根心形书签。在奶油色和珊瑚红底上都要清楚。≤ 15 KB。
 
 **E 批合计 ≤ 0.4 MB**（现在全部美术约 3.2 MB，红线 4 MB）。交付方式同前：推分支 `codex/merge-cafe-batch-e-art`，只放图片和说明，不改代码和 `art.json`。
+
+## 11. G 批：熟客漫画（6 张，试点）
+
+**用途**：熟客升到 ♥5 时弹窗，原本只放开心头像和一句台词，现在换成一格漫画，台词仍由程序显示在图下方。这是"熟客漫画"的试点：效果好，再补 ♥1 / ♥3 的 12 张。
+
+**规格**：和 `comic_01/08/15` 完全一致。
+- 1200×600（2:1），WebP 质量 75–80
+- **每张 ≤ 50 KB，6 张合计 ≤ 300 KB**（现在全部美术 3.59 MB，加上这批约 3.9 MB，仍在 4 MB 内）
+- 图里不放任何文字：书、报纸、船身都用图形表示，不写可读的字
+- 单格，不分镜，人物别贴边，左右各留约 5%（弹窗会圆角裁一点）
+
+**人物**：
+- 熟客必须和自己的头像是同一个人（脸、发型、肤色、服装主色一致），头像在 `assets/avatars/` 下，表里注明了对应文件。
+- 咖啡师和 `comic_01` 是同一个人：棕色卷发盘起，红色发带，绿色围裙。
+- 画风参照已交付的 3 张漫画：Lily's Garden 式成人比例，暖、不幼稚。
+- 背景是装修完成的海边咖啡馆（参照 `comic_15` 和第三幕图层），可以虚化。
+
+| id | 熟客 | 头像文件 | 台词（en.json `line.<id>.5`，不画进图） | 画面 |
+|---|---|---|---|---|
+| `comic_reg_mia` | Mia，隔壁书店店主 | `avatar_customer_03` | "I wrote the shop newsletter about this place. It's officially my favorite chapter." | 白天。Mia 坐在咖啡馆桌边，得意地举起一份刚印好的店报，头版是一张咖啡馆的小照片（不写字）。手边一杯拿铁，咖啡师从她肩后探头看，笑得开心 |
+| `comic_reg_kai` | Kai，冲浪教练 | `avatar_customer_05` | "Caught the best wave of the season today. Powered by your coffee, of course." | 清晨。Kai 浑身湿漉漉，冲浪板夹在腋下，靠在吧台前举着美式咖啡干杯。咖啡师隔着吧台大笑，背景海面上有浪 |
+| `comic_reg_rose` | Rose，在这片海滩住了 40 个夏天的老太太 | `avatar_customer_01` | "You've given this old corner its heart back, dear. I'm proud of you." | 黄昏金色光。Rose 一手握着咖啡师的手，另一手拿着一张泛黄的老照片，照片里是几十年前同一个摊位。咖啡师眼眶微红，很感动。整幅画最温情 |
+| `comic_reg_leo` | Leo，小说家 | `avatar_customer_02` | "The book is done! You're in the acknowledgements. Twice." | 午后。Leo 隔着桌子递给咖啡师一本崭新的精装书，封面插画是一个小小的海边咖啡馆（不写书名）。桌上有一杯冷萃，咖啡师双手接书，又惊又喜 |
+| `comic_reg_marcus` | Marcus，帆船俱乐部 | `avatar_customer_04` | "Regatta's on Sunday. The whole club wants your café to cater it." | 晴天。码头边，Marcus 穿俱乐部 polo 衫，一手指向身后挂满彩旗的帆船。最前面一条小艇的船身上画着一个水果挞图案（不写字）。咖啡师端着一托盘水果挞，跃跃欲试 |
+| `comic_reg_chloe` | Chloe，婚礼策划师 | `avatar_customer_06` | "I'm booking your café for my own wedding. Yes, really. Save me a cake!" | 傍晚。露台上灯串亮起，Chloe 开心地伸出手，给咖啡师看订婚戒指。咖啡师捧着一个奶油蛋糕，惊喜地张大嘴 |
+
+**交付顺序**：
+1. 先交 `comic_reg_mia` 一张，推送后程序先接进游戏看效果。
+2. 不用等反馈，接着画其余 5 张。
+3. 如果试点那张需要调整，在 issue 里另行通知。
+
+**交付方式**：同前。
+- 分支：`codex/merge-cafe-batch-g-art`
+- 文件：`assets/comics/comic_reg_<id>.webp`，交接说明和尺寸检查图放 `art/issue-65-batch-g/`
+- 只交图片和说明，不改代码和 `art.json`，不提 PR
 
 ## 不需要做的
 
