@@ -18,7 +18,7 @@ Issue #38 的主界面效果图（`art/issue-38-main-screen/`）定了风格方�
 | E 批（13 张，V1） | ✅ 已交付（同上，365 KB）并接入：熟客开心表情 6、宝箱 2、等级徽章、Book 图标；沙堆 / 木箱 / 百搭星已登记，M4 用 |
 | F 批（9 张，V1） | ✅ 已交付（`codex/merge-cafe-batch-f-art` @ `fd090f8`，95.6 KB）并接入：心形满 / 空、喇叭开 / 关、礼物、解锁、套餐角标已替换 emoji；日历已登记、M5 用；欢迎回来插画是 webp，M5 做回归卡时随后台加载接入 |
 | G 批（6 张，熟客漫画试点） | ✅ 已交付（`codex/merge-cafe-batch-g-art` @ `7436895` + `638f9ff`，288.9 KB）并接入：6 位熟客满 5 心的升心卡改为漫画 |
-| H 批（3 张，CrazyGames 封面，不进游戏包） | ⏳ 已发需求 #67，见 §12 |
+| H 批（3 张，CrazyGames 封面，不进游戏包） | ✅ 已交付（`codex/merge-cafe-batch-h-store` @ `b5252e8`）：`store/crazygames/` 横版 / 竖版 / 方形；另附漫画 35 KB 压缩试验（Mia 34.8 KB，手机尺寸可接受） |
 
 ## 第二批待画清单（按优先级）
 
