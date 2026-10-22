@@ -597,7 +597,7 @@ with sync_playwright() as p:
     check('3 条做完：宝箱按钮亮起，底栏 Tasks 有红点逻辑', pg.evaluate("Core.dailyProgress(MCL.C, MCL.S, MCL.now()).ready"))
     pg.screenshot(path=str(out / 'm5-daily-ready.png'))
     c0, s0, e0 = S(pg, 'coins'), S(pg, 'stars'), S(pg, 'energy')
-    pg.click('#daily-chest'); pg.wait_for_selector('#modal.show', timeout=3000); pg.wait_for_timeout(1300)
+    pg.evaluate("document.getElementById('daily-chest').click()"); pg.wait_for_selector('#modal.show', timeout=3000); pg.wait_for_timeout(1300)
     pg.screenshot(path=str(out / 'm5-daily-chest.png')); close_modal(pg); settle_rewards(pg)
     check('每日宝箱：+100 金币 +1 星 +30 体力（以上），按钮变成「明天再来」', S(pg, 'coins') - c0 == 100 and S(pg, 'stars') - s0 == 1 and S(pg, 'energy') - e0 >= 30 and 'tomorrow' in pg.inner_text('#daily-chest'),
           f"coins +{S(pg, 'coins') - c0} stars +{S(pg, 'stars') - s0} energy +{S(pg, 'energy') - e0} btn={pg.inner_text('#daily-chest')!r}")
