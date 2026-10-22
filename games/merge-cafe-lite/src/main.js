@@ -460,10 +460,12 @@
     const timer = setTimeout(open, 950);
     modalOnClose = () => { clearTimeout(timer); open(); landRewards(r, LY.W / 2, LY.H * 0.45); };
   }
-  /* ---------- 出售（V1 M2）：选中物品时它下方出现 Sell +N；高等级的要确认 ---------- */
+  /* ---------- 出售（V1 M2）：选中物品时它下方出现 Sell +N；按钮贴着下一格容易点错，
+     所以平时不出（eco.sell.onlyWhenStuck），只在满格无可合时作为脱困手段出现，并按 confirmFrom 确认 ---------- */
   let sellKey = ''; const SELL_SEC = 4;
+  const sellAllowed = () => !C.eco.sell.onlyWhenStuck || Core.stuckHint(C, S) >= 0;
   function updateSellBtn() {
-    const it = sel >= 0 ? S.cells[sel] : null, on = !!(it && it.k === 'item' && !drag && !down && mode === 'merge' && !Core.tutStep(C, S) && !modalOpen() && !flyingTo(sel) && !spotlight && clock() - selT < SELL_SEC); // 4 秒后自动收起，少挡格子
+    const it = sel >= 0 ? S.cells[sel] : null, on = !!(it && it.k === 'item' && !drag && !down && mode === 'merge' && !Core.tutStep(C, S) && !modalOpen() && !flyingTo(sel) && !spotlight && clock() - selT < SELL_SEC && sellAllowed()); // 4 秒后自动收起，少挡格子
     const key = on ? sel + '|' + it.chain + it.lvl + '|' + LY.cs : '';
     if (key === sellKey) return; sellKey = key;
     const el = $('sell'); el.classList.toggle('show', on); if (!on) return;
@@ -480,7 +482,7 @@
     sel = -1; stuckShown = -1; markDirty();
   }
   $('sell').onclick = () => {
-    const i = sel, it = S.cells[i]; if (!it || it.k !== 'item') return;
+    const i = sel, it = S.cells[i]; if (!it || it.k !== 'item' || !sellAllowed()) return;
     const name = L.t(Core.itemDef(C, it).name), price = Core.sellPrice(C, it);
     if (it.lvl >= (C.eco.sell.confirmFrom || 99)) modal(L.t('ui.sellTitle', { item: name }), L.t('ui.sellBody', { n: price }), [{ label: L.t('ui.cancel'), alt: true }, { label: L.t('ui.sell', { n: price }), price, on: () => doSell(i) }]);
     else doSell(i);
