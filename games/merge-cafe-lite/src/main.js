@@ -477,7 +477,9 @@
   }
   /* ---------- 弹窗队列（V1 M3）：升心、新菜谱等，排在升级庆典之后，没在拖拽、没有别的弹窗时依次弹 ---------- */
   const popups = [];
+  let obstacleTipShown = false;
   function tryPopups() {
+    if (!obstacleTipShown && Core.featureOn(C, S, 'obstacles') && mode === 'merge' && !modalOpen() && !lvQueue.length) { obstacleTipShown = true; if (!S.stats.dug) toast(L.t('ui.obstacleTip')); }
     if (!popups.length || lvQueue.length || down || drag || modalOpen() || Ads.busy || flies.length || Core.tutStep(C, S)) return;
     popups.shift()();
   }
@@ -502,6 +504,11 @@
     modal(L.t('ui.heartUp', { name, n: u.heart }), '', [{ label: L.t('ui.continue') }], null,
       `<div class="heartup">${src ? `<img src="${esc2(src)}" alt="">` : ''}<div class="hs">${'♥'.repeat(u.heart)}${'♡'.repeat(5 - u.heart)}</div>${line ? `<q>${esc2(line)}</q>` : ''}</div>`);
     modalOnClose = () => { if (u.chest) setTimeout(() => showChest(u.chest), 350); };
+  }
+  /* 百搭星掉落：从合成点飞到空格，第一次掉落时提示怎么用 */
+  function dropStar(cell, x, y) {
+    flies.push({ cell, item: S.cells[cell], x0: x, y0: y, t0: clock() + 0.2, dur: 0.45, spawn: true }); Sfx.chestOpen();
+    if ((S.stats.wildGot || 0) <= 1) toast(L.t('ui.wildGot')); else floatText(x, y - LY.cs * 0.6, '★ ' + L.t('ui.wildStar'), '#d89a22');
   }
   /* 庆典彩带：屏幕上方几处撒粒子 */
   function sfxBurst() {
@@ -577,12 +584,12 @@
   function tapLocked(i) {
     if (Core.tutStep(C, S)) { shakes.set(i, clock()); return; }
     if (!Core.canUnlockHere(C, S, i)) { shakes.set(i, clock()); toast(L.t('ui.notAdjacent')); return; }
-    const p = Core.unlockPrice(C, i);
-    modal(L.t('ui.unlockTitle'), L.t('ui.unlockBody', { n: p }), [
+    const p = Core.unlockPrice(C, i), ob = Core.obstacleAt(C, S, i);
+    modal(L.t('ui.unlockTitle'), ob ? L.t('ui.unlockHidden', { n: p, item: itemName({ k: 'item', chain: ob.chain, lvl: ob.lvl }) }) : L.t('ui.unlockBody', { n: p }), [
       { label: L.t('ui.cancel'), alt: true },
       { label: L.t('ui.unlock'), on: () => {
         const r = Core.unlock(C, S, i);
-        if (r.ok) { pops.set(i, clock()); const [x, y] = cellXY(i); burst(x, y, '#f5c03a', 14); Sfx.unlock(); Sfx.pop(); markDirty(); hudCache = ''; }
+        if (r.ok) { pops.set(i, clock()); const [x, y] = cellXY(i); burst(x, y, '#f5c03a', 14); Sfx.unlock(); Sfx.pop(); if (r.found) queueFound(r.found, x, y); markDirty(); hudCache = ''; }
         else if (r.reason === 'coins') { shakes.set(i, clock()); toast(L.t('ui.noCoins')); }
       } },
     ]);
@@ -598,6 +605,7 @@
       flyRewards(R.x + R.w / 2, R.y + R.h / 2, r.coins, r.stars + r.bonusStar);
       if (r.xp) floatText(R.x + R.w / 2, R.y - 4, '+' + r.xp + ' XP', '#2e9a5a');
       queueLevelUps(r.levelUps); Sfx.deliver();
+      if (r.pay.perfect) { floatText(R.x + R.w / 2, R.y - 22, L.t('ui.perfect', { n: r.pay.perfect }), '#c4851a'); burst(R.x + R.w / 2, R.y + R.h / 2, '#ffd84a', 18); Sfx.chestOpen(); }
       for (const u of r.recipeUps) floatText(R.x + R.w * 0.62, R.y + R.h * 0.35, L.t('ui.recipeStar', { item: L.t(C.chains[u.chain].items[u.lvl - 1].name), n: u.stars }), '#d89a22');
       if (r.gift) setTimeout(() => { bump('pill-energy'); toast(L.t('ui.gift', { name: L.t(C.regById[r.reg].name), n: r.gift })); }, 700);
       if (r.reg && Core.regOn(C, S, C.regById[r.reg])) { const hx = R.x + R.h * 0.3, hy = R.y + R.h * 0.4; for (let k = 0; k < 4; k++) floatText(hx + (k - 1.5) * 10, hy, '♥', '#e2566f'); }
@@ -623,7 +631,7 @@
     if (!down || e.pointerId !== down.id) return;
     if (!drag) {
       const i = down.cell;
-      if (i < 0 || !S.unlocked[i] || !S.cells[i] || S.cells[i].k !== 'item' || flyingTo(i)) return;
+      if (i < 0 || !S.unlocked[i] || !S.cells[i] || (S.cells[i].k !== 'item' && S.cells[i].k !== 'tool') || flyingTo(i)) return;
       if (Math.hypot(e.clientX - down.x, e.clientY - down.y) < DRAG_PX) return;
       const [cx, cy] = cellXY(i);
       drag = { from: i, ox: down.x - cx, oy: down.y - cy, x: e.clientX, y: e.clientY };
@@ -660,12 +668,26 @@
           if (r.combo.coins) flyRewards(x, y, r.combo.coins, 0);
           if (r.combo.energy) { bump('pill-energy'); toast('+' + r.combo.energy + ' ⚡'); }
         }
+        if (r.star >= 0) dropStar(r.star, x, y);
         if (r.bubble >= 0) { selT = -10; /* 名字标签会压住泡泡，这次不显示 */ const [bx, by] = cellXY(r.bubble); flies.push({ cell: r.bubble, item: S.cells[r.bubble], x0: x, y0: y, t0: clock() + 0.15, dur: 0.4, spawn: true }); burst(bx, by, '#bfe8f2', 10); }
+        markDirty();
+      } else if (r.type === 'dig' || r.type === 'wild') { // 挖障碍 / 百搭星升级
+        pops.set(to, clock()); sel = to; selT = clock(); idleT = clock();
+        const [x, y] = cellXY(to); burst(x, y, r.type === 'dig' ? '#e6c98f' : '#ffd84a', 20); burst(x, y, Core.itemDef(C, S.cells[to]).color, 10);
+        Sfx.merge(r.lvl); if (r.type === 'wild') Sfx.chestOpen();
+        floatText(x, y - LY.cs * 0.5, r.type === 'dig' ? L.t('ui.dug', { item: itemName(S.cells[to]) }) : '★ ' + itemName(S.cells[to]), r.type === 'dig' ? '#8a5a32' : '#d89a22');
+        if (r.found) queueFound(r.found, x, y);
+        if (r.combo && r.combo.show) { Sfx.combo(r.combo.n); if (r.combo.coins) flyRewards(x, y, r.combo.coins, 0); }
+        if (r.star >= 0) dropStar(r.star, x, y);
         markDirty();
       } else if (r.type === 'move') { sel = to; selT = clock(); markDirty(); }
       else { // 回弹：从松手位置飞回原格，不吞物品
         flies.push({ cell: g.from, item: moving, x0: px, y0: py, t0: clock(), dur: 0.22 });
-        if (r.type === 'bounce') { shakes.set(to, clock()); Sfx.bounce(); if (r.reason === 'max') toast(L.t('ui.maxMerge')); }
+        if (r.type === 'bounce') {
+          shakes.set(to, clock()); Sfx.bounce();
+          if (r.reason === 'max') toast(L.t('ui.maxMerge'));
+          else if (r.reason === 'dig') { const h = Core.obstacleAt(C, S, to); toast(L.t('ui.digHint', { item: itemName({ k: 'item', chain: h.chain, lvl: h.lvl }) })); }
+        }
       }
       return;
     }
@@ -1111,9 +1133,10 @@
   function drawItem(it, x, y, size, alpha) {
     if (alpha !== undefined) GL.alpha = alpha;
     GL.rect(x - size * 0.34, y + size * 0.3, size * 0.68, size * 0.15, size * 0.08, COL.shadow, { soft: size * 0.06 });
-    GL.img(Art.item(C, it, size), x, y, size, size);
+    GL.img(it.k === 'tool' ? Art.wild(size) : Art.item(C, it, size), x, y, size, size);
     GL.alpha = 1;
   }
+  const itemName = (it) => it.k === 'tool' ? L.t('ui.wildStar') : L.t(Core.itemDef(C, it).name);
   function needSet() { // 订单里还没交的需求，用来在棋盘上打勾
     const m = new Set();
     for (const o of S.orders) if (o) for (const n of o.needs) if (!n.done) m.add(n.chain + n.lvl);
@@ -1128,8 +1151,15 @@
     GL.rect(x + 1, y + 5, w, h, 14, COL.shadow, { soft: 6 });
     GL.rect(x, y, w, h, 14, COL.cream);
     const reg = C.regByAvatar[o.cust], regOn = reg && Core.regOn(C, S, reg);
+    const perfLeft = o.set ? o.perfectEnd - now() : 0;
     GL.rect(x, y, w, h, 14, o.regular ? hex('#e2566f') : o.rare ? COL.gold : COL.creamD, { stroke: o.regular || o.rare ? 4 : 3 });
     if (hl === 1) GL.rect(x, y, w, h, 14, COL.goodLine, { stroke: 4 });
+    if (o.set) { // 套餐单：左上角角标；Perfect 时限内顶边一条金色进度条
+      const bs2 = Math.max(18, h * 0.24), img = Art.opt('badge_set_order', Math.round(bs2));
+      if (perfLeft > 0) { const f = Math.min(1, perfLeft / (C.eco.setOrder.perfectSec * 1000)); GL.rect(x + 10, y + 3, (w - 20) * f, 4, 2, COL.gold); }
+      if (img) GL.img(img, x + bs2 * 0.3, y + bs2 * 0.3, bs2, bs2);
+      else { GL.circle(x + bs2 * 0.3, y + bs2 * 0.3, bs2 * 0.45, hex('#fff4db')); GL.circle(x + bs2 * 0.3, y + bs2 * 0.3, bs2 * 0.45, COL.goldD, { stroke: 2 }); GL.text('2', x + bs2 * 0.3, y + bs2 * 0.3, { size: bs2 * 0.5, weight: 900, fill: '#c4851a' }); }
+    }
     const pad = Math.max(5, h * 0.06), botH = h * 0.28, topH = h - botH - pad * 2;
     const av = Math.min(topH, w * 0.38);
     const hearts = regOn ? Core.regState(S, reg.id).hearts : 0;
@@ -1151,7 +1181,7 @@
     GL.rect(x + pad, by - botH / 2, w - pad * 2, botH, botH / 2, hex('#f6e7c6'));
     let cx = x + pad * 1.6 + ic / 2;
     GL.img(Art.coin(ic), cx, by, ic, ic); cx += ic / 2 + 3;
-    const pay = Core.orderCoins(C, S, o);
+    const pay = Core.orderCoins(C, S, o, now());
     cx += GL.text(String(pay.total), cx, by, { size: fs, weight: 900, fill: pay.total > pay.base ? '#2e9a5a' : '#3a2416', align: 'left' }) + 4;
     if (o.stars) { GL.img(Art.star(ic), cx + ic / 2, by, ic, ic); GL.text(String(o.stars), cx + ic + 1, by, { size: fs * 0.85, weight: 900, fill: '#3a2416', align: 'left' }); }
     const left = o.needs.some((nd) => nd.done) ? null : o.expiresAt - now();
@@ -1230,6 +1260,19 @@
     const [r, c] = Core.rc(C, i), [x, y] = cellXY(i), cs = LY.cs, h = cs / 2 - 1.5;
     const sh = shakes.get(i), sx = sh !== undefined && t - sh < 0.3 ? Math.sin((t - sh) * 60) * cs * 0.05 * (1 - (t - sh) / 0.3) : 0;
     if (S.unlocked[i]) GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, (r + c) % 2 ? COL.cellB : COL.cellA);
+    else if (Core.obstacleAt(C, S, i)) { // 棋盘障碍（M4）：沙堆 / 木箱 + 埋着的物品剪影
+      const ob = Core.obstacleAt(C, S, i), next = Core.canUnlockHere(C, S, i), img = Art.opt('obstacle_' + ob.kind, Math.round(cs));
+      GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, (r + c) % 2 ? COL.cellB : COL.cellA);
+      if (img) GL.img(img, x + sx, y, cs, cs);
+      else if (ob.kind === 'sand') { GL.circle(x + sx, y + cs * 0.08, cs * 0.42, hex('#e6c98f')); GL.circle(x + sx - cs * 0.12, y - cs * 0.04, cs * 0.26, hex('#efd8a8')); }
+      else { GL.rect(x - h * 0.9 + sx, y - h * 0.9, h * 1.8, h * 1.8, cs * 0.08, hex('#b8743c')); GL.rect(x - h * 0.6 + sx, y - h * 0.6, h * 1.2, h * 1.2, cs * 0.05, hex('#e7c79a')); }
+      drawItem({ k: 'item', chain: ob.chain, lvl: ob.lvl }, x + sx, y - cs * 0.02, cs * 0.5, next ? 0.55 : 0.35);
+      if (next) {
+        const p = String(Core.unlockPrice(C, i)), fs = Math.max(8, cs * 0.17);
+        GL.img(Art.coin(fs), x - cs * 0.15 + sx, y + cs * 0.33, fs, fs);
+        GL.text(p, x - cs * 0.05 + sx, y + cs * 0.33, { size: fs, weight: 900, fill: '#6b4a2a', align: 'left', outline: 'rgba(255,248,230,0.9)' });
+      }
+    }
     else {
       const next = Core.canUnlockHere(C, S, i);
       GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, next ? COL.lockNext : (r + c) % 2 ? COL.lockB : COL.lockA);
@@ -1242,7 +1285,8 @@
       }
     }
     if (i === target && drag && i !== drag.from) {
-      const ok = Core.canMerge(C, S.cells[drag.from], S.cells[i]);
+      const A = S.cells[drag.from], B = S.cells[i];
+      const ok = Core.canMerge(C, A, B) || Core.canDig(C, S, A, i) || (A && A.k === 'tool' && B && B.k === 'item' && B.lvl < C.maxLevel);
       if (ok) GL.rect(x - h, y - h, h * 2, h * 2, cs * 0.14, COL.good);
       GL.rect(x - h, y - h, h * 2, h * 2, cs * 0.14, ok ? COL.goodLine : [0.4, 0.3, 0.2, 0.35], { stroke: 3 });
     }
@@ -1320,7 +1364,7 @@
     if (drag && dragIt) drawItem(dragIt, drag.x - drag.ox, drag.y - drag.oy - 4, cs * 1.0);
     // 选中物品的名字
     if (sel >= 0 && !drag && !spotlight && S.cells[sel] && t - selT < 1.6) {
-      const it = S.cells[sel], [x, y] = cellXY(sel), name = L.t(Core.itemDef(C, it).name) + ' · ' + L.t('ui.level', { n: it.lvl });
+      const it = S.cells[sel], [x, y] = cellXY(sel), name = itemName(it) + (it.k === 'tool' ? '' : ' · ' + L.t('ui.level', { n: it.lvl }));
       const fs = Math.max(12, cs * 0.24), tw = GL.measure(name, { size: fs, weight: 800 }) + 18, ly = y - cs * 0.78;
       const lx = Math.max(LY.bx + 4, Math.min(LY.bx + LY.bs - tw - 4, x - tw / 2));
       GL.alpha = Math.min(1, (1.6 - (t - selT)) * 4);
@@ -1455,6 +1499,7 @@
     btn('bubble', () => { const e = S.cells.findIndex((c, i) => !c && S.unlocked[i]); if (e >= 0) S.cells[e] = { k: 'bubble', chain: 'coffee', lvl: 5, until: now() + C.eco.bubble.lifeSec * 1000 }; });
     btn('+5 stars', () => { S.stars += 5; decoKey = ''; });
     btn('+100 xp', () => { queueLevelUps(Core.addXp(C, S, 100, now())); });
+    btn('wild star', () => { Core.giveWildStar(C, S, 3, 3); });
     btn('+20 hearts', () => { for (const r of C.regs) if (Core.regOn(C, S, r)) { const st = Core.regState(S, r.id); st.pts += 20; } });
     btn('chest', () => { const r = Core.openChest(C, S, now()); pendingCoins += r.coins; pendingStars += r.stars; showChest(r); });
     btn('skip tutorial', () => Core.skipTutorial(S));

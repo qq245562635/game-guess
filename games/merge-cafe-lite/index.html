@@ -250,8 +250,8 @@ body.book #book { display: block; }
 <div id="err"></div>
 <div id="dbg"><span id="dbg-fps"></span></div>
 <script>
-const CONFIG = {"chains":{"_doc":"合成链。id 与正式图标命名一致（item_<chain>_<两位等级>），到图后放 assets/items/<id>.png 并在 art.json 登记即可替换占位。name 是本地化键。color 只给占位图用。","maxLevel":8,"chains":{"coffee":{"name":"chain.coffee","shape":"round","items":[{"id":"item_coffee_01","name":"item.coffee.1","color":"#7a4a2a"},{"id":"item_coffee_02","name":"item.coffee.2","color":"#5a3016"},{"id":"item_coffee_03","name":"item.coffee.3","color":"#3b2214"},{"id":"item_coffee_04","name":"item.coffee.4","color":"#a0623a"},{"id":"item_coffee_05","name":"item.coffee.5","color":"#c98f5e"},{"id":"item_coffee_06","name":"item.coffee.6","color":"#e0b07e"},{"id":"item_coffee_07","name":"item.coffee.7","color":"#2f7f8a"},{"id":"item_coffee_08","name":"item.coffee.8","color":"#e8735a"}]},"bake":{"name":"chain.bake","shape":"square","items":[{"id":"item_bake_01","name":"item.bake.1","color":"#d9cbb0"},{"id":"item_bake_02","name":"item.bake.2","color":"#e8c98f"},{"id":"item_bake_03","name":"item.bake.3","color":"#d9a75e"},{"id":"item_bake_04","name":"item.bake.4","color":"#c2803e"},{"id":"item_bake_05","name":"item.bake.5","color":"#7fae5a"},{"id":"item_bake_06","name":"item.bake.6","color":"#e06a7a"},{"id":"item_bake_07","name":"item.bake.7","color":"#f2d6e0"},{"id":"item_bake_08","name":"item.bake.8","color":"#f0b43c"}]}}},"board":{"_doc":"棋盘7×7，初始上四行28格解锁；下三行依次开格且须与已开格相邻。首会话调参：保持第五行低价新手开格，第六/七行提高金币需求，避免30分钟内全部开完。","cols":7,"rows":7,"mask":["xxxxxxx","xxxxxxx","xxxxxxx","xxxxxxx",".......",".......","......."],"unlockPrice":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[30,25,20,20,20,25,30],[140,120,100,90,100,120,140],[350,300,260,240,260,300,350]],"requireAdjacent":true,"startItems":[{"chain":"coffee","level":1,"at":[3,3]}]},"generators":{"_doc":"生成器（策划案 §4 / Issue M1）：只出 1–2 级，权重 80/20；储量 10 次，点一次耗 1 体力 + 1 储量，储量耗尽冷却 60 秒。cooldownRamp：前期冷却缩短（首测反馈），按已完成订单数分档，beforeOrders 之前用 sec 秒，过了最后一档用各生成器自己的 cooldownSec。按 #38 效果图放在棋盘外（棋盘下方按钮）；anchor=[行,列] 是出生点参照（可在棋盘外，如第 7 行），产物落到离它最近的空格。 upgrades：生成器升级（金币消耗，2026-10-21 金币消耗设计），两台共用这张表；第 k 项是升到 Lv(k+2) 的价格和效果，Lv1 用生成器自己的 charges / levelWeights。cdMul 乘在冷却时长上（含 cooldownRamp 前期档）。","cooldownRamp":[{"beforeOrders":8,"sec":15},{"beforeOrders":20,"sec":30}],"generators":[{"id":"gen_coffee_machine","name":"gen.coffee","chain":"coffee","charges":10,"cooldownSec":60,"energyCost":1,"levelWeights":{"1":80,"2":20},"anchor":[7,1],"color":"#2f7f8a"},{"id":"gen_ingredient_box","name":"gen.bake","chain":"bake","charges":10,"cooldownSec":60,"energyCost":1,"levelWeights":{"1":80,"2":20},"anchor":[7,5],"color":"#e8735a"}],"upgrades":[{"cost":150,"charges":12,"cdMul":0.9,"levelWeights":{"1":80,"2":20}},{"cost":300,"charges":14,"cdMul":0.8,"levelWeights":{"1":75,"2":20,"3":5}},{"cost":600,"charges":16,"cdMul":0.7,"levelWeights":{"1":70,"2":22,"3":8}},{"cost":1000,"charges":18,"cdMul":0.6,"levelWeights":{"1":65,"2":23,"3":12}}]},"economy":{"_doc":"经济。体力上限100、每120秒自然恢复1点。首会话数值实验：初始体力从200调为150，让普通玩家更有机会在首会话遇到体力补充广告，但需通过真人测试验证；其余经济参数不变。 金币消耗（2026-10-21）：开格之外再加 5 种——生成器升级（见 generators.json upgrades）、coinRefill 金币立即回满生成器（当天第 n 次价格 base+step×n）、coinEnergy 金币买体力（每天按 prices 逐次涨价，买完当天不再出现；广告 +30 永远免费，金币只做兜底）、bubble 合成泡泡（合出 minLevel 级以上时按 chance 在旁边冒一个同款泡泡，lifeSec 秒内花 等级×pricePerLevel 金币或看广告拿下，否则消失）、swapOrder 花金币换掉不想做的订单（交过一部分的不能换）。每日次数按 UTC 0 点重置。 v0.4：每完成 starEveryOrders 单奖 1 星，由 3 改为 5（装修拉长到 D1/D4/D7）。 V1 M2：combo 合成连击（两次合成间隔 ≤ windowSec 算连击，showFrom 起显示浮字；每 coinsEvery 连给 coins 金币、每 energyEvery 连给 energy 体力；断了不罚）；sell 出售（价格 = 2^(等级−1)，confirmFrom 级以上要确认）；recycle 回收桶（每卖 1 件 +1，满 size 件送 energy 体力）；bubble.pity 泡泡保底（连续 pity 次 minLevel 级以上合成没冒泡泡，下一次必冒）；hints.idleSec 无操作多少秒后晃一对能合成的物品。","energy":{"max":100,"start":150,"regenSec":120},"startCoins":100,"startStars":0,"startGems":0,"starEveryOrders":5,"coinRefill":{"base":20,"step":10},"coinEnergy":{"amount":20,"prices":[80,160,320]},"bubble":{"minLevel":4,"chance":0.08,"lifeSec":60,"pricePerLevel":25,"maxAtOnce":1,"pity":20},"swapOrder":{"price":10},"combo":{"windowSec":2.5,"showFrom":3,"coinsEvery":5,"coins":5,"energyEvery":10,"energy":1},"sell":{"confirmFrom":5},"recycle":{"size":8,"energy":5},"hints":{"idleSec":5}},"orders":{"_doc":"订单（策划案 §5 / Issue M2）。同时 slots 个订单；超时自动刷新不惩罚（已交过部分物品的订单不会因超时消失）。普通订单奖 20–80 金币；稀有订单 = 需求里有 rareMinLevel 级以上物品，奖 150–300 金币 + 1 星。构建脚本和单测会检查每个模板的 coins 区间落在对应档位内。minDone=已完成订单数达到多少后才会出现（首测反馈前期就出三明治等 5 级单、做不出来：4 级单推到第 4 单后、5 级推到第 8 单后、稀有推到第 10 单后）；weight=抽取权重；timeSec=限时区间（策划案未给具体值，暂定待 lijie 确认）。","slots":3,"maxRareAtOnce":1,"rareMinLevel":6,"bands":{"normal":{"coins":[20,80],"stars":0},"rare":{"coins":[150,300],"stars":1}},"customers":[{"id":"avatar_customer_01","color":"#e8b04a","hair":"#7a5230"},{"id":"avatar_customer_02","color":"#4a8fd0","hair":"#2a1d14"},{"id":"avatar_customer_03","color":"#d0605a","hair":"#9c5a2a"},{"id":"avatar_customer_04","color":"#5aa77a","hair":"#c9c2b8"},{"id":"avatar_customer_05","color":"#9a6fc0","hair":"#4a3020"},{"id":"avatar_customer_06","color":"#e07a9a","hair":"#d8a860"}],"templates":[{"id":"n_c2","needs":[["coffee",2]],"coins":[20,25],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_b2","needs":[["bake",2]],"coins":[20,25],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_c3","needs":[["coffee",3]],"coins":[25,35],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_b3","needs":[["bake",3]],"coins":[25,35],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_c2b2","needs":[["coffee",2],["bake",2]],"coins":[30,40],"timeSec":[360,480],"weight":8,"minDone":1},{"id":"n_c4","needs":[["coffee",4]],"coins":[40,50],"timeSec":[360,480],"weight":8,"minDone":4},{"id":"n_b4","needs":[["bake",4]],"coins":[40,50],"timeSec":[360,480],"weight":8,"minDone":4},{"id":"n_c3b3","needs":[["coffee",3],["bake",3]],"coins":[45,60],"timeSec":[420,540],"weight":7,"minDone":5},{"id":"n_c5","needs":[["coffee",5]],"coins":[60,75],"timeSec":[480,600],"weight":6,"minDone":8},{"id":"n_b5","needs":[["bake",5]],"coins":[60,75],"timeSec":[480,600],"weight":6,"minDone":8},{"id":"n_c4b4","needs":[["coffee",4],["bake",4]],"coins":[70,80],"timeSec":[540,660],"weight":5,"minDone":10},{"id":"r_c6","needs":[["coffee",6]],"coins":[150,180],"timeSec":[900,1200],"weight":3,"minDone":10},{"id":"r_b6","needs":[["bake",6]],"coins":[150,180],"timeSec":[900,1200],"weight":3,"minDone":10},{"id":"r_c6b4","needs":[["coffee",6],["bake",4]],"coins":[190,230],"timeSec":[1200,1500],"weight":2,"minDone":13},{"id":"r_c7","needs":[["coffee",7]],"coins":[220,260],"timeSec":[1500,1800],"weight":2,"minDone":15},{"id":"r_b7","needs":[["bake",7]],"coins":[220,260],"timeSec":[1500,1800],"weight":2,"minDone":15},{"id":"r_c8","needs":[["coffee",8]],"coins":[270,300],"timeSec":[1800,2400],"weight":1,"minDone":20},{"id":"r_b8","needs":[["bake",8]],"coins":[270,300],"timeSec":[1800,2400],"weight":1,"minDone":20}]},"tutorial":{"_doc":"新手引导（Issue M2）：首次进入强制 点生成器 → 拖合 → 交订单。引导期间生成器固定出 spawnLevel 级、只允许当前这一步的操作；第一个订单固定为 firstOrder（放在第 1 个订单位），其余订单位照常从模板抽。目标：60 秒内首次合成、3 分钟内首订单。","enabled":true,"generator":"gen_coffee_machine","spawnLevel":1,"firstOrder":{"id":"tut_c2","needs":[["coffee",2]],"coins":[25,25],"timeSec":[900,900],"customer":0},"steps":["tapGen","merge","deliver"]},"deco":{"_doc":"装修（策划案 §6 v0.4 / V1-plan.md）：按区域组织，每个区域若干幕、每幕若干节点，按顺序解锁。cost=星星价，coins=金币价（没有就是 0）。layer 是场景里打开的图层 id；comics 里的节点解锁后弹一格漫画。区域 1「海边咖啡摊」= 原来的 3 幕 15 节点：第一幕 6 星不变（首个会话就能装完），第二幕 24 星 + 3500 金币，第三幕 44 星 + 10000 金币（M1 校准：升级奖励让金币来得更快，原定 1000 / 3600 会让第三幕提前到 D5），tools/sim.js（每天 2×15 分钟）装完时间约 D1 / D4 / D7。区域 2、3 是 V2：加区域 = 在 areas 里追加一项 + 交场景图，unlockLevel 是进入该区域要求的店铺等级（且上一个区域要装完）。 M3 再校准：熟客单、菜谱加成和小费让金币来得更快，二三幕金币价上调到 3500 / 10000，装完仍是 D1/D4/D7。","areas":[{"id":"seaside","name":"area.seaside","unlockLevel":1,"scene":"seaside","acts":[{"id":"act1","name":"act.1","nodes":[{"id":"a1_tables","name":"deco.a1_tables","cost":1,"layer":"tables"},{"id":"a1_parasol","name":"deco.a1_parasol","cost":1,"layer":"parasol"},{"id":"a1_sign","name":"deco.a1_sign","cost":1,"layer":"sign"},{"id":"a1_counter","name":"deco.a1_counter","cost":1,"layer":"counter"},{"id":"a1_light","name":"deco.a1_light","cost":2,"layer":"lightbox"}]},{"id":"act2","name":"act.2","nodes":[{"id":"a2_deck","name":"deco.a2_deck","cost":4,"layer":"deck","coins":500},{"id":"a2_flowers","name":"deco.a2_flowers","cost":4,"layer":"flowers","coins":600},{"id":"a2_bar","name":"deco.a2_bar","cost":5,"layer":"bar","coins":700},{"id":"a2_menu","name":"deco.a2_menu","cost":5,"layer":"menu","coins":800},{"id":"a2_speaker","name":"deco.a2_speaker","cost":6,"layer":"speakers","coins":900}]},{"id":"act3","name":"act.3","nodes":[{"id":"a3_neon","name":"deco.a3_neon","cost":8,"layer":"neon","coins":1400},{"id":"a3_terrace","name":"deco.a3_terrace","cost":8,"layer":"terrace","coins":1800},{"id":"a3_tower","name":"deco.a3_tower","cost":9,"layer":"tower","coins":2000},{"id":"a3_photo","name":"deco.a3_photo","cost":9,"layer":"photo","coins":2200},{"id":"a3_lights","name":"deco.a3_lights","cost":10,"layer":"lights","coins":2600}]}],"comics":{"a1_tables":"comic.1","a2_bar":"comic.8","a3_lights":"comic.15"}}]},"ads":{"_doc":"广告（策划案 §7 / Issue M3），WebGL 版只有广告。当前全部是 Mock：点了模拟播放 mockSec 秒再发奖，接入点见 src/ads.js 里的 TODO（CrazyGames / Playgama SDK）。激励视频 3 个点位：体力见底 +energy、生成器冷却时立即回满、订单完成后奖励翻倍（按钮出现 doubleOfferSec 秒）。插屏：每完成 interstitialEveryOrders 个订单出 1 次，拖拽中、弹窗中、引导中一律延后，禁止打断合成。 首测反馈广告太频繁后降频：插屏改为每 interstitialEveryOrders 单 1 次、第 interstitialFirstAtOrder 单之前不出、两次之间至少 interstitialMinGapSec 秒；翻倍按钮每 double.everyOrders 单才出一次。","rewarded":{"energy":{"amount":30},"refill":{},"double":{"offerSec":6,"everyOrders":3}},"mockSec":5,"interstitialEveryOrders":10,"interstitialMockSec":3,"interstitialFirstAtOrder":20,"interstitialMinGapSec":240},"tasks":{"_doc":"任务（底栏 Tasks，首测反馈新增，策划案 / #39 原本没有）。同时显示 active 个，按 list 顺序补位；做完点 Claim 领奖励后补下一个，全部领完显示完成。type：merges 合成次数、orders 完成订单、spawns 点生成器次数、unlocks 开格数、renovate 装修节点数、coins 累计赚金币、level 做出过的最高等级物品。除 level 外都从接到任务那一刻起算。奖励以金币、体力为主，星星只给少量（共 6 颗），避免冲掉装修节奏。","active":3,"list":[{"id":"t01","type":"merges","n":5,"reward":{"coins":20}},{"id":"t02","type":"orders","n":2,"reward":{"energy":10}},{"id":"t03","type":"spawns","n":10,"reward":{"coins":20}},{"id":"t04","type":"level","n":4,"reward":{"coins":30}},{"id":"t05","type":"unlocks","n":1,"reward":{"energy":15}},{"id":"t06","type":"orders","n":5,"reward":{"stars":1}},{"id":"t07","type":"merges","n":20,"reward":{"coins":40}},{"id":"t08","type":"renovate","n":2,"reward":{"energy":20}},{"id":"t09","type":"level","n":5,"reward":{"coins":50}},{"id":"t10","type":"coins","n":300,"reward":{"stars":1}},{"id":"t11","type":"orders","n":10,"reward":{"energy":20}},{"id":"t12","type":"unlocks","n":3,"reward":{"coins":60}},{"id":"t13","type":"level","n":6,"reward":{"stars":1}},{"id":"t14","type":"merges","n":50,"reward":{"energy":30}},{"id":"t15","type":"renovate","n":5,"reward":{"coins":80}},{"id":"t16","type":"orders","n":20,"reward":{"stars":2}},{"id":"t17","type":"level","n":7,"reward":{"coins":100}},{"id":"t18","type":"spawns","n":100,"reward":{"stars":1,"energy":30}}]},"art":{"_doc":"已到位的正式图（规格见 ASSETS.md）。物品 / 生成器放 assets/items/<id>.png → 登记进 items；顾客头像放 assets/avatars/<id>.png → avatars；货币图标、Logo、小图标、底栏图标放 assets/ui/<id>.png → ui（可用 id：icon_energy icon_coin icon_star logo_merge_cafe_lite icon_lock icon_check icon_clock icon_hand nav_cafe nav_merge）。头图放 assets/scene/<id>.webp → scene（header_merge_p 竖屏、header_merge_l 横屏；#49 A 批正式头图，P1 正式头图到位后同名替换）。装修场景（#49）放 assets/scene/<id>.webp → cafe（底图 scene_base + 图层，坐标在 assets/scene/layers.json，构建时内联为 layerPos）；漫画放 assets/comics/<id>.webp → comics。cafe / comics 在首帧之后后台加载。没登记的一律用占位，不发多余请求。","items":["gen_coffee_machine","gen_ingredient_box","item_bake_01","item_bake_02","item_bake_03","item_bake_04","item_bake_05","item_bake_06","item_bake_07","item_bake_08","item_coffee_01","item_coffee_02","item_coffee_03","item_coffee_04","item_coffee_05","item_coffee_06","item_coffee_07","item_coffee_08","item_wild_star"],"avatars":["avatar_customer_01","avatar_customer_02","avatar_customer_03","avatar_customer_04","avatar_customer_05","avatar_customer_06","avatar_customer_01_happy","avatar_customer_02_happy","avatar_customer_03_happy","avatar_customer_04_happy","avatar_customer_05_happy","avatar_customer_06_happy"],"ui":["icon_coin","icon_energy","icon_star","logo_merge_cafe_lite","icon_lock","icon_check","icon_clock","icon_hand","nav_cafe","nav_merge","nav_tasks","deco_plant_pot","deco_plant_fern","deco_plant_bush","chest_closed","chest_open","obstacle_sand","obstacle_crate","badge_level","nav_book","fx_bubble","icon_upgrade"],"scene":["header_merge_p","header_merge_l","bg_wood_tile"],"sceneMeta":{"_doc":"头图元数据：safeTop = 图里 Logo 顶边占图高的比例，这条线以上可以被顶栏盖住，以下不行","header_merge_p":{"safeTop":0.25},"header_merge_l":{"safeTop":0.04}},"cafe":["scene_base","shabby_stall","shabby_table","shabby_litter","tables","parasol","sign","counter","lightbox","deck","flowers","bar","menu","speakers","neon","terrace","tower","photo","lights"],"comics":["comic_01","comic_08","comic_15"],"layerPos":{"counter":[700,687],"shabby_stall":[700,685],"tables":[1385,968],"shabby_table":[1404,998],"parasol":[1350,799],"sign":[889,643],"lightbox":[716,812],"shabby_litter":[1430,1090],"deck":[640,1080],"flowers":[720,850],"bar":[770,890],"menu":[1270,1040],"speakers":[720,690],"neon":[1040,878],"terrace":[660,1290],"tower":[1140,880],"photo":[670,1110],"lights":[700,635]}},"progression":{"_doc":"店铺等级（V1-plan.md「店铺等级」）。每完成一单得经验 = 需求等级之和，稀有单 ×xp.rareMul（熟客单 M3 起 ×xp.regularMul）。levelNeed[i] = 从 i+1 级升到 i+2 级要的经验，超出表的等级每级 after。每次升级：+levelReward.energy 体力（可超上限）+ 等级×coinsPerLevel 金币；每 chestEvery 级额外给一个宝箱（内容 chest）。unlocks：按等级开放的系统，ready=false 的还没做，升级弹窗不提；feature 是程序里的开关名。 M1 校准（tools/sim.js，每天 2×15 分钟）：升级送体力和金币会加快后期升级，所以 11 级以后的经验需求比 V1-plan 初稿 ×1.2，20 级以后每级 360；结果 8 级 D1、12 级 D3、16 级 D6、20 级 D10。 M3 再校准：熟客单、菜谱加成、小费让经验和金币来得更快，8 级以后经验需求上调，20 级以后每级 330；熟客单经验 ×1.5。结果仍是 8 级 D1、12 级 D3、16 级 D6、20 级 D10。","xp":{"rareMul":2,"regularMul":1.5},"levelNeed":[20,25,35,45,55,65,75,110,120,140,185,215,245,265,275,285,295,305,315],"after":330,"levelReward":{"energy":20,"coinsPerLevel":10,"chestEvery":5},"chest":{"energy":30,"coins":100,"stars":1},"unlocks":[{"level":2,"feature":"daily","name":"unlock.daily","ready":false},{"level":3,"feature":"regulars","name":"unlock.regulars","ready":true},{"level":4,"feature":"setOrders","name":"unlock.setOrders","ready":false},{"level":5,"feature":"recipes","name":"unlock.recipes","ready":true},{"level":5,"feature":"reg.kai","name":"reg.kai","ready":true,"regular":true},{"level":6,"feature":"obstacles","name":"unlock.obstacles","ready":false},{"level":7,"feature":"wildStar","name":"unlock.wildStar","ready":false},{"level":7,"feature":"reg.rose","name":"reg.rose","ready":true,"regular":true},{"level":9,"feature":"offline6h","name":"unlock.offline","ready":false},{"level":9,"feature":"reg.leo","name":"reg.leo","ready":true,"regular":true},{"level":11,"feature":"reg.marcus","name":"reg.marcus","ready":true,"regular":true},{"level":13,"feature":"reg.chloe","name":"reg.chloe","ready":true,"regular":true},{"level":15,"feature":"offline8h","name":"unlock.offline","ready":false}]},"regulars":{"_doc":"熟客（V1 M3，V1-plan.md「熟客好感」）。avatar = orders.json customers 的下标（03 号头像是下标 2）。unlock = 登场所需店铺等级。fav = 最爱的物品 [链, 等级]（可多个；熟客单就是要这些）。好感：做她的单 +points.order，单里有她最爱的 +points.fav，熟客单 +points.regularOrder；只涨不跌。hearts = 1–5 心的累计好感门槛。heartRewards：tip = 她的单金币加成（%，取当前最高）、gift = 每天第一次做她的单送体力、chest = 到这一心送一个宝箱、line = 这一心解锁的台词 key。regularOrder：2 心以上每位每天最多 1 张，新订单有 chance 概率出熟客单；金币 = coinsPerLevel × 需求等级和 × coinsMul，必给 stars 星，限时 timeSec。seats：咖啡馆场景里熟客坐的位置（2400×1600 母画布坐标），对应图层装修后才坐人，按熟客登场顺序依次入座。 M3 校准（tools/sim.js，每天 2×15 分钟）：Mia 1–5 心约 D1/D2/D4/D7/D11。","regulars":[{"id":"mia","name":"reg.mia","avatar":2,"unlock":3,"fav":[["coffee",5]]},{"id":"kai","name":"reg.kai","avatar":4,"unlock":5,"fav":[["coffee",4],["bake",4]]},{"id":"rose","name":"reg.rose","avatar":0,"unlock":7,"fav":[["bake",5]]},{"id":"leo","name":"reg.leo","avatar":1,"unlock":9,"fav":[["coffee",7]]},{"id":"marcus","name":"reg.marcus","avatar":3,"unlock":11,"fav":[["bake",6]]},{"id":"chloe","name":"reg.chloe","avatar":5,"unlock":13,"fav":[["bake",7]]}],"points":{"order":1,"fav":3,"regularOrder":5},"hearts":[5,25,70,140,220],"heartRewards":[{"heart":1,"line":1},{"heart":2,"regularOrders":true},{"heart":3,"line":3,"tip":10},{"heart":4,"gift":10},{"heart":5,"line":5,"tip":20,"chest":true}],"regularOrder":{"chance":0.35,"coinsPerLevel":12,"coinsMul":1.5,"stars":1,"timeSec":[600,900]},"seats":[{"layer":"tables","at":[1455,1085]},{"layer":"tables","at":[1660,1085]},{"layer":"deck","at":[780,1190]},{"layer":"terrace","at":[950,1330]},{"layer":"terrace","at":[1450,1330]},{"layer":"deck","at":[1250,1250]}]},"recipes":{"_doc":"菜谱熟练度与图鉴（V1 M3，V1-plan.md「菜谱熟练度 + 图鉴」）。图鉴：第一次做出某物品 → New Recipe 卡 + 等级×coinsPerLevel 金币；一条链 8 格集齐送一个宝箱。熟练度：每交一次得「等级」点，累计到 stars 的门槛升 1/2/3 星；订单金币按单里每道菜的星数加成 bonusPerStar%（多道菜取平均）。店铺等级达到 progression unlocks 的 recipes 才开始发奖和加成，之前做过的照常记录。","coinsPerLevel":10,"stars":[10,40,120],"bonusPerStar":10}};
-const LOCALE = {"game.title":"Merge Café","chain.coffee":"Coffee","chain.bake":"Bakery","item.coffee.1":"Coffee Beans","item.coffee.2":"Roasted Beans","item.coffee.3":"Espresso","item.coffee.4":"Americano","item.coffee.5":"Latte","item.coffee.6":"Latte Art","item.coffee.7":"Cold Brew","item.coffee.8":"Sea Salt Coffee","item.bake.1":"Flour","item.bake.2":"Dough","item.bake.3":"Raw Loaf","item.bake.4":"Toast","item.bake.5":"Sandwich","item.bake.6":"Fruit Tart","item.bake.7":"Cream Cake","item.bake.8":"Party Cake","gen.coffee":"Coffee","gen.bake":"Ingredients","ui.level":"Lv {n}","ui.maxLevel":"Max level","ui.charges":"{n}/{max} left","ui.recharging":"Recharging {t}","ui.mergeHint":"Drag two matching items together to merge","ui.full":"Board is full! Merge items to free up space.","ui.noEnergyTitle":"Out of Energy","ui.noEnergyBody":"+1 energy every 2 minutes. Next in {t}.","ui.energyFull":"Energy full","ui.ok":"OK","ui.cancel":"Cancel","ui.unlockTitle":"Expand the Board","ui.unlockBody":"Open this tile for {n} coins?","ui.unlock":"Unlock","ui.notAdjacent":"Unlock a tile next to the board first.","ui.noCoins":"Not enough coins.","ui.cantMerge":"These don't match.","ui.maxMerge":"Already at max level!","ui.welcomeBack":"Welcome back! +{n} energy","ui.webglError":"Your browser doesn't support WebGL.","ui.wrongOrder":"This customer ordered something else.","ui.rare":"Rare","ui.orderDone":"Order complete!","ui.soon":"Renovations open soon!","nav.cafe":"Café","nav.merge":"Merge","tut.tapGen":"Tap the Coffee Machine to brew some beans.","tut.merge":"Drag one bean onto the other to merge them!","tut.deliver":"Drag the Roasted Beans to your customer.","tut.done":"Nice! Tap any order to see how to make it.","game.titleSub":"Lite","act.1":"Act 1 · Fix Up the Stall","act.2":"Act 2 · Seaside Makeover","act.3":"Act 3 · Insta-Famous","deco.a1_tables":"Tables & Chairs","deco.a1_parasol":"Beach Parasol","deco.a1_sign":"Café Sign","deco.a1_counter":"New Counter","deco.a1_light":"Light Box","deco.a2_deck":"Wooden Deck","deco.a2_flowers":"Flower Wall","deco.a2_bar":"Coffee Bar","deco.a2_menu":"Menu Board","deco.a2_speaker":"Speakers","deco.a3_neon":"Neon Sign","deco.a3_terrace":"Sun Terrace","deco.a3_tower":"Drink Tower","deco.a3_photo":"Photo Wall","deco.a3_lights":"Fairy Lights","comic.1":"“A real table! Customers can finally sit down.”","comic.8":"“The new bar is gorgeous. People are lining up!”","comic.15":"“Look at those lights… we did it. Best café on the coast!”","ui.renovate":"Renovate","ui.needStars":"Need {n} more stars. Fill orders to earn them!","ui.actDone":"{act} complete!","ui.allDone":"Your café is complete!","ui.continue":"Continue","ui.starBonus":"Bonus star for 3 orders!","ui.genEmptyTitle":"Machine Recharging","ui.genEmptyBody":"Ready again in {t}.","ad.watch":"Watch Ad","ad.energy":"+{n} Energy","ad.refill":"Refill Now","ad.double":"Double Coins","ad.playing":"Ad playing… {n}","ad.label":"Advertisement","ad.got":"+{n} coins!","ui.howToMake":"How to make {item}","ui.chainTip":"Merge two of the same item to get the next one.","ui.onBoard":"x{n}","nav.tasks":"Tasks","ui.tasksTitle":"Tasks","ui.claim":"Claim","ui.tasksDone":"All tasks done! More coming soon.","task.merges":"Merge {n} items","task.orders":"Complete {n} orders","task.spawns":"Tap generators {n} times","task.unlocks":"Unlock {n} tiles","task.renovate":"Renovate {n} times","task.coins":"Earn {n} coins","task.level":"Make a Lv {n} item","ui.upgrade":"Upgrade","ui.genLevel":"{name} · Lv {n}","ui.upgradeBody":"Uses per refill: {a} → {b}. Recharge time −{p}%.","ui.upgradeLv3":"Sometimes makes Lv 3 items ({p}%).","ui.upgraded":"Upgraded to Lv {n}!","ui.energyTitle":"Need Energy?","ui.bubbleTitle":"Bubble Bonus!","ui.bubbleBody":"Grab this {item} before the bubble pops in {t}.","ui.bubblePopped":"The bubble popped!","ui.swap":"Swap Order","ad.free":"Free","ui.buy":"Buy","area.seaside":"Seaside Café","ui.levelUp":"Café Level {n}!","ui.levelTitle":"Café Level {n}","ui.levelBody":"{xp} / {need} XP to level {next}. Every order earns XP.","ui.nextUnlock":"Lv {n}: {what}","ui.chest":"Bonus chest!","ui.decoCoins":"Need {n} more coins.","unlock.daily":"Daily Tasks","unlock.regulars":"Regular Customers","unlock.setOrders":"Combo Orders","unlock.recipes":"Recipe Book","unlock.obstacles":"Sand & Crates","unlock.wildStar":"Wild Star","unlock.offline":"Longer Café Hours","ui.collect":"Collect","ui.levelRewards":"Level-up rewards","ui.combo":"Combo x{n}!","ui.sell":"Sell +{n}","ui.sellTitle":"Sell {item}?","ui.sellBody":"You'll get {n} coins.","ui.recycle":"Recycle bin {n}/{max}","ui.recycleFull":"Recycle bonus! +{n} energy","ui.stuck":"No matches left. Sell an item to make room!","ui.open":"Open","reg.mia":"Mia","reg.kai":"Kai","reg.rose":"Rose","reg.leo":"Leo","reg.marcus":"Marcus","reg.chloe":"Chloe","line.mia.1":"Hi! I'm Mia from the bookshop next door. Your latte smells like a good first chapter.","line.mia.3":"I keep telling customers about your café. Half of them come here before they buy a book now.","line.mia.5":"I wrote the shop newsletter about this place. It's officially my favorite chapter.","line.kai.1":"Kai. I teach surfing down the beach. Feed me and I'll tell you where the waves are.","line.kai.3":"My students think your toast is part of the training plan. I'm not correcting them.","line.kai.5":"Caught the best wave of the season today. Powered by your coffee, of course.","line.rose.1":"I'm Rose. I've watched this stall for forty summers. It hasn't looked this good in years.","line.rose.3":"I had my first date on this beach. Your sandwiches taste like those summers.","line.rose.5":"You've given this old corner its heart back, dear. I'm proud of you.","line.leo.1":"Leo. I write novels, or I try to. Your cold brew is the only thing finishing my chapters.","line.leo.3":"I put a little seaside café in my book. Guess who runs it?","line.leo.5":"The book is done! You're in the acknowledgements. Twice.","line.marcus.1":"Marcus, from the sailing club. My crew voted your fruit tart the official snack.","line.marcus.3":"We named the new dinghy after your fruit tart. Don't ask whose idea that was.","line.marcus.5":"Regatta's on Sunday. The whole club wants your café to cater it.","line.chloe.1":"Chloe, wedding planner. Always running, never without cake.","line.chloe.3":"A bride asked where I found that cream cake. I said it's a secret. It's you.","line.chloe.5":"I'm booking your café for my own wedding. Yes, really. Save me a cake!","nav.book":"Book","ui.bookRecipes":"Recipes","ui.bookRegulars":"Regulars","ui.newRecipe":"New Recipe!","ui.heartUp":"{name} ♥{n}","ui.newRegular":"New regular: {name}","ui.gift":"{name} brought you a gift! +{n} energy","ui.recipeStar":"{item} ★{n}","ui.chainDone":"{chain} collection complete!","ui.toNextHeart":"{n} more to ♥{h}","ui.favOrder":"Favorite order","ui.maxHearts":"Best friends!"};
+const CONFIG = {"chains":{"_doc":"合成链。id 与正式图标命名一致（item_<chain>_<两位等级>），到图后放 assets/items/<id>.png 并在 art.json 登记即可替换占位。name 是本地化键。color 只给占位图用。","maxLevel":8,"chains":{"coffee":{"name":"chain.coffee","shape":"round","items":[{"id":"item_coffee_01","name":"item.coffee.1","color":"#7a4a2a"},{"id":"item_coffee_02","name":"item.coffee.2","color":"#5a3016"},{"id":"item_coffee_03","name":"item.coffee.3","color":"#3b2214"},{"id":"item_coffee_04","name":"item.coffee.4","color":"#a0623a"},{"id":"item_coffee_05","name":"item.coffee.5","color":"#c98f5e"},{"id":"item_coffee_06","name":"item.coffee.6","color":"#e0b07e"},{"id":"item_coffee_07","name":"item.coffee.7","color":"#2f7f8a"},{"id":"item_coffee_08","name":"item.coffee.8","color":"#e8735a"}]},"bake":{"name":"chain.bake","shape":"square","items":[{"id":"item_bake_01","name":"item.bake.1","color":"#d9cbb0"},{"id":"item_bake_02","name":"item.bake.2","color":"#e8c98f"},{"id":"item_bake_03","name":"item.bake.3","color":"#d9a75e"},{"id":"item_bake_04","name":"item.bake.4","color":"#c2803e"},{"id":"item_bake_05","name":"item.bake.5","color":"#7fae5a"},{"id":"item_bake_06","name":"item.bake.6","color":"#e06a7a"},{"id":"item_bake_07","name":"item.bake.7","color":"#f2d6e0"},{"id":"item_bake_08","name":"item.bake.8","color":"#f0b43c"}]}}},"board":{"_doc":"棋盘7×7，初始上四行28格解锁；下三行依次开格且须与已开格相邻。首会话调参：保持第五行低价新手开格，第六/七行提高金币需求，避免30分钟内全部开完。 V1 M4 棋盘障碍（店铺 obstacles 等级开放）：obstacles.rows 按行号（0 起）给锁格埋物品——kind 是外观（sand 沙堆 / crate 木箱），lvl 是埋的物品等级区间，链随机。开放后锁格显示埋着的物品剪影：把同款物品拖上去 = 挖出来并直接合成升一级、格子打开；也可以照旧付金币开，埋着的物品原样送你。仍要求与已开格相邻。开放前付金币开的格子是空的。","cols":7,"rows":7,"mask":["xxxxxxx","xxxxxxx","xxxxxxx","xxxxxxx",".......",".......","......."],"unlockPrice":[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[30,25,20,20,20,25,30],[140,120,100,90,100,120,140],[350,300,260,240,260,300,350]],"requireAdjacent":true,"startItems":[{"chain":"coffee","level":1,"at":[3,3]}],"obstacles":{"rows":{"4":{"kind":"sand","lvl":[1,3]},"5":{"kind":"crate","lvl":[3,4]},"6":{"kind":"crate","lvl":[4,5]}}}},"generators":{"_doc":"生成器（策划案 §4 / Issue M1）：只出 1–2 级，权重 80/20；储量 10 次，点一次耗 1 体力 + 1 储量，储量耗尽冷却 60 秒。cooldownRamp：前期冷却缩短（首测反馈），按已完成订单数分档，beforeOrders 之前用 sec 秒，过了最后一档用各生成器自己的 cooldownSec。按 #38 效果图放在棋盘外（棋盘下方按钮）；anchor=[行,列] 是出生点参照（可在棋盘外，如第 7 行），产物落到离它最近的空格。 upgrades：生成器升级（金币消耗，2026-10-21 金币消耗设计），两台共用这张表；第 k 项是升到 Lv(k+2) 的价格和效果，Lv1 用生成器自己的 charges / levelWeights。cdMul 乘在冷却时长上（含 cooldownRamp 前期档）。","cooldownRamp":[{"beforeOrders":8,"sec":15},{"beforeOrders":20,"sec":30}],"generators":[{"id":"gen_coffee_machine","name":"gen.coffee","chain":"coffee","charges":10,"cooldownSec":60,"energyCost":1,"levelWeights":{"1":80,"2":20},"anchor":[7,1],"color":"#2f7f8a"},{"id":"gen_ingredient_box","name":"gen.bake","chain":"bake","charges":10,"cooldownSec":60,"energyCost":1,"levelWeights":{"1":80,"2":20},"anchor":[7,5],"color":"#e8735a"}],"upgrades":[{"cost":150,"charges":12,"cdMul":0.9,"levelWeights":{"1":80,"2":20}},{"cost":300,"charges":14,"cdMul":0.8,"levelWeights":{"1":75,"2":20,"3":5}},{"cost":600,"charges":16,"cdMul":0.7,"levelWeights":{"1":70,"2":22,"3":8}},{"cost":1000,"charges":18,"cdMul":0.6,"levelWeights":{"1":65,"2":23,"3":12}}]},"economy":{"_doc":"经济。体力上限100、每120秒自然恢复1点。首会话数值实验：初始体力从200调为150，让普通玩家更有机会在首会话遇到体力补充广告，但需通过真人测试验证；其余经济参数不变。 金币消耗（2026-10-21）：开格之外再加 5 种——生成器升级（见 generators.json upgrades）、coinRefill 金币立即回满生成器（当天第 n 次价格 base+step×n）、coinEnergy 金币买体力（每天按 prices 逐次涨价，买完当天不再出现；广告 +30 永远免费，金币只做兜底）、bubble 合成泡泡（合出 minLevel 级以上时按 chance 在旁边冒一个同款泡泡，lifeSec 秒内花 等级×pricePerLevel 金币或看广告拿下，否则消失）、swapOrder 花金币换掉不想做的订单（交过一部分的不能换）。每日次数按 UTC 0 点重置。 v0.4：每完成 starEveryOrders 单奖 1 星，由 3 改为 5（装修拉长到 D1/D4/D7）。 V1 M2：combo 合成连击（两次合成间隔 ≤ windowSec 算连击，showFrom 起显示浮字；每 coinsEvery 连给 coins 金币、每 energyEvery 连给 energy 体力；断了不罚）；sell 出售（价格 = 2^(等级−1)，confirmFrom 级以上要确认）；recycle 回收桶（每卖 1 件 +1，满 size 件送 energy 体力）；bubble.pity 泡泡保底（连续 pity 次 minLevel 级以上合成没冒泡泡，下一次必冒）；hints.idleSec 无操作多少秒后晃一对能合成的物品。 V1 M4：setOrder 套餐单（店铺 setOrders 等级开放后，同时要两条链的订单就是套餐单；perfectSec 秒内交齐额外 +bonusPct% 金币和 Perfect 演出，超时只是没额外奖励）；wildStar 百搭星（店铺 wildStar 等级开放后，合出 minLevel 级以上时按 chance 在旁边掉一颗，连续 pity 次没掉必掉；拖到任意 8 级以下物品上 = 该物品升 1 级）。","energy":{"max":100,"start":150,"regenSec":120},"startCoins":100,"startStars":0,"startGems":0,"starEveryOrders":5,"coinRefill":{"base":20,"step":10},"coinEnergy":{"amount":20,"prices":[80,160,320]},"bubble":{"minLevel":4,"chance":0.08,"lifeSec":60,"pricePerLevel":25,"maxAtOnce":1,"pity":20},"swapOrder":{"price":10},"combo":{"windowSec":2.5,"showFrom":3,"coinsEvery":5,"coins":5,"energyEvery":10,"energy":1},"sell":{"confirmFrom":5},"recycle":{"size":8,"energy":5},"hints":{"idleSec":5},"setOrder":{"perfectSec":180,"bonusPct":50},"wildStar":{"minLevel":6,"chance":0.05,"pity":15}},"orders":{"_doc":"订单（策划案 §5 / Issue M2）。同时 slots 个订单；超时自动刷新不惩罚（已交过部分物品的订单不会因超时消失）。普通订单奖 20–80 金币；稀有订单 = 需求里有 rareMinLevel 级以上物品，奖 150–300 金币 + 1 星。构建脚本和单测会检查每个模板的 coins 区间落在对应档位内。minDone=已完成订单数达到多少后才会出现（首测反馈前期就出三明治等 5 级单、做不出来：4 级单推到第 4 单后、5 级推到第 8 单后、稀有推到第 10 单后）；weight=抽取权重；timeSec=限时区间（策划案未给具体值，暂定待 lijie 确认）。","slots":3,"maxRareAtOnce":1,"rareMinLevel":6,"bands":{"normal":{"coins":[20,80],"stars":0},"rare":{"coins":[150,300],"stars":1}},"customers":[{"id":"avatar_customer_01","color":"#e8b04a","hair":"#7a5230"},{"id":"avatar_customer_02","color":"#4a8fd0","hair":"#2a1d14"},{"id":"avatar_customer_03","color":"#d0605a","hair":"#9c5a2a"},{"id":"avatar_customer_04","color":"#5aa77a","hair":"#c9c2b8"},{"id":"avatar_customer_05","color":"#9a6fc0","hair":"#4a3020"},{"id":"avatar_customer_06","color":"#e07a9a","hair":"#d8a860"}],"templates":[{"id":"n_c2","needs":[["coffee",2]],"coins":[20,25],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_b2","needs":[["bake",2]],"coins":[20,25],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_c3","needs":[["coffee",3]],"coins":[25,35],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_b3","needs":[["bake",3]],"coins":[25,35],"timeSec":[300,420],"weight":10,"minDone":0},{"id":"n_c2b2","needs":[["coffee",2],["bake",2]],"coins":[30,40],"timeSec":[360,480],"weight":8,"minDone":1},{"id":"n_c4","needs":[["coffee",4]],"coins":[40,50],"timeSec":[360,480],"weight":8,"minDone":4},{"id":"n_b4","needs":[["bake",4]],"coins":[40,50],"timeSec":[360,480],"weight":8,"minDone":4},{"id":"n_c3b3","needs":[["coffee",3],["bake",3]],"coins":[45,60],"timeSec":[420,540],"weight":7,"minDone":5},{"id":"n_c5","needs":[["coffee",5]],"coins":[60,75],"timeSec":[480,600],"weight":6,"minDone":8},{"id":"n_b5","needs":[["bake",5]],"coins":[60,75],"timeSec":[480,600],"weight":6,"minDone":8},{"id":"n_c4b4","needs":[["coffee",4],["bake",4]],"coins":[70,80],"timeSec":[540,660],"weight":5,"minDone":10},{"id":"r_c6","needs":[["coffee",6]],"coins":[150,180],"timeSec":[900,1200],"weight":3,"minDone":10},{"id":"r_b6","needs":[["bake",6]],"coins":[150,180],"timeSec":[900,1200],"weight":3,"minDone":10},{"id":"r_c6b4","needs":[["coffee",6],["bake",4]],"coins":[190,230],"timeSec":[1200,1500],"weight":2,"minDone":13},{"id":"r_c7","needs":[["coffee",7]],"coins":[220,260],"timeSec":[1500,1800],"weight":2,"minDone":15},{"id":"r_b7","needs":[["bake",7]],"coins":[220,260],"timeSec":[1500,1800],"weight":2,"minDone":15},{"id":"r_c8","needs":[["coffee",8]],"coins":[270,300],"timeSec":[1800,2400],"weight":1,"minDone":20},{"id":"r_b8","needs":[["bake",8]],"coins":[270,300],"timeSec":[1800,2400],"weight":1,"minDone":20}]},"tutorial":{"_doc":"新手引导（Issue M2）：首次进入强制 点生成器 → 拖合 → 交订单。引导期间生成器固定出 spawnLevel 级、只允许当前这一步的操作；第一个订单固定为 firstOrder（放在第 1 个订单位），其余订单位照常从模板抽。目标：60 秒内首次合成、3 分钟内首订单。","enabled":true,"generator":"gen_coffee_machine","spawnLevel":1,"firstOrder":{"id":"tut_c2","needs":[["coffee",2]],"coins":[25,25],"timeSec":[900,900],"customer":0},"steps":["tapGen","merge","deliver"]},"deco":{"_doc":"装修（策划案 §6 v0.4 / V1-plan.md）：按区域组织，每个区域若干幕、每幕若干节点，按顺序解锁。cost=星星价，coins=金币价（没有就是 0）。layer 是场景里打开的图层 id；comics 里的节点解锁后弹一格漫画。区域 1「海边咖啡摊」= 原来的 3 幕 15 节点：第一幕 6 星不变（首个会话就能装完），第二幕 24 星 + 8500 金币，第三幕 44 星 + 12000 金币（M1 校准：升级奖励让金币来得更快，原定 1000 / 3600 会让第三幕提前到 D5），tools/sim.js（每天 2×15 分钟）装完时间约 D1 / D4 / D7。区域 2、3 是 V2：加区域 = 在 areas 里追加一项 + 交场景图，unlockLevel 是进入该区域要求的店铺等级（且上一个区域要装完）。 M3 再校准：熟客单、菜谱加成和小费让金币来得更快，二三幕金币价上调到 3500 / 10000，装完仍是 D1/D4/D7。 M4 再校准：挖障碍省下了开格的金币，套餐单 Perfect 多给金币，二三幕金币价上调到 8500 / 12000，装完仍是 D1/D4/D7。","areas":[{"id":"seaside","name":"area.seaside","unlockLevel":1,"scene":"seaside","acts":[{"id":"act1","name":"act.1","nodes":[{"id":"a1_tables","name":"deco.a1_tables","cost":1,"layer":"tables"},{"id":"a1_parasol","name":"deco.a1_parasol","cost":1,"layer":"parasol"},{"id":"a1_sign","name":"deco.a1_sign","cost":1,"layer":"sign"},{"id":"a1_counter","name":"deco.a1_counter","cost":1,"layer":"counter"},{"id":"a1_light","name":"deco.a1_light","cost":2,"layer":"lightbox"}]},{"id":"act2","name":"act.2","nodes":[{"id":"a2_deck","name":"deco.a2_deck","cost":4,"layer":"deck","coins":1300},{"id":"a2_flowers","name":"deco.a2_flowers","cost":4,"layer":"flowers","coins":1500},{"id":"a2_bar","name":"deco.a2_bar","cost":5,"layer":"bar","coins":1700},{"id":"a2_menu","name":"deco.a2_menu","cost":5,"layer":"menu","coins":1900},{"id":"a2_speaker","name":"deco.a2_speaker","cost":6,"layer":"speakers","coins":2100}]},{"id":"act3","name":"act.3","nodes":[{"id":"a3_neon","name":"deco.a3_neon","cost":8,"layer":"neon","coins":2100},{"id":"a3_terrace","name":"deco.a3_terrace","cost":8,"layer":"terrace","coins":2300},{"id":"a3_tower","name":"deco.a3_tower","cost":9,"layer":"tower","coins":2400},{"id":"a3_photo","name":"deco.a3_photo","cost":9,"layer":"photo","coins":2500},{"id":"a3_lights","name":"deco.a3_lights","cost":10,"layer":"lights","coins":2700}]}],"comics":{"a1_tables":"comic.1","a2_bar":"comic.8","a3_lights":"comic.15"}}]},"ads":{"_doc":"广告（策划案 §7 / Issue M3），WebGL 版只有广告。当前全部是 Mock：点了模拟播放 mockSec 秒再发奖，接入点见 src/ads.js 里的 TODO（CrazyGames / Playgama SDK）。激励视频 3 个点位：体力见底 +energy、生成器冷却时立即回满、订单完成后奖励翻倍（按钮出现 doubleOfferSec 秒）。插屏：每完成 interstitialEveryOrders 个订单出 1 次，拖拽中、弹窗中、引导中一律延后，禁止打断合成。 首测反馈广告太频繁后降频：插屏改为每 interstitialEveryOrders 单 1 次、第 interstitialFirstAtOrder 单之前不出、两次之间至少 interstitialMinGapSec 秒；翻倍按钮每 double.everyOrders 单才出一次。","rewarded":{"energy":{"amount":30},"refill":{},"double":{"offerSec":6,"everyOrders":3}},"mockSec":5,"interstitialEveryOrders":10,"interstitialMockSec":3,"interstitialFirstAtOrder":20,"interstitialMinGapSec":240},"tasks":{"_doc":"任务（底栏 Tasks，首测反馈新增，策划案 / #39 原本没有）。同时显示 active 个，按 list 顺序补位；做完点 Claim 领奖励后补下一个，全部领完显示完成。type：merges 合成次数、orders 完成订单、spawns 点生成器次数、unlocks 开格数、renovate 装修节点数、coins 累计赚金币、level 做出过的最高等级物品。除 level 外都从接到任务那一刻起算。奖励以金币、体力为主，星星只给少量（共 6 颗），避免冲掉装修节奏。","active":3,"list":[{"id":"t01","type":"merges","n":5,"reward":{"coins":20}},{"id":"t02","type":"orders","n":2,"reward":{"energy":10}},{"id":"t03","type":"spawns","n":10,"reward":{"coins":20}},{"id":"t04","type":"level","n":4,"reward":{"coins":30}},{"id":"t05","type":"unlocks","n":1,"reward":{"energy":15}},{"id":"t06","type":"orders","n":5,"reward":{"stars":1}},{"id":"t07","type":"merges","n":20,"reward":{"coins":40}},{"id":"t08","type":"renovate","n":2,"reward":{"energy":20}},{"id":"t09","type":"level","n":5,"reward":{"coins":50}},{"id":"t10","type":"coins","n":300,"reward":{"stars":1}},{"id":"t11","type":"orders","n":10,"reward":{"energy":20}},{"id":"t12","type":"unlocks","n":3,"reward":{"coins":60}},{"id":"t13","type":"level","n":6,"reward":{"stars":1}},{"id":"t14","type":"merges","n":50,"reward":{"energy":30}},{"id":"t15","type":"renovate","n":5,"reward":{"coins":80}},{"id":"t16","type":"orders","n":20,"reward":{"stars":2}},{"id":"t17","type":"level","n":7,"reward":{"coins":100}},{"id":"t18","type":"spawns","n":100,"reward":{"stars":1,"energy":30}}]},"art":{"_doc":"已到位的正式图（规格见 ASSETS.md）。物品 / 生成器放 assets/items/<id>.png → 登记进 items；顾客头像放 assets/avatars/<id>.png → avatars；货币图标、Logo、小图标、底栏图标放 assets/ui/<id>.png → ui（可用 id：icon_energy icon_coin icon_star logo_merge_cafe_lite icon_lock icon_check icon_clock icon_hand nav_cafe nav_merge）。头图放 assets/scene/<id>.webp → scene（header_merge_p 竖屏、header_merge_l 横屏；#49 A 批正式头图，P1 正式头图到位后同名替换）。装修场景（#49）放 assets/scene/<id>.webp → cafe（底图 scene_base + 图层，坐标在 assets/scene/layers.json，构建时内联为 layerPos）；漫画放 assets/comics/<id>.webp → comics。cafe / comics 在首帧之后后台加载。没登记的一律用占位，不发多余请求。","items":["gen_coffee_machine","gen_ingredient_box","item_bake_01","item_bake_02","item_bake_03","item_bake_04","item_bake_05","item_bake_06","item_bake_07","item_bake_08","item_coffee_01","item_coffee_02","item_coffee_03","item_coffee_04","item_coffee_05","item_coffee_06","item_coffee_07","item_coffee_08","item_wild_star"],"avatars":["avatar_customer_01","avatar_customer_02","avatar_customer_03","avatar_customer_04","avatar_customer_05","avatar_customer_06","avatar_customer_01_happy","avatar_customer_02_happy","avatar_customer_03_happy","avatar_customer_04_happy","avatar_customer_05_happy","avatar_customer_06_happy"],"ui":["icon_coin","icon_energy","icon_star","logo_merge_cafe_lite","icon_lock","icon_check","icon_clock","icon_hand","nav_cafe","nav_merge","nav_tasks","deco_plant_pot","deco_plant_fern","deco_plant_bush","chest_closed","chest_open","obstacle_sand","obstacle_crate","badge_level","nav_book","fx_bubble","icon_upgrade"],"scene":["header_merge_p","header_merge_l","bg_wood_tile"],"sceneMeta":{"_doc":"头图元数据：safeTop = 图里 Logo 顶边占图高的比例，这条线以上可以被顶栏盖住，以下不行","header_merge_p":{"safeTop":0.25},"header_merge_l":{"safeTop":0.04}},"cafe":["scene_base","shabby_stall","shabby_table","shabby_litter","tables","parasol","sign","counter","lightbox","deck","flowers","bar","menu","speakers","neon","terrace","tower","photo","lights"],"comics":["comic_01","comic_08","comic_15"],"layerPos":{"counter":[700,687],"shabby_stall":[700,685],"tables":[1385,968],"shabby_table":[1404,998],"parasol":[1350,799],"sign":[889,643],"lightbox":[716,812],"shabby_litter":[1430,1090],"deck":[640,1080],"flowers":[720,850],"bar":[770,890],"menu":[1270,1040],"speakers":[720,690],"neon":[1040,878],"terrace":[660,1290],"tower":[1140,880],"photo":[670,1110],"lights":[700,635]}},"progression":{"_doc":"店铺等级（V1-plan.md「店铺等级」）。每完成一单得经验 = 需求等级之和，稀有单 ×xp.rareMul（熟客单 M3 起 ×xp.regularMul）。levelNeed[i] = 从 i+1 级升到 i+2 级要的经验，超出表的等级每级 after。每次升级：+levelReward.energy 体力（可超上限）+ 等级×coinsPerLevel 金币；每 chestEvery 级额外给一个宝箱（内容 chest）。unlocks：按等级开放的系统，ready=false 的还没做，升级弹窗不提；feature 是程序里的开关名。 M1 校准（tools/sim.js，每天 2×15 分钟）：升级送体力和金币会加快后期升级，所以 11 级以后的经验需求比 V1-plan 初稿 ×1.2，20 级以后每级 360；结果 8 级 D1、12 级 D3、16 级 D6、20 级 D10。 M3 再校准：熟客单、菜谱加成、小费让经验和金币来得更快，8 级以后经验需求上调，20 级以后每级 330；熟客单经验 ×1.5。结果仍是 8 级 D1、12 级 D3、16 级 D6、20 级 D10。","xp":{"rareMul":2,"regularMul":1.5},"levelNeed":[20,25,35,45,55,65,75,110,120,140,185,215,245,265,275,285,295,305,315],"after":330,"levelReward":{"energy":20,"coinsPerLevel":10,"chestEvery":5},"chest":{"energy":30,"coins":100,"stars":1},"unlocks":[{"level":2,"feature":"daily","name":"unlock.daily","ready":false},{"level":3,"feature":"regulars","name":"unlock.regulars","ready":true},{"level":4,"feature":"setOrders","name":"unlock.setOrders","ready":true},{"level":5,"feature":"recipes","name":"unlock.recipes","ready":true},{"level":5,"feature":"reg.kai","name":"reg.kai","ready":true,"regular":true},{"level":6,"feature":"obstacles","name":"unlock.obstacles","ready":true},{"level":7,"feature":"wildStar","name":"unlock.wildStar","ready":true},{"level":7,"feature":"reg.rose","name":"reg.rose","ready":true,"regular":true},{"level":9,"feature":"offline6h","name":"unlock.offline","ready":false},{"level":9,"feature":"reg.leo","name":"reg.leo","ready":true,"regular":true},{"level":11,"feature":"reg.marcus","name":"reg.marcus","ready":true,"regular":true},{"level":13,"feature":"reg.chloe","name":"reg.chloe","ready":true,"regular":true},{"level":15,"feature":"offline8h","name":"unlock.offline","ready":false}]},"regulars":{"_doc":"熟客（V1 M3，V1-plan.md「熟客好感」）。avatar = orders.json customers 的下标（03 号头像是下标 2）。unlock = 登场所需店铺等级。fav = 最爱的物品 [链, 等级]（可多个；熟客单就是要这些）。好感：做她的单 +points.order，单里有她最爱的 +points.fav，熟客单 +points.regularOrder；只涨不跌。hearts = 1–5 心的累计好感门槛。heartRewards：tip = 她的单金币加成（%，取当前最高）、gift = 每天第一次做她的单送体力、chest = 到这一心送一个宝箱、line = 这一心解锁的台词 key。regularOrder：2 心以上每位每天最多 1 张，新订单有 chance 概率出熟客单；金币 = coinsPerLevel × 需求等级和 × coinsMul，必给 stars 星，限时 timeSec。seats：咖啡馆场景里熟客坐的位置（2400×1600 母画布坐标），对应图层装修后才坐人，按熟客登场顺序依次入座。 M3 校准（tools/sim.js，每天 2×15 分钟）：Mia 1–5 心约 D1/D2/D4/D7/D11。","regulars":[{"id":"mia","name":"reg.mia","avatar":2,"unlock":3,"fav":[["coffee",5]]},{"id":"kai","name":"reg.kai","avatar":4,"unlock":5,"fav":[["coffee",4],["bake",4]]},{"id":"rose","name":"reg.rose","avatar":0,"unlock":7,"fav":[["bake",5]]},{"id":"leo","name":"reg.leo","avatar":1,"unlock":9,"fav":[["coffee",7]]},{"id":"marcus","name":"reg.marcus","avatar":3,"unlock":11,"fav":[["bake",6]]},{"id":"chloe","name":"reg.chloe","avatar":5,"unlock":13,"fav":[["bake",7]]}],"points":{"order":1,"fav":3,"regularOrder":5},"hearts":[5,25,70,140,220],"heartRewards":[{"heart":1,"line":1},{"heart":2,"regularOrders":true},{"heart":3,"line":3,"tip":10},{"heart":4,"gift":10},{"heart":5,"line":5,"tip":20,"chest":true}],"regularOrder":{"chance":0.35,"coinsPerLevel":12,"coinsMul":1.5,"stars":1,"timeSec":[600,900]},"seats":[{"layer":"tables","at":[1455,1085]},{"layer":"tables","at":[1660,1085]},{"layer":"deck","at":[780,1190]},{"layer":"terrace","at":[950,1330]},{"layer":"terrace","at":[1450,1330]},{"layer":"deck","at":[1250,1250]}]},"recipes":{"_doc":"菜谱熟练度与图鉴（V1 M3，V1-plan.md「菜谱熟练度 + 图鉴」）。图鉴：第一次做出某物品 → New Recipe 卡 + 等级×coinsPerLevel 金币；一条链 8 格集齐送一个宝箱。熟练度：每交一次得「等级」点，累计到 stars 的门槛升 1/2/3 星；订单金币按单里每道菜的星数加成 bonusPerStar%（多道菜取平均）。店铺等级达到 progression unlocks 的 recipes 才开始发奖和加成，之前做过的照常记录。","coinsPerLevel":10,"stars":[10,40,120],"bonusPerStar":10}};
+const LOCALE = {"game.title":"Merge Café","chain.coffee":"Coffee","chain.bake":"Bakery","item.coffee.1":"Coffee Beans","item.coffee.2":"Roasted Beans","item.coffee.3":"Espresso","item.coffee.4":"Americano","item.coffee.5":"Latte","item.coffee.6":"Latte Art","item.coffee.7":"Cold Brew","item.coffee.8":"Sea Salt Coffee","item.bake.1":"Flour","item.bake.2":"Dough","item.bake.3":"Raw Loaf","item.bake.4":"Toast","item.bake.5":"Sandwich","item.bake.6":"Fruit Tart","item.bake.7":"Cream Cake","item.bake.8":"Party Cake","gen.coffee":"Coffee","gen.bake":"Ingredients","ui.level":"Lv {n}","ui.maxLevel":"Max level","ui.charges":"{n}/{max} left","ui.recharging":"Recharging {t}","ui.mergeHint":"Drag two matching items together to merge","ui.full":"Board is full! Merge items to free up space.","ui.noEnergyTitle":"Out of Energy","ui.noEnergyBody":"+1 energy every 2 minutes. Next in {t}.","ui.energyFull":"Energy full","ui.ok":"OK","ui.cancel":"Cancel","ui.unlockTitle":"Expand the Board","ui.unlockBody":"Open this tile for {n} coins?","ui.unlock":"Unlock","ui.notAdjacent":"Unlock a tile next to the board first.","ui.noCoins":"Not enough coins.","ui.cantMerge":"These don't match.","ui.maxMerge":"Already at max level!","ui.welcomeBack":"Welcome back! +{n} energy","ui.webglError":"Your browser doesn't support WebGL.","ui.wrongOrder":"This customer ordered something else.","ui.rare":"Rare","ui.orderDone":"Order complete!","ui.soon":"Renovations open soon!","nav.cafe":"Café","nav.merge":"Merge","tut.tapGen":"Tap the Coffee Machine to brew some beans.","tut.merge":"Drag one bean onto the other to merge them!","tut.deliver":"Drag the Roasted Beans to your customer.","tut.done":"Nice! Tap any order to see how to make it.","game.titleSub":"Lite","act.1":"Act 1 · Fix Up the Stall","act.2":"Act 2 · Seaside Makeover","act.3":"Act 3 · Insta-Famous","deco.a1_tables":"Tables & Chairs","deco.a1_parasol":"Beach Parasol","deco.a1_sign":"Café Sign","deco.a1_counter":"New Counter","deco.a1_light":"Light Box","deco.a2_deck":"Wooden Deck","deco.a2_flowers":"Flower Wall","deco.a2_bar":"Coffee Bar","deco.a2_menu":"Menu Board","deco.a2_speaker":"Speakers","deco.a3_neon":"Neon Sign","deco.a3_terrace":"Sun Terrace","deco.a3_tower":"Drink Tower","deco.a3_photo":"Photo Wall","deco.a3_lights":"Fairy Lights","comic.1":"“A real table! Customers can finally sit down.”","comic.8":"“The new bar is gorgeous. People are lining up!”","comic.15":"“Look at those lights… we did it. Best café on the coast!”","ui.renovate":"Renovate","ui.needStars":"Need {n} more stars. Fill orders to earn them!","ui.actDone":"{act} complete!","ui.allDone":"Your café is complete!","ui.continue":"Continue","ui.starBonus":"Bonus star for 3 orders!","ui.genEmptyTitle":"Machine Recharging","ui.genEmptyBody":"Ready again in {t}.","ad.watch":"Watch Ad","ad.energy":"+{n} Energy","ad.refill":"Refill Now","ad.double":"Double Coins","ad.playing":"Ad playing… {n}","ad.label":"Advertisement","ad.got":"+{n} coins!","ui.howToMake":"How to make {item}","ui.chainTip":"Merge two of the same item to get the next one.","ui.onBoard":"x{n}","nav.tasks":"Tasks","ui.tasksTitle":"Tasks","ui.claim":"Claim","ui.tasksDone":"All tasks done! More coming soon.","task.merges":"Merge {n} items","task.orders":"Complete {n} orders","task.spawns":"Tap generators {n} times","task.unlocks":"Unlock {n} tiles","task.renovate":"Renovate {n} times","task.coins":"Earn {n} coins","task.level":"Make a Lv {n} item","ui.upgrade":"Upgrade","ui.genLevel":"{name} · Lv {n}","ui.upgradeBody":"Uses per refill: {a} → {b}. Recharge time −{p}%.","ui.upgradeLv3":"Sometimes makes Lv 3 items ({p}%).","ui.upgraded":"Upgraded to Lv {n}!","ui.energyTitle":"Need Energy?","ui.bubbleTitle":"Bubble Bonus!","ui.bubbleBody":"Grab this {item} before the bubble pops in {t}.","ui.bubblePopped":"The bubble popped!","ui.swap":"Swap Order","ad.free":"Free","ui.buy":"Buy","area.seaside":"Seaside Café","ui.levelUp":"Café Level {n}!","ui.levelTitle":"Café Level {n}","ui.levelBody":"{xp} / {need} XP to level {next}. Every order earns XP.","ui.nextUnlock":"Lv {n}: {what}","ui.chest":"Bonus chest!","ui.decoCoins":"Need {n} more coins.","unlock.daily":"Daily Tasks","unlock.regulars":"Regular Customers","unlock.setOrders":"Combo Orders","unlock.recipes":"Recipe Book","unlock.obstacles":"Sand & Crates","unlock.wildStar":"Wild Star","unlock.offline":"Longer Café Hours","ui.collect":"Collect","ui.levelRewards":"Level-up rewards","ui.combo":"Combo x{n}!","ui.sell":"Sell +{n}","ui.sellTitle":"Sell {item}?","ui.sellBody":"You'll get {n} coins.","ui.recycle":"Recycle bin {n}/{max}","ui.recycleFull":"Recycle bonus! +{n} energy","ui.stuck":"No matches left. Sell an item to make room!","ui.open":"Open","reg.mia":"Mia","reg.kai":"Kai","reg.rose":"Rose","reg.leo":"Leo","reg.marcus":"Marcus","reg.chloe":"Chloe","line.mia.1":"Hi! I'm Mia from the bookshop next door. Your latte smells like a good first chapter.","line.mia.3":"I keep telling customers about your café. Half of them come here before they buy a book now.","line.mia.5":"I wrote the shop newsletter about this place. It's officially my favorite chapter.","line.kai.1":"Kai. I teach surfing down the beach. Feed me and I'll tell you where the waves are.","line.kai.3":"My students think your toast is part of the training plan. I'm not correcting them.","line.kai.5":"Caught the best wave of the season today. Powered by your coffee, of course.","line.rose.1":"I'm Rose. I've watched this stall for forty summers. It hasn't looked this good in years.","line.rose.3":"I had my first date on this beach. Your sandwiches taste like those summers.","line.rose.5":"You've given this old corner its heart back, dear. I'm proud of you.","line.leo.1":"Leo. I write novels, or I try to. Your cold brew is the only thing finishing my chapters.","line.leo.3":"I put a little seaside café in my book. Guess who runs it?","line.leo.5":"The book is done! You're in the acknowledgements. Twice.","line.marcus.1":"Marcus, from the sailing club. My crew voted your fruit tart the official snack.","line.marcus.3":"We named the new dinghy after your fruit tart. Don't ask whose idea that was.","line.marcus.5":"Regatta's on Sunday. The whole club wants your café to cater it.","line.chloe.1":"Chloe, wedding planner. Always running, never without cake.","line.chloe.3":"A bride asked where I found that cream cake. I said it's a secret. It's you.","line.chloe.5":"I'm booking your café for my own wedding. Yes, really. Save me a cake!","nav.book":"Book","ui.bookRecipes":"Recipes","ui.bookRegulars":"Regulars","ui.newRecipe":"New Recipe!","ui.heartUp":"{name} ♥{n}","ui.newRegular":"New regular: {name}","ui.gift":"{name} brought you a gift! +{n} energy","ui.recipeStar":"{item} ★{n}","ui.chainDone":"{chain} collection complete!","ui.toNextHeart":"{n} more to ♥{h}","ui.favOrder":"Favorite order","ui.maxHearts":"Best friends!","ui.wildStar":"Wild Star","ui.wildGot":"Wild Star! Drop it on any item to level it up.","ui.digHint":"Drop a {item} here to dig it out!","ui.unlockHidden":"Open this tile for {n} coins? You'll get the {item} inside.","ui.dug":"Dug up! {item}","ui.perfect":"Perfect! +{n}","ui.obstacleTip":"Sand & crates hide items. Drop the same item on them to dig them out!"};
 /* 本地化：所有玩家可见文案只从 locale/en.json 取（构建时内联为 LOCALE）。
    DOM 里写 data-l10n="key"，启动时 L.apply() 统一填。 */
 const L = (() => {
@@ -272,7 +272,7 @@ const L = (() => {
    所有数值来自 CONFIG（src/config/*.json），这里不写死任何数。
    时间一律用毫秒时间戳 now 传入，随机数用 rng 传入，方便离线结算和测试。 */
 const Core = (() => {
-  const SAVE_VERSION = 7;
+  const SAVE_VERSION = 8;
   const TUT_DONE = -1;
 
   /* ---------- 配置索引 ---------- */
@@ -335,6 +335,7 @@ const Core = (() => {
       stats: newStats(now),
     };
     for (let r = 0; r < C.rows; r++) for (let c = 0; c < C.cols; c++) s.unlocked[idx(C, r, c)] = b.mask[r][c] === 'x';
+    s.hidden = rollHidden(C, s, rng); // 锁格里埋的物品（M4 棋盘障碍）
     for (const g of C.genList) s.gens[g.id] = { charges: g.charges, cdEnd: 0, lv: 1 };
     for (const it of b.startItems) s.cells[idx(C, it.at[0], it.at[1])] = { k: 'item', chain: it.chain, lvl: it.level };
     fillTasks(C, s);
@@ -343,6 +344,24 @@ const Core = (() => {
       else s.orders.push(rollOrder(C, s, now, rng));
     }
     return s;
+  }
+
+  /* ---------- 棋盘障碍（V1 M4）：锁格里埋物品 ---------- */
+  function rollHidden(C, s, rng) {
+    const R = (C.cfg.board.obstacles || {}).rows || {}, chains = Object.keys(C.chains), h = new Array(C.n).fill(null);
+    for (let i = 0; i < C.n; i++) {
+      if (s.unlocked[i]) continue;
+      const def = R[String(rc(C, i)[0])]; if (!def) continue;
+      h[i] = { kind: def.kind, chain: chains[Math.floor(rng() * chains.length)], lvl: randInt(rng, def.lvl[0], def.lvl[1]) };
+    }
+    return h;
+  }
+  /* 这个锁格现在是不是"能挖的障碍"（开放了、埋了东西、和已开格相邻） */
+  const obstacleAt = (C, s, i) => (featureOn(C, s, 'obstacles') && !s.unlocked[i] && s.hidden && s.hidden[i]) || null;
+  /* 挖：把同款物品拖到障碍上 → 格子打开，里面是合成升一级的物品 */
+  function canDig(C, s, it, i) {
+    const h = obstacleAt(C, s, i);
+    return !!(h && it && it.k === 'item' && it.chain === h.chain && it.lvl === h.lvl && it.lvl < C.maxLevel && canUnlockHere(C, s, i));
   }
 
   /* ---------- 体力：按时间戳结算，返回本次恢复了多少 ---------- */
@@ -486,6 +505,18 @@ const Core = (() => {
     s.stats.bubbles = (s.stats.bubbles || 0) + 1;
     return to;
   }
+  /* 百搭星掉落（V1 M4）：合出 minLevel 级以上按 chance 在旁边空格掉一颗，连续 pity 次没掉必掉 */
+  function maybeWildStar(C, s, at, it, rng) {
+    const W = C.eco.wildStar; if (!W || !featureOn(C, s, 'wildStar') || it.lvl < W.minLevel) return -1;
+    const forced = (s.wildPity || 0) >= W.pity;
+    if (!forced && rng() >= W.chance) { s.wildPity = (s.wildPity || 0) + 1; return -1; }
+    const [r, c] = rc(C, at), to = nearestEmpty(C, s, r, c);
+    if (to < 0) { s.wildPity = (s.wildPity || 0) + 1; return -1; }
+    s.wildPity = 0; s.cells[to] = { k: 'tool', id: 'wild' }; s.stats.wildGot = (s.stats.wildGot || 0) + 1; logEv(s, 'mid');
+    return to;
+  }
+  /* 直接给一颗百搭星（每日宝箱等）：放到离 (ar,ac) 最近的空格，没空格返回 -1 */
+  function giveWildStar(C, s, ar, ac) { const to = nearestEmpty(C, s, ar, ac); if (to < 0) return -1; s.cells[to] = { k: 'tool', id: 'wild' }; s.stats.wildGot = (s.stats.wildGot || 0) + 1; return to; }
   function settleBubbles(C, s, now) {
     const gone = [];
     for (let i = 0; i < C.n; i++) { const c = s.cells[i]; if (c && c.k === 'bubble' && !c.hold && now >= c.until) { s.cells[i] = null; gone.push(i); } }
@@ -521,11 +552,31 @@ const Core = (() => {
   }
   function drop(C, s, from, to, now, rng) {
     const a = s.cells[from];
-    if (!a || a.k !== 'item') return { type: 'none' };
+    if (!a || (a.k !== 'item' && a.k !== 'tool')) return { type: 'none' };
     if (to < 0 || to >= C.n || to === from) return { type: 'none' };
-    if (!s.unlocked[to]) return { type: 'bounce', reason: 'locked' };
+    if (!s.unlocked[to]) {
+      if (canDig(C, s, a, to)) { // 挖障碍
+        const it = { k: 'item', chain: a.chain, lvl: a.lvl + 1 };
+        s.unlocked[to] = true; s.hidden[to] = null; s.cells[to] = it; s.cells[from] = null;
+        s.stats.unlocks = (s.stats.unlocks || 0) + 1; s.stats.dug = (s.stats.dug || 0) + 1; s.stats.merges++;
+        s.stats.maxLvl = Math.max(s.stats.maxLvl || 0, it.lvl); logEv(s, 'mid');
+        const found = markFound(C, s, it, now), combo = addCombo(C, s, now);
+        return { type: 'dig', lvl: it.lvl, found, combo, star: maybeWildStar(C, s, to, it, rng || Math.random) };
+      }
+      return { type: 'bounce', reason: obstacleAt(C, s, to) ? 'dig' : 'locked' };
+    }
     const b = s.cells[to];
     const step = tutStep(C, s);
+    if (a.k === 'tool') { // 百搭星：拖到 8 级以下物品上 = 升 1 级；拖到空格是移动
+      if (step) return { type: 'bounce', reason: 'tutorial' };
+      if (!b) { s.cells[to] = a; s.cells[from] = null; return { type: 'move' }; }
+      if (b.k !== 'item' || b.lvl >= C.maxLevel) return { type: 'bounce', reason: b.k === 'item' ? 'max' : 'mismatch' };
+      const it = { k: 'item', chain: b.chain, lvl: b.lvl + 1 };
+      s.cells[to] = it; s.cells[from] = null; s.stats.wildUsed = (s.stats.wildUsed || 0) + 1;
+      s.stats.maxLvl = Math.max(s.stats.maxLvl || 0, it.lvl); logEv(s, 'mid');
+      return { type: 'wild', lvl: it.lvl, found: markFound(C, s, it, now) };
+    }
+    if (b && b.k === 'tool') return { type: 'bounce', reason: 'mismatch' };
     if (step && step !== 'merge') return { type: 'bounce', reason: 'tutorial' };
     if (!b) {
       if (step) return { type: 'bounce', reason: 'tutorial' };
@@ -541,7 +592,8 @@ const Core = (() => {
       if (step === 'merge') s.tut++;
       const bubble = maybeBubble(C, s, to, s.cells[to], now, rng || Math.random);
       const combo = step ? null : addCombo(C, s, now);
-      return { type: 'merge', lvl: a.lvl + 1, bubble, combo, found };
+      const star = step ? -1 : maybeWildStar(C, s, to, s.cells[to], rng || Math.random);
+      return { type: 'merge', lvl: a.lvl + 1, bubble, combo, found, star };
     }
     let reason = 'mismatch';
     if (a.k === 'item' && b.k === 'item' && a.chain === b.chain && a.lvl === b.lvl) reason = 'max';
@@ -589,6 +641,8 @@ const Core = (() => {
   /* 满格且没有能合的：返回最低级物品的格子（提示卖掉它腾地方），否则 -1 */
   function stuckHint(C, s) {
     if (emptyCount(C, s) > 0 || findMergePair(C, s)) return -1;
+    if (s.cells.some((c) => c && c.k === 'tool') && s.cells.some((c) => c && c.k === 'item' && c.lvl < C.maxLevel)) return -1; // 有百搭星能用
+    for (let i = 0; i < C.n; i++) if (s.cells[i] && s.cells.some((_, j) => canDig(C, s, s.cells[i], j))) return -1; // 有障碍能挖
     let low = -1;
     for (let i = 0; i < C.n; i++) { const c = s.cells[i]; if (c && c.k === 'item' && (low < 0 || c.lvl < s.cells[low].lvl)) low = i; }
     return low;
@@ -606,7 +660,14 @@ const Core = (() => {
       stars: C.O.bands[rare ? 'rare' : 'normal'].stars,
       rare, cust: customer !== undefined ? customer : randInt(rng, 0, C.O.customers.length - 1),
       start: now, expiresAt: now + sec * 1000,
+      ...setOrderFields(C, s, t.needs, now),
     };
+  }
+  /* 套餐单（V1 M4）：开放后，同时要两条链的订单在 perfectSec 秒内交齐有 Perfect 加成 */
+  function setOrderFields(C, s, needs, now) {
+    const S2 = C.eco.setOrder; if (!S2 || !featureOn(C, s, 'setOrders') || s.tut !== TUT_DONE) return {};
+    const chains = new Set(needs.map((n) => n[0] || n.chain));
+    return chains.size >= 2 ? { set: true, perfectEnd: now + S2.perfectSec * 1000 } : {};
   }
   /* 熟客单：2 心以上的熟客每人每天最多 1 张；新订单有 chance 概率出 */
   function rollRegularOrder(C, s, now, rng) {
@@ -665,7 +726,8 @@ const Core = (() => {
     if (ni < 0) return { type: 'reject', reason: 'mismatch' };
     o.needs[ni].done = true; s.cells[from] = null;
     if (o.needs.some((n) => !n.done)) return { type: 'partial', need: ni };
-    const pay = orderCoins(C, s, o);
+    const pay = orderCoins(C, s, o, now);
+    if (pay.perfect) { s.stats.perfects = (s.stats.perfects || 0) + 1; logEv(s, 'mid'); }
     s.coins += pay.total; s.stars += o.stars;
     s.stats.ordersDone++; s.stats.coinsEarned += pay.total;
     logEv(s, 'small');
@@ -740,13 +802,15 @@ const Core = (() => {
     return ups;
   }
   /* 这张订单实际给多少金币：基础 + 菜谱星级加成（多道菜取平均）+ 熟客小费 */
-  function orderCoins(C, s, o) {
+  function orderCoins(C, s, o, now) {
     const base = o.coins;
+    // 套餐单 Perfect：在时限内交齐（now 不传时按"还在时限内"显示）
+    const perfect = o.set && (now === undefined || now <= o.perfectEnd) ? Math.round(base * C.eco.setOrder.bonusPct / 100) : 0;
     let recipe = 0;
     if (featureOn(C, s, 'recipes')) { const pct = o.needs.reduce((a, n) => a + recipeStars(C, s, n.chain, n.lvl) * C.RC.bonusPerStar, 0) / o.needs.length; recipe = Math.round(base * pct / 100); }
     let tip = 0; const r = C.regByAvatar[o.cust];
     if (r && regOn(C, s, r)) tip = Math.round(base * regPerks(C, regState(s, r.id).hearts).tip / 100);
-    return { base, recipe, tip, total: base + recipe + tip };
+    return { base, recipe, tip, perfect, total: base + recipe + tip + perfect };
   }
   /* 已经入座的熟客（UI 画在咖啡馆场景里）：按登场顺序依次占座，座位所在图层要已经装修 */
   function seatedRegulars(C, s) {
@@ -894,7 +958,9 @@ const Core = (() => {
     const p = unlockPrice(C, i);
     if (s.coins < p) return { ok: false, reason: 'coins', price: p };
     s.coins -= p; s.unlocked[i] = true; s.stats.unlocks = (s.stats.unlocks || 0) + 1; s.stats.coinsSpent.unlock += p;
-    return { ok: true, price: p };
+    let item = null; // 障碍开放后付金币开：埋着的物品原样送你；开放前开的格子是空的
+    if (s.hidden && s.hidden[i]) { if (featureOn(C, s, 'obstacles')) { item = { k: 'item', chain: s.hidden[i].chain, lvl: s.hidden[i].lvl }; s.cells[i] = item; } s.hidden[i] = null; }
+    return { ok: true, price: p, item, found: item ? markFound(C, s, item, 0) : null };
   }
 
   /* ---------- 存档 ---------- */
@@ -918,6 +984,7 @@ const Core = (() => {
       for (const c of o.cells || []) if (c && c.k === 'item') o.recipes[c.chain + c.lvl] = { f: 1, p: 0 };
       o.v = 7;
     }
+    if (o.v === 7) { o.v = 8; } // v7 → v8：棋盘障碍埋的物品（下面按当前锁格补）、百搭星格子
     if (o.v !== SAVE_VERSION) return null;
     if (!Array.isArray(o.cells) || o.cells.length !== C.n || !Array.isArray(o.unlocked) || o.unlocked.length !== C.n) return null;
     if (!o.gens || typeof o.gens !== 'object' || !Array.isArray(o.orders)) return null;
@@ -931,6 +998,7 @@ const Core = (() => {
     if (typeof o.area !== 'number' || !C.areas[o.area]) o.area = 0;
     if (!o.regs || typeof o.regs !== 'object') o.regs = {};
     if (!o.recipes || typeof o.recipes !== 'object') o.recipes = {};
+    if (!Array.isArray(o.hidden) || o.hidden.length !== C.n) o.hidden = rollHidden(C, o, rng || Math.random);
     if (!o.stats.maxLvl) for (const c of o.cells) if (c) o.stats.maxLvl = Math.max(o.stats.maxLvl, c.lvl);
     if (!o.tasks || !Array.isArray(o.tasks.active)) o.tasks = { next: 0, active: [] };
     o.tasks.active = o.tasks.active.filter((a) => taskDef(C, a.id));
@@ -946,6 +1014,7 @@ const Core = (() => {
     // 配置改动后可能有删掉的生成器 / 越界等级 / 删掉的订单模板：清理掉而不是崩
     for (let i = 0; i < C.n; i++) {
       const c = o.cells[i];
+      if (c && c.k === 'tool') { if (c.id !== 'wild') o.cells[i] = null; continue; }
       if (c && ((c.k !== 'item' && c.k !== 'bubble') || !C.chains[c.chain] || c.lvl < 1 || c.lvl > C.maxLevel)) o.cells[i] = null;
     }
     for (const id in o.gens) if (!C.gens[id]) delete o.gens[id];
@@ -978,7 +1047,7 @@ const Core = (() => {
     xpNeed, orderXp, addXp, openChest, unlockLevel, featureOn, nextUnlock, logEv, markDay, daysInFirstWeek, adOffer, adClick, grantEnergy, grantDouble, markInterstitial, cooldownSec,
     fillTasks, taskProgress, tasksClaimable, claimTask,
     genMaxCharges, upgradeCost, upgradeGen, refillPrice, buyRefill, energyPrice, buyEnergy,
-    addCombo, sellPrice, sellItem, findMergePair, stuckHint,
+    addCombo, sellPrice, sellItem, findMergePair, stuckHint, rollHidden, obstacleAt, canDig, maybeWildStar, giveWildStar, setOrderFields,
     regState, regOn, heartsFor, regPerks, addAffinity, recipeStars, recState, markFound, addMastery, orderCoins, seatedRegulars, rollRegularOrder,
     maybeBubble, settleBubbles, bubblePrice, popBubble, canSwap, swapOrder, daily,
     unlockPrice, canUnlockHere, unlock, serialize, deserialize, itemDef,
@@ -1355,6 +1424,15 @@ const Art = (() => {
   }
 
   /* 顾客头像占位：圆底 + 肩膀 + 脸 + 发型（id 与正式图 avatar_customer_XX 一致，到图自动替换） */
+  /* 百搭星（V1 M4）：正式图 item_wild_star（E 批），没有就画彩虹星 */
+  function wild(size) {
+    return GL.sprite('I|item_wild_star|', size, size, (g, w) => {
+      if (loaded.item_wild_star) { g.drawImage(loaded.item_wild_star, 0, 0, w, w); return; }
+      const gr = g.createLinearGradient(0, 0, w, w); ['#ff6b8b', '#ffb84a', '#ffe35a', '#6fd38a', '#5cb8ff', '#a77cff'].forEach((c, i) => gr.addColorStop(i / 5, c));
+      g.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? w * 0.2 : w * 0.44; g.lineTo(w / 2 + Math.cos(a) * r, w / 2 + Math.sin(a) * r); }
+      g.closePath(); g.fillStyle = gr; g.fill(); g.strokeStyle = '#3a2416'; g.lineWidth = w * 0.045; g.stroke();
+    });
+  }
   /* happy = 熟客 1 心以上：有 <id>_happy 正式图（E 批）就用开心表情，没有就用原图 */
   function avatar(C, k, size, happy) {
     const cu = C.O.customers[k % C.O.customers.length], hid = cu.id + '_happy';
@@ -1407,7 +1485,7 @@ const Art = (() => {
   }
   /* 只有正式图、没有占位的 UI 图（D 批：泡泡外壳 fx_bubble、升级箭头 icon_upgrade）：没到返回 null，由调用方画程序版 */
   function opt(id, w, h) { return loaded[id] ? GL.sprite('I|' + id + '|', w, h || w, (g, pw, ph) => g.drawImage(loaded[id], 0, 0, pw, ph)) : null; }
-  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, logo, has, src, img, cover, plant, layer, opt, FONT };
+  return { load, item, wild, gen, lock, coin, avatar, star, clock, check, bolt, hand, logo, has, src, img, cover, plant, layer, opt, FONT };
 })();
 
 /* Merge Café Lite · 音效（V1 M2）：全部用 WebAudio 现场合成，不占包体。
@@ -1984,7 +2062,9 @@ const Ads = (() => {
   }
   /* ---------- 弹窗队列（V1 M3）：升心、新菜谱等，排在升级庆典之后，没在拖拽、没有别的弹窗时依次弹 ---------- */
   const popups = [];
+  let obstacleTipShown = false;
   function tryPopups() {
+    if (!obstacleTipShown && Core.featureOn(C, S, 'obstacles') && mode === 'merge' && !modalOpen() && !lvQueue.length) { obstacleTipShown = true; if (!S.stats.dug) toast(L.t('ui.obstacleTip')); }
     if (!popups.length || lvQueue.length || down || drag || modalOpen() || Ads.busy || flies.length || Core.tutStep(C, S)) return;
     popups.shift()();
   }
@@ -2009,6 +2089,11 @@ const Ads = (() => {
     modal(L.t('ui.heartUp', { name, n: u.heart }), '', [{ label: L.t('ui.continue') }], null,
       `<div class="heartup">${src ? `<img src="${esc2(src)}" alt="">` : ''}<div class="hs">${'♥'.repeat(u.heart)}${'♡'.repeat(5 - u.heart)}</div>${line ? `<q>${esc2(line)}</q>` : ''}</div>`);
     modalOnClose = () => { if (u.chest) setTimeout(() => showChest(u.chest), 350); };
+  }
+  /* 百搭星掉落：从合成点飞到空格，第一次掉落时提示怎么用 */
+  function dropStar(cell, x, y) {
+    flies.push({ cell, item: S.cells[cell], x0: x, y0: y, t0: clock() + 0.2, dur: 0.45, spawn: true }); Sfx.chestOpen();
+    if ((S.stats.wildGot || 0) <= 1) toast(L.t('ui.wildGot')); else floatText(x, y - LY.cs * 0.6, '★ ' + L.t('ui.wildStar'), '#d89a22');
   }
   /* 庆典彩带：屏幕上方几处撒粒子 */
   function sfxBurst() {
@@ -2084,12 +2169,12 @@ const Ads = (() => {
   function tapLocked(i) {
     if (Core.tutStep(C, S)) { shakes.set(i, clock()); return; }
     if (!Core.canUnlockHere(C, S, i)) { shakes.set(i, clock()); toast(L.t('ui.notAdjacent')); return; }
-    const p = Core.unlockPrice(C, i);
-    modal(L.t('ui.unlockTitle'), L.t('ui.unlockBody', { n: p }), [
+    const p = Core.unlockPrice(C, i), ob = Core.obstacleAt(C, S, i);
+    modal(L.t('ui.unlockTitle'), ob ? L.t('ui.unlockHidden', { n: p, item: itemName({ k: 'item', chain: ob.chain, lvl: ob.lvl }) }) : L.t('ui.unlockBody', { n: p }), [
       { label: L.t('ui.cancel'), alt: true },
       { label: L.t('ui.unlock'), on: () => {
         const r = Core.unlock(C, S, i);
-        if (r.ok) { pops.set(i, clock()); const [x, y] = cellXY(i); burst(x, y, '#f5c03a', 14); Sfx.unlock(); Sfx.pop(); markDirty(); hudCache = ''; }
+        if (r.ok) { pops.set(i, clock()); const [x, y] = cellXY(i); burst(x, y, '#f5c03a', 14); Sfx.unlock(); Sfx.pop(); if (r.found) queueFound(r.found, x, y); markDirty(); hudCache = ''; }
         else if (r.reason === 'coins') { shakes.set(i, clock()); toast(L.t('ui.noCoins')); }
       } },
     ]);
@@ -2105,6 +2190,7 @@ const Ads = (() => {
       flyRewards(R.x + R.w / 2, R.y + R.h / 2, r.coins, r.stars + r.bonusStar);
       if (r.xp) floatText(R.x + R.w / 2, R.y - 4, '+' + r.xp + ' XP', '#2e9a5a');
       queueLevelUps(r.levelUps); Sfx.deliver();
+      if (r.pay.perfect) { floatText(R.x + R.w / 2, R.y - 22, L.t('ui.perfect', { n: r.pay.perfect }), '#c4851a'); burst(R.x + R.w / 2, R.y + R.h / 2, '#ffd84a', 18); Sfx.chestOpen(); }
       for (const u of r.recipeUps) floatText(R.x + R.w * 0.62, R.y + R.h * 0.35, L.t('ui.recipeStar', { item: L.t(C.chains[u.chain].items[u.lvl - 1].name), n: u.stars }), '#d89a22');
       if (r.gift) setTimeout(() => { bump('pill-energy'); toast(L.t('ui.gift', { name: L.t(C.regById[r.reg].name), n: r.gift })); }, 700);
       if (r.reg && Core.regOn(C, S, C.regById[r.reg])) { const hx = R.x + R.h * 0.3, hy = R.y + R.h * 0.4; for (let k = 0; k < 4; k++) floatText(hx + (k - 1.5) * 10, hy, '♥', '#e2566f'); }
@@ -2130,7 +2216,7 @@ const Ads = (() => {
     if (!down || e.pointerId !== down.id) return;
     if (!drag) {
       const i = down.cell;
-      if (i < 0 || !S.unlocked[i] || !S.cells[i] || S.cells[i].k !== 'item' || flyingTo(i)) return;
+      if (i < 0 || !S.unlocked[i] || !S.cells[i] || (S.cells[i].k !== 'item' && S.cells[i].k !== 'tool') || flyingTo(i)) return;
       if (Math.hypot(e.clientX - down.x, e.clientY - down.y) < DRAG_PX) return;
       const [cx, cy] = cellXY(i);
       drag = { from: i, ox: down.x - cx, oy: down.y - cy, x: e.clientX, y: e.clientY };
@@ -2167,12 +2253,26 @@ const Ads = (() => {
           if (r.combo.coins) flyRewards(x, y, r.combo.coins, 0);
           if (r.combo.energy) { bump('pill-energy'); toast('+' + r.combo.energy + ' ⚡'); }
         }
+        if (r.star >= 0) dropStar(r.star, x, y);
         if (r.bubble >= 0) { selT = -10; /* 名字标签会压住泡泡，这次不显示 */ const [bx, by] = cellXY(r.bubble); flies.push({ cell: r.bubble, item: S.cells[r.bubble], x0: x, y0: y, t0: clock() + 0.15, dur: 0.4, spawn: true }); burst(bx, by, '#bfe8f2', 10); }
+        markDirty();
+      } else if (r.type === 'dig' || r.type === 'wild') { // 挖障碍 / 百搭星升级
+        pops.set(to, clock()); sel = to; selT = clock(); idleT = clock();
+        const [x, y] = cellXY(to); burst(x, y, r.type === 'dig' ? '#e6c98f' : '#ffd84a', 20); burst(x, y, Core.itemDef(C, S.cells[to]).color, 10);
+        Sfx.merge(r.lvl); if (r.type === 'wild') Sfx.chestOpen();
+        floatText(x, y - LY.cs * 0.5, r.type === 'dig' ? L.t('ui.dug', { item: itemName(S.cells[to]) }) : '★ ' + itemName(S.cells[to]), r.type === 'dig' ? '#8a5a32' : '#d89a22');
+        if (r.found) queueFound(r.found, x, y);
+        if (r.combo && r.combo.show) { Sfx.combo(r.combo.n); if (r.combo.coins) flyRewards(x, y, r.combo.coins, 0); }
+        if (r.star >= 0) dropStar(r.star, x, y);
         markDirty();
       } else if (r.type === 'move') { sel = to; selT = clock(); markDirty(); }
       else { // 回弹：从松手位置飞回原格，不吞物品
         flies.push({ cell: g.from, item: moving, x0: px, y0: py, t0: clock(), dur: 0.22 });
-        if (r.type === 'bounce') { shakes.set(to, clock()); Sfx.bounce(); if (r.reason === 'max') toast(L.t('ui.maxMerge')); }
+        if (r.type === 'bounce') {
+          shakes.set(to, clock()); Sfx.bounce();
+          if (r.reason === 'max') toast(L.t('ui.maxMerge'));
+          else if (r.reason === 'dig') { const h = Core.obstacleAt(C, S, to); toast(L.t('ui.digHint', { item: itemName({ k: 'item', chain: h.chain, lvl: h.lvl }) })); }
+        }
       }
       return;
     }
@@ -2618,9 +2718,10 @@ const Ads = (() => {
   function drawItem(it, x, y, size, alpha) {
     if (alpha !== undefined) GL.alpha = alpha;
     GL.rect(x - size * 0.34, y + size * 0.3, size * 0.68, size * 0.15, size * 0.08, COL.shadow, { soft: size * 0.06 });
-    GL.img(Art.item(C, it, size), x, y, size, size);
+    GL.img(it.k === 'tool' ? Art.wild(size) : Art.item(C, it, size), x, y, size, size);
     GL.alpha = 1;
   }
+  const itemName = (it) => it.k === 'tool' ? L.t('ui.wildStar') : L.t(Core.itemDef(C, it).name);
   function needSet() { // 订单里还没交的需求，用来在棋盘上打勾
     const m = new Set();
     for (const o of S.orders) if (o) for (const n of o.needs) if (!n.done) m.add(n.chain + n.lvl);
@@ -2635,8 +2736,15 @@ const Ads = (() => {
     GL.rect(x + 1, y + 5, w, h, 14, COL.shadow, { soft: 6 });
     GL.rect(x, y, w, h, 14, COL.cream);
     const reg = C.regByAvatar[o.cust], regOn = reg && Core.regOn(C, S, reg);
+    const perfLeft = o.set ? o.perfectEnd - now() : 0;
     GL.rect(x, y, w, h, 14, o.regular ? hex('#e2566f') : o.rare ? COL.gold : COL.creamD, { stroke: o.regular || o.rare ? 4 : 3 });
     if (hl === 1) GL.rect(x, y, w, h, 14, COL.goodLine, { stroke: 4 });
+    if (o.set) { // 套餐单：左上角角标；Perfect 时限内顶边一条金色进度条
+      const bs2 = Math.max(18, h * 0.24), img = Art.opt('badge_set_order', Math.round(bs2));
+      if (perfLeft > 0) { const f = Math.min(1, perfLeft / (C.eco.setOrder.perfectSec * 1000)); GL.rect(x + 10, y + 3, (w - 20) * f, 4, 2, COL.gold); }
+      if (img) GL.img(img, x + bs2 * 0.3, y + bs2 * 0.3, bs2, bs2);
+      else { GL.circle(x + bs2 * 0.3, y + bs2 * 0.3, bs2 * 0.45, hex('#fff4db')); GL.circle(x + bs2 * 0.3, y + bs2 * 0.3, bs2 * 0.45, COL.goldD, { stroke: 2 }); GL.text('2', x + bs2 * 0.3, y + bs2 * 0.3, { size: bs2 * 0.5, weight: 900, fill: '#c4851a' }); }
+    }
     const pad = Math.max(5, h * 0.06), botH = h * 0.28, topH = h - botH - pad * 2;
     const av = Math.min(topH, w * 0.38);
     const hearts = regOn ? Core.regState(S, reg.id).hearts : 0;
@@ -2658,7 +2766,7 @@ const Ads = (() => {
     GL.rect(x + pad, by - botH / 2, w - pad * 2, botH, botH / 2, hex('#f6e7c6'));
     let cx = x + pad * 1.6 + ic / 2;
     GL.img(Art.coin(ic), cx, by, ic, ic); cx += ic / 2 + 3;
-    const pay = Core.orderCoins(C, S, o);
+    const pay = Core.orderCoins(C, S, o, now());
     cx += GL.text(String(pay.total), cx, by, { size: fs, weight: 900, fill: pay.total > pay.base ? '#2e9a5a' : '#3a2416', align: 'left' }) + 4;
     if (o.stars) { GL.img(Art.star(ic), cx + ic / 2, by, ic, ic); GL.text(String(o.stars), cx + ic + 1, by, { size: fs * 0.85, weight: 900, fill: '#3a2416', align: 'left' }); }
     const left = o.needs.some((nd) => nd.done) ? null : o.expiresAt - now();
@@ -2737,6 +2845,19 @@ const Ads = (() => {
     const [r, c] = Core.rc(C, i), [x, y] = cellXY(i), cs = LY.cs, h = cs / 2 - 1.5;
     const sh = shakes.get(i), sx = sh !== undefined && t - sh < 0.3 ? Math.sin((t - sh) * 60) * cs * 0.05 * (1 - (t - sh) / 0.3) : 0;
     if (S.unlocked[i]) GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, (r + c) % 2 ? COL.cellB : COL.cellA);
+    else if (Core.obstacleAt(C, S, i)) { // 棋盘障碍（M4）：沙堆 / 木箱 + 埋着的物品剪影
+      const ob = Core.obstacleAt(C, S, i), next = Core.canUnlockHere(C, S, i), img = Art.opt('obstacle_' + ob.kind, Math.round(cs));
+      GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, (r + c) % 2 ? COL.cellB : COL.cellA);
+      if (img) GL.img(img, x + sx, y, cs, cs);
+      else if (ob.kind === 'sand') { GL.circle(x + sx, y + cs * 0.08, cs * 0.42, hex('#e6c98f')); GL.circle(x + sx - cs * 0.12, y - cs * 0.04, cs * 0.26, hex('#efd8a8')); }
+      else { GL.rect(x - h * 0.9 + sx, y - h * 0.9, h * 1.8, h * 1.8, cs * 0.08, hex('#b8743c')); GL.rect(x - h * 0.6 + sx, y - h * 0.6, h * 1.2, h * 1.2, cs * 0.05, hex('#e7c79a')); }
+      drawItem({ k: 'item', chain: ob.chain, lvl: ob.lvl }, x + sx, y - cs * 0.02, cs * 0.5, next ? 0.55 : 0.35);
+      if (next) {
+        const p = String(Core.unlockPrice(C, i)), fs = Math.max(8, cs * 0.17);
+        GL.img(Art.coin(fs), x - cs * 0.15 + sx, y + cs * 0.33, fs, fs);
+        GL.text(p, x - cs * 0.05 + sx, y + cs * 0.33, { size: fs, weight: 900, fill: '#6b4a2a', align: 'left', outline: 'rgba(255,248,230,0.9)' });
+      }
+    }
     else {
       const next = Core.canUnlockHere(C, S, i);
       GL.rect(x - h + sx, y - h, h * 2, h * 2, cs * 0.14, next ? COL.lockNext : (r + c) % 2 ? COL.lockB : COL.lockA);
@@ -2749,7 +2870,8 @@ const Ads = (() => {
       }
     }
     if (i === target && drag && i !== drag.from) {
-      const ok = Core.canMerge(C, S.cells[drag.from], S.cells[i]);
+      const A = S.cells[drag.from], B = S.cells[i];
+      const ok = Core.canMerge(C, A, B) || Core.canDig(C, S, A, i) || (A && A.k === 'tool' && B && B.k === 'item' && B.lvl < C.maxLevel);
       if (ok) GL.rect(x - h, y - h, h * 2, h * 2, cs * 0.14, COL.good);
       GL.rect(x - h, y - h, h * 2, h * 2, cs * 0.14, ok ? COL.goodLine : [0.4, 0.3, 0.2, 0.35], { stroke: 3 });
     }
@@ -2827,7 +2949,7 @@ const Ads = (() => {
     if (drag && dragIt) drawItem(dragIt, drag.x - drag.ox, drag.y - drag.oy - 4, cs * 1.0);
     // 选中物品的名字
     if (sel >= 0 && !drag && !spotlight && S.cells[sel] && t - selT < 1.6) {
-      const it = S.cells[sel], [x, y] = cellXY(sel), name = L.t(Core.itemDef(C, it).name) + ' · ' + L.t('ui.level', { n: it.lvl });
+      const it = S.cells[sel], [x, y] = cellXY(sel), name = itemName(it) + (it.k === 'tool' ? '' : ' · ' + L.t('ui.level', { n: it.lvl }));
       const fs = Math.max(12, cs * 0.24), tw = GL.measure(name, { size: fs, weight: 800 }) + 18, ly = y - cs * 0.78;
       const lx = Math.max(LY.bx + 4, Math.min(LY.bx + LY.bs - tw - 4, x - tw / 2));
       GL.alpha = Math.min(1, (1.6 - (t - selT)) * 4);
@@ -2962,6 +3084,7 @@ const Ads = (() => {
     btn('bubble', () => { const e = S.cells.findIndex((c, i) => !c && S.unlocked[i]); if (e >= 0) S.cells[e] = { k: 'bubble', chain: 'coffee', lvl: 5, until: now() + C.eco.bubble.lifeSec * 1000 }; });
     btn('+5 stars', () => { S.stars += 5; decoKey = ''; });
     btn('+100 xp', () => { queueLevelUps(Core.addXp(C, S, 100, now())); });
+    btn('wild star', () => { Core.giveWildStar(C, S, 3, 3); });
     btn('+20 hearts', () => { for (const r of C.regs) if (Core.regOn(C, S, r)) { const st = Core.regState(S, r.id); st.pts += 20; } });
     btn('chest', () => { const r = Core.openChest(C, S, now()); pendingCoins += r.coins; pendingStars += r.stars; showChest(r); });
     btn('skip tutorial', () => Core.skipTutorial(S));

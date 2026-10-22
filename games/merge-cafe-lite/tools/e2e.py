@@ -247,8 +247,8 @@ with sync_playwright() as p:
     check('第一幕 5 节点全部解锁：共扣 6 星，进入第二幕，场景大幅变化', S(pg, 'deco') == 5 and S(pg, 'stars') == 0 and 'Act 2' in pg.inner_text('#deco-act') and d5 > 0.05, f'{d5 * 100:.1f}% 像素变化')
     pg.screenshot(path=str(out / 'cafe-act1-done.png'))
     reload(pg)
-    check('刷新后装修进度保留', S(pg, 'deco') == 5 and S(pg, 'v') == 7)
-    pg.evaluate('MCL.S.stars=68; MCL.S.coins=13500'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)  # 二、三幕共 68 星 + 13500 金币
+    check('刷新后装修进度保留', S(pg, 'deco') == 5 and S(pg, 'v') == 8)
+    pg.evaluate('MCL.S.stars=68; MCL.S.coins=20500'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)  # 二、三幕共 68 星 + 20500 金币
     comics = 0
     for _ in range(20):
         if S(pg, 'deco') >= 15: break
@@ -351,7 +351,9 @@ with sync_playwright() as p:
     pg.evaluate("MCL.S.cells[20]={k:'bubble',chain:'bake',lvl:5,until:MCL.now()+1500}"); pg.wait_for_timeout(100)
     tap_cell(pg, 20); pg.click('#m-btns .btn.ad'); no_ad(pg); pg.wait_for_timeout(300)
     check('看广告拿泡泡：广告比泡泡剩余时间长也照样拿到、不扣金币', cell(pg, 20) == {'k': 'item', 'chain': 'bake', 'lvl': 5} and S(pg, 'coins') == 1650 and S(pg, 'ads.clicks.bubble') == 1)
-    pg.evaluate("MCL.S.cells[21]={k:'bubble',chain:'bake',lvl:4,until:MCL.now()+300}"); pg.wait_for_timeout(900)
+    pg.evaluate("MCL.S.cells[21]={k:'bubble',chain:'bake',lvl:4,until:MCL.now()+300}")
+    try: pg.wait_for_function("MCL.S.cells[21] === null", timeout=6000); pg.wait_for_timeout(150)  # 软件渲染帧率低：等它真的消失
+    except Exception: pass
     check('泡泡到点自动消失并提示', cell(pg, 21) is None and 'popped' in pg.inner_text('#toast'))
     u0 = S(pg, 'orders[1].uid'); x, y = order_xy(pg, 1); click(pg, x, y)
     check('点订单卡：合成路线弹窗里有"换单 10 金币"', pg.is_visible('#m-btns .btn.coin') and 'Swap' in pg.inner_text('#m-btns') and '10' in pg.inner_text('#m-btns .btn.coin'))
@@ -372,16 +374,17 @@ with sync_playwright() as p:
     check('顶栏左侧有店铺等级徽章：1 级、经验环 0', pg.is_visible('#lvl') and pg.inner_text('#level') == '1' and S(pg, 'level') == 1)
     LV_ORDER = ("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; s.xp=17;"
       "s.orders[0]={uid:995,tid:'n_c3',needs:[{chain:'coffee',lvl:3,done:false}],coins:30,stars:0,rare:false,cust:0,start:MCL.now(),expiresAt:MCL.now()+600000};"
-      "s.cells[2]={k:'item',chain:'coffee',lvl:3}; s.cells[10]={k:'item',chain:'bake',lvl:1}; s.cells[11]={k:'item',chain:'bake',lvl:1};})()")
+      "s.cells[2]={k:'item',chain:'coffee',lvl:3}; s.cells[22]={k:'item',chain:'bake',lvl:1}; s.cells[23]={k:'item',chain:'bake',lvl:1};})()")  # 避开右上角调试面板
     pg.evaluate(LV_ORDER); pg.wait_for_timeout(200); c0, e0 = S(pg, 'coins'), S(pg, 'energy')
     # 交单后立刻抓起别的物品：拖拽期间庆典不能弹
-    (ax, ay), (ox, oy), (x0, y0) = cxy(pg, 2), order_xy(pg, 0), cxy(pg, 10)
+    (ax, ay), (ox, oy), (x0, y0) = cxy(pg, 2), order_xy(pg, 0), cxy(pg, 22)
     pg.mouse.move(ax, ay); pg.mouse.down()
     for k in range(1, 9): pg.mouse.move(ax + (ox - ax) * k / 8, ay + (oy - ay) * k / 8)
     pg.mouse.up(); pg.mouse.move(x0, y0); pg.mouse.down(); pg.mouse.move(x0 + 30, y0 + 10, steps=4)
     seen = False
     for k in range(10): pg.mouse.move(x0 + 30 + k * 2, y0 + 10, steps=1); pg.wait_for_timeout(120); seen = seen or pg.is_visible('#modal.show')
-    check('交单 +3 经验 → 升到 2 级；拖拽中庆典不弹，顶栏等级先不跳', S(pg, 'level') == 2 and not seen and pg.inner_text('#level') == '1' and pg.evaluate('MCL.pendingLevels') == 1)
+    check('交单 +3 经验 → 升到 2 级；拖拽中庆典不弹，顶栏等级先不跳', S(pg, 'level') == 2 and not seen and pg.inner_text('#level') == '1' and pg.evaluate('MCL.pendingLevels') == 1,
+          f"level={S(pg, 'level')} seen={seen} badge={pg.inner_text('#level')} pending={pg.evaluate('MCL.pendingLevels')} orders={S(pg, 'stats.ordersDone')} modal={pg.inner_text('#m-title') if pg.is_visible('#modal.show') else '-'}")
     pg.mouse.up()
     try: pg.wait_for_selector('#modal.show', timeout=6000)  # 软件渲染下金币飞行动画可能慢，等它落地
     except Exception: pass
@@ -393,7 +396,9 @@ with sync_playwright() as p:
     pg.click('#lvl'); pg.wait_for_timeout(200)
     check('点等级徽章：显示等级和经验进度', pg.is_visible('#modal.show') and 'Café Level 2' in pg.inner_text('#m-title') and '/ 25 XP' in pg.inner_text('#m-body'), pg.inner_text('#m-body') if pg.is_visible('#modal.show') else '')
     pg.screenshot(path=str(out / 'm1-level-info.png')); pg.click('#m-btns .btn'); pg.wait_for_timeout(200)
-    pg.evaluate('MCL.S.xp = 5; [...document.querySelectorAll("#dbg button")].find(b => b.textContent === "+100 xp").click()'); pg.wait_for_timeout(900)  # 5 + 100 = 25 + 35 + 45 → 正好 5 级
+    pg.evaluate('MCL.S.xp = 5; [...document.querySelectorAll("#dbg button")].find(b => b.textContent === "+100 xp").click()')  # 5 + 100 = 25 + 35 + 45 → 正好 5 级
+    try: pg.wait_for_selector('#modal.show', timeout=6000); pg.wait_for_timeout(200)
+    except Exception: pass
     check('一次连升多级合成一个庆典（2 → 5 级，5 级送宝箱）', pg.is_visible('#modal.show') and 'Level 5' in pg.inner_text('#m-title') and 'chest' in pg.inner_text('#m-comic').lower(), pg.inner_text('#m-comic') if pg.is_visible('#modal.show') else '')
     c5 = S(pg, 'coins'); pg.click('#m-btns .btn')
     try: pg.wait_for_selector('#chest-box', timeout=3000)
@@ -404,17 +409,17 @@ with sync_playwright() as p:
     pg.click('#m-btns .btn'); settle_rewards(pg)
     check('宝箱 Collect 后金币落地，顶栏和存档一致', pg.inner_text('#coins').replace(',', '') == str(S(pg, 'coins')) and S(pg, 'coins') == c5)
     # 装修：第二幕节点要星 + 金币
-    pg.evaluate('MCL.S.deco=5; MCL.S.stars=10; MCL.S.coins=450'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)
-    check('装修第二幕：按钮显示 ★4 + 500 金币', '4' in pg.inner_text('#deco-btn') and '500' in pg.inner_text('#deco-btn'), pg.inner_text('#deco-btn'))
+    pg.evaluate('MCL.S.deco=5; MCL.S.stars=10; MCL.S.coins=1250'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)
+    check('装修第二幕：按钮显示 ★4 + 1300 金币', '4' in pg.inner_text('#deco-btn') and '1300' in pg.inner_text('#deco-btn').replace(',', ''), pg.inner_text('#deco-btn'))
     pg.screenshot(path=str(out / 'm1-deco-coins.png'))
     pg.click('#deco-btn'); pg.wait_for_timeout(300)
-    check('金币不够：不扣星不扣钱，提示还差 50 金币', S(pg, 'deco') == 5 and S(pg, 'stars') == 10 and S(pg, 'coins') == 450 and '50' in pg.inner_text('#toast'), pg.inner_text('#toast'))
-    pg.evaluate('MCL.S.coins=550'); pg.wait_for_timeout(300); pg.click('#deco-btn'); pg.wait_for_timeout(1300)
-    check('金币够了：扣 4 星 + 500 金币，装上木栈台', S(pg, 'deco') == 6 and S(pg, 'stars') == 6 and S(pg, 'coins') == 50)
+    check('金币不够：不扣星不扣钱，提示还差 50 金币', S(pg, 'deco') == 5 and S(pg, 'stars') == 10 and S(pg, 'coins') == 1250 and '50' in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    pg.evaluate('MCL.S.coins=1350'); pg.wait_for_timeout(300); pg.click('#deco-btn'); pg.wait_for_timeout(1300)
+    check('金币够了：扣 4 星 + 1300 金币，装上木栈台', S(pg, 'deco') == 6 and S(pg, 'stars') == 6 and S(pg, 'coins') == 50)
     pg.click('#nav-merge'); pg.wait_for_timeout(300)
     check('打点：今天已记上线、奖励事件有计数、游玩时长在涨', len(S(pg, 'stats.days')) == 1 and S(pg, 'stats.ev.small') >= 1 and S(pg, 'stats.ev.mid') >= 2 and S(pg, 'stats.playMs') > 1000, json.dumps(S(pg, 'stats.ev')))
     reload(pg, levels=True)
-    check('刷新后等级、经验保留（存档 v7）', S(pg, 'v') == 7 and S(pg, 'level') == 5 and pg.inner_text('#level') == '5')
+    check('刷新后等级、经验保留（存档 v8）', S(pg, 'v') == 8 and S(pg, 'level') == 5 and pg.inner_text('#level') == '5')
     ctx.close()
 
     # ================= V1 M2：连击、出售 + 回收桶、高级合成特写、满格提示、音效开关 =================
@@ -424,10 +429,11 @@ with sync_playwright() as p:
     PAIRS = [(14, 15), (16, 17), (18, 19), (21, 22), (23, 24)]  # 第 3–4 行，避开调试面板
     pg.evaluate("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; for(const i of [14,15,16,17,18,19,21,22,23,24]) s.cells[i]={k:'item',chain:'coffee',lvl:1}; s.combo={n:0,at:0};})()")
     pg.wait_for_timeout(200); c0 = S(pg, 'coins')
+    pg.evaluate('MCL.C.eco.combo.windowSec = 15')  # 软件渲染下每次拖拽要 1–3 秒，放宽连击窗口只测"连击计数和奖励"
     for a, b in PAIRS: (x0, y0), (x1, y1) = cxy(pg, a), cxy(pg, b); pg.mouse.move(x0, y0); pg.mouse.down(); pg.mouse.move(x0 + (x1 - x0) / 2, y0, steps=2); pg.mouse.move(x1, y1, steps=2); pg.mouse.up(); pg.wait_for_timeout(60)
     pg.wait_for_timeout(300)
     check('M2 连击：5 次连续合成 → 连击 x5，第 3 次起飘"Combo x3!"，x5 送 5 金币', S(pg, 'combo.n') == 5 and S(pg, 'stats.bestCombo') == 5 and S(pg, 'coins') == c0 + 5, f"combo={S(pg, 'combo.n')}")
-    pg.wait_for_timeout(2700)  # 连击窗口过了
+    pg.evaluate('MCL.C.eco.combo.windowSec = 2.5'); pg.wait_for_timeout(2700)  # 恢复 2.5 秒，等窗口过去
     pg.evaluate("MCL.S.cells[28]={k:'item',chain:'bake',lvl:1}; MCL.S.cells[29]={k:'item',chain:'bake',lvl:1}; MCL.S.unlocked[28]=MCL.S.unlocked[29]=true"); pg.wait_for_timeout(150); drag(pg, 28, 29)
     check('超过 2.5 秒再合成：连击从 1 重新数，不罚', S(pg, 'combo.n') == 1 and S(pg, 'coins') == c0 + 5)
     # 出售
@@ -515,6 +521,47 @@ with sync_playwright() as p:
     pg.click('#nav-merge'); pg.wait_for_timeout(300)
     reload(pg, levels=True)
     check('刷新后好感、菜谱保留', pg.evaluate("Core.regState(MCL.S,'mia').hearts") == 3 and S(pg, 'recipes.coffee3.f') == 1)
+    ctx.close()
+
+    # ================= V1 M4：棋盘障碍、套餐单、百搭星 =================
+    ctx = br.new_context(viewport={'width': 405, 'height': 720}, device_scale_factor=2)
+    pg = ctx.new_page(); watch(pg); boot(pg, '?reset=1&fastads', levels=True)
+    pg.evaluate("Core.skipTutorial(MCL.S); MCL.C.prog.levelNeed=[]; MCL.C.prog.after=1e12; for(let i=0;i<49;i++) MCL.S.cells[i]=null"); pg.wait_for_timeout(300)
+    check('M4：6 级前锁格只是锁（看不到埋的东西）', pg.evaluate('Core.obstacleAt(MCL.C, MCL.S, 31)') is None)
+    pg.evaluate("MCL.S.level = 6; MCL.S.hidden[31] = {kind:'sand', chain:'bake', lvl:2}; MCL.S.cells[24]={k:'item',chain:'bake',lvl:2}; MCL.S.cells[23]={k:'item',chain:'coffee',lvl:1}")
+    pg.wait_for_timeout(1000)
+    check('6 级开放：锁格变成沙堆 / 木箱，显示埋着的物品', pg.evaluate('!!Core.obstacleAt(MCL.C, MCL.S, 31)') and pg.evaluate("Core.obstacleAt(MCL.C, MCL.S, 40).kind") == 'crate')
+    pg.screenshot(path=str(out / 'm4-obstacles.png'))
+    drag(pg, 23, 31)
+    check('拖不同款到沙堆：回弹，提示要拖什么', cell(pg, 23) == {'k': 'item', 'chain': 'coffee', 'lvl': 1} and not S(pg, 'unlocked[31]') and 'Dough' in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    u0 = S(pg, 'stats.unlocks'); drag(pg, 24, 31); pg.wait_for_timeout(300)
+    check('拖同款面团到沙堆：挖开，格子打开，得到升一级的面包胚', S(pg, 'unlocked[31]') and cell(pg, 31) == {'k': 'item', 'chain': 'bake', 'lvl': 3} and cell(pg, 24) is None and S(pg, 'stats.unlocks') == u0 + 1)
+    pg.screenshot(path=str(out / 'm4-dug.png'))
+    for _ in range(3):  # 挖出的面包胚第一次做出 → New Recipe 卡，先收掉
+        try: pg.wait_for_selector('#modal.show', timeout=2500); pg.click('#m-btns .btn'); settle_rewards(pg)
+        except Exception: break
+    pg.evaluate("MCL.S.coins = 500; MCL.S.hidden[30] = {kind:'sand', chain:'coffee', lvl:3}"); pg.wait_for_timeout(200)
+    tap_cell(pg, 30)
+    check('点障碍：开格弹窗写明里面是什么（Espresso）', pg.is_visible('#modal.show') and 'Espresso' in pg.inner_text('#m-body'), pg.inner_text('#m-body') if pg.is_visible('#modal.show') else '')
+    pg.click('#m-btns .btn:not(.alt)'); pg.wait_for_timeout(400)
+    check('付金币开：埋的浓缩液原样给你', S(pg, 'unlocked[30]') and cell(pg, 30) == {'k': 'item', 'chain': 'coffee', 'lvl': 3})
+    if pg.is_visible('#modal.show'): pg.click('#m-btns .btn'); settle_rewards(pg)  # 可能弹 New Recipe
+    # 套餐单
+    SET = ("(()=>{const s=MCL.S; s.level=6; for(let i=0;i<49;i++) if(i!==30&&i!==31) s.cells[i]=null; const t=MCL.now();"
+      "s.orders[0]={uid:960,tid:'n_c2b2',needs:[{chain:'coffee',lvl:2,done:false},{chain:'bake',lvl:2,done:false}],coins:40,stars:0,rare:false,cust:0,start:t,expiresAt:t+9e5,set:true,perfectEnd:t+180000};"
+      "s.cells[2]={k:'item',chain:'coffee',lvl:2}; s.cells[3]={k:'item',chain:'bake',lvl:2};})()")
+    pg.evaluate(SET); pg.wait_for_timeout(400); pg.screenshot(path=str(out / 'm4-set-order.png'))
+    c0 = S(pg, 'coins'); drag_to_order(pg, 2, 0); drag_to_order(pg, 3, 0); settle_rewards(pg)
+    check('M4 套餐单：3 分钟内交齐 → Perfect +20（40 × 50%），记一次 Perfect', S(pg, 'stats.perfects') == 1 and S(pg, 'coins') - c0 >= 60, f"+{S(pg, 'coins') - c0}")
+    # 百搭星
+    pg.evaluate("MCL.S.level = 7; MCL.S.cells[16]={k:'tool',id:'wild'}; MCL.S.cells[18]={k:'item',chain:'coffee',lvl:4}"); pg.wait_for_timeout(400)
+    tap_cell(pg, 16); pg.wait_for_timeout(300)
+    check('M4 百搭星：选中显示名字、没有 Sell 按钮', not pg.is_visible('#sell.show'))
+    pg.screenshot(path=str(out / 'm4-wild.png'))
+    drag(pg, 16, 18); pg.wait_for_timeout(300)
+    check('百搭星拖到美式上：升成拿铁，星消失', cell(pg, 18) == {'k': 'item', 'chain': 'coffee', 'lvl': 5} and cell(pg, 16) is None)
+    reload(pg, levels=True)
+    check('刷新后障碍和挖开的格子保留（存档 v8）', S(pg, 'v') == 8 and S(pg, 'unlocked[31]') and S(pg, 'hidden[31]') is None and S(pg, 'hidden[40]') is not None)
     ctx.close()
 
     # ================= 多分辨率布局 =================

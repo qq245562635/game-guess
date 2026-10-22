@@ -152,6 +152,15 @@ const Art = (() => {
   }
 
   /* 顾客头像占位：圆底 + 肩膀 + 脸 + 发型（id 与正式图 avatar_customer_XX 一致，到图自动替换） */
+  /* 百搭星（V1 M4）：正式图 item_wild_star（E 批），没有就画彩虹星 */
+  function wild(size) {
+    return GL.sprite('I|item_wild_star|', size, size, (g, w) => {
+      if (loaded.item_wild_star) { g.drawImage(loaded.item_wild_star, 0, 0, w, w); return; }
+      const gr = g.createLinearGradient(0, 0, w, w); ['#ff6b8b', '#ffb84a', '#ffe35a', '#6fd38a', '#5cb8ff', '#a77cff'].forEach((c, i) => gr.addColorStop(i / 5, c));
+      g.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? w * 0.2 : w * 0.44; g.lineTo(w / 2 + Math.cos(a) * r, w / 2 + Math.sin(a) * r); }
+      g.closePath(); g.fillStyle = gr; g.fill(); g.strokeStyle = '#3a2416'; g.lineWidth = w * 0.045; g.stroke();
+    });
+  }
   /* happy = 熟客 1 心以上：有 <id>_happy 正式图（E 批）就用开心表情，没有就用原图 */
   function avatar(C, k, size, happy) {
     const cu = C.O.customers[k % C.O.customers.length], hid = cu.id + '_happy';
@@ -204,5 +213,5 @@ const Art = (() => {
   }
   /* 只有正式图、没有占位的 UI 图（D 批：泡泡外壳 fx_bubble、升级箭头 icon_upgrade）：没到返回 null，由调用方画程序版 */
   function opt(id, w, h) { return loaded[id] ? GL.sprite('I|' + id + '|', w, h || w, (g, pw, ph) => g.drawImage(loaded[id], 0, 0, pw, ph)) : null; }
-  return { load, item, gen, lock, coin, avatar, star, clock, check, bolt, hand, logo, has, src, img, cover, plant, layer, opt, FONT };
+  return { load, item, wild, gen, lock, coin, avatar, star, clock, check, bolt, hand, logo, has, src, img, cover, plant, layer, opt, FONT };
 })();

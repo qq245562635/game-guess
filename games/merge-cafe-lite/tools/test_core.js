@@ -264,12 +264,12 @@ test('引导中刷新：存档能续上；棋盘不满足条件则自动结束�
 });
 
 /* ---------- M3 装修 / 星星 / 广告 ---------- */
-test('装修表（区域 1）：3 幕 15 节点；第一幕 6 星不变，二幕 24 星 + 3500 金币，三幕 44 星 + 10000 金币；漫画在第 1/8/15 节点', () => {
+test('装修表（区域 1）：3 幕 15 节点；第一幕 6 星不变，二幕 24 星 + 8500 金币，三幕 44 星 + 12000 金币；漫画在第 1/8/15 节点', () => {
   assert.strictEqual(CN.areas.length, 1); assert.strictEqual(CN.deco.length, 15);
   const act = (a, k) => CN.deco.filter((d) => d.act === a).reduce((x, d) => x + (d[k] || 0), 0);
   assert.deepStrictEqual([0, 1, 2].map((a) => CN.deco.filter((d) => d.act === a).length), [5, 5, 5]);
   assert.deepStrictEqual([act(0, 'cost'), act(1, 'cost'), act(2, 'cost')], [6, 24, 44]);
-  assert.deepStrictEqual([act(0, 'coins'), act(1, 'coins'), act(2, 'coins')], [0, 3500, 10000]);
+  assert.deepStrictEqual([act(0, 'coins'), act(1, 'coins'), act(2, 'coins')], [0, 8500, 12000]);
   assert.deepStrictEqual(CN.deco.map((d, i) => CN.areas[0].comics[d.id] ? i + 1 : 0).filter(Boolean), [1, 8, 15]);
 });
 test('装修：按顺序解锁，扣星 + 扣金币；星或金币不够都不扣；全部完成后不能再装', () => {
@@ -283,10 +283,10 @@ test('装修：按顺序解锁，扣星 + 扣金币；星或金币不够都不�
     assert.strictEqual(!!r.comic, [0, 7, 14].includes(i)); assert.strictEqual(r.actDone, [4, 9, 14].includes(i));
     spent += nd.cost; coins += nd.coins || 0;
   }
-  assert.strictEqual(spent, 74); assert.strictEqual(coins, 13500); assert.strictEqual(s.stats.coinsSpent.deco, 13500);
+  assert.strictEqual(spent, 74); assert.strictEqual(coins, 20500); assert.strictEqual(s.stats.coinsSpent.deco, 20500);
   assert.strictEqual(Core.renovate(CN, s).reason, 'done');
   const t = fresh(); t.deco = 5; t.stars = 99; t.coins = 99;
-  const r = Core.renovate(CN, t); assert.strictEqual(r.reason, 'coins'); assert.strictEqual(r.need, 401); assert.deepStrictEqual([t.stars, t.coins, t.deco], [99, 99, 5]);
+  const r = Core.renovate(CN, t); assert.strictEqual(r.reason, 'coins'); assert.strictEqual(r.need, 1201); assert.deepStrictEqual([t.stars, t.coins, t.deco], [99, 99, 5]);
 });
 test('装修图层：只有已解锁节点的图层生效', () => {
   const s = fresh(); s.deco = 2;
@@ -374,20 +374,20 @@ test('任务：全部领完后不再补，也不报错', () => {
 });
 
 /* ---------- 存档 ---------- */
-test('存档往返：版本字段 v=7、棋盘/生成器/订单/装修/广告统计/体力/金币/星星一致', () => {
+test('存档往返：版本字段 v=8、棋盘/生成器/订单/装修/广告统计/体力/金币/星星一致', () => {
   const s = fresh(); Core.tapGen(CN, s, GC, T0, seq(0.9)); s.deco = 4; Core.adOffer(s, 'energy');
   const txt = Core.serialize(s, T0 + 5);
-  assert.strictEqual(JSON.parse(txt).v, 7);
+  assert.strictEqual(JSON.parse(txt).v, 8);
   const back = Core.deserialize(CN, txt, T0 + 5, lcg(1));
   for (const k of ['coins', 'stars', 'gems', 'energy', 'energyTs', 'tut', 'level', 'xp', 'area']) assert.strictEqual(back[k], s[k], k);
-  for (const k of ['cells', 'unlocked', 'gens', 'orders', 'ads', 'tasks', 'daily', 'regs', 'recipes']) assert.deepStrictEqual(back[k], s[k], k);
+  for (const k of ['cells', 'unlocked', 'gens', 'orders', 'ads', 'tasks', 'daily', 'regs', 'recipes', 'hidden']) assert.deepStrictEqual(back[k], s[k], k);
   assert.strictEqual(back.deco, 4);
 });
-test('v2 存档（M2）连续迁移到 v7：棋盘 / 订单 / 金币原样保留，补 deco=0、广告统计、任务', () => {
+test('v2 存档（M2）连续迁移到 v8：棋盘 / 订单 / 金币原样保留，补 deco=0、广告统计、任务', () => {
   const s = fresh(); Core.tapGen(CN, s, GC, T0, seq(0.9)); s.coins = 321; s.stars = 4;
   const v2 = JSON.parse(Core.serialize(s, T0)); v2.v = 2; delete v2.deco; delete v2.ads; delete v2.tasks; delete v2.stats.unlocks; delete v2.stats.maxLvl;
   const back = Core.deserialize(CN, JSON.stringify(v2), T0, lcg(1));
-  assert(back); assert.strictEqual(back.v, 7); assert.strictEqual(back.tasks.active.length, 3);
+  assert(back); assert.strictEqual(back.v, 8); assert.strictEqual(back.tasks.active.length, 3);
   assert.strictEqual(back.stats.maxLvl, Math.max(...back.cells.filter(Boolean).map((c) => c.lvl)), 'maxLvl 从棋盘补'); assert.strictEqual(back.deco, 0); assert.deepStrictEqual(back.ads.clicks, { energy: 0, refill: 0, double: 0, bubble: 0 });
   assert.deepStrictEqual(back.cells, s.cells); assert.deepStrictEqual(back.orders, s.orders);
   assert.strictEqual(back.coins, 321); assert.strictEqual(back.stars, 4);
@@ -482,12 +482,12 @@ test('换单：扣 10 金币换成不同模板；交过一部分的、引导中�
   s.coins = 9; assert.strictEqual(Core.swapOrder(CN, s, 0, T0).reason, 'coins'); assert.strictEqual(s.coins, 9);
   const g = Core.newState(C, T0, lcg(1)); g.coins = 100; assert.strictEqual(Core.swapOrder(C, g, 1, T0).reason, 'locked');
 });
-test('v4 存档迁移到 v7：生成器补 lv=1、补每日计数和花费统计、广告统计补 bubble，原有数据不变', () => {
+test('v4 存档迁移到 v8：生成器补 lv=1、补每日计数和花费统计、广告统计补 bubble，原有数据不变', () => {
   const s = fresh(); Core.tapGen(CN, s, GC, T0, seq(0.9)); s.coins = 777; Core.adClick(s, 'energy');
   const v4 = JSON.parse(Core.serialize(s, T0)); v4.v = 4; delete v4.daily; delete v4.stats.coinsSpent; delete v4.ads.offers.bubble; delete v4.ads.clicks.bubble;
   for (const id in v4.gens) delete v4.gens[id].lv;
   const back = Core.deserialize(CN, JSON.stringify(v4), T0, lcg(1));
-  assert.strictEqual(back.v, 7); assert.strictEqual(back.gens[GC].lv, 1); assert.strictEqual(back.gens[GC].charges, s.gens[GC].charges);
+  assert.strictEqual(back.v, 8); assert.strictEqual(back.gens[GC].lv, 1); assert.strictEqual(back.gens[GC].charges, s.gens[GC].charges);
   assert.deepStrictEqual(back.daily, { day: Math.floor(T0 / 86400000), refills: 0, energyBuys: 0 });
   assert.strictEqual(back.stats.coinsSpent.upgrade, 0); assert.strictEqual(back.ads.clicks.energy, 1); assert.strictEqual(back.ads.clicks.bubble, 0);
   assert.strictEqual(back.coins, 777); assert.deepStrictEqual(back.cells, s.cells);
@@ -550,11 +550,11 @@ test('打点：每天上线按 UTC 日去重；首周来了几天；奖励事件
   Core.drop(CN, s, 7, 8, T0, () => 0.99); assert.strictEqual(s.stats.ev.mid, m0 + 1, '第一次做出 7 级算中奖励');
   Core.addXp(CN, s, 125, T0); assert(s.stats.ev.big >= 1, '5 级宝箱算大奖励');
 });
-test('v5 存档迁移到 v7：按已完成订单数估店铺等级（老玩家不从 1 级重来），补区域和打点，原数据不变', () => {
+test('v5 存档迁移到 v8：按已完成订单数估店铺等级（老玩家不从 1 级重来），补区域和打点，原数据不变', () => {
   const s = fresh(); s.coins = 555; s.deco = 7; s.stats.ordersDone = 40;
   const v5 = JSON.parse(Core.serialize(s, T0)); v5.v = 5; delete v5.level; delete v5.xp; delete v5.area; delete v5.stats.ev; delete v5.stats.days; delete v5.stats.xpEarned;
   const back = Core.deserialize(CN, JSON.stringify(v5), T0, lcg(1));
-  assert.strictEqual(back.v, 7); assert.strictEqual(back.area, 0); assert.strictEqual(back.deco, 7); assert.strictEqual(back.coins, 555);
+  assert.strictEqual(back.v, 8); assert.strictEqual(back.area, 0); assert.strictEqual(back.deco, 7); assert.strictEqual(back.coins, 555);
   assert.strictEqual(back.level, 5, '40 单 × 4 经验 = 160 → 5 级（累计 125 到 5 级、180 才到 6 级）'); assert.strictEqual(back.xp, 35);
   assert.deepStrictEqual(back.stats.ev, { small: 0, mid: 0, big: 0 }); assert(Array.isArray(back.stats.days));
 });
@@ -661,7 +661,7 @@ test('熟练度：每交一次 +等级点，10/40/120 点升 1/2/3 星；订单�
   s.orders[0] = ord(821, [['coffee', 5]], 0); r = serve(CN, s, 0); assert.deepStrictEqual(r.recipeUps, [{ chain: 'coffee', lvl: 5, stars: 1 }]);
   assert.strictEqual(Core.recipeStars(CN, s, 'coffee', 5), 1);
   Core.recState(s, 'coffee', 5).p = 120; Core.recState(s, 'bake', 2).p = 40;
-  const o = ord(822, [['coffee', 5], ['bake', 2]], 0, { coins: 100 }); assert.deepStrictEqual(Core.orderCoins(CN, s, o), { base: 100, recipe: 25, tip: 0, total: 125 });
+  const o = ord(822, [['coffee', 5], ['bake', 2]], 0, { coins: 100 }); assert.deepStrictEqual(Core.orderCoins(CN, s, o), { base: 100, recipe: 25, tip: 0, perfect: 0, total: 125 });
 });
 test('熟客入座：座位所在图层装修后才坐，按登场顺序依次坐', () => {
   const s = fresh(); lvUp(CN, s, 7);
@@ -669,11 +669,83 @@ test('熟客入座：座位所在图层装修后才坐，按登场顺序依次�
   s.deco = 1; assert.deepStrictEqual(Core.seatedRegulars(CN, s).map((x) => x.reg.id), ['mia', 'kai'], '桌椅 2 个座位');
   s.deco = 6; assert.deepStrictEqual(Core.seatedRegulars(CN, s).map((x) => x.reg.id), ['mia', 'kai', 'rose'], '木栈台再加座位，Leo 9 级才来');
 });
-test('v6 存档迁移到 v7：补熟客和菜谱；棋盘上已有物品记为做出过', () => {
+test('v6 存档迁移到 v8：补熟客和菜谱；棋盘上已有物品记为做出过', () => {
   const s = fresh(); clearBoard(s); put(s, 0, 0, 'bake', 4);
   const v6 = JSON.parse(Core.serialize(s, T0)); v6.v = 6; delete v6.regs; delete v6.recipes;
   const back = Core.deserialize(CN, JSON.stringify(v6), T0, lcg(1));
-  assert.strictEqual(back.v, 7); assert.deepStrictEqual(back.regs, {}); assert.deepStrictEqual(back.recipes, { bake4: { f: 1, p: 0 } });
+  assert.strictEqual(back.v, 8); assert.deepStrictEqual(back.regs, {}); assert.deepStrictEqual(back.recipes, { bake4: { f: 1, p: 0 } });
+});
+
+/* ---------- V1 M4：棋盘障碍、套餐单、百搭星 ---------- */
+test('障碍：新档锁格埋物品——第 5 行沙堆 1–3 级，第 6–7 行木箱 3–5 级；开格的不埋', () => {
+  const s = fresh();
+  for (let i = 0; i < 49; i++) {
+    const h = s.hidden[i], r = Math.floor(i / 7);
+    if (r < 4) assert.strictEqual(h, null);
+    else { assert(h && ['coffee', 'bake'].includes(h.chain)); assert.strictEqual(h.kind, r === 4 ? 'sand' : 'crate'); assert(h.lvl >= [1, 3, 4][r - 4] && h.lvl <= [3, 4, 5][r - 4], 'lvl ' + h.lvl); }
+  }
+});
+test('挖障碍：6 级开放；同款物品拖上去 → 格子打开、里面是升一级的物品；不相邻 / 不同款 / 没开放都回弹', () => {
+  const s = fresh(); clearBoard(s); const i = Core.idx(CN, 4, 3); s.hidden[i] = { kind: 'sand', chain: 'bake', lvl: 2 };
+  put(s, 3, 3, 'bake', 2);
+  assert.strictEqual(Core.drop(CN, s, 24, i, T0).type, 'bounce', '没开放');
+  lvUp(CN, s, 6); put(s, 3, 2, 'coffee', 2);
+  assert.strictEqual(Core.drop(CN, s, 23, i, T0).reason, 'dig', '不同款回弹并提示');
+  const u0 = s.stats.unlocks, r = Core.drop(CN, s, 24, i, T0, () => 0.99);
+  assert.strictEqual(r.type, 'dig'); assert.strictEqual(r.lvl, 3); assert(s.unlocked[i]); assert.deepStrictEqual(s.cells[i], { k: 'item', chain: 'bake', lvl: 3 });
+  assert.strictEqual(s.cells[24], null); assert.strictEqual(s.hidden[i], null); assert.strictEqual(s.stats.unlocks, u0 + 1); assert.strictEqual(s.stats.dug, 1);
+  const far = Core.idx(CN, 6, 0); s.hidden[far] = { kind: 'crate', chain: 'coffee', lvl: 2 };
+  assert.strictEqual(Core.drop(CN, s, 23, far, T0).type, 'bounce', '不相邻不能挖');
+});
+test('付金币开格：障碍开放后埋的物品原样给你；开放前开的格子是空的', () => {
+  const s = fresh(); clearBoard(s); s.coins = 1000; const a = Core.idx(CN, 4, 0), b = Core.idx(CN, 4, 1);
+  s.hidden[a] = { kind: 'sand', chain: 'coffee', lvl: 2 }; s.hidden[b] = { kind: 'sand', chain: 'bake', lvl: 1 };
+  assert.strictEqual(Core.unlock(CN, s, a).item, null); assert.strictEqual(s.cells[a], null); assert.strictEqual(s.hidden[a], null);
+  lvUp(CN, s, 6); const r = Core.unlock(CN, s, b);
+  assert.deepStrictEqual(r.item, { k: 'item', chain: 'bake', lvl: 1 }); assert.deepStrictEqual(s.cells[b], r.item);
+});
+test('套餐单：4 级开放后两条链的订单标为套餐单；3 分钟内交齐 +50% 并记 Perfect；超时只是没额外奖励', () => {
+  const s = fresh(); clearBoard(s);
+  assert.deepStrictEqual(Core.setOrderFields(CN, s, [['coffee', 2], ['bake', 2]], T0), {}, '没开放');
+  lvUp(CN, s, 4);
+  assert.deepStrictEqual(Core.setOrderFields(CN, s, [['coffee', 2], ['bake', 2]], T0), { set: true, perfectEnd: T0 + 180e3 });
+  assert.deepStrictEqual(Core.setOrderFields(CN, s, [['coffee', 2]], T0), {}, '单链不是套餐');
+  const mk = () => Object.assign(ord(900, [['coffee', 2], ['bake', 2]], 0, { coins: 40 }), { set: true, perfectEnd: T0 + 180e3 });
+  s.orders[0] = mk(); let c0 = s.coins; const e0 = s.stats.ev.mid;
+  put(s, 0, 0, 'coffee', 2); put(s, 0, 1, 'bake', 2); Core.deliver(CN, s, 0, 0, T0, lcg(1)); let r = Core.deliver(CN, s, 1, 0, T0 + 60e3, lcg(1));
+  assert.strictEqual(r.pay.perfect, 20); assert.strictEqual(r.coins, 60 + r.pay.recipe + r.pay.tip); assert.strictEqual(s.stats.perfects, 1); assert(s.stats.ev.mid > e0);
+  s.orders[0] = mk(); put(s, 0, 0, 'coffee', 2); put(s, 0, 1, 'bake', 2); Core.deliver(CN, s, 0, 0, T0, lcg(1)); r = Core.deliver(CN, s, 1, 0, T0 + 181e3, lcg(1));
+  assert.strictEqual(r.pay.perfect, 0); assert.strictEqual(s.stats.perfects, 1);
+});
+test('百搭星：7 级开放；合出 6 级以上 5% 掉落、15 次保底；拖到物品上升 1 级；拖到 8 级 / 泡泡 / 别的星回弹；不能卖', () => {
+  const s = fresh(); clearBoard(s);
+  put(s, 0, 0, 'coffee', 5); put(s, 0, 1, 'coffee', 5); assert.strictEqual(Core.drop(CN, s, 0, 1, T0, () => 0).star, -1, '没开放');
+  lvUp(CN, s, 7); clearBoard(s);
+  for (let k = 0; k < 15; k++) { put(s, 0, 0, 'coffee', 5); put(s, 0, 1, 'coffee', 5); assert.strictEqual(Core.drop(CN, s, 0, 1, T0, () => 0.99).star, -1); s.cells[1] = null; }
+  put(s, 0, 0, 'coffee', 5); put(s, 0, 1, 'coffee', 5); const st = Core.drop(CN, s, 0, 1, T0, () => 0.99).star;
+  assert(st >= 0, '第 16 次保底必掉'); assert.deepStrictEqual(s.cells[st], { k: 'tool', id: 'wild' });
+  put(s, 3, 3, 'bake', 4); const r = Core.drop(CN, s, st, 24, T0); assert.strictEqual(r.type, 'wild'); assert.deepStrictEqual(s.cells[24], { k: 'item', chain: 'bake', lvl: 5 }); assert.strictEqual(s.cells[st], null);
+  s.cells[10] = { k: 'tool', id: 'wild' }; put(s, 3, 4, 'coffee', 8);
+  assert.strictEqual(Core.drop(CN, s, 10, 25, T0).type, 'bounce', '8 级不能再升');
+  s.cells[11] = { k: 'tool', id: 'wild' }; assert.strictEqual(Core.drop(CN, s, 10, 11, T0).type, 'bounce', '星不能叠');
+  assert.strictEqual(Core.drop(CN, s, 10, 40 - 40 + 12, T0).type, 'move', '拖到空格是移动');
+  assert.strictEqual(Core.sellItem(CN, s, 12, T0).reason, 'none', '百搭星不能卖');
+  put(s, 4, 0, 'bake', 3); assert.strictEqual(Core.drop(CN, s, 28, 12, T0).type, 'bounce', '物品不能合到星上');
+});
+test('卡死提示：有百搭星或能挖的障碍就不算卡死', () => {
+  const s = fresh(); lvUp(CN, s, 7);
+  for (let i = 0; i < 28; i++) s.cells[i] = { k: 'item', chain: i % 2 ? 'coffee' : 'bake', lvl: i < 16 ? 1 + Math.floor(i / 2) : 8 };
+  for (let i = 28; i < 49; i++) s.hidden[i] = null;
+  assert(Core.stuckHint(CN, s) >= 0, '真卡死');
+  s.cells[27] = { k: 'tool', id: 'wild' }; assert.strictEqual(Core.stuckHint(CN, s), -1, '有星');
+  s.cells[27] = { k: 'item', chain: 'coffee', lvl: 8 }; s.hidden[Core.idx(CN, 4, 0)] = { kind: 'sand', chain: 'bake', lvl: 1 };
+  assert.strictEqual(Core.stuckHint(CN, s), -1, '能挖');
+});
+test('v7 存档迁移到 v8：按当前锁格补埋物品，已开格不埋；百搭星格子保留', () => {
+  const s = fresh(); s.unlocked[28] = true; s.cells[3] = { k: 'tool', id: 'wild' };
+  const v7 = JSON.parse(Core.serialize(s, T0)); v7.v = 7; delete v7.hidden;
+  const back = Core.deserialize(CN, JSON.stringify(v7), T0, lcg(1));
+  assert.strictEqual(back.v, 8); assert.strictEqual(back.hidden[28], null); assert(back.hidden[29]); assert.deepStrictEqual(back.cells[3], { k: 'tool', id: 'wild' });
 });
 
 for (const [st, n] of results) console.log(st === 'PASS' ? '  ✓' : '  ✗', n);
