@@ -69,7 +69,7 @@ def skip_time(pg, ms): pg.evaluate(f"sessionStorage.setItem('mcl.timeOffset', St
 def close_modal(pg):
     pg.click('#m-btns .btn'); pg.wait_for_function("!document.getElementById('modal').classList.contains('show')", timeout=4000)
 def no_ad(pg): pg.wait_for_function("!document.getElementById('ad').classList.contains('show')", timeout=8000)
-def settle_rewards(pg): pg.wait_for_function('MCL.pending === 0', timeout=5000); pg.wait_for_timeout(100); no_ad(pg)
+def settle_rewards(pg): pg.wait_for_function('MCL.pending === 0', timeout=12000); pg.wait_for_timeout(100); no_ad(pg)
 def scene_png(pg, path):
     R = pg.evaluate('MCL.layout.cafeScene'); pg.screenshot(path=str(path), clip={'x': 0, 'y': 0, 'width': R['w'], 'height': R['h']})
 def img_diff(a, b):
@@ -552,7 +552,9 @@ with sync_playwright() as p:
     check('点障碍：开格弹窗写明里面是什么（Espresso）', pg.is_visible('#modal.show') and 'Espresso' in pg.inner_text('#m-body'), pg.inner_text('#m-body') if pg.is_visible('#modal.show') else '')
     pg.click('#m-btns .btn:not(.alt)'); pg.wait_for_timeout(400)
     check('付金币开：埋的浓缩液原样给你', S(pg, 'unlocked[30]') and cell(pg, 30) == {'k': 'item', 'chain': 'coffee', 'lvl': 3})
-    if pg.is_visible('#modal.show'): pg.click('#m-btns .btn'); settle_rewards(pg)  # 可能弹 New Recipe
+    for _ in range(3):  # 浓缩液第一次拿到 → New Recipe 卡（排队弹，可能晚一点），先收掉
+        try: pg.wait_for_selector('#modal.show', timeout=2500); pg.click('#m-btns .btn'); settle_rewards(pg)
+        except Exception: break
     # 套餐单
     SET = ("(()=>{const s=MCL.S; s.level=6; for(let i=0;i<49;i++) if(i!==30&&i!==31) s.cells[i]=null; const t=MCL.now();"
       "s.orders[0]={uid:960,tid:'n_c2b2',needs:[{chain:'coffee',lvl:2,done:false},{chain:'bake',lvl:2,done:false}],coins:40,stars:0,rare:false,cust:0,start:t,expiresAt:t+9e5,set:true,perfectEnd:t+180000};"
