@@ -69,7 +69,7 @@ assert all(x > 0 for x in P['levelNeed']) and P['after'] > 0, '店铺等级经�
 for u in P['unlocks']:
     assert u['name'] in locale, f'缺本地化：{u["name"]}'
 UI_IDS = {'icon_energy', 'icon_coin', 'icon_star', 'logo_merge_cafe_lite', 'icon_lock', 'icon_check', 'icon_clock', 'icon_hand', 'nav_cafe', 'nav_merge', 'nav_tasks', 'deco_plant_pot', 'deco_plant_fern', 'deco_plant_bush', 'fx_bubble', 'icon_upgrade', 'badge_level', 'chest_closed', 'chest_open', 'obstacle_sand', 'obstacle_crate', 'nav_book'}
-item_ids = {it['id'] for d in config['chains']['chains'].values() for it in d['items']} | {g['id'] for g in config['generators']['generators']}
+item_ids = {it['id'] for d in config['chains']['chains'].values() for it in d['items']} | {g['id'] for g in config['generators']['generators']} | {'item_wild_star'}  # 百搭星（M4）
 avatar_ids = {c['id'] for c in config['orders']['customers']} | {c['id'] + '_happy' for c in config['orders']['customers']}
 for key, ids, folder in [('items', item_ids, 'items'), ('avatars', avatar_ids, 'avatars'), ('ui', UI_IDS, 'ui')]:
     for i in config['art'].get(key, []):

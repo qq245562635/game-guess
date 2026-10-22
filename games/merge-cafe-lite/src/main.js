@@ -1424,7 +1424,7 @@
     Art.load(CONFIG.art.scene || [], 'assets/scene/', () => {}, 'webp'),
   ]);
   /* 顶栏和底栏的图标是 DOM 里的 SVG 占位：正式图到了换成 <img> */
-  const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg', nav_tasks: '#nav-tasks svg' };
+  const DOM_ICONS = { icon_energy: '#pill-energy svg', icon_coin: '#pill-coins svg', icon_star: '#pill-stars svg', nav_cafe: '#nav-cafe svg', nav_merge: '#nav-merge svg', nav_tasks: '#nav-tasks svg', nav_book: '#nav-book svg' };
   function swapDomIcon(id) {
     if (id === 'badge_level') { const el = $('lvl'); el.style.setProperty('--badge', `url('${Art.src(id)}')`); el.classList.add('art'); return; }
     const old = DOM_ICONS[id] && document.querySelector(DOM_ICONS[id]); if (!old) return;

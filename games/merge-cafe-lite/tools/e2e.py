@@ -48,6 +48,9 @@ def drag_to_order(pg, a, k): (x0, y0) = cxy(pg, a); x1, y1 = order_xy(pg, k); dr
 def click(pg, x, y): pg.mouse.click(x, y); pg.wait_for_timeout(150)
 def tap_gen(pg, gid): click(pg, *gen_xy(pg, gid))
 def tap_cell(pg, i): click(pg, *cxy(pg, i))
+def wait_sell(pg):  # 软件渲染下帧率很低：等 Sell 按钮真的出现
+    try: pg.wait_for_selector('#sell.show', timeout=4000)
+    except Exception: pass
 # 老用例按"没有店铺升级弹窗"写的：默认把升级经验调到够不着，店铺等级在自己的段落里单独测（levels=True）
 NO_LEVELUP = 'MCL.C.prog.levelNeed = []; MCL.C.prog.after = 1e12'
 def boot(pg, q='?reset=1&fastads', levels=False):
@@ -429,17 +432,17 @@ with sync_playwright() as p:
     check('超过 2.5 秒再合成：连击从 1 重新数，不罚', S(pg, 'combo.n') == 1 and S(pg, 'coins') == c0 + 5)
     # 出售
     pg.evaluate("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; s.cells[15]={k:'item',chain:'bake',lvl:2}; s.cells[16]={k:'item',chain:'coffee',lvl:5}; s.recycle=0;})()"); pg.wait_for_timeout(200)
-    c0 = S(pg, 'coins'); tap_cell(pg, 15); pg.wait_for_timeout(250)
+    c0 = S(pg, 'coins'); tap_cell(pg, 15); wait_sell(pg)
     check('M2 出售：点选物品，下方出现 "Sell +2"', pg.is_visible('#sell.show') and 'Sell +2' in pg.inner_text('#sell'), pg.inner_text('#sell') if pg.is_visible('#sell') else '')
     pg.screenshot(path=str(out / 'm2-sell.png'))
-    pg.click('#sell'); settle_rewards(pg)
+    tap_cell(pg, 15); wait_sell(pg); pg.click('#sell'); settle_rewards(pg)  # Sell 按钮 4 秒自动收起，截图慢时重新选中
     check('卖掉 2 级物品：+2 金币、格子空出、回收桶 1/8', cell(pg, 15) is None and S(pg, 'coins') == c0 + 2 and S(pg, 'recycle') == 1 and '1/8' in pg.inner_text('#toast') and not pg.is_visible('#sell.show'))
-    tap_cell(pg, 16); pg.wait_for_timeout(250); pg.click('#sell'); pg.wait_for_timeout(200)
+    tap_cell(pg, 16); wait_sell(pg); pg.click('#sell'); pg.wait_for_timeout(200)
     check('5 级以上要确认：弹窗、未确认前不卖', pg.is_visible('#modal.show') and 'Latte' in pg.inner_text('#m-title') and cell(pg, 16) is not None)
     pg.click('#m-btns .btn.coin'); settle_rewards(pg)
     check('确认后卖出：+16 金币', cell(pg, 16) is None and S(pg, 'coins') == c0 + 18)
     pg.evaluate("MCL.S.recycle=7; MCL.S.cells[17]={k:'item',chain:'bake',lvl:1}; MCL.S.energy=40; MCL.S.energyTs=MCL.now()"); pg.wait_for_timeout(150)
-    tap_cell(pg, 17); pg.wait_for_timeout(250); pg.click('#sell'); pg.wait_for_timeout(300)
+    tap_cell(pg, 17); wait_sell(pg); pg.click('#sell'); pg.wait_for_timeout(300)
     check('回收桶满 8 件：送 5 体力、桶清零', S(pg, 'energy') == 45 and S(pg, 'recycle') == 0 and 'Recycle bonus' in pg.inner_text('#toast'), pg.inner_text('#toast'))
     # 高级合成特写
     pg.evaluate("MCL.S.cells[22]={k:'item',chain:'coffee',lvl:5}; MCL.S.cells[23]={k:'item',chain:'coffee',lvl:5}"); pg.wait_for_timeout(150)
