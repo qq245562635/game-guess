@@ -613,14 +613,16 @@ with sync_playwright() as p:
     check('隔天回来：先欢迎回来卡、再签到 Day 2', len(titles) >= 2 and 'Welcome' in titles[0] and 'Day 2' in titles[1], str(titles))
     check('隔天回来：每日任务换新、宝箱可以再开', S(pg, 'dtasks.day') == d0 + 1 and not S(pg, 'dtasks.claimed'))
     # 离线营业 + 欢迎回来卡 + 广告翻倍
-    pg.evaluate("MCL.S.level = 9; MCL.S.deco = 5; MCL.S.login.day = Core.dayOf(MCL.now()) + 1; MCL.save()")  # 签到记到明天，下面跳 3 小时不会再弹
+    pg.evaluate("MCL.S.level = 9; MCL.S.deco = 5; MCL.S.login.day = Core.dayOf(MCL.now()); MCL.save()")  # 今天已签到（跳 3 小时若跨过 UTC 0 点会再弹签到，下面一并收掉）
     c0 = S(pg, 'coins'); skip_time(pg, 3 * 3600000); pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0')
     pg.wait_for_selector('#modal.show', timeout=6000)
     check('离开 3 小时回来：欢迎回来卡，插画 + 186 金币（每小时 10+27+25）', 'Welcome' in pg.inner_text('#m-title') and pg.is_visible('.welcome img.pic') and '186' in pg.inner_text('.welcome .amt'),
           f"{pg.inner_text('#m-title')!r} {pg.inner_text('#m-comic')!r}")
     pg.wait_for_timeout(400); pg.screenshot(path=str(out / 'm5-welcome.png'))
-    pg.click('#m-btns .btn.ad'); no_ad(pg); settle_rewards(pg)
-    check('看广告翻倍：一共 +372，广告统计记 offline 1/1', S(pg, 'coins') - c0 == 372 and S(pg, 'ads.offers.offline') == 1 and S(pg, 'ads.clicks.offline') == 1, f"+{S(pg, 'coins') - c0}")
+    pg.click('#m-btns .btn.ad'); no_ad(pg); pg.wait_for_timeout(800)
+    while pg.is_visible('#modal.show'): close_modal(pg); pg.wait_for_timeout(500)
+    settle_rewards(pg)
+    check('看广告翻倍：一共 +372，广告统计 offline 点 1 次 / 展示 2 次（含隔天那张）', S(pg, 'coins') - c0 >= 372 and S(pg, 'stats.offlineCoins') == 186 + 64 and S(pg, 'ads.offers.offline') == 2 and S(pg, 'ads.clicks.offline') == 1, f"+{S(pg, 'coins') - c0}")
     pg.evaluate('MCL.save()'); skip_time(pg, 20 * 3600000); c0 = S(pg, 'coins'); pg.reload(); pg.wait_for_function('window.MCL && MCL.layout.bs > 0')
     pg.wait_for_selector('#modal.show', timeout=6000)
     check('离开 20 小时：9 级封顶 6 小时（372），卡上提示上限', 'Welcome' in pg.inner_text('#m-title') and '372' in pg.inner_text('.welcome .amt') and '6 hours' in pg.inner_text('.welcome'), pg.inner_text('#m-comic'))
