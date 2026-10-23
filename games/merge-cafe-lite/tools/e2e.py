@@ -74,7 +74,12 @@ def close_all(pg):  # 弹窗排队一个接一个弹（中间有空档），每�
         except Exception: return
         close_modal(pg); pg.wait_for_timeout(300)
 def no_ad(pg): pg.wait_for_function("!document.getElementById('ad').classList.contains('show')", timeout=8000)
-def settle_rewards(pg): pg.wait_for_function('MCL.pending === 0', timeout=12000); pg.wait_for_timeout(100); no_ad(pg)
+def settle_rewards(pg):  # 等奖励落地；排队晚到的弹窗（签到等，软件渲染下可能晚于 close_all 的 2.5 秒）顺手关掉
+    for _ in range(60):
+        if pg.evaluate('MCL.pending === 0'): break
+        if pg.is_visible('#modal.show') and not pg.is_visible('#ad.show'): close_modal(pg)
+        pg.wait_for_timeout(200)
+    pg.wait_for_function('MCL.pending === 0', timeout=4000); pg.wait_for_timeout(100); no_ad(pg)
 def scene_png(pg, path):
     R = pg.evaluate('MCL.layout.cafeScene'); pg.screenshot(path=str(path), clip={'x': 0, 'y': 0, 'width': R['w'], 'height': R['h']})
 def img_diff(a, b):
@@ -438,6 +443,7 @@ with sync_playwright() as p:
     ctx = br.new_context(viewport={'width': 405, 'height': 720}, device_scale_factor=2)
     pg = ctx.new_page(); watch(pg); boot(pg, '?reset=1&fastads&debug=1')
     pg.evaluate('[...document.querySelectorAll("#dbg button")].find(b => b.textContent === "skip tutorial").click()'); pg.wait_for_timeout(300)
+    pg.evaluate("document.getElementById('dbg').style.visibility='hidden'")  # V1.1 加了储物架后棋盘变小，调试面板会盖到拖拽路径
     PAIRS = [(14, 15), (16, 17), (18, 19), (21, 22), (23, 24)]  # 第 3–4 行，避开调试面板
     pg.evaluate("(()=>{const s=MCL.S; for(let i=0;i<49;i++) s.cells[i]=null; for(const i of [14,15,16,17,18,19,21,22,23,24]) s.cells[i]={k:'item',chain:'coffee',lvl:1}; s.combo={n:0,at:0};})()")
     pg.wait_for_timeout(200); c0 = S(pg, 'coins')
@@ -682,6 +688,39 @@ with sync_playwright() as p:
     e0 = S(pg, 'energy'); drag_to_order(pg, 2, 0); pg.wait_for_timeout(900)
     check('交齐 8 级单：体力 +20、提示小费', S(pg, 'energy') - e0 == 20 and 'tip' in pg.inner_text('#toast'), f"+{S(pg, 'energy') - e0} toast={pg.inner_text('#toast')!r}")
     close_all(pg); settle_rewards(pg)
+    ctx.close()
+
+    # ================= V1.1 ③：储物架 + 回收桶拖拽 + 赎回 =================
+    def box_xy(pg, i): B = pg.evaluate(f'MCL.stripBox({i})'); return B['x'] + B['s'] / 2, B['y'] + B['s'] / 2
+    ctx = br.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2)
+    pg = ctx.new_page(); watch(pg); boot(pg)
+    pg.evaluate("(()=>{const s=MCL.S; Core.skipTutorial(s); for(let i=0;i<49;i++) s.cells[i]=null; s.cells[3]={k:'item',chain:'coffee',lvl:5}; s.cells[4]={k:'item',chain:'bake',lvl:3}; s.coins=1000;})()"); pg.wait_for_timeout(400)
+    x0, y0 = cxy(pg, 3); x1, y1 = box_xy(pg, 1); drag_xy(pg, x0, y0, x1, y1)
+    check('V1.1 储物架：4 级以前拖上去回弹不吞，提示几级开放', S(pg, 'cells[3].lvl') == 5 and 'Lv 4' in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    pg.evaluate('MCL.S.level = 4'); pg.wait_for_timeout(300)
+    drag_xy(pg, x0, y0, x1, y1)
+    check('4 级：棋盘物品拖进储物架第 1 格，棋盘那格空出来', S(pg, 'cells[3]') is None and S(pg, 'pantry[0].lvl') == 5)
+    pg.screenshot(path=str(out / 'v11-pantry.png'))
+    x2, y2 = cxy(pg, 10); drag_xy(pg, x1, y1, x2, y2)
+    check('架上的物品拖回棋盘空格', S(pg, 'cells[10].lvl') == 5 and S(pg, 'pantry[0]') is None)
+    c0 = S(pg, 'coins'); bx, by = box_xy(pg, 0); x4, y4 = cxy(pg, 4); drag_xy(pg, x4, y4, bx, by); pg.wait_for_timeout(300)
+    check('拖进回收桶 = 卖（不弹确认），+4 金币，出现 Undo', S(pg, 'cells[4]') is None and S(pg, 'coins') - c0 == 4 and pg.is_visible('#undo.show') and not pg.is_visible('#modal.show'), pg.inner_text('#undo') if pg.is_visible('#undo') else '')
+    pg.screenshot(path=str(out / 'v11-undo.png'), clip={'x': 0, 'y': 560, 'width': 390, 'height': 200})
+    pg.evaluate('MCL.S.lastSold.at = MCL.now()')  # 截图在软件渲染下要几秒，重新计时免得 10 秒窗口被测试本身吃掉
+    pg.click('#undo'); pg.wait_for_timeout(500); settle_rewards(pg)
+    check('点 Undo：原价赎回到原位，金币退回，回收桶计数退回', S(pg, 'cells[4].lvl') == 3 and S(pg, 'coins') == c0 and (S(pg, 'recycle') or 0) == 0 and not pg.is_visible('#undo.show'))
+    drag_xy(pg, x4, y4, bx, by); settle_rewards(pg); pg.evaluate('MCL.S.lastSold.at -= 11000'); pg.wait_for_timeout(700)
+    check('10 秒后 Undo 自动消失', not pg.is_visible('#undo.show') and S(pg, 'cells[4]') is None)
+    pg.evaluate('MCL.S.coins = 1000'); bxx, byy = box_xy(pg, 5); click(pg, bxx, byy); pg.wait_for_selector('#modal.show', timeout=3000)
+    check('点下一格（1k）：弹扩建窗', 'Pantry' in pg.inner_text('#m-title') and '1000' in pg.inner_text('#m-btns').replace(',', ''), pg.inner_text('#m-btns'))
+    pg.click('#m-btns .btn.coin'); pg.wait_for_timeout(400)
+    check('花 1000 金币扩到第 5 格', S(pg, 'pantrySlots') == 5 and S(pg, 'coins') == 0)
+    pg.evaluate("(()=>{const s=MCL.S,t=MCL.now(); s.pantry[2]={k:'item',chain:'coffee',lvl:2}; s.orders[0]={uid:771,tid:'n_c2',needs:[{chain:'coffee',lvl:2,done:false}],coins:20,stars:0,rare:false,cust:0,start:t,expiresAt:t+9e5};})()"); pg.wait_for_timeout(300)
+    x3, y3 = box_xy(pg, 3); ox, oy = order_xy(pg, 0); drag_xy(pg, x3, y3, ox, oy); pg.wait_for_timeout(500)
+    check('架上的物品直接拖给订单交货', S(pg, 'pantry[2]') is None and S(pg, 'orders[0].uid') != 771)
+    close_all(pg); settle_rewards(pg)
+    pg.evaluate('MCL.save()'); reload(pg)
+    check('刷新后储物架格数和东西都在', S(pg, 'pantrySlots') == 5)
     ctx.close()
 
     # ================= 多分辨率布局 =================

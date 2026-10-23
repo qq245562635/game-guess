@@ -48,6 +48,7 @@ function session(s, rng, t0, sec, opt) {
       const g = C.genList.map((d) => d.id).sort((a, b2) => s.gens[a].lv - s.gens[b2].lv)[0], uc = Core.upgradeCost(C, s, g);
       if (uc !== null && s.coins >= uc + 50) { Core.upgradeGen(C, s, g); t += 3; }
       if (Core.emptyCount(C, s) <= 4 && unlockCheapest()) continue;
+      { const pp = Core.pantryPrice(C, s); if (pp !== null && Core.pantryOn(C, s) && s.coins >= pp + ((Core.decoNext(C, s) || {}).coins || 0) + 500) { Core.buyPantrySlot(C, s); t += 3; } } // V1.1 ③：留够下一个装修的钱还有富余才扩储物架（机器人不往里放东西，只算金币消耗）
     }
     // 0.5 M4：能挖的障碍就挖（同款物品拖上去，白得一格 + 升一级）；有百搭星就用在最高的 8 级以下物品上
     { let dug = false;
@@ -153,11 +154,11 @@ function campaignReport(days, runs) {
   for (const [sinks, daily] of [[false, false], [true, false], [true, true]]) {
     const all = []; for (let k = 1; k <= runs; k++) all.push(campaign(k, days, sinks, daily));
     console.log(`\n${daily ? 'M6：全部金币消耗 + 每天回来（离线营业不翻倍、签到、每日宝箱）' : sinks ? 'M5 前：全部金币消耗' : '旧：只有开格'}（每天 2×15 分钟，不看广告，${runs} 局中位数）`);
-    console.log('天  店铺等级  装修节点  累计赚   手里余额  开格数  生成器等级  累计花费（开格/升级/回满/体力/泡泡/装修）');
+    console.log('天  店铺等级  装修节点  累计赚   手里余额  开格数  生成器等级  累计花费（开格/升级/回满/体力/泡泡/装修/储物架）');
     for (let d = 0; d < days; d++) {
       const r = all.map((a) => a[d]), m = (f) => pct(r.map(f), 0.5);
       console.log(`D${d + 1}  ${String(m((x) => x.level)).padStart(6)}  ${String(m((x) => x.deco)).padStart(6)}  ${String(m((x) => x.earned)).padStart(6)}  ${String(m((x) => x.coins)).padStart(8)}  ${String(m((x) => x.unlocks)).padStart(6)}  ${(m((x) => x.lv[0]) + '/' + m((x) => x.lv[1])).padStart(10)}  ` +
-        ['unlock', 'upgrade', 'refill', 'energy', 'bubble', 'deco'].map((k) => m((x) => x.spent[k])).join('/'));
+        ['unlock', 'upgrade', 'refill', 'energy', 'bubble', 'deco', 'pantry'].map((k) => m((x) => x.spent[k] || 0)).join('/'));
     }
     if (sinks) {
       const dayOf = (f) => { const v = all.map((a) => { const i = a.findIndex(f); return i < 0 ? 99 : i + 1; }).sort((a, b) => a - b); return v[v.length >> 1]; };

@@ -50,6 +50,7 @@ const Core = (() => {
       v: SAVE_VERSION,
       coins: C.eco.startCoins, stars: C.eco.startStars, gems: C.eco.startGems,
       energy: C.eco.energy.start, energyTs: now, pot: 0, // pot：备用咖啡壶里存的体力（V1.1）
+      pantry: [], pantrySlots: C.eco.pantry ? C.eco.pantry.free : 0, lastSold: null, // 储物架、最近卖掉的一件（V1.1 ③）
       cells: new Array(C.n).fill(null),
       unlocked: new Array(C.n).fill(false),
       gens: {},
@@ -295,14 +296,46 @@ const Core = (() => {
   function canMerge(C, a, b) {
     return !!(a && b && a.k === 'item' && b.k === 'item' && a.chain === b.chain && a.lvl === b.lvl && a.lvl < C.maxLevel);
   }
+  /* ---------- 储物架（V1.1 ③）：棋盘外的格子，不占棋盘；位置用负数表示（架位 k → -1 - k），和棋盘格共用拖放 / 交单 / 出售 ---------- */
+  const panRef = (k) => -1 - k;
+  const isPan = (ref) => ref < 0;
+  function itemAt(s, ref) { return ref >= 0 ? s.cells[ref] || null : ((s.pantry || [])[-1 - ref] || null); }
+  function clearAt(s, ref) { if (ref >= 0) s.cells[ref] = null; else if (s.pantry) s.pantry[-1 - ref] = null; }
+  const pantryOn = (C, s) => !!C.eco.pantry && featureOn(C, s, 'pantry') && !tutStep(C, s);
+  const pantrySlots = (C, s) => Math.min(C.eco.pantry ? C.eco.pantry.max : 0, s.pantrySlots || (C.eco.pantry ? C.eco.pantry.free : 0));
+  /* 下一格的价格，满了返回 null */
+  function pantryPrice(C, s) { const P = C.eco.pantry; if (!P) return null; const n = pantrySlots(C, s) - P.free; return n < P.prices.length ? P.prices[n] : null; }
+  function buyPantrySlot(C, s) {
+    if (!pantryOn(C, s)) return { ok: false, reason: 'locked' };
+    const p = pantryPrice(C, s); if (p === null) return { ok: false, reason: 'max' };
+    if (s.coins < p) return { ok: false, reason: 'coins', price: p };
+    s.coins -= p; s.pantrySlots = pantrySlots(C, s) + 1; s.stats.coinsSpent.pantry = (s.stats.coinsSpent.pantry || 0) + p; logEv(s, 'mid');
+    return { ok: true, price: p, slots: s.pantrySlots };
+  }
+  /* 放进储物架第 k 格：from 是棋盘格或另一个架位。空格 = 放进去；有东西 = 两边互换 */
+  function store(C, s, from, k) {
+    const a = itemAt(s, from);
+    if (!pantryOn(C, s)) return { type: 'bounce', reason: 'locked' };
+    if (!a || (a.k !== 'item' && a.k !== 'tool')) return { type: 'none' };
+    if (k < 0 || k >= pantrySlots(C, s)) return { type: 'bounce', reason: 'locked' };
+    if (isPan(from) && -1 - from === k) return { type: 'none' };
+    if (!s.pantry) s.pantry = [];
+    const b = s.pantry[k] || null;
+    s.pantry[k] = a; clearAt(s, from);
+    if (b) { if (from >= 0) s.cells[from] = b; else s.pantry[-1 - from] = b; }
+    s.stats.stored = (s.stats.stored || 0) + 1;
+    return { type: b ? 'swap' : 'store' };
+  }
+
+  /* from 可以是棋盘格（≥0）或储物架格（V1.1 ③：-1 - 架位，见 panRef）；to 只能是棋盘格 */
   function drop(C, s, from, to, now, rng) {
-    const a = s.cells[from];
+    const a = itemAt(s, from);
     if (!a || (a.k !== 'item' && a.k !== 'tool')) return { type: 'none' };
     if (to < 0 || to >= C.n || to === from) return { type: 'none' };
     if (!s.unlocked[to]) {
       if (canDig(C, s, a, to)) { // 挖障碍
         const it = { k: 'item', chain: a.chain, lvl: a.lvl + 1 };
-        s.unlocked[to] = true; s.hidden[to] = null; s.cells[to] = it; s.cells[from] = null;
+        s.unlocked[to] = true; s.hidden[to] = null; s.cells[to] = it; clearAt(s, from);
         s.stats.unlocks = (s.stats.unlocks || 0) + 1; s.stats.dug = (s.stats.dug || 0) + 1; s.stats.merges++;
         s.stats.maxLvl = Math.max(s.stats.maxLvl || 0, it.lvl); logEv(s, 'mid');
         const found = markFound(C, s, it, now), combo = addCombo(C, s, now);
@@ -314,10 +347,10 @@ const Core = (() => {
     const step = tutStep(C, s);
     if (a.k === 'tool') { // 百搭星：拖到 8 级以下物品上 = 升 1 级；拖到空格是移动
       if (step) return { type: 'bounce', reason: 'tutorial' };
-      if (!b) { s.cells[to] = a; s.cells[from] = null; return { type: 'move' }; }
+      if (!b) { s.cells[to] = a; clearAt(s, from); return { type: 'move' }; }
       if (b.k !== 'item' || b.lvl >= C.maxLevel) return { type: 'bounce', reason: b.k === 'item' ? 'max' : 'mismatch' };
       const it = { k: 'item', chain: b.chain, lvl: b.lvl + 1 };
-      s.cells[to] = it; s.cells[from] = null; s.stats.wildUsed = (s.stats.wildUsed || 0) + 1;
+      s.cells[to] = it; clearAt(s, from); s.stats.wildUsed = (s.stats.wildUsed || 0) + 1;
       s.stats.maxLvl = Math.max(s.stats.maxLvl || 0, it.lvl); logEv(s, 'mid');
       return { type: 'wild', lvl: it.lvl, found: markFound(C, s, it, now) };
     }
@@ -325,11 +358,11 @@ const Core = (() => {
     if (step && step !== 'merge') return { type: 'bounce', reason: 'tutorial' };
     if (!b) {
       if (step) return { type: 'bounce', reason: 'tutorial' };
-      s.cells[to] = a; s.cells[from] = null; return { type: 'move' };
+      s.cells[to] = a; clearAt(s, from); return { type: 'move' };
     }
     if (canMerge(C, a, b)) {
       s.cells[to] = { k: 'item', chain: a.chain, lvl: a.lvl + 1 };
-      s.cells[from] = null;
+      clearAt(s, from);
       s.stats.merges++;
       const found = markFound(C, s, s.cells[to], now);
       if (a.lvl + 1 > (s.stats.maxLvl || 0)) { s.stats.maxLvl = a.lvl + 1; if (!found) logEv(s, 'mid'); } // 第一次做出这个等级（图鉴已记中奖励的不重复记）
@@ -361,17 +394,39 @@ const Core = (() => {
 
   /* ---------- 出售 + 回收桶（V1 M2） ---------- */
   const sellPrice = (C, it) => Math.pow(2, it.lvl - 1);
+  /* i 可以是棋盘格或架位（拖进回收桶，V1.1 ③）。记下 lastSold，undoSec 秒内可以原价赎回 */
   function sellItem(C, s, i, now) {
-    const it = s.cells[i];
+    const it = itemAt(s, i);
     if (!it || it.k !== 'item') return { ok: false, reason: 'none' };
     if (tutStep(C, s)) return { ok: false, reason: 'tutorial' };
     const price = sellPrice(C, it), R = C.eco.recycle || { size: 0 };
-    s.cells[i] = null; s.coins += price; s.stats.coinsEarned += price; s.stats.sold = (s.stats.sold || 0) + 1;
+    clearAt(s, i); s.coins += price; s.stats.coinsEarned += price; s.stats.sold = (s.stats.sold || 0) + 1;
     s.recycle = (s.recycle || 0) + 1;
     let energy = 0;
     if (R.size && s.recycle >= R.size) { s.recycle = 0; energy = R.energy; settleEnergy(C, s, now || 0); s.energy += energy; logEv(s, 'mid'); }
     else logEv(s, 'small');
+    s.lastSold = { it, price, energy, from: i, at: now || 0 };
     return { ok: true, price, item: it, energy, bin: s.recycle, binSize: R.size || 0 };
+  }
+  /* 赎回最近卖掉的一件（undoSec 秒内、原价）：放回原位，原位被占了放离原位最近的空格，棋盘满了放储物架空位。
+     回收桶计数退回；那一件让回收桶满了送过体力的，体力一并退回（不够退就不能赎） */
+  function undoLeft(C, s, now) { const L = s.lastSold, U = (C.eco.recycle || {}).undoSec || 0; return L && U ? Math.max(0, L.at + U * 1000 - now) : 0; }
+  function undoSell(C, s, now) {
+    const L = s.lastSold; if (!L || undoLeft(C, s, now) <= 0) { s.lastSold = null; return { ok: false, reason: 'expired' }; }
+    if (s.coins < L.price) return { ok: false, reason: 'coins', price: L.price };
+    if (L.energy) { settleEnergy(C, s, now); if (s.energy < L.energy) return { ok: false, reason: 'energy' }; }
+    let to = null;
+    if (L.from >= 0 && s.unlocked[L.from] && !s.cells[L.from]) to = L.from;
+    else if (L.from < 0 && -1 - L.from < pantrySlots(C, s) && !(s.pantry || [])[-1 - L.from]) to = L.from;
+    else { const [r, c] = L.from >= 0 ? rc(C, L.from) : [3, 3], e = nearestEmpty(C, s, r, c); if (e >= 0) to = e; }
+    if (to === null && pantryOn(C, s)) { for (let k = 0; k < pantrySlots(C, s); k++) if (!(s.pantry || [])[k]) { to = panRef(k); break; } }
+    if (to === null) return { ok: false, reason: 'full' };
+    if (to >= 0) s.cells[to] = L.it; else { if (!s.pantry) s.pantry = []; s.pantry[-1 - to] = L.it; }
+    s.coins -= L.price; s.stats.coinsEarned -= L.price; s.stats.sold = Math.max(0, (s.stats.sold || 0) - 1);
+    const R = C.eco.recycle || { size: 0 };
+    if (L.energy) { s.energy -= L.energy; s.recycle = R.size - 1; } else s.recycle = Math.max(0, (s.recycle || 0) - 1);
+    s.stats.undone = (s.stats.undone || 0) + 1; s.lastSold = null;
+    return { ok: true, to, item: L.it, price: L.price, energy: L.energy };
   }
 
   /* ---------- 提示（V1 M2）：永不卡死 ---------- */
@@ -469,12 +524,12 @@ const Core = (() => {
   /* 交货：把棋盘 from 格的物品交给第 k 个订单。全部交齐则结算并在该槽位刷新新订单。 */
   function deliver(C, s, from, k, now, rng) {
     rng = rng || Math.random;
-    const it = s.cells[from], o = s.orders[k];
+    const it = itemAt(s, from), o = s.orders[k]; // from 可以是架位（V1.1 ③）
     const step = tutStep(C, s);
     if (step && (step !== 'deliver' || k !== 0)) return { type: 'reject', reason: 'tutorial' };
     const ni = orderNeedFor(C, o, it);
     if (ni < 0) return { type: 'reject', reason: 'mismatch' };
-    o.needs[ni].done = true; s.cells[from] = null;
+    o.needs[ni].done = true; clearAt(s, from);
     if (o.needs.some((n) => !n.done)) return { type: 'partial', need: ni };
     const pay = orderCoins(C, s, o, now);
     if (pay.perfect) { s.stats.perfects = (s.stats.perfects || 0) + 1; logEv(s, 'mid'); }
@@ -639,7 +694,7 @@ const Core = (() => {
   function daysInFirstWeek(s) { const ds = s.stats.days || []; if (!ds.length) return 0; const d0 = Math.min(...ds); return ds.filter((d) => d - d0 < 7).length; }
 
   /* ---------- 任务（底栏 Tasks） ---------- */
-  const newSpent = () => ({ unlock: 0, upgrade: 0, refill: 0, energy: 0, bubble: 0, swap: 0, deco: 0 });
+  const newSpent = () => ({ unlock: 0, upgrade: 0, refill: 0, energy: 0, bubble: 0, swap: 0, deco: 0, pantry: 0 });
   function newStats(now) {
     return { merges: 0, spawns: 0, ordersDone: 0, coinsEarned: 0, unlocks: 0, maxLvl: 0, firstMergeAt: 0, firstOrderAt: 0, createdAt: now, coinsSpent: newSpent(), bubbles: 0,
       xpEarned: 0, ev: { small: 0, mid: 0, big: 0 }, days: [dayOf(now)], playMs: 0 };
@@ -825,6 +880,10 @@ const Core = (() => {
     if (typeof o.gems !== 'number') o.gems = 0;
     if (typeof o.pot !== 'number' || !(o.pot >= 0)) o.pot = 0; // V1.1 咖啡壶：老存档从空壶开始（加字段不升存档版本）
     o.pot = Math.min(o.pot, potMax(C));
+    { const P = C.eco.pantry; // V1.1 ③ 储物架：老存档 = 免费格数、空架；越界 / 坏掉的东西清掉
+      o.pantrySlots = P ? Math.max(P.free, Math.min(P.max, Math.floor(o.pantrySlots) || P.free)) : 0;
+      o.pantry = (Array.isArray(o.pantry) ? o.pantry : []).slice(0, o.pantrySlots).map((c) => c && ((c.k === 'item' && C.chains[c.chain] && c.lvl >= 1 && c.lvl <= C.maxLevel) || (c.k === 'tool' && c.id === 'wild')) ? c : null);
+      if (!o.lastSold || typeof o.lastSold.at !== 'number') o.lastSold = null; }
     if (typeof o.tut !== 'number') o.tut = TUT_DONE;
     if (typeof o.seq !== 'number') o.seq = 0;
     if (typeof o.deco !== 'number' || o.deco < 0) o.deco = 0;
@@ -875,6 +934,7 @@ const Core = (() => {
     addCombo, sellPrice, sellItem, findMergePair, stuckHint, rollHidden, obstacleAt, canDig, maybeWildStar, giveWildStar, setOrderFields,
     regState, regOn, heartsFor, regPerks, addAffinity, recipeStars, recState, markFound, addMastery, orderCoins, seatedRegulars, rollRegularOrder,
     maybeBubble, settleBubbles, bubblePrice, popBubble, canSwap, swapOrder, daily,
+    panRef, itemAt, pantryOn, pantrySlots, pantryPrice, buyPantrySlot, store, undoLeft, undoSell,
     unlockPrice, canUnlockHere, unlock, serialize, deserialize, itemDef,
   };
 })();

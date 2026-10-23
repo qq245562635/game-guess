@@ -1,5 +1,5 @@
 {
-  "_doc": "经济。体力上限100、每120秒自然恢复1点。首会话数值实验：初始体力从200调为150，让普通玩家更有机会在首会话遇到体力补充广告，但需通过真人测试验证；其余经济参数不变。 金币消耗（2026-10-21）：开格之外再加 5 种——生成器升级（见 generators.json upgrades）、coinRefill 金币立即回满生成器（当天第 n 次价格 base+step×n）、coinEnergy 金币买体力（每天按 prices 逐次涨价，买完当天不再出现；广告 +30 永远免费，金币只做兜底）、bubble 合成泡泡（合出 minLevel 级以上时按 chance 在旁边冒一个同款泡泡，lifeSec 秒内花 等级×pricePerLevel 金币或看广告拿下，否则消失）、swapOrder 花金币换掉不想做的订单（交过一部分的不能换）。每日次数按 UTC 0 点重置。 v0.4：每完成 starEveryOrders 单奖 1 星，由 3 改为 5（装修拉长到 D1/D4/D7）。 V1 M2：combo 合成连击（两次合成间隔 ≤ windowSec 算连击，showFrom 起显示浮字；每 coinsEvery 连给 coins 金币、每 energyEvery 连给 energy 体力；断了不罚）；sell 出售（价格 = 2^(等级−1)，confirmFrom 级以上要确认）；recycle 回收桶（每卖 1 件 +1，满 size 件送 energy 体力）；bubble.pity 泡泡保底（连续 pity 次 minLevel 级以上合成没冒泡泡，下一次必冒）；hints.idleSec 无操作多少秒后晃一对能合成的物品。 V1 M4：setOrder 套餐单（店铺 setOrders 等级开放后，同时要两条链的订单就是套餐单；perfectSec 秒内交齐额外 +bonusPct% 金币和 Perfect 演出，超时只是没额外奖励）；wildStar 百搭星（店铺 wildStar 等级开放后，合出 minLevel 级以上时按 chance 在旁边掉一颗，连续 pity 次没掉必掉；拖到任意 8 级以下物品上 = 该物品升 1 级）。 V1.1 备用咖啡壶 energy.potMax：体力满了以后自然恢复不再浪费，存进壶里（上限 potMax），体力不够点生成器时整壶自动倒进来（Reddit 体力吐槽 + sim：晚场 100 体力 5.5 分钟见底、干等 9 分钟；壶 60 → 约 9.6 分钟见底）。",
+  "_doc": "经济。体力上限100、每120秒自然恢复1点。首会话数值实验：初始体力从200调为150，让普通玩家更有机会在首会话遇到体力补充广告，但需通过真人测试验证；其余经济参数不变。 金币消耗（2026-10-21）：开格之外再加 5 种——生成器升级（见 generators.json upgrades）、coinRefill 金币立即回满生成器（当天第 n 次价格 base+step×n）、coinEnergy 金币买体力（每天按 prices 逐次涨价，买完当天不再出现；广告 +30 永远免费，金币只做兜底）、bubble 合成泡泡（合出 minLevel 级以上时按 chance 在旁边冒一个同款泡泡，lifeSec 秒内花 等级×pricePerLevel 金币或看广告拿下，否则消失）、swapOrder 花金币换掉不想做的订单（交过一部分的不能换）。每日次数按 UTC 0 点重置。 v0.4：每完成 starEveryOrders 单奖 1 星，由 3 改为 5（装修拉长到 D1/D4/D7）。 V1 M2：combo 合成连击（两次合成间隔 ≤ windowSec 算连击，showFrom 起显示浮字；每 coinsEvery 连给 coins 金币、每 energyEvery 连给 energy 体力；断了不罚）；sell 出售（价格 = 2^(等级−1)，confirmFrom 级以上要确认）；recycle 回收桶（每卖 1 件 +1，满 size 件送 energy 体力）；bubble.pity 泡泡保底（连续 pity 次 minLevel 级以上合成没冒泡泡，下一次必冒）；hints.idleSec 无操作多少秒后晃一对能合成的物品。 V1 M4：setOrder 套餐单（店铺 setOrders 等级开放后，同时要两条链的订单就是套餐单；perfectSec 秒内交齐额外 +bonusPct% 金币和 Perfect 演出，超时只是没额外奖励）；wildStar 百搭星（店铺 wildStar 等级开放后，合出 minLevel 级以上时按 chance 在旁边掉一颗，连续 pity 次没掉必掉；拖到任意 8 级以下物品上 = 该物品升 1 级）。 V1.1 备用咖啡壶 energy.potMax：体力满了以后自然恢复不再浪费，存进壶里（上限 potMax），体力不够点生成器时整壶自动倒进来（Reddit 体力吐槽 + sim：晚场 100 体力 5.5 分钟见底、干等 9 分钟；壶 60 → 约 9.6 分钟见底）。 V1.1 ③：pantry 储物架（店铺 pantry 等级开放）——棋盘外 free 格免费，金币逐格扩到 max 格（prices，共 3.3 万，只收金币、不接广告、不留内购位），放进去的东西不占棋盘，可以拖回棋盘、直接交单、拖进回收桶；recycle.undoSec 拖进回收桶（或满格时 Sell）卖掉的最近一件，这么多秒内可以原价赎回。",
   "energy": {
     "max": 100,
     "start": 150,
@@ -48,7 +48,13 @@
   },
   "recycle": {
     "size": 8,
-    "energy": 5
+    "energy": 5,
+    "undoSec": 10
+  },
+  "pantry": {
+    "free": 4,
+    "max": 10,
+    "prices": [1000, 2000, 4000, 6000, 8000, 12000]
   },
   "hints": {
     "idleSec": 5
