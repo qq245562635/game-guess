@@ -26,6 +26,7 @@ src/game.src.html        页面骨架和样式
 tools/build.py           构建：python3 tools/build.py（同时查词条数、禁用字样、打印 gzip 体积）
 tools/test_core.js       逻辑单测：node tools/test_core.js
 tools/e2e.py             浏览器端到端自测（Playwright，真实指针拖拽）：python3 tools/e2e.py
+tools/store_shots.py     上架截图：从真实游戏截 4 张（竖 / 横屏棋盘、装修前 / 后）到 store/screens/，规范见 docs/store-listing.md
 tools/sim.js             数值模拟：机器人用真实逻辑跑首个会话（星星产出 / 第一幕解锁率）+ 7 天金币曲线（旧/新消耗对比）：node tools/sim.js
 docs/selftest/           各里程碑自测截图
 ```

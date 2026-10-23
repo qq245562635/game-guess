@@ -968,6 +968,27 @@ test('保底进度：泡泡还差几次必出（跟着 bubblePity 走）；百�
   s.level = 7; s.wildPity = 14; assert.deepStrictEqual(Core.pityLeft(CN, s).wild, { left: 1, minLevel: 6 });
 });
 
+/* ---------- V1.1 ⑤：红线——看不看广告都不改订单难度 ---------- */
+test('红线：订单抽取和广告无关——同样的进度和随机数，看过 100 次广告的档和没看过的档抽到完全一样的订单', () => {
+  const roll = (ads) => {
+    const s = fresh(); s.stats.ordersDone = 25; s.level = 9;
+    if (ads) { s.ads.rewards = 100; for (const k in s.ads.clicks) { s.ads.clicks[k] = 20; s.ads.offers[k] = 20; } s.ads.interstitials = 9; }
+    const rng = lcg(42), out = [];
+    for (let k = 0; k < 40; k++) { const o = Core.rollOrder(CN, s, T0 + k * 1000, rng); out.push(o.tid + ':' + o.coins + ':' + (o.expiresAt - o.start)); s.orders[k % 3] = o; }
+    return out;
+  };
+  assert.deepStrictEqual(roll(true), roll(false));
+});
+test('红线：core 里订单 / 掉率 / 生成器相关的函数不读广告统计', () => {
+  const src = fs.readFileSync(path.join(root, 'src/core.js'), 'utf8');
+  for (const fn of ['rollOrder', 'makeOrder', 'rollLevel', 'tapGen', 'dropRates', 'orderCoins']) {
+    const i = src.indexOf('function ' + fn + '('); assert(i >= 0, fn);
+    let depth = 0, j = src.indexOf('{', i);
+    for (; j < src.length; j++) { if (src[j] === '{') depth++; else if (src[j] === '}' && --depth === 0) break; }
+    assert(!/\bs\.ads\b/.test(src.slice(i, j)), fn + ' 读了 s.ads');
+  }
+});
+
 for (const [st, n] of results) console.log(st === 'PASS' ? '  ✓' : '  ✗', n);
 console.log(`\n${pass}/${results.length} passed`);
 process.exit(pass === results.length ? 0 : 1);
