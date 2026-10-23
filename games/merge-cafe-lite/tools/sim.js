@@ -27,6 +27,7 @@ function lcg(seed) { let x = seed >>> 0; return () => { x = (Math.imul(x, 110351
 function session(s, rng, t0, sec, opt) {
   opt = opt || {};
   let t = 0, stuck = false, adsLeft = opt.adEnergy ? 1 : 0, act1At = null, starsTotal = 0;
+  const W = { wait: 0, zeroAt: null }; // V1.1 体力墙：没体力干等的秒数、第一次见底的时刻（真人这时会走或看广告）
   const now = () => t0 + t * 1000;
   const firstAct = C.deco.filter((d) => d.act === 0).reduce((a, d) => a + d.cost, 0);
   const countStars = (before) => { starsTotal += Math.max(0, s.stars - before); if (act1At === null && starsTotal + (opt.starsBefore || 0) >= firstAct) act1At = t; };
@@ -105,10 +106,10 @@ function session(s, rng, t0, sec, opt) {
     { const cell = s.unlocked.findIndex((u, i) => !u && Core.canUnlockHere(C, s, i) && s.coins >= Core.unlockPrice(C, i));
       if (cell >= 0) { Core.unlock(C, s, cell); t += 3; continue; } }
     // 没体力 / 冷却：等
-    if (s.energy < 1 || C.genList.every((g) => s.gens[g.id].charges <= 0)) { t += 5; continue; }
+    if (s.energy < 1 || C.genList.every((g) => s.gens[g.id].charges <= 0)) { if (s.energy < 1) { W.wait += 5; if (W.zeroAt === null) W.zeroAt = t; } t += 5; continue; }
     stuck = true; break;
   }
-  return { stars: starsTotal, act1At, stuck, endT: now() };
+  return { stars: starsTotal, act1At, stuck, endT: now(), W };
 }
 
 function play(seed, sessionSec, adEnergy) {
@@ -134,15 +135,16 @@ function campaign(seed, days, sinks, daily) {
   const out = []; let stuckN = 0, lastEnd = 0;
   for (let d = 0; d < days; d++) {
     const m0 = s.level + s.deco + C.regs.reduce((a, r) => a + Core.regState(s, r.id).hearts, 0) + Object.keys(s.recipes || {}).reduce((a, k) => { const m = k.match(/^(\D+)(\d+)$/); return a + Core.recipeStars(C, s, m[1], +m[2]); }, 0);
+    const walls = [];
     for (const [h, len] of [[9, 900], [21, 900]]) {
       const t0 = T0 + d * 86400e3 + h * 3600e3;
       if (daily) { if (lastEnd) Core.offlineEarn(C, s, lastEnd, t0); Core.claimLogin(C, s, t0); }
       const r = session(s, rng, t0, len, { sinks, daily });
-      if (r.stuck) stuckN++; lastEnd = r.endT;
+      if (r.stuck) stuckN++; lastEnd = r.endT; walls.push(r.W);
       while (Core.renovate(C, s).ok) {} // 有星有钱就装修（玩家会第一时间装）
     }
     const ms = s.level + s.deco + C.regs.reduce((a, r) => a + Core.regState(s, r.id).hearts, 0) + Object.keys(s.recipes || {}).reduce((a, k) => { const m = k.match(/^(\D+)(\d+)$/); return a + Core.recipeStars(C, s, m[1], +m[2]); }, 0) - m0; // 当天里程碑：升级 + 装修节点 + 熟客心 + 菜谱星
-    out.push({ ms, offline: s.stats.offlineCoins || 0, dchest: s.stats.dailyChests || 0, login: s.login ? s.login.n : 0, stuck: stuckN, dug: s.stats.dug || 0, wildGot: s.stats.wildGot || 0, perfects: s.stats.perfects || 0, mia: Core.regState(s, 'mia').hearts, regH: C.regs.map((r) => Core.regState(s, r.id).hearts), rec3: Object.keys(s.recipes || {}).filter((k) => { const m = k.match(/^(\D+)(\d+)$/); return Core.recipeStars(C, s, m[1], +m[2]) >= 3; }).length, found: Object.values(s.recipes || {}).filter((r) => r.f).length, mid: s.stats.ev.mid, coins: s.coins, earned: s.stats.coinsEarned, spent: Object.assign({}, s.stats.coinsSpent), unlocks: s.stats.unlocks, lv: C.genList.map((g) => s.gens[g.id].lv), level: s.level, deco: s.deco });
+    out.push({ walls, ms, offline: s.stats.offlineCoins || 0, dchest: s.stats.dailyChests || 0, login: s.login ? s.login.n : 0, stuck: stuckN, dug: s.stats.dug || 0, wildGot: s.stats.wildGot || 0, perfects: s.stats.perfects || 0, mia: Core.regState(s, 'mia').hearts, regH: C.regs.map((r) => Core.regState(s, r.id).hearts), rec3: Object.keys(s.recipes || {}).filter((k) => { const m = k.match(/^(\D+)(\d+)$/); return Core.recipeStars(C, s, m[1], +m[2]) >= 3; }).length, found: Object.values(s.recipes || {}).filter((r) => r.f).length, mid: s.stats.ev.mid, coins: s.coins, earned: s.stats.coinsEarned, spent: Object.assign({}, s.stats.coinsSpent), unlocks: s.stats.unlocks, lv: C.genList.map((g) => s.gens[g.id].lv), level: s.level, deco: s.deco });
   }
   return out;
 }
@@ -164,6 +166,11 @@ function campaignReport(days, runs) {
       console.log(`M4 验收：14 天 ${all.length} 局 × 28 个会话里卡死 ${all.reduce((x, a) => x + a[13].stuck, 0)} 次；挖障碍 D7 ${pct(all.map((a) => a[6].dug), 0.5)} 格；百搭星 D14 ${pct(all.map((a) => a[13].wildGot), 0.5)} 颗；套餐 Perfect D7 ${pct(all.map((a) => a[6].perfects), 0.5)} 次`);
       console.log(`M3 验收：Mia 1–5 心 D${[1, 2, 3, 4, 5].map((h) => dayOf((x) => x.mia >= h)).join('/D')}；第 7 天各熟客心数 ${C.regs.map((r, i) => r.id + ' ' + pct(all.map((a) => a[6].regH[i]), 0.5)).join('、')}；菜谱满星 D4 ${pct(all.map((a) => a[3].rec3), 0.5)} 道、D7 ${pct(all.map((a) => a[6].rec3), 0.5)}、D14 ${pct(all.map((a) => a[13].rec3), 0.5)}；图鉴 D14 ${pct(all.map((a) => a[13].found), 0.5)}/16`);
       if (daily) console.log(`M6 验收：每天至少 1 个里程碑（升级 / 装修节点 / 熟客升心 / 菜谱升星）的天数 ${days - all.reduce((mx, a) => Math.max(mx, a.filter((x) => x.ms < 1).length), 0)}/${days}（取最差一局；${all.length} 局里有空白天的 ${all.filter((a) => a.some((x) => x.ms < 1)).length} 局，空白天在 D${[...new Set([].concat(...all.map((a) => a.map((x, i) => x.ms < 1 ? i + 1 : 0).filter(Boolean))))].sort((x, y) => x - y).join('/D') || '-'}）；里程碑中位数 D1–D7 ${[0, 1, 2, 3, 4, 5, 6].map((d) => pct(all.map((a) => a[d].ms), 0.5)).join('/')}、D8–D14 ${[7, 8, 9, 10, 11, 12, 13].map((d) => pct(all.map((a) => a[d].ms), 0.5)).join('/')}；14 天离线营业 ${pct(all.map((a) => a[13].offline), 0.5)} 金币、每日宝箱 ${pct(all.map((a) => a[13].dchest), 0.5)} 个、签到 ${pct(all.map((a) => a[13].login), 0.5)} 格`);
+      if (daily) { // V1.1 体力墙：D2–D14 每天早 / 晚两场，不看广告（D1 有开局 150 体力，不算）
+        const xs = (f) => { const v = []; for (const a of all) for (let d = 1; d < days; d++) v.push(f(a[d])); return v.sort((x, y) => x - y)[v.length >> 1]; };
+        const mean = (f) => { let n = 0, m = 0; for (const a of all) for (let d = 1; d < days; d++) { m += f(a[d]); n++; } return m / n; };
+        console.log(`V1.1 体力墙（D2–D14 中位数，不看广告）：晚场第 ${(xs((x) => x.walls[1].zeroAt === null ? 900 : x.walls[1].zeroAt) / 60).toFixed(1)} 分钟见底、干等 ${(xs((x) => x.walls[1].wait) / 60).toFixed(1)} 分钟；早场干等 ${(xs((x) => x.walls[0].wait) / 60).toFixed(1)} 分钟；每天见底 ${mean((x) => x.walls.filter((w) => w.zeroAt !== null).length).toFixed(2)} 场（= 体力广告的曝光机会）`);
+      }
       console.log(`M1 验收（中位数）：第一幕 D${dayOf((x) => x.deco >= 5)}、第二幕 D${dayOf((x) => x.deco >= 10)}、第三幕 D${dayOf((x) => x.deco >= 15)}；` +
         `店铺 8 级 D${dayOf((x) => x.level >= 8)}、12 级 D${dayOf((x) => x.level >= 12)}、16 级 D${dayOf((x) => x.level >= 16)}、20 级 D${dayOf((x) => x.level >= 20)}`);
     }

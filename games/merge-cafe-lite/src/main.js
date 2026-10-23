@@ -23,10 +23,10 @@
     params.delete('reset'); const q = params.toString();
     try { history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + location.hash); } catch (e) {}
   }
-  let S = null, welcomeGain = 0;
+  let S = null, welcomeGain = 0, welcomePot = 0;
   { const ls = store(), raw = ls && ls.getItem(SAVE_KEY); if (raw) S = Core.deserialize(C, raw, now()); }
   let awayFrom = 0; // 上次存档时间：开画后算离线营业（M5）
-  if (S) { awayFrom = S.lastSeen || 0; delete S.lastSeen; welcomeGain = Core.settleAll(C, S, now()); }
+  if (S) { awayFrom = S.lastSeen || 0; delete S.lastSeen; const p0 = S.pot || 0; welcomeGain = Core.settleAll(C, S, now()); welcomePot = (S.pot || 0) - p0; }
   else S = Core.newState(C, now());
   Core.markDay(S, now()); // 留存打点：今天来过
   if (!S.settings) S.settings = { mute: false };
@@ -38,7 +38,7 @@
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { save(); hiddenAt = now(); }
     else {
-      Core.markDay(S, now()); const g = Core.settleAll(C, S, now()); if (g > 0) toast(L.t('ui.welcomeBack', { n: g }));
+      Core.markDay(S, now()); const p0 = S.pot || 0, g = Core.settleAll(C, S, now()); welcomeToast(g, (S.pot || 0) - p0);
       if (hiddenAt) { const r = Core.offlineEarn(C, S, hiddenAt, now()); hiddenAt = 0; if (r) { queueWelcome(r); markDirty(); save(); } }
     }
   });
@@ -184,6 +184,11 @@
     el.style.left = (LY.bx + LY.bs / 2) + 'px';
     el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1800);
   }
+  /* 回到游戏：体力恢复了多少 + 咖啡壶存了多少（V1.1） */
+  function welcomeToast(g, pot) {
+    if (pot > 0) toast(L.t('ui.potSaved', { n: S.pot }) + (g > 0 ? ' · +' + g + ' ⚡' : ''));
+    else if (g > 0) toast(L.t('ui.welcomeBack', { n: g }));
+  }
   let modalOnClose = null, energyModalTick = null;
   function modal(title, body, buttons, comic, html) {
     $('m-title').textContent = title; $('m-body').textContent = body;
@@ -221,10 +226,11 @@
   function updateHud() {
     Core.settleEnergy(C, S, now());
     const E = C.eco.energy, nx = Core.energyNextIn(C, S, now());
-    const key = [S.energy, S.coins - pendingCoins, S.stars - pendingStars, S.energy < E.max ? mmss(nx) : ''].join('|');
+    const key = [S.energy, S.pot || 0, S.coins - pendingCoins, S.stars - pendingStars, S.energy < E.max ? mmss(nx) : ''].join('|');
     if (key === hudCache) return; hudCache = key;
     $('energy').textContent = S.energy; $('coins').textContent = (S.coins - pendingCoins).toLocaleString('en-US'); $('stars').textContent = S.stars - pendingStars;
     $('energy-timer').textContent = S.energy < E.max ? mmss(nx) : '';
+    const pot = $('energy-pot'); pot.classList.toggle('on', S.pot > 0); pot.innerHTML = S.pot > 0 ? ico('icon_pot', '☕', 13) + S.pot : '';
     if (energyModalTick) energyModalTick();
     updateLevel();
   }
@@ -274,7 +280,9 @@
     if (r.ok) {
       const R = genRect(id);
       flies.push({ cell: r.to, item: r.item, x0: R.x + R.h * 0.55, y0: R.y + R.h / 2, t0: clock(), dur: 0.32, spawn: true });
-      Sfx.spawn(); if (r.found) { const [fx, fy] = cellXY(r.to); queueFound(r.found, fx, fy); } markDirty(); return;
+      Sfx.spawn(); if (r.found) { const [fx, fy] = cellXY(r.to); queueFound(r.found, fx, fy); }
+      if (r.poured) { bump('pill-energy'); toast(L.t('ui.potPour', { n: r.poured })); hudCache = ''; }
+      markDirty(); return;
     }
     shakes.set('g' + id, clock()); Sfx.bounce();
     if (r.reason === 'full') toast(L.t('ui.full'));
@@ -315,7 +323,7 @@
     if (ok) { grant(); markDirty(); save(); hudCache = ''; updateHud(); }
   }
   function showNoEnergy(fromPill) { // 激励视频点位 1：+30 体力；金币买体力（每天限次涨价）作兜底，广告永远免费、放在最上面
-    const body = () => L.t('ui.noEnergyBody', { t: mmss(Core.energyNextIn(C, S, now())) });
+    const body = () => L.t('ui.noEnergyBody', { t: mmss(Core.energyNextIn(C, S, now())) }) + (Core.potMax(C) ? ' ' + L.t('ui.potHint', { n: Core.potMax(C) }) : '');
     if (!fromPill) { Core.adOffer(S, 'energy'); markDirty(); } // 点顶栏体力主动打开的不计展示（§11 点击率口径只算体力见底弹窗）
     const price = Core.energyPrice(C, S, now()), btns = [
       { label: '▶ ' + L.t('ad.energy', { n: C.ads.rewarded.energy.amount }), ad: true, on: () => watchAd('energy', () => {
@@ -528,7 +536,7 @@
       if (!Art.src('welcome_back') && clock() - startedAt < 2) { popups.unshift(show); return; } // 插画后台加载，最多等 2 秒
       const pic = Art.src('welcome_back');
       Core.adOffer(S, 'offline'); markDirty();
-      const html = `<div class="welcome">${pic ? `<img class="pic" src="${esc2(pic)}" alt="">` : ''}<div class="amt">${coinIcon()}+${r.coins}</div>${r.capped ? `<div style="font:800 13px var(--font);color:#7a5a3a">${esc2(L.t('ui.offlineCap', { h: r.capH }))}</div>` : ''}</div>`;
+      const html = `<div class="welcome">${pic ? `<img class="pic" src="${esc2(pic)}" alt="">` : ''}<div class="amt">${coinIcon()}+${r.coins}</div>${S.pot > 0 ? `<div style="font:800 14px var(--font);color:#7a4a24;margin-top:4px">${ico('icon_pot', '☕', 18)} ${esc2(L.t('ui.potSaved', { n: S.pot }))}</div>` : ''}${r.capped ? `<div style="font:800 13px var(--font);color:#7a5a3a">${esc2(L.t('ui.offlineCap', { h: r.capH }))}</div>` : ''}</div>`;
       Sfx.coin();
       modal(L.t('ui.welcomeTitle'), L.t('ui.welcomeBody', { n: r.coins, t: hm(r.mins) }), [
         { label: L.t('ui.collect'), alt: true },
@@ -1554,7 +1562,7 @@
     Art.load(CONFIG.art.uiWebp || [], 'assets/ui/', () => {}, 'webp'); // 欢迎回来插画（M5）
     Art.load(CONFIG.art.cafe || [], 'assets/scene/', () => {}, 'webp');
     Art.load(CONFIG.art.comics || [], 'assets/comics/', () => {}, 'webp');
-    if (welcomeGain > 0) setTimeout(() => toast(L.t('ui.welcomeBack', { n: welcomeGain })), 300);
+    if (welcomeGain > 0 || welcomePot > 0) setTimeout(() => welcomeToast(welcomeGain, welcomePot), 300);
     { const r = Core.offlineEarn(C, S, awayFrom, now()); if (r) { queueWelcome(r); markDirty(); } }
     startedAt = clock();
     updateHud(); updateTutorial(); updateSndBtn();
@@ -1595,6 +1603,7 @@
     const skip = (ms) => { timeOffset += ms; try { sessionStorage.setItem('mcl.timeOffset', timeOffset); } catch (e) {} const g = Core.settleAll(C, S, now()); toast('+' + Math.round(ms / 60000) + ' min, energy +' + g); };
     btn('+1m', () => skip(60e3)); btn('+10m', () => skip(600e3)); btn('+1h', () => skip(3600e3));
     btn('energy 0', () => { S.energy = 0; S.energyTs = now(); });
+    btn('pot full', () => { S.pot = Core.potMax(C); });
     btn('+100 coins', () => { S.coins += 100; });
     btn('+1000 coins', () => { S.coins += 1000; });
     btn('bubble', () => { const e = S.cells.findIndex((c, i) => !c && S.unlocked[i]); if (e >= 0) S.cells[e] = { k: 'bubble', chain: 'coffee', lvl: 5, until: now() + C.eco.bubble.lifeSec * 1000 }; });

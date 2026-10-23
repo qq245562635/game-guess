@@ -260,7 +260,7 @@ with sync_playwright() as p:
     pg.screenshot(path=str(out / 'cafe-act1-done.png'))
     reload(pg)
     check('刷新后装修进度保留', S(pg, 'deco') == 5 and S(pg, 'v') == 9)
-    pg.evaluate('MCL.S.stars=68; MCL.S.coins=28700'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)  # 二、三幕共 68 星 + 28700 金币
+    pg.evaluate('MCL.S.stars=68; MCL.S.coins=37300'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)  # 二、三幕共 68 星 + 37300 金币（V1.1）
     comics = 0
     for _ in range(20):
         if S(pg, 'deco') >= 15: break
@@ -649,6 +649,22 @@ with sync_playwright() as p:
           pg.inner_text('#m-title'))
     pg.screenshot(path=str(out / 'g-comic-mia.png'))
     close_all(pg); settle_rewards(pg)
+    ctx.close()
+
+    # ================= V1.1 ①：备用咖啡壶 =================
+    ctx = br.new_context(viewport={'width': 405, 'height': 720}, device_scale_factor=2)
+    pg = ctx.new_page(); watch(pg); boot(pg)
+    pg.evaluate("Core.skipTutorial(MCL.S); for(let i=0;i<49;i++) MCL.S.cells[i]=null; MCL.S.energy=0; MCL.S.pot=40; MCL.S.energyTs=MCL.now()"); pg.wait_for_timeout(400)
+    check('V1.1 咖啡壶：壶里有体力时顶栏体力旁显示杯子 + 点数', pg.is_visible('#energy-pot.on') and '40' in pg.inner_text('#energy-pot'), pg.inner_text('#pill-energy'))
+    pg.screenshot(path=str(out / 'v11-pot-hud.png'), clip={'x': 0, 'y': 0, 'width': 405, 'height': 70})
+    tap_gen(pg, GC); pg.wait_for_timeout(300)
+    check('体力 0 点生成器：整壶倒进体力（+40 提示），照常出物品，壶清空、杯子隐藏', S(pg, 'energy') == 39 and S(pg, 'pot') == 0 and 'Coffee pot' in pg.inner_text('#toast')
+          and not pg.is_visible('#energy-pot.on') and not pg.is_visible('#modal.show'), f"energy={S(pg, 'energy')} pot={S(pg, 'pot')} toast={pg.inner_text('#toast')!r}")
+    pg.evaluate("MCL.S.energy=0; MCL.S.energyTs=MCL.now()"); tap_gen(pg, GC); pg.wait_for_selector('#modal.show', timeout=3000)
+    check('壶也空了才弹体力见底，弹窗里说明咖啡壶（上限 60）', 'Out of Energy' in pg.inner_text('#modal') and 'coffee pot' in pg.inner_text('#m-body') and '60' in pg.inner_text('#m-body'), pg.inner_text('#m-body'))
+    close_all(pg)
+    pg.evaluate('MCL.S.energy=100; MCL.S.pot=0; MCL.S.energyTs=MCL.now(); MCL.save()'); skip_time(pg, 2 * 3600000); reload(pg)
+    check('满体力离开 2 小时：恢复不再浪费，壶存满 60，回来提示', S(pg, 'energy') == 100 and S(pg, 'pot') == 60 and '60' in pg.inner_text('#energy-pot'), f"energy={S(pg, 'energy')} pot={S(pg, 'pot')}")
     ctx.close()
 
     # ================= 多分辨率布局 =================
