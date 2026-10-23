@@ -657,9 +657,9 @@ with sync_playwright() as p:
     pg.evaluate("Core.skipTutorial(MCL.S); for(let i=0;i<49;i++) MCL.S.cells[i]=null; MCL.S.energy=0; MCL.S.pot=40; MCL.S.energyTs=MCL.now()"); pg.wait_for_timeout(400)
     check('V1.1 咖啡壶：壶里有体力时顶栏体力旁显示杯子 + 点数', pg.is_visible('#energy-pot.on') and '40' in pg.inner_text('#energy-pot'), pg.inner_text('#pill-energy'))
     pg.screenshot(path=str(out / 'v11-pot-hud.png'), clip={'x': 0, 'y': 0, 'width': 405, 'height': 70})
-    tap_gen(pg, GC); pg.wait_for_timeout(300)
+    tap_gen(pg, GC); pg.wait_for_timeout(900)  # 顶栏每 0.25 秒刷新一次，软件渲染下多等一会
     check('体力 0 点生成器：整壶倒进体力（+40 提示），照常出物品，壶清空、杯子隐藏', S(pg, 'energy') == 39 and S(pg, 'pot') == 0 and 'Coffee pot' in pg.inner_text('#toast')
-          and not pg.is_visible('#energy-pot.on') and not pg.is_visible('#modal.show'), f"energy={S(pg, 'energy')} pot={S(pg, 'pot')} toast={pg.inner_text('#toast')!r}")
+          and not pg.is_visible('#energy-pot.on') and not pg.is_visible('#modal.show'), f"energy={S(pg, 'energy')} pot={S(pg, 'pot')} toast={pg.inner_text('#toast')!r} potEl={pg.is_visible('#energy-pot.on')} modal={pg.inner_text('#m-title') if pg.is_visible('#modal.show') else ''!r}")
     pg.evaluate("MCL.S.energy=0; MCL.S.energyTs=MCL.now()"); tap_gen(pg, GC); pg.wait_for_selector('#modal.show', timeout=3000)
     check('壶也空了才弹体力见底，弹窗里说明咖啡壶（上限 60）', 'Out of Energy' in pg.inner_text('#modal') and 'coffee pot' in pg.inner_text('#m-body') and '60' in pg.inner_text('#m-body'), pg.inner_text('#m-body'))
     close_all(pg)
