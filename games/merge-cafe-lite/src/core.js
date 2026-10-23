@@ -396,6 +396,10 @@ const Core = (() => {
 
   /* ---------- 订单 ---------- */
   const isRare = (C, t) => t.needs.some(([, l]) => l >= C.O.rareMinLevel);
+  /* V1.1 ②：按订单里最高的需求等级算——交齐返多少体力、会不会过期（不存进订单，老存档的订单也按这个算） */
+  const orderTopLvl = (o) => o.needs.reduce((m, n) => Math.max(m, n.lvl), 0);
+  const orderEnergyBack = (C, o) => (C.O.energyBack || {})[String(orderTopLvl(o))] || 0;
+  const orderExpires = (C, o) => !(C.O.noExpireFrom && orderTopLvl(o) >= C.O.noExpireFrom);
   function makeOrder(C, s, t, now, rng, customer) {
     const sec = randInt(rng, t.timeSec[0], t.timeSec[1]);
     const rare = isRare(C, t);
@@ -451,7 +455,7 @@ const Core = (() => {
     const refreshed = [];
     for (let k = 0; k < s.orders.length; k++) {
       const o = s.orders[k];
-      if (!o || now < o.expiresAt || o.needs.some((n) => n.done)) continue;
+      if (!o || now < o.expiresAt || o.needs.some((n) => n.done) || !orderExpires(C, o)) continue; // 高级单不过期（V1.1）
       if (s.tut !== TUT_DONE && k === 0) continue; // 引导订单不过期
       s.orders[k] = null; s.orders[k] = rollOrder(C, s, now, rng); refreshed.push(k);
     }
@@ -481,6 +485,8 @@ const Core = (() => {
     if (o.set) s.stats.setDone = (s.stats.setDone || 0) + 1;
     if (aff.reg) s.stats.regServed = (s.stats.regServed || 0) + 1;
     const xp = orderXp(C, o), levelUps = addXp(C, s, xp, now);
+    const energyBack = orderEnergyBack(C, o); // V1.1 ②：高级单小费回体力
+    if (energyBack) { settleEnergy(C, s, now || 0); s.energy += energyBack; s.stats.energyBack = (s.stats.energyBack || 0) + energyBack; }
     const every = C.eco.starEveryOrders || 0, bonusStar = every && s.stats.ordersDone % every === 0 ? 1 : 0;
     s.stars += bonusStar;
     if (!s.stats.firstOrderAt) s.stats.firstOrderAt = now || 1;
@@ -491,7 +497,7 @@ const Core = (() => {
     const interstitial = !!(ie && done % ie === 0 && done >= (A.interstitialFirstAtOrder || 0) &&
       (now || 0) - (s.ads.lastInterAt || 0) >= (A.interstitialMinGapSec || 0) * 1000);
     const de = (A.rewarded && A.rewarded.double && A.rewarded.double.everyOrders) || 1, offerDouble = done % de === 0;
-    return { type: 'complete', coins: pay.total, pay, stars: doneOrder.stars, bonusStar, interstitial, offerDouble, order: doneOrder, xp, levelUps,
+    return { type: 'complete', coins: pay.total, pay, stars: doneOrder.stars, bonusStar, interstitial, offerDouble, order: doneOrder, xp, levelUps, energyBack,
       heartUps: aff.heartUps, gift: aff.gift, reg: aff.reg, recipeUps };
   }
 
@@ -860,7 +866,7 @@ const Core = (() => {
   return {
     SAVE_VERSION, TUT_DONE, index, idx, rc, newState, settleEnergy, energyNextIn, potMax, pourPot, settleAll, settleGen,
     tapGen, refillGen, rollLevel, nearestEmpty, emptyCount, canMerge, drop,
-    isRare, rollOrder, settleOrders, orderNeedFor, deliver, tutStep, skipTutorial,
+    isRare, orderEnergyBack, orderExpires, rollOrder, settleOrders, orderNeedFor, deliver, tutStep, skipTutorial,
     decoNext, renovate, decoDone, areaOf, areaNodes,
     xpNeed, orderXp, addXp, openChest, unlockLevel, featureOn, nextUnlock, logEv, markDay, daysInFirstWeek, adOffer, adClick, grantEnergy, grantDouble, markInterstitial, cooldownSec,
     fillTasks, taskProgress, tasksClaimable, claimTask,
