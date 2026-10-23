@@ -190,7 +190,7 @@ with sync_playwright() as p:
     check('订单超时自动刷新，不扣金币 / 星 / 体力', S(pg, 'orders[0].uid') != pg.evaluate('window.__u') and (S(pg, 'coins'), S(pg, 'stars')) == (c1, s1) and S(pg, 'energy') >= e2)
 
     # ---- 体力见底 ----
-    pg.evaluate('MCL.S.energy=0; MCL.S.energyTs=MCL.now()')
+    pg.evaluate('MCL.S.energy=0; MCL.S.pot=0; MCL.S.energyTs=MCL.now()')  # 壶也清空（V1.1），否则会先倒壶
     tap_gen(pg, GC)
     check('体力见底：弹窗、显示下一点倒计时、不扣储量', pg.is_visible('#modal.show') and 'Out of Energy' in pg.inner_text('#modal'), pg.inner_text('#m-body') if pg.is_visible('#modal.show') else '')
     pg.screenshot(path=str(out / 'no-energy.png'))
@@ -275,7 +275,7 @@ with sync_playwright() as p:
     check('切回 Merge：棋盘可玩', pg.evaluate('MCL.mode') == 'merge')
 
     # ================= M3：广告 Mock =================
-    pg.evaluate('MCL.S.energy=0; MCL.S.energyTs=MCL.now()')
+    pg.evaluate('MCL.S.energy=0; MCL.S.pot=0; MCL.S.energyTs=MCL.now()')  # 壶也清空（V1.1），否则会先倒壶
     tap_gen(pg, GC)
     check('激励点位 1：体力见底弹窗里有"看广告 +30"按钮', pg.is_visible('#m-btns .btn.ad') and '+30' in pg.inner_text('#m-btns'))
     pg.click('#m-btns .btn.ad'); pg.wait_for_timeout(300)
