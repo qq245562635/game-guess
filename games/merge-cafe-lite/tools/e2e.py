@@ -723,6 +723,19 @@ with sync_playwright() as p:
     check('刷新后储物架格数和东西都在', S(pg, 'pantrySlots') == 5)
     ctx.close()
 
+    # ================= V1.1 ④：掉率透明 =================
+    ctx = br.new_context(viewport={'width': 405, 'height': 720}, device_scale_factor=2)
+    pg = ctx.new_page(); watch(pg); boot(pg)
+    pg.evaluate("Core.skipTutorial(MCL.S); MCL.S.bubblePity = 5"); pg.wait_for_timeout(300)
+    b = pg.evaluate(f"MCL.upgradeBadge('{GC}')"); click(pg, b['x'], b['y']); pg.wait_for_selector('#modal.show', timeout=3000)
+    txt = pg.inner_text('#m-comic')
+    check('V1.1 掉率：升级弹窗列出现在 80% / 20% 和升级后 80% / 20%，下面是泡泡保底（还差 15 次）', 'Drops now' in txt and '80%' in txt and '20%' in txt and 'After upgrade' in txt and '15 more' in txt, txt)
+    pg.screenshot(path=str(out / 'v11-drops.png')); close_all(pg)
+    pg.evaluate(f"MCL.S.gens['{GC}'].lv = 5"); pg.wait_for_timeout(200); click(pg, b['x'], b['y']); pg.wait_for_selector('#modal.show', timeout=3000)
+    txt = pg.inner_text('#m-comic')
+    check('满级：只显示现在的掉率 65% / 23% / 12%', '65%' in txt and '23%' in txt and '12%' in txt and 'After upgrade' not in txt, txt)
+    close_all(pg); ctx.close()
+
     # ================= 多分辨率布局 =================
     for name, vw, vh in [('portrait-9x16', 405, 720), ('portrait-tall', 390, 844), ('portrait-short', 375, 667),
                          ('landscape-16x9', 1280, 720), ('landscape-phone', 844, 390), ('tablet', 820, 1180)]:
