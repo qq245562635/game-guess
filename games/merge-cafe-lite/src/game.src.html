@@ -125,6 +125,10 @@ body.tasks #tasks { display: block; }
 #sell { position: fixed; z-index: 3; display: none; transform: translateX(-50%); border: 3px solid #b97a12; border-radius: 14px; padding: 4px 10px;
   background: linear-gradient(#ffd866, #f2b632); color: #5a3a12; font: 900 14px var(--font); box-shadow: 0 3px 0 #b97a12; cursor: pointer; white-space: nowrap; }
 #sell.show { display: block; animation: x2 .25s cubic-bezier(.2,1.6,.4,1); }
+/* 回收桶赎回（V1.1 ③）：卖掉后 undoSec 秒内出现在回收桶上方 */
+#undo { position: fixed; z-index: 3; display: none; transform: translateX(-50%); border: 3px solid #3d7f57; border-radius: 14px; padding: 4px 10px;
+  background: linear-gradient(#8fd6a8, #5aa77a); color: #fff; font: 900 14px var(--font); box-shadow: 0 3px 0 #3d7f57; cursor: pointer; white-space: nowrap; text-shadow: 0 1px 0 rgba(30,70,45,.6); }
+#undo.show { display: block; animation: x2 .25s cubic-bezier(.2,1.6,.4,1); }
 #snd { position: fixed; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: 3px solid #e9d2a6; background: var(--cream); box-shadow: 0 3px 0 rgba(120,80,40,.35);
   font: 16px/1 sans-serif; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 body.cafe #snd, body.tasks #snd, body.book #snd { display: none; }
@@ -263,6 +267,7 @@ body.book #book { display: block; }
 <div id="deco"><div class="deco-head"><span id="deco-act"></span><span id="deco-prog"></span></div><div id="deco-list"></div><button class="btn" id="deco-btn"></button></div>
 <button id="x2">▶ <span></span></button>
 <button id="sell"></button>
+<button id="undo"></button>
 <button id="snd" aria-label="Sound">🔊</button>
 <div id="ad"><div id="ad-label"></div><div id="ad-count"></div></div>
 <div id="modal"><div class="card"><h2 id="m-title"></h2><div id="m-comic"></div><p id="m-body"></p><div class="btns" id="m-btns"></div></div></div>

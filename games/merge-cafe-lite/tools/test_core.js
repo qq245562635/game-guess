@@ -895,6 +895,65 @@ test('高级单不过期但可以花金币换掉（没交过的）', () => {
   const r = Core.swapOrder(CN, s, 0, T0, lcg(4)); assert(r.ok); assert.notStrictEqual(s.orders[0].uid, 880);
 });
 
+/* ---------- V1.1 ③：储物架 + 回收桶赎回 ---------- */
+const PR = Core.panRef;
+const lv4 = () => { const s = fresh(); s.level = 4; return s; };
+test('储物架：店铺 4 级开放；免费 4 格，金币扩到 10 格（1000/2000/4000/6000/8000/12000），满了没有下一格', () => {
+  const s0 = fresh(); assert.strictEqual(Core.pantryOn(CN, s0), false); assert.strictEqual(Core.buyPantrySlot(CN, s0).reason, 'locked');
+  const s = lv4(); assert(Core.pantryOn(CN, s)); assert.strictEqual(Core.pantrySlots(CN, s), 4);
+  s.coins = 0; assert.strictEqual(Core.buyPantrySlot(CN, s).reason, 'coins'); assert.strictEqual(Core.pantrySlots(CN, s), 4);
+  const paid = []; s.coins = 1e6;
+  while (Core.pantryPrice(CN, s) !== null) paid.push(Core.buyPantrySlot(CN, s).price);
+  assert.deepStrictEqual(paid, [1000, 2000, 4000, 6000, 8000, 12000]); assert.strictEqual(Core.pantrySlots(CN, s), 10);
+  assert.strictEqual(s.stats.coinsSpent.pantry, 33000); assert.strictEqual(Core.buyPantrySlot(CN, s).reason, 'max');
+});
+test('储物架：棋盘物品放进空格 / 和架上的互换；没开的格子、没开放时回弹不吞东西', () => {
+  const s = lv4(); clearBoard(s); const a = put(s, 0, 0, 'coffee', 3), b = put(s, 0, 1, 'bake', 5);
+  assert.strictEqual(Core.store(CN, s, a, 0).type, 'store'); assert.strictEqual(s.cells[a], null); assert.deepStrictEqual(s.pantry[0], { k: 'item', chain: 'coffee', lvl: 3 });
+  assert.strictEqual(Core.store(CN, s, b, 0).type, 'swap'); assert.deepStrictEqual(s.cells[b], { k: 'item', chain: 'coffee', lvl: 3 }); assert.strictEqual(s.pantry[0].chain, 'bake');
+  assert.strictEqual(Core.store(CN, s, PR(0), 2).type, 'store'); assert.strictEqual(s.pantry[0], null); assert.strictEqual(s.pantry[2].lvl, 5);
+  assert.strictEqual(Core.store(CN, s, b, 4).reason, 'locked'); assert(s.cells[b]);
+  const t = fresh(); clearBoard(t); const c = put(t, 0, 0, 'coffee', 1); assert.strictEqual(Core.store(CN, t, c, 0).reason, 'locked'); assert(t.cells[c]);
+});
+test('储物架：架上的东西拖回棋盘——空格放下、同款合成（算连击 / 图鉴）、不能合回弹留在架上；也能直接交单', () => {
+  const s = lv4(); clearBoard(s); s.pantry = [{ k: 'item', chain: 'coffee', lvl: 2 }, { k: 'item', chain: 'bake', lvl: 3 }, { k: 'item', chain: 'coffee', lvl: 2 }];
+  assert.strictEqual(Core.drop(CN, s, PR(0), 10, T0, lcg(1)).type, 'move'); assert.strictEqual(s.pantry[0], null); assert.strictEqual(s.cells[10].lvl, 2);
+  const r = Core.drop(CN, s, PR(2), 10, T0, lcg(1)); assert.strictEqual(r.type, 'merge'); assert.strictEqual(s.cells[10].lvl, 3); assert.strictEqual(s.pantry[2], null);
+  assert.strictEqual(Core.drop(CN, s, PR(1), 10, T0, lcg(1)).type, 'bounce'); assert.strictEqual(s.pantry[1].lvl, 3);
+  s.orders[0] = { uid: 5, tid: 'n_b3', needs: [{ chain: 'bake', lvl: 3, done: false }], coins: 30, stars: 0, rare: false, cust: 0, start: T0, expiresAt: T0 + 9e5 };
+  assert.strictEqual(Core.deliver(CN, s, PR(1), 0, T0, lcg(1)).type, 'complete'); assert.strictEqual(s.pantry[1], null);
+});
+test('回收桶：棋盘或架上的物品都能卖；10 秒内原价赎回到原位（原位被占放最近空格），超时不能赎', () => {
+  const s = lv4(); clearBoard(s); s.coins = 0; const a = put(s, 2, 2, 'coffee', 4);
+  const r = Core.sellItem(CN, s, a, T0); assert(r.ok); assert.strictEqual(s.coins, 8); assert.strictEqual(s.recycle, 1);
+  assert(Core.undoLeft(CN, s, T0 + 9000) > 0);
+  const u = Core.undoSell(CN, s, T0 + 9000); assert(u.ok); assert.strictEqual(u.to, a); assert.deepStrictEqual(s.cells[a], { k: 'item', chain: 'coffee', lvl: 4 });
+  assert.deepStrictEqual([s.coins, s.recycle, s.lastSold], [0, 0, null]);
+  Core.sellItem(CN, s, a, T0); put(s, 2, 2, 'bake', 1);
+  const u2 = Core.undoSell(CN, s, T0 + 1000); assert(u2.ok); assert.notStrictEqual(u2.to, a); assert.strictEqual(s.cells[u2.to].lvl, 4);
+  Core.sellItem(CN, s, u2.to, T0); assert.strictEqual(Core.undoSell(CN, s, T0 + 10001).reason, 'expired');
+  s.pantry = [{ k: 'item', chain: 'bake', lvl: 6 }]; s.coins = 0;
+  assert(Core.sellItem(CN, s, PR(0), T0).ok); assert.strictEqual(s.coins, 32); assert.strictEqual(s.pantry[0], null);
+  assert.strictEqual(Core.undoSell(CN, s, T0 + 100).to, PR(0)); assert.strictEqual(s.pantry[0].lvl, 6);
+});
+test('回收桶赎回：那一件让回收桶满了送过体力的一并退回；钱不够 / 体力不够退 / 没地方放都不能赎', () => {
+  const s = lv4(); clearBoard(s); s.recycle = 7; s.energy = 50; s.energyTs = T0; const a = put(s, 0, 0, 'coffee', 1);
+  const r = Core.sellItem(CN, s, a, T0); assert.strictEqual(r.energy, 5); assert.strictEqual(s.energy, 55); assert.strictEqual(s.recycle, 0);
+  assert(Core.undoSell(CN, s, T0 + 100).ok); assert.deepStrictEqual([s.energy, s.recycle], [50, 7]);
+  Core.sellItem(CN, s, a, T0); s.energy = 2; assert.strictEqual(Core.undoSell(CN, s, T0 + 100).reason, 'energy');
+  const t = lv4(); clearBoard(t); const b = put(t, 0, 0, 'coffee', 5); Core.sellItem(CN, t, b, T0); t.coins = 0; assert.strictEqual(Core.undoSell(CN, t, T0 + 100).reason, 'coins');
+  t.coins = 100; for (let i = 0; i < 49; i++) if (t.unlocked[i]) t.cells[i] = { k: 'item', chain: 'bake', lvl: 8 }; t.pantry = [1, 2, 3, 4].map(() => ({ k: 'item', chain: 'bake', lvl: 8 }));
+  assert.strictEqual(Core.undoSell(CN, t, T0 + 100).reason, 'full');
+});
+test('储物架存档：老存档 = 4 格空架；越界格数 / 坏物品清掉；架上东西刷新后还在', () => {
+  const s = lv4(); s.pantry = [{ k: 'item', chain: 'coffee', lvl: 3 }]; s.pantrySlots = 6;
+  const back = Core.deserialize(CN, Core.serialize(s, T0), T0, lcg(1)); assert.strictEqual(back.pantrySlots, 6); assert.deepStrictEqual(back.pantry[0], { k: 'item', chain: 'coffee', lvl: 3 });
+  const o = JSON.parse(Core.serialize(s, T0)); delete o.pantry; delete o.pantrySlots;
+  const b2 = Core.deserialize(CN, JSON.stringify(o), T0, lcg(1)); assert.deepStrictEqual([b2.pantrySlots, b2.pantry], [4, []]);
+  o.pantrySlots = 99; o.pantry = [{ k: 'item', chain: 'tea', lvl: 1 }, { k: 'bubble', chain: 'coffee', lvl: 2 }, { k: 'tool', id: 'wild' }];
+  const b3 = Core.deserialize(CN, JSON.stringify(o), T0, lcg(1)); assert.strictEqual(b3.pantrySlots, 10); assert.deepStrictEqual(b3.pantry, [null, null, { k: 'tool', id: 'wild' }]);
+});
+
 for (const [st, n] of results) console.log(st === 'PASS' ? '  ✓' : '  ✗', n);
 console.log(`\n${pass}/${results.length} passed`);
 process.exit(pass === results.length ? 0 : 1);

@@ -73,7 +73,8 @@
       const cw = Math.min(W - 16, 620), cx = (W - cw) / 2;
       const gensH = Math.round(Math.min(84, Math.max(56, cw * 0.15)));
       const ordersH = Math.round(Math.min(140, Math.max(92, cw * 0.22))); // 效果图订单卡约 0.21 屏宽，省下的高度给头图
-      const fixed = hudH + ordersH + gensH + navH + safeB + gap * 5;
+      const stripBox = Math.floor(Math.min(46, (cw - 8 - 30) / 11)), stripH = stripBox + 8; // V1.1 ③ 回收桶 + 储物架一条
+      const fixed = hudH + ordersH + gensH + stripH + navH + safeB + gap * 6 + 8; // +8：生成器等级牌会往上探出卡片，别压到储物架
       const sceneMin = Math.max(56, H * 0.1);
       const bs = Math.floor(Math.min(cw * 0.86, H - fixed - sceneMin)); // 按 #38 效果图收窄，两侧放绿植
       const sceneH = H - fixed - bs; // 场景吃掉剩余高度
@@ -84,6 +85,7 @@
       y += gap + ordersH + gap;
       LY.bs = bs; LY.bx = Math.round((W - bs) / 2); LY.by = Math.round(y);
       y += bs + gap;
+      LY.strip = buildStrip(cx, y, cw, 1, stripBox); y += stripH + gap + 8;
       const gw = (cw - gap) / 2;
       LY.gens = C.genList.map((g, k) => ({ id: g.id, x: cx + k * (gw + gap), y, w: gw, h: gensH }));
       y += gensH + gap;
@@ -96,6 +98,8 @@
       LY.bs = bs; LY.bx = Math.round(gap * 2 + lw); LY.by = Math.round(hudH + (H - hudH - gap - bs) / 2);
       LY.scene = { x: 0, y: 0, w: LY.bx - gap, h: H };
       placeNav(gap, H - navH - gap - safeB, lw - gap, navH);
+      { const box = Math.floor(Math.min(44, (lw - gap - 8 - 15) / 6)), sh = box * 2 + 3 + 8; // 横屏：放在左栏底栏上面，两行
+        LY.strip = buildStrip(gap, H - navH - gap - safeB - gap - sh, lw - gap, 2, box); }
       placeHud(LY.bx, safeT + 8, bs + gap + rw);
       const rx = LY.bx + bs + gap * 2, gensH = Math.round(Math.min(76, Math.max(56, bs * 0.15)));
       const oh = (bs - gensH - gap * 3) / 3;
@@ -138,6 +142,17 @@
   addEventListener('resize', layout);
   layout();
 
+  /* ---------- 回收桶 + 储物架（V1.1 ③）：一条 11 格，第 0 格是回收桶，后面 10 格是储物架 ---------- */
+  function buildStrip(x, y, w, rows, box) {
+    const n = 11, per = Math.ceil(n / rows), gp = 3, tw = per * box + (per - 1) * gp + 8, x0 = x + (w - tw) / 2, boxes = [];
+    for (let i = 0; i < n; i++) boxes.push({ kind: i ? 'slot' : 'bin', k: i - 1, x: x0 + 4 + (i % per) * (box + gp), y: y + 4 + Math.floor(i / per) * (box + gp), s: box });
+    return { x: x0, y, w: tw, h: rows * box + (rows - 1) * gp + 8, box, boxes };
+  }
+  const stripAt = (x, y) => (LY.strip ? LY.strip.boxes.find((B) => x >= B.x - 2 && x <= B.x + B.s + 2 && y >= B.y - 2 && y <= B.y + B.s + 2) : null) || null;
+  const panBox = (k) => LY.strip.boxes[k + 1];
+  const binBox = () => LY.strip.boxes[0];
+  /* 棋盘格或架位（负数）的中心点 */
+  const refXY = (ref) => { if (ref >= 0) return cellXY(ref); const B = panBox(-1 - ref); return [B.x + B.s / 2, B.y + B.s / 2]; };
   const cellXY = (i) => { const [r, c] = Core.rc(C, i); return [LY.bx + LY.pad + (c + 0.5) * LY.cs, LY.by + LY.pad + (r + 0.5) * LY.cs]; };
   function cellAt(x, y) {
     const c = Math.floor((x - LY.bx - LY.pad) / LY.cs), r = Math.floor((y - LY.by - LY.pad) / LY.cs);
@@ -471,9 +486,10 @@
     el.textContent = L.t('ui.sell', { n: Core.sellPrice(C, it) });
     el.style.left = Math.max(40, Math.min(LY.W - 40, x)) + 'px'; el.style.top = (up ? y - LY.cs * 0.55 - 30 : below) + 'px';
   }
-  function doSell(i) {
+  function doSell(i, px, py) { // i：棋盘格或架位；拖进回收桶时传松手位置
     const r = Core.sellItem(C, S, i, now()); if (!r.ok) return;
-    const [x, y] = cellXY(i); burst(x, y, '#f5c03a', 10); Sfx.sell();
+    const [x, y] = px !== undefined ? [px, py] : refXY(i); burst(x, y, '#f5c03a', 10); Sfx.sell();
+    { const B = binBox(); burst(B.x + B.s / 2, B.y + B.s / 2, '#5aa77a', 8); pops.set('bin', clock()); }
     flyRewards(x, y, r.price, 0); // core 已入账；flyRewards 记成待落地，飞到顶栏再跳数字
     if (r.energy) { bump('pill-energy'); toast(L.t('ui.recycleFull', { n: r.energy })); }
     else toast(L.t('ui.recycle', { n: r.bin, max: r.binSize }));
@@ -484,6 +500,44 @@
     const name = L.t(Core.itemDef(C, it).name), price = Core.sellPrice(C, it);
     if (it.lvl >= (C.eco.sell.confirmFrom || 99)) modal(L.t('ui.sellTitle', { item: name }), L.t('ui.sellBody', { n: price }), [{ label: L.t('ui.cancel'), alt: true }, { label: L.t('ui.sell', { n: price }), price, on: () => doSell(i) }]);
     else doSell(i);
+  };
+  /* ---------- 回收桶 + 储物架（V1.1 ③） ---------- */
+  const kfmt = (n) => n >= 1000 ? (n / 1000) + 'k' : String(n);
+  function tapStrip(B) {
+    if (Core.tutStep(C, S)) return;
+    if (B.kind === 'bin') {
+      const R = C.eco.recycle;
+      modal(L.t('ui.binTitle'), L.t('ui.binBody', { n: R.undoSec, size: R.size, e: R.energy }), [{ label: L.t('ui.ok') }]); return;
+    }
+    if (!Core.pantryOn(C, S)) { shakes.set('p' + B.k, clock()); toast(L.t('ui.pantryLocked', { n: Core.unlockLevel(C, 'pantry') })); return; }
+    const slots = Core.pantrySlots(C, S), it = S.pantry[B.k];
+    if (B.k < slots) { pops.set('p' + B.k, clock() - 0.18); Sfx.tap(); toast(it ? itemName(it) + (it.k === 'tool' ? '' : ' · ' + L.t('ui.level', { n: it.lvl })) : L.t('ui.pantryTip')); return; }
+    const price = Core.pantryPrice(C, S);
+    if (B.k !== slots || price === null) { shakes.set('p' + B.k, clock()); toast(L.t('ui.pantryTap')); return; }
+    modal(L.t('ui.pantryBuyTitle'), L.t('ui.pantryBuyBody', { n: slots + 1, max: C.eco.pantry.max }), [
+      { label: L.t('ui.cancel'), alt: true },
+      { label: L.t('ui.unlock'), price, on: () => {
+        const r = Core.buyPantrySlot(C, S);
+        if (!r.ok) { if (r.reason === 'coins') toast(L.t('ui.noCoins')); return; }
+        spent(); Sfx.unlock(); pops.set('p' + B.k, clock()); burst(B.x + B.s / 2, B.y + B.s / 2, '#f5c03a', 14);
+      } },
+    ]);
+  }
+  let undoKey = '-'; /* 强制下一帧重算（空串会被当成「已隐藏」跳过） */
+  function updateUndo() {
+    const left = Core.undoLeft(C, S, now()), on = left > 0 && mode === 'merge' && !modalOpen() && !drag && !Ads.busy && !!LY.strip;
+    const key = on ? Math.ceil(left / 1000) + '|' + LY.strip.x + '|' + LY.strip.y : '';
+    if (key === undoKey) return; undoKey = key;
+    const el = $('undo'); el.classList.toggle('show', on); if (!on) return;
+    const B = binBox(); el.textContent = '↶ ' + L.t('ui.undo') + ' ' + Math.ceil(left / 1000) + 's';
+    el.style.left = Math.max(46, B.x + B.s / 2) + 'px'; el.style.top = (B.y - 34) + 'px';
+  }
+  $('undo').onclick = () => {
+    const r = Core.undoSell(C, S, now());
+    if (!r.ok) { toast(r.reason === 'coins' ? L.t('ui.noCoins') : r.reason === 'expired' ? '' : L.t('ui.undoFull')); undoKey = '-'; /* 强制下一帧重算（空串会被当成「已隐藏」跳过） */ return; }
+    const B = binBox(), [x, y] = refXY(r.to);
+    flies.push(r.to >= 0 ? { cell: r.to, item: r.item, x0: B.x + B.s / 2, y0: B.y + B.s / 2, t0: clock(), dur: 0.3 } : { cell: -1, pan: -1 - r.to, item: r.item, x0: B.x + B.s / 2, y0: B.y + B.s / 2, x1: x, y1: y, t0: clock(), dur: 0.3 });
+    spent(); Sfx.pop(); toast(L.t('ui.undone')); undoKey = '-'; /* 强制下一帧重算（空串会被当成「已隐藏」跳过） */
   };
   /* ---------- 永不卡死（V1 M2）：满格无可合 → 选中最低级物品并提示卖掉；idleSec 秒没操作 → 轻晃一对能合的 ---------- */
   function updateHints(t) {
@@ -663,7 +717,7 @@
     ]);
   }
   function deliverTo(from, k, px, py) {
-    const it = S.cells[from], R = LY.orders[k];
+    const it = Core.itemAt(S, from), R = LY.orders[k]; // from 可以是架位（V1.1 ③）
     const r = Core.deliver(C, S, from, k, now());
     if (r.type === 'reject') return false;
     // 物品飞进订单卡
@@ -694,17 +748,20 @@
     idleT = clock();
     if (modalOpen() || down || mode !== 'merge' || Ads.busy) return;
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
-    down = { id: e.pointerId, x: e.clientX, y: e.clientY, cell: cellAt(e.clientX, e.clientY), gen: genAt(e.clientX, e.clientY), up: upgradeAt(e.clientX, e.clientY) };
+    down = { id: e.pointerId, x: e.clientX, y: e.clientY, cell: cellAt(e.clientX, e.clientY), gen: genAt(e.clientX, e.clientY), up: upgradeAt(e.clientX, e.clientY), pan: stripAt(e.clientX, e.clientY) };
   });
   cv.addEventListener('pointermove', (e) => {
     if (!down || e.pointerId !== down.id) return;
     if (!drag) {
-      const i = down.cell;
-      if (i < 0 || !S.unlocked[i] || !S.cells[i] || (S.cells[i].k !== 'item' && S.cells[i].k !== 'tool') || flyingTo(i)) return;
+      const i = down.cell, P = down.pan;
+      let from = null;
+      if (i >= 0 && S.unlocked[i] && S.cells[i] && (S.cells[i].k === 'item' || S.cells[i].k === 'tool') && !flyingTo(i)) from = i;
+      else if (P && P.kind === 'slot' && Core.pantryOn(C, S) && S.pantry[P.k] && !flies.some((f) => f.pan === P.k)) from = Core.panRef(P.k); // 从储物架拖出来
+      if (from === null) return;
       if (Math.hypot(e.clientX - down.x, e.clientY - down.y) < DRAG_PX) return;
-      const [cx, cy] = cellXY(i);
-      drag = { from: i, ox: down.x - cx, oy: down.y - cy, x: e.clientX, y: e.clientY };
-      sel = i;
+      const [cx, cy] = refXY(from);
+      drag = { from, ox: down.x - cx, oy: down.y - cy, x: e.clientX, y: e.clientY };
+      sel = from >= 0 ? from : -1;
     }
     drag.x = e.clientX; drag.y = e.clientY;
   });
@@ -714,14 +771,32 @@
     if (drag) {
       const g = drag; drag = null;
       const px = g.x - g.ox, py = g.y - g.oy;
-      const moving = S.cells[g.from];
+      const moving = Core.itemAt(S, g.from);
+      const flyBack = () => { if (g.from >= 0) flies.push({ cell: g.from, item: moving, x0: px, y0: py, t0: clock(), dur: 0.22 }); else { const [bx, by] = refXY(g.from); flies.push({ cell: -1, pan: -1 - g.from, item: moving, x0: px, y0: py, x1: bx, y1: by, t0: clock(), dur: 0.22 }); } };
       // 先看是不是拖进订单卡（用手指位置判断，跟手）
       const k = cancelled ? -1 : orderAt(g.x, g.y);
       if (k >= 0) {
         if (deliverTo(g.from, k, px, py)) { sel = -1; return; }
         cardPops.set(k, -1); shakes.set('o' + k, clock());
         if (!Core.tutStep(C, S)) toast(L.t('ui.wrongOrder'));
-        flies.push({ cell: g.from, item: moving, x0: px, y0: py, t0: clock(), dur: 0.22 });
+        flyBack();
+        return;
+      }
+      // V1.1 ③：拖进回收桶 = 卖（拖是主动动作，不会误点；卖完 undoSec 秒内可赎回）；拖进储物架 = 存 / 互换
+      const sb = cancelled ? null : stripAt(g.x, g.y);
+      if (sb) {
+        if (sb.kind === 'bin') {
+          if (moving && moving.k === 'item' && !Core.tutStep(C, S)) { doSell(g.from, px, py); sel = -1; return; }
+          flyBack(); shakes.set('bin', clock()); Sfx.bounce(); if (moving && moving.k === 'tool') toast(L.t('ui.noSellStar')); return;
+        }
+        const r = Core.store(C, S, g.from, sb.k);
+        if (r.type === 'store' || r.type === 'swap') {
+          pops.set('p' + sb.k, clock()); Sfx.pop(); sel = -1; idleT = clock();
+          if (r.type === 'swap') { if (g.from >= 0) pops.set(g.from, clock()); else pops.set('p' + (-1 - g.from), clock()); }
+          markDirty(); return;
+        }
+        flyBack(); shakes.set('p' + sb.k, clock()); Sfx.bounce();
+        if (r.reason === 'locked') toast(Core.pantryOn(C, S) ? L.t('ui.pantryTap') : L.t('ui.pantryLocked', { n: Core.unlockLevel(C, 'pantry') }));
         return;
       }
       const to = cancelled ? -1 : cellAt(px, py);
@@ -750,8 +825,8 @@
         if (r.star >= 0) dropStar(r.star, x, y);
         markDirty();
       } else if (r.type === 'move') { sel = to; selT = clock(); markDirty(); }
-      else { // 回弹：从松手位置飞回原格，不吞物品
-        flies.push({ cell: g.from, item: moving, x0: px, y0: py, t0: clock(), dur: 0.22 });
+      else { // 回弹：从松手位置飞回原格（或架位），不吞物品
+        flyBack();
         if (r.type === 'bounce') {
           shakes.set(to, clock()); Sfx.bounce();
           if (r.reason === 'max') toast(L.t('ui.maxMerge'));
@@ -761,6 +836,8 @@
       return;
     }
     if (cancelled) return;
+    { const sb = stripAt(e.clientX, e.clientY); // 点回收桶 / 储物架（V1.1 ③）
+      if (sb && d.pan && sb.kind === d.pan.kind && sb.k === d.pan.k) { tapStrip(sb); return; } }
     // 点击订单卡 → 合成路线
     const ok = orderAt(e.clientX, e.clientY);
     if (ok >= 0 && orderAt(d.x, d.y) === ok && !Core.tutStep(C, S) && S.orders[ok]) {
@@ -1367,6 +1444,49 @@
       GL.img(Art.plant('fern', s1), LY.bx - 6 + sway(1), LY.by + LY.bs - s1 * 0.3, s1, s1);
     }
   }
+  /* 回收桶 + 储物架（V1.1 ③）：桶在最左，架位按已开 / 下一格（价格）/ 没开（锁）画；没开放时整条写「几级开放」 */
+  function drawStrip(t, needs, dragIt) {
+    const ST = LY.strip; if (!ST) return;
+    const on = Core.pantryOn(C, S), slots = Core.pantrySlots(C, S), price = Core.pantryPrice(C, S), over = drag ? stripAt(drag.x, drag.y) : null;
+    GL.rect(ST.x + 1, ST.y + 4, ST.w, ST.h, 12, COL.shadow, { soft: 5 });
+    GL.rect(ST.x, ST.y, ST.w, ST.h, 12, COL.frame); GL.rect(ST.x, ST.y, ST.w, ST.h, 12, COL.frameD, { stroke: 3 });
+    const wob = (key, s0) => { const sh = shakes.get(key); return sh !== undefined && t - sh < 0.3 ? Math.sin((t - sh) * 60) * s0 * 0.06 * (1 - (t - sh) / 0.3) : 0; };
+    const popS = (key) => { const p = pops.get(key); if (p !== undefined && t - p > 0.5) pops.delete(key); return p !== undefined ? popScale(t - p) : 1; };
+    for (const B of ST.boxes) {
+      const s0 = B.s, cx = B.x + s0 / 2, cy = B.y + s0 / 2, key = B.kind === 'bin' ? 'bin' : 'p' + B.k, sx = wob(key, s0), hot = over && over.kind === B.kind && over.k === B.k;
+      GL.save(); GL.scaleAt(cx, cy, popS(key));
+      if (B.kind === 'bin') { // 绿色回收桶：桶身 + 桶盖 + 两道竖纹；右下角回收计数
+        GL.rect(B.x + sx, B.y, s0, s0, s0 * 0.2, hex('#5aa77a')); GL.rect(B.x + sx, B.y, s0, s0, s0 * 0.2, hex('#3d7f57'), { stroke: 2.5 });
+        GL.rect(cx - s0 * 0.21 + sx, cy - s0 * 0.16, s0 * 0.42, s0 * 0.46, s0 * 0.06, COL.cream);
+        GL.rect(cx - s0 * 0.28 + sx, cy - s0 * 0.29, s0 * 0.56, s0 * 0.1, s0 * 0.04, COL.cream);
+        GL.rect(cx - s0 * 0.07 + sx, cy - s0 * 0.36, s0 * 0.14, s0 * 0.08, s0 * 0.03, COL.cream);
+        for (const dx of [-0.08, 0.08]) GL.rect(cx + s0 * dx - s0 * 0.02 + sx, cy - s0 * 0.08, s0 * 0.04, s0 * 0.3, s0 * 0.02, hex('#5aa77a'));
+        const R = C.eco.recycle; if (s0 >= 26) GL.text((S.recycle || 0) + '/' + R.size, B.x + s0 - 3 + sx, B.y + s0 - s0 * 0.14, { size: Math.max(8, s0 * 0.24), weight: 900, fill: '#fff', align: 'right', outline: 'rgba(30,70,45,0.9)' });
+        if (hot && dragIt) { const ok = dragIt.k === 'item'; GL.rect(B.x, B.y, s0, s0, s0 * 0.2, ok ? COL.goodLine : COL.coralD, { stroke: 3.5 }); }
+      } else if (on && B.k < slots) { // 已开的架位
+        GL.rect(B.x + sx, B.y, s0, s0, s0 * 0.16, COL.cellA); GL.rect(B.x + sx, B.y, s0, s0, s0 * 0.16, COL.creamD, { stroke: 2 });
+        const it = S.pantry[B.k];
+        if (it && !(drag && drag.from === Core.panRef(B.k)) && !flies.some((f) => f.pan === B.k)) {
+          drawItem(it, cx + sx, cy, s0 * 0.9);
+          if (it.k === 'item' && needs.has(it.chain + it.lvl)) GL.img(Art.check(s0 * 0.34), B.x + s0 * 0.84 + sx, B.y + s0 * 0.16, s0 * 0.34, s0 * 0.34);
+        }
+        if (hot && dragIt) { GL.rect(B.x, B.y, s0, s0, s0 * 0.16, COL.good); GL.rect(B.x, B.y, s0, s0, s0 * 0.16, COL.goodLine, { stroke: 3 }); }
+      } else if (on && B.k === slots && price !== null) { // 下一格：金币价
+        GL.rect(B.x + sx, B.y, s0, s0, s0 * 0.16, COL.lockNext);
+        const fs = Math.max(8, s0 * 0.27); GL.img(Art.coin(fs), cx + sx, cy - s0 * 0.14, fs, fs);
+        GL.text(kfmt(price), cx + sx, cy + s0 * 0.2, { size: fs, weight: 900, fill: '#6b4a2a' });
+      } else { // 还没开
+        GL.rect(B.x + sx, B.y, s0, s0, s0 * 0.16, B.k % 2 ? COL.lockB : COL.lockA);
+        const lt = Art.has('icon_lock') ? [1, 1, 1, 0.5] : [0.55, 0.42, 0.3, 0.45];
+        GL.img(Art.lock(s0 * 0.36), cx + sx, cy, s0 * 0.36, s0 * 0.36, lt);
+      }
+      GL.restore();
+    }
+    if (!on && !Core.tutStep(C, S)) { // 没开放：在架位上写「储物架 · 4 级开放」
+      const a = panBox(0), b = panBox(9), mx = (a.x + b.x + b.s) / 2, my = a.y + (a.y === b.y ? a.s / 2 : (b.y + b.s - a.y) / 2);
+      GL.text(L.t('ui.pantryLocked', { n: Core.unlockLevel(C, 'pantry') }), mx, my, { size: Math.max(11, ST.box * 0.36), weight: 900, fill: '#fff4db', outline: 'rgba(58,36,22,0.85)' });
+    }
+  }
   function drawBoardFrame() {
     GL.rect(LY.bx + 2, LY.by + 8, LY.bs, LY.bs, 20, COL.shadow, { soft: 12 });
     GL.rect(LY.bx, LY.by, LY.bs, LY.bs, 20, COL.frame);
@@ -1401,7 +1521,7 @@
       }
     }
     if (i === target && drag && i !== drag.from) {
-      const A = S.cells[drag.from], B = S.cells[i];
+      const A = Core.itemAt(S, drag.from), B = S.cells[i];
       const ok = Core.canMerge(C, A, B) || Core.canDig(C, S, A, i) || (A && A.k === 'tool' && B && B.k === 'item' && B.lvl < C.maxLevel);
       if (ok) GL.rect(x - h, y - h, h * 2, h * 2, cs * 0.14, COL.good);
       GL.rect(x - h, y - h, h * 2, h * 2, cs * 0.14, ok ? COL.goodLine : [0.4, 0.3, 0.2, 0.35], { stroke: 3 });
@@ -1447,7 +1567,7 @@
     if (mode !== 'merge') { drawScene(LY.cafeScene || LY.scene, t, false); drawFx(t); T = t; return GL.end(); }
     drawScene(LY.scene, t, true);
     const needs = needSet();
-    const dragIt = drag ? S.cells[drag.from] : null;
+    const dragIt = drag ? Core.itemAt(S, drag.from) : null;
     const overOrder = drag ? orderAt(drag.x, drag.y) : -1;
     for (let k = 0; k < LY.orders.length; k++) drawOrder(k, t, k === overOrder && Core.orderNeedFor(C, S.orders[k], dragIt) >= 0 ? 1 : 0);
     for (const R of LY.gens) drawGenButton(R, t);
@@ -1456,6 +1576,7 @@
     const target = drag ? cellAt(drag.x - drag.ox, drag.y - drag.oy) : -1;
     for (let i = 0; i < C.n; i++) drawCell(i, t, target);
     for (let i = 0; i < C.n; i++) drawCellItem(i, t, needs);
+    drawStrip(t, needs, dragIt);
     // 新手引导：压暗，再把要点的东西画在暗层上面，加脉冲框和手指
     const F = tutFocus();
     if (F) {
@@ -1473,7 +1594,7 @@
       if (t < f.t0) continue; // 延迟起飞的（泡泡）还没到时间
       if (f.item.k === 'bubble') drawBubble(f.item, x, y, cs * (0.5 + 0.5 * e), t);
       else drawItem(f.item, x, y, cs * 0.9 * (f.spawn ? 0.6 + 0.4 * e : f.shrink ? 1 - 0.5 * e : 1));
-      if (u >= 1) { flies.splice(k, 1); if (f.cell >= 0) pops.set(f.cell, t); }
+      if (u >= 1) { flies.splice(k, 1); if (f.cell >= 0) pops.set(f.cell, t); else if (f.pan !== undefined) pops.set('p' + f.pan, t); }
     }
     drawParticles(t);
     // 拖拽中的物品（最上层，放大一点跟手）
@@ -1563,7 +1684,7 @@
       if (dirty) { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); }
       if (DEBUG) debugStats();
     }
-    const r0 = performance.now(); render(); renderMs = renderMs * 0.9 + (performance.now() - r0) * 0.1; updateSellBtn();
+    const r0 = performance.now(); render(); renderMs = renderMs * 0.9 + (performance.now() - r0) * 0.1; updateSellBtn(); updateUndo();
     fpsN++; if (tn - fpsT >= 1000) { fps = Math.round(fpsN * 1000 / (tn - fpsT)); fpsN = 0; fpsT = tn; }
     requestAnimationFrame(frame);
   }
@@ -1635,7 +1756,7 @@
   }
   // 自动化测试 / 调试入口
   window.MCL = {
-    C, get S() { return S; }, get pendingLevels() { return pendingLevels; }, cellXY, cellAt, layout: LY, save, now, genRect, upgradeBadge: (id) => upgradeBadge(genRect(id)), orderRect: (k) => LY.orders[k], get mode() { return mode; }, needAt,
+    C, get S() { return S; }, get pendingLevels() { return pendingLevels; }, cellXY, cellAt, layout: LY, stripBox: (i) => LY.strip.boxes[i], save, now, genRect, upgradeBadge: (id) => upgradeBadge(genRect(id)), orderRect: (k) => LY.orders[k], get mode() { return mode; }, needAt,
     get fps() { return fps; }, get sel() { return sel; }, get popups() { return popups.length; }, setMode, get spotlight() { return !!spotlight; }, get renderMs() { return renderMs; }, get pending() { return pendingCoins + pendingStars; }, get pendingCoins() { return pendingCoins; },
   };
 })();

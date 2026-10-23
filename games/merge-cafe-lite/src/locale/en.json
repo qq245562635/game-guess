@@ -196,5 +196,17 @@
   "ui.potSaved": "Coffee pot: {n} energy saved",
   "ui.potHint": "When energy is full, extra brews into your coffee pot (up to {n}) and pours in when you run out.",
   "ui.bigOrder": "Big order: no time limit, and +{n} energy back when served.",
-  "ui.energyBack": "Big order tip: +{n} energy!"
+  "ui.energyBack": "Big order tip: +{n} energy!",
+  "unlock.pantry": "Pantry",
+  "ui.pantryLocked": "Pantry opens at Lv {n}",
+  "ui.pantryTip": "Drag items here to keep them off the board.",
+  "ui.pantryTap": "Tap the coin slot to add pantry space.",
+  "ui.pantryBuyTitle": "Bigger Pantry",
+  "ui.pantryBuyBody": "Add pantry slot {n} of {max}? Stored items stay off the board — drag them back to merge or serve.",
+  "ui.binTitle": "Recycle Bin",
+  "ui.binBody": "Drag an item here to sell it for coins. Changed your mind? Tap Undo within {n} seconds. Every {size} items recycled: +{e} energy.",
+  "ui.undo": "Undo",
+  "ui.undone": "Got it back!",
+  "ui.undoFull": "No space to put it back.",
+  "ui.noSellStar": "Wild Stars can't be sold."
 }

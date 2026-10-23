@@ -1,5 +1,5 @@
 {
-  "_doc": "店铺等级（V1-plan.md「店铺等级」）。每完成一单得经验 = 需求等级之和，稀有单 ×xp.rareMul（熟客单 M3 起 ×xp.regularMul）。levelNeed[i] = 从 i+1 级升到 i+2 级要的经验，超出表的等级每级 after。每次升级：+levelReward.energy 体力（可超上限）+ 等级×coinsPerLevel 金币；每 chestEvery 级额外给一个宝箱（内容 chest）。unlocks：按等级开放的系统，ready=false 的还没做，升级弹窗不提；feature 是程序里的开关名。 M1 校准（tools/sim.js，每天 2×15 分钟）：升级送体力和金币会加快后期升级，所以 11 级以后的经验需求比 V1-plan 初稿 ×1.2，20 级以后每级 360；结果 8 级 D1、12 级 D3、16 级 D6、20 级 D10。 M3 再校准：熟客单、菜谱加成、小费让经验和金币来得更快，8 级以后经验需求上调，20 级以后每级 330；熟客单经验 ×1.5。结果仍是 8 级 D1、12 级 D3、16 级 D6、20 级 D10。",
+  "_doc": "店铺等级（V1-plan.md「店铺等级」）。每完成一单得经验 = 需求等级之和，稀有单 ×xp.rareMul（熟客单 M3 起 ×xp.regularMul）。levelNeed[i] = 从 i+1 级升到 i+2 级要的经验，超出表的等级每级 after。每次升级：+levelReward.energy 体力（可超上限）+ 等级×coinsPerLevel 金币；每 chestEvery 级额外给一个宝箱（内容 chest）。unlocks：按等级开放的系统，ready=false 的还没做，升级弹窗不提；feature 是程序里的开关名。 M1 校准（tools/sim.js，每天 2×15 分钟）：升级送体力和金币会加快后期升级，所以 11 级以后的经验需求比 V1-plan 初稿 ×1.2，20 级以后每级 360；结果 8 级 D1、12 级 D3、16 级 D6、20 级 D10。 M3 再校准：熟客单、菜谱加成、小费让经验和金币来得更快，8 级以后经验需求上调，20 级以后每级 330；熟客单经验 ×1.5。结果仍是 8 级 D1、12 级 D3、16 级 D6、20 级 D10。 V1.1 ③：4 级加开储物架（pantry），和套餐单同一级。",
   "xp": {
     "rareMul": 2,
     "regularMul": 1.5
@@ -53,6 +53,12 @@
       "level": 4,
       "feature": "setOrders",
       "name": "unlock.setOrders",
+      "ready": true
+    },
+    {
+      "level": 4,
+      "feature": "pantry",
+      "name": "unlock.pantry",
       "ready": true
     },
     {
