@@ -105,7 +105,6 @@
   "ui.upgrade": "Upgrade",
   "ui.genLevel": "{name} · Lv {n}",
   "ui.upgradeBody": "Uses per refill: {a} → {b}. Recharge time −{p}%.",
-  "ui.upgradeLv3": "Sometimes makes Lv 3 items ({p}%).",
   "ui.upgraded": "Upgraded to Lv {n}!",
   "ui.energyTitle": "Need Energy?",
   "ui.bubbleTitle": "Bubble Bonus!",
@@ -208,5 +207,9 @@
   "ui.undo": "Undo",
   "ui.undone": "Got it back!",
   "ui.undoFull": "No space to put it back.",
-  "ui.noSellStar": "Wild Stars can't be sold."
+  "ui.noSellStar": "Wild Stars can't be sold.",
+  "ui.dropsNow": "Drops now",
+  "ui.dropsNext": "After upgrade",
+  "ui.luckyBubble": "Bonus bubble: guaranteed within {n} more Lv {l}+ merges.",
+  "ui.luckyStar": "Wild Star: guaranteed within {n} more Lv {l}+ merges."
 }

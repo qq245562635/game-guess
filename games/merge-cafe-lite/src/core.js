@@ -187,6 +187,21 @@ const Core = (() => {
     if (s.tut !== TUT_DONE) s.tut++;
     return { ok: true, to, item, found, poured };
   }
+  /* V1.1 ④ 掉率透明：某台生成器某个等级的掉率 [{lvl, pct}]（pct 整数、合计 100）；lv 不传 = 当前等级 */
+  function dropRates(C, s, id, lv) {
+    const w = genStats(C, id, lv || (s.gens[id] && s.gens[id].lv) || 1).levelWeights, ent = Object.entries(w).map(([l, x]) => [+l, x]).filter(([, x]) => x > 0).sort((a, b) => a[0] - b[0]);
+    const tot = ent.reduce((a, [, x]) => a + x, 0), out = ent.map(([lvl, x]) => ({ lvl, pct: Math.round(x / tot * 100) }));
+    const diff = 100 - out.reduce((a, r) => a + r.pct, 0); if (out.length) out[0].pct += diff; // 四舍五入差额补到 1 级上
+    return out;
+  }
+  /* 保底进度：再合几次 minLevel 级以上必出（泡泡 / 百搭星）；功能没开返回 null */
+  function pityLeft(C, s) {
+    const B = C.eco.bubble, W = C.eco.wildStar;
+    return {
+      bubble: B && B.pity ? { left: Math.max(1, B.pity - (s.bubblePity || 0)), minLevel: B.minLevel } : null,
+      wild: W && W.pity && featureOn(C, s, 'wildStar') ? { left: Math.max(1, W.pity - (s.wildPity || 0)), minLevel: W.minLevel } : null,
+    };
+  }
   /* 冷却时长：前期按已完成订单数走 cooldownRamp（15 → 30 秒），之后用生成器自己的 cooldownSec */
   function cooldownSec(C, s, id) {
     const ramp = C.cfg.generators.cooldownRamp || [], done = s.stats.ordersDone, mul = genStats(C, id, (s.gens[id] && s.gens[id].lv) || 1).cdMul || 1;
@@ -930,7 +945,7 @@ const Core = (() => {
     xpNeed, orderXp, addXp, openChest, unlockLevel, featureOn, nextUnlock, logEv, markDay, daysInFirstWeek, adOffer, adClick, grantEnergy, grantDouble, markInterstitial, cooldownSec,
     fillTasks, taskProgress, tasksClaimable, claimTask,
     dailyTasks, dailyProgress, claimDailyChest, loginDue, claimLogin, offlineEarn, offlineRate, offlineCapH, dayOf,
-    genMaxCharges, upgradeCost, upgradeGen, refillPrice, buyRefill, energyPrice, buyEnergy,
+    genMaxCharges, dropRates, pityLeft, upgradeCost, upgradeGen, refillPrice, buyRefill, energyPrice, buyEnergy,
     addCombo, sellPrice, sellItem, findMergePair, stuckHint, rollHidden, obstacleAt, canDig, maybeWildStar, giveWildStar, setOrderFields,
     regState, regOn, heartsFor, regPerks, addAffinity, recipeStars, recState, markFound, addMastery, orderCoins, seatedRegulars, rollRegularOrder,
     maybeBubble, settleBubbles, bubblePrice, popBubble, canSwap, swapOrder, daily,

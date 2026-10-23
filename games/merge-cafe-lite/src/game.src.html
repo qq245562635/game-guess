@@ -128,6 +128,15 @@ body.tasks #tasks { display: block; }
 /* 回收桶赎回（V1.1 ③）：卖掉后 undoSec 秒内出现在回收桶上方 */
 #undo { position: fixed; z-index: 3; display: none; transform: translateX(-50%); border: 3px solid #3d7f57; border-radius: 14px; padding: 4px 10px;
   background: linear-gradient(#8fd6a8, #5aa77a); color: #fff; font: 900 14px var(--font); box-shadow: 0 3px 0 #3d7f57; cursor: pointer; white-space: nowrap; text-shadow: 0 1px 0 rgba(30,70,45,.6); }
+/* 掉率表（V1.1 ④）：生成器弹窗里每个等级一枚物品图 + 百分比，升级后那一行绿色 */
+.drops { margin: 4px 0 6px; }
+.drops .dr { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; font: 800 13px var(--font); }
+.drops .dr b { min-width: 86px; text-align: left; color: #7a5a3a; }
+.drops .dr span { display: inline-flex; align-items: center; gap: 2px; padding: 2px 8px 2px 2px; border-radius: 12px; background: #f6e7c6; font-weight: 900; }
+.drops .dr.next span { background: #d6f0dd; color: #1f6b3c; }
+.drops .dr img, .drops .dr i { width: 28px; height: 28px; object-fit: contain; }
+.drops .dr i { display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; color: #fff; font-style: normal; }
+.drops .lucky { margin: 6px 0 0; font: 800 12px var(--font); color: #8a5a32; }
 #undo.show { display: block; animation: x2 .25s cubic-bezier(.2,1.6,.4,1); }
 #snd { position: fixed; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: 3px solid #e9d2a6; background: var(--cream); box-shadow: 0 3px 0 rgba(120,80,40,.35);
   font: 16px/1 sans-serif; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }

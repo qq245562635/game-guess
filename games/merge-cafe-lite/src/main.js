@@ -660,11 +660,9 @@
   function showUpgrade(id) {
     const g = S.gens[id], def = C.gens[id], cost = Core.upgradeCost(C, S, id), lv = g.lv || 1;
     const title = L.t('ui.genLevel', { name: L.t(def.name), n: lv });
-    if (cost === null) { modal(title, L.t('ui.maxLevel'), [{ label: L.t('ui.ok') }]); return; }
+    if (cost === null) { modal(title, L.t('ui.maxLevel'), [{ label: L.t('ui.ok') }], null, dropsHTML(id, lv, null)); return; }
     const cur = lv > 1 ? C.ups[lv - 2] : { charges: def.charges, cdMul: 1, levelWeights: def.levelWeights }, nx = C.ups[lv - 1];
-    let body = L.t('ui.upgradeBody', { a: cur.charges, b: nx.charges, p: Math.round((1 - nx.cdMul / cur.cdMul) * 100) });
-    const w3 = (lw) => { let tot = 0; for (const k in lw) tot += lw[k]; return Math.round((lw[3] || 0) / tot * 100); };
-    if (w3(nx.levelWeights) > w3(cur.levelWeights)) body += ' ' + L.t('ui.upgradeLv3', { p: w3(nx.levelWeights) });
+    const body = L.t('ui.upgradeBody', { a: cur.charges, b: nx.charges, p: Math.round((1 - nx.cdMul / cur.cdMul) * 100) });
     modal(title, body, [
       { label: L.t('ui.cancel'), alt: true },
       { label: L.t('ui.upgrade'), price: cost, on: () => {
@@ -673,7 +671,18 @@
         spent(); genPress.set(id, clock()); const R = genRect(id); burst(R.x + R.w / 2, R.y + R.h / 2, '#f5c03a', 22); burst(R.x + R.w / 2, R.y + R.h / 2, '#5fc8be', 10);
         toast(L.t('ui.upgraded', { n: r.lv }));
       } },
-    ]);
+    ], null, dropsHTML(id, lv, lv + 1));
+  }
+  /* V1.1 ④ 掉率透明：生成器弹窗里列出现在每个等级的掉率（物品图 + 百分比），升级前后对比；下面一行是泡泡 / 百搭星的保底进度 */
+  function dropsHTML(id, lv, nextLv) {
+    const chain = C.gens[id].chain, row = (label, rates, cls) => `<div class="dr${cls || ''}"><b>${esc2(label)}</b>${rates.map((r) => `<span>${itemPic(chain, r.lvl)}${r.pct}%</span>`).join('')}</div>`;
+    return `<div class="drops">${row(L.t('ui.dropsNow'), Core.dropRates(C, S, id, lv))}${nextLv ? row(L.t('ui.dropsNext'), Core.dropRates(C, S, id, nextLv), ' next') : ''}${luckyHTML()}</div>`;
+  }
+  function luckyHTML() {
+    const P = Core.pityLeft(C, S), out = [];
+    if (P.bubble) out.push(L.t('ui.luckyBubble', { n: P.bubble.left, l: P.bubble.minLevel }));
+    if (P.wild) out.push(L.t('ui.luckyStar', { n: P.wild.left, l: P.wild.minLevel }));
+    return out.map((t) => `<p class="lucky">${esc2(t)}</p>`).join('');
   }
   /* 等级牌的位置（卡片左上角压角），引导中不显示 */
   function upgradeBadge(R) { const r = Math.max(15, R.h * 0.24); return { x: R.x + r * 1.15, y: R.y + r * 0.2, r, w: r * 2.5, h: r * 1.45 }; }
@@ -894,11 +903,12 @@
     if (show && mode !== 'book' && bookSeen && bookSig() !== bookSeen) $('nav-book').classList.add('dot');
     if (!bookSeen && show) bookSeen = bookSig();
     if (mode !== 'book') return;
-    const key = bookTab + '|' + bookSig() + '|' + JSON.stringify(S.recipes) + '|' + JSON.stringify(S.regs) + '|' + S.level;
+    const key = bookTab + '|' + bookSig() + '|' + JSON.stringify(S.recipes) + '|' + JSON.stringify(S.regs) + '|' + S.level + '|' + (S.bubblePity || 0) + '|' + (S.wildPity || 0);
     if (key === bookKey) return; bookKey = key;
     $('bt-rec').classList.toggle('on', bookTab === 'rec'); $('bt-reg').classList.toggle('on', bookTab === 'reg');
     let html = '';
     if (bookTab === 'rec') {
+      html += `<div class="drops">${luckyHTML()}</div>`; // V1.1 ④：保底进度
       for (const chain of Object.keys(C.chains)) {
         const items = C.chains[chain].items, found = items.filter((_, i) => Core.recState(S, chain, i + 1).f).length;
         html += `<div class="rchain"><h4><span>${esc2(L.t(C.chains[chain].name || 'chain.' + chain))}</span><span>${found}/${items.length}</span></h4><div class="rgrid">` +

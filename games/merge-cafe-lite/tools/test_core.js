@@ -954,6 +954,20 @@ test('储物架存档：老存档 = 4 格空架；越界格数 / 坏物品清掉
   const b3 = Core.deserialize(CN, JSON.stringify(o), T0, lcg(1)); assert.strictEqual(b3.pantrySlots, 10); assert.deepStrictEqual(b3.pantry, [null, null, { k: 'tool', id: 'wild' }]);
 });
 
+/* ---------- V1.1 ④：掉率透明 + 保底进度 ---------- */
+test('掉率：Lv1 1 级 80% / 2 级 20%；Lv5 65 / 23 / 12；每一档合计 100%', () => {
+  const s = fresh();
+  assert.deepStrictEqual(Core.dropRates(CN, s, GC), [{ lvl: 1, pct: 80 }, { lvl: 2, pct: 20 }]);
+  assert.deepStrictEqual(Core.dropRates(CN, s, GC, 5), [{ lvl: 1, pct: 65 }, { lvl: 2, pct: 23 }, { lvl: 3, pct: 12 }]);
+  for (let lv = 1; lv <= 5; lv++) assert.strictEqual(Core.dropRates(CN, s, GB, lv).reduce((a, r) => a + r.pct, 0), 100);
+  s.gens[GC].lv = 3; assert.strictEqual(Core.dropRates(CN, s, GC).length, 3);
+});
+test('保底进度：泡泡还差几次必出（跟着 bubblePity 走）；百搭星开放前不显示', () => {
+  const s = fresh(); s.bubblePity = 7;
+  const p = Core.pityLeft(CN, s); assert.deepStrictEqual(p.bubble, { left: 13, minLevel: 4 }); assert.strictEqual(p.wild, null);
+  s.level = 7; s.wildPity = 14; assert.deepStrictEqual(Core.pityLeft(CN, s).wild, { left: 1, minLevel: 6 });
+});
+
 for (const [st, n] of results) console.log(st === 'PASS' ? '  ✓' : '  ✗', n);
 console.log(`\n${pass}/${results.length} passed`);
 process.exit(pass === results.length ? 0 : 1);
