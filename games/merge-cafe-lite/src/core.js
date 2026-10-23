@@ -49,7 +49,7 @@ const Core = (() => {
     const s = {
       v: SAVE_VERSION,
       coins: C.eco.startCoins, stars: C.eco.startStars, gems: C.eco.startGems,
-      energy: C.eco.energy.start, energyTs: now,
+      energy: C.eco.energy.start, energyTs: now, pot: 0, // pot：备用咖啡壶里存的体力（V1.1）
       cells: new Array(C.n).fill(null),
       unlocked: new Array(C.n).fill(false),
       gens: {},
@@ -97,22 +97,33 @@ const Core = (() => {
     return !!(h && it && it.k === 'item' && it.chain === h.chain && it.lvl === h.lvl && it.lvl < C.maxLevel && canUnlockHere(C, s, i));
   }
 
-  /* ---------- 体力：按时间戳结算，返回本次恢复了多少 ---------- */
+  /* ---------- 体力：按时间戳结算，返回本次恢复到体力里的点数 ----------
+     备用咖啡壶（V1.1）：体力满了以后，本来会浪费掉的自然恢复存进壶里（s.pot，上限 energy.potMax），
+     体力不够点生成器时整壶自动倒进体力（见 tapGen）。壶也满了才停表。 */
+  const potMax = (C) => C.eco.energy.potMax || 0;
   function settleEnergy(C, s, now) {
-    const E = C.eco.energy, ms = E.regenSec * 1000;
-    if (s.energy >= E.max) { s.energyTs = now; return 0; }
+    const E = C.eco.energy, ms = E.regenSec * 1000, PM = potMax(C);
     if (now < s.energyTs) { s.energyTs = now; return 0; } // 系统时间被往回调：不倒扣，从现在重新计
+    if (s.energy >= E.max && (s.pot || 0) >= PM) { s.energyTs = now; return 0; } // 体力和壶都满：停表
     const gain = Math.floor((now - s.energyTs) / ms);
     if (gain <= 0) return 0;
-    const before = s.energy;
-    s.energy = Math.min(E.max, s.energy + gain);
-    s.energyTs = s.energy >= E.max ? now : s.energyTs + gain * ms;
+    const before = s.energy, add = Math.max(0, Math.min(gain, E.max - s.energy));
+    s.energy += add;
+    if (PM) s.pot = Math.min(PM, (s.pot || 0) + gain - add);
+    s.energyTs = s.energy >= E.max && (s.pot || 0) >= PM ? now : s.energyTs + gain * ms;
     return s.energy - before;
   }
+  /* 下一点恢复还要多久（毫秒）；体力和壶都满返回 0 */
   function energyNextIn(C, s, now) {
-    if (s.energy >= C.eco.energy.max) return 0;
+    if (s.energy >= C.eco.energy.max && (s.pot || 0) >= potMax(C)) return 0;
     const ms = C.eco.energy.regenSec * 1000;
     return Math.max(0, ms - (now - s.energyTs));
+  }
+  /* 体力不够 need 点时把整壶倒进体力，返回倒了多少 */
+  function pourPot(C, s, need) {
+    if (s.energy >= need || !(s.pot > 0)) return 0;
+    const n = s.pot; s.energy += n; s.pot = 0; s.stats.potPoured = (s.stats.potPoured || 0) + n; logEv(s, 'small');
+    return n;
   }
   function spendEnergy(C, s, n, now) { settleEnergy(C, s, now); s.energy -= n; }
 
@@ -162,6 +173,7 @@ const Core = (() => {
     if (g.charges <= 0) return { ok: false, reason: 'cooldown', left: g.cdEnd - now };
     const to = nearestEmpty(C, s, def.anchor[0], def.anchor[1]);
     if (to < 0) return { ok: false, reason: 'full' };
+    const poured = pourPot(C, s, def.energyCost); // 体力不够先倒咖啡壶
     if (s.energy < def.energyCost) return { ok: false, reason: 'energy', next: energyNextIn(C, s, now) };
     spendEnergy(C, s, def.energyCost, now);
     g.charges--;
@@ -172,7 +184,7 @@ const Core = (() => {
     s.stats.spawns++; s.stats.maxLvl = Math.max(s.stats.maxLvl || 0, item.lvl);
     const found = markFound(C, s, item, now);
     if (s.tut !== TUT_DONE) s.tut++;
-    return { ok: true, to, item, found };
+    return { ok: true, to, item, found, poured };
   }
   /* 冷却时长：前期按已完成订单数走 cooldownRamp（15 → 30 秒），之后用生成器自己的 cooldownSec */
   function cooldownSec(C, s, id) {
@@ -805,6 +817,8 @@ const Core = (() => {
     o.tasks.active = o.tasks.active.filter((a) => taskDef(C, a.id));
     fillTasks(C, o);
     if (typeof o.gems !== 'number') o.gems = 0;
+    if (typeof o.pot !== 'number' || !(o.pot >= 0)) o.pot = 0; // V1.1 咖啡壶：老存档从空壶开始（加字段不升存档版本）
+    o.pot = Math.min(o.pot, potMax(C));
     if (typeof o.tut !== 'number') o.tut = TUT_DONE;
     if (typeof o.seq !== 'number') o.seq = 0;
     if (typeof o.deco !== 'number' || o.deco < 0) o.deco = 0;
@@ -844,7 +858,7 @@ const Core = (() => {
   function itemDef(C, it) { return C.chains[it.chain].items[it.lvl - 1]; }
 
   return {
-    SAVE_VERSION, TUT_DONE, index, idx, rc, newState, settleEnergy, energyNextIn, settleAll, settleGen,
+    SAVE_VERSION, TUT_DONE, index, idx, rc, newState, settleEnergy, energyNextIn, potMax, pourPot, settleAll, settleGen,
     tapGen, refillGen, rollLevel, nearestEmpty, emptyCount, canMerge, drop,
     isRare, rollOrder, settleOrders, orderNeedFor, deliver, tutStep, skipTutorial,
     decoNext, renovate, decoDone, areaOf, areaNodes,

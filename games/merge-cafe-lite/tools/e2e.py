@@ -190,7 +190,7 @@ with sync_playwright() as p:
     check('订单超时自动刷新，不扣金币 / 星 / 体力', S(pg, 'orders[0].uid') != pg.evaluate('window.__u') and (S(pg, 'coins'), S(pg, 'stars')) == (c1, s1) and S(pg, 'energy') >= e2)
 
     # ---- 体力见底 ----
-    pg.evaluate('MCL.S.energy=0; MCL.S.energyTs=MCL.now()')
+    pg.evaluate('MCL.S.energy=0; MCL.S.pot=0; MCL.S.energyTs=MCL.now()')  # 壶也清空（V1.1），否则会先倒壶
     tap_gen(pg, GC)
     check('体力见底：弹窗、显示下一点倒计时、不扣储量', pg.is_visible('#modal.show') and 'Out of Energy' in pg.inner_text('#modal'), pg.inner_text('#m-body') if pg.is_visible('#modal.show') else '')
     pg.screenshot(path=str(out / 'no-energy.png'))
@@ -260,7 +260,7 @@ with sync_playwright() as p:
     pg.screenshot(path=str(out / 'cafe-act1-done.png'))
     reload(pg)
     check('刷新后装修进度保留', S(pg, 'deco') == 5 and S(pg, 'v') == 9)
-    pg.evaluate('MCL.S.stars=68; MCL.S.coins=28700'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)  # 二、三幕共 68 星 + 28700 金币
+    pg.evaluate('MCL.S.stars=68; MCL.S.coins=37300'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)  # 二、三幕共 68 星 + 37300 金币（V1.1）
     comics = 0
     for _ in range(20):
         if S(pg, 'deco') >= 15: break
@@ -275,7 +275,7 @@ with sync_playwright() as p:
     check('切回 Merge：棋盘可玩', pg.evaluate('MCL.mode') == 'merge')
 
     # ================= M3：广告 Mock =================
-    pg.evaluate('MCL.S.energy=0; MCL.S.energyTs=MCL.now()')
+    pg.evaluate('MCL.S.energy=0; MCL.S.pot=0; MCL.S.energyTs=MCL.now()')  # 壶也清空（V1.1），否则会先倒壶
     tap_gen(pg, GC)
     check('激励点位 1：体力见底弹窗里有"看广告 +30"按钮', pg.is_visible('#m-btns .btn.ad') and '+30' in pg.inner_text('#m-btns'))
     pg.click('#m-btns .btn.ad'); pg.wait_for_timeout(300)
@@ -421,13 +421,13 @@ with sync_playwright() as p:
     pg.click('#m-btns .btn'); settle_rewards(pg)
     check('宝箱 Collect 后金币落地，顶栏和存档一致', pg.inner_text('#coins').replace(',', '') == str(S(pg, 'coins')) and S(pg, 'coins') == c5)
     # 装修：第二幕节点要星 + 金币
-    pg.evaluate('MCL.S.deco=5; MCL.S.stars=10; MCL.S.coins=1250'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)
-    check('装修第二幕：按钮显示 ★4 + 1800 金币', '4' in pg.inner_text('#deco-btn') and '1800' in pg.inner_text('#deco-btn').replace(',', ''), pg.inner_text('#deco-btn'))
+    pg.evaluate('MCL.S.deco=5; MCL.S.stars=10; MCL.S.coins=2250'); pg.click('#nav-cafe'); pg.wait_for_timeout(400)
+    check('装修第二幕：按钮显示 ★4 + 2300 金币（V1.1 ×1.3）', '4' in pg.inner_text('#deco-btn') and '2300' in pg.inner_text('#deco-btn').replace(',', ''), pg.inner_text('#deco-btn'))
     pg.screenshot(path=str(out / 'm1-deco-coins.png'))
     pg.click('#deco-btn'); pg.wait_for_timeout(300)
-    check('金币不够：不扣星不扣钱，提示还差 50 金币', S(pg, 'deco') == 5 and S(pg, 'stars') == 10 and S(pg, 'coins') == 1250 and '50' in pg.inner_text('#toast'), pg.inner_text('#toast'))
-    pg.evaluate('MCL.S.coins=1850'); pg.wait_for_timeout(300); pg.click('#deco-btn'); pg.wait_for_timeout(1300)
-    check('金币够了：扣 4 星 + 1800 金币，装上木栈台', S(pg, 'deco') == 6 and S(pg, 'stars') == 6 and S(pg, 'coins') == 50)
+    check('金币不够：不扣星不扣钱，提示还差 50 金币', S(pg, 'deco') == 5 and S(pg, 'stars') == 10 and S(pg, 'coins') == 2250 and '50' in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    pg.evaluate('MCL.S.coins=2350'); pg.wait_for_timeout(300); pg.click('#deco-btn'); pg.wait_for_timeout(1300)
+    check('金币够了：扣 4 星 + 2300 金币，装上木栈台', S(pg, 'deco') == 6 and S(pg, 'stars') == 6 and S(pg, 'coins') == 50)
     pg.click('#nav-merge'); pg.wait_for_timeout(300)
     check('打点：今天已记上线、奖励事件有计数、游玩时长在涨', len(S(pg, 'stats.days')) == 1 and S(pg, 'stats.ev.small') >= 1 and S(pg, 'stats.ev.mid') >= 2 and S(pg, 'stats.playMs') > 1000, json.dumps(S(pg, 'stats.ev')))
     reload(pg, levels=True)
@@ -649,6 +649,22 @@ with sync_playwright() as p:
           pg.inner_text('#m-title'))
     pg.screenshot(path=str(out / 'g-comic-mia.png'))
     close_all(pg); settle_rewards(pg)
+    ctx.close()
+
+    # ================= V1.1 ①：备用咖啡壶 =================
+    ctx = br.new_context(viewport={'width': 405, 'height': 720}, device_scale_factor=2)
+    pg = ctx.new_page(); watch(pg); boot(pg)
+    pg.evaluate("Core.skipTutorial(MCL.S); for(let i=0;i<49;i++) MCL.S.cells[i]=null; MCL.S.energy=0; MCL.S.pot=40; MCL.S.energyTs=MCL.now()"); pg.wait_for_timeout(400)
+    check('V1.1 咖啡壶：壶里有体力时顶栏体力旁显示杯子 + 点数', pg.is_visible('#energy-pot.on') and '40' in pg.inner_text('#energy-pot'), pg.inner_text('#pill-energy'))
+    pg.screenshot(path=str(out / 'v11-pot-hud.png'), clip={'x': 0, 'y': 0, 'width': 405, 'height': 70})
+    tap_gen(pg, GC); pg.wait_for_timeout(900)  # 顶栏每 0.25 秒刷新一次，软件渲染下多等一会
+    check('体力 0 点生成器：整壶倒进体力（+40 提示），照常出物品，壶清空、杯子隐藏', S(pg, 'energy') == 39 and S(pg, 'pot') == 0 and 'Coffee pot' in pg.inner_text('#toast')
+          and not pg.is_visible('#energy-pot.on') and not pg.is_visible('#modal.show'), f"energy={S(pg, 'energy')} pot={S(pg, 'pot')} toast={pg.inner_text('#toast')!r} potEl={pg.is_visible('#energy-pot.on')} modal={pg.inner_text('#m-title') if pg.is_visible('#modal.show') else ''!r}")
+    pg.evaluate("MCL.S.energy=0; MCL.S.energyTs=MCL.now()"); tap_gen(pg, GC); pg.wait_for_selector('#modal.show', timeout=3000)
+    check('壶也空了才弹体力见底，弹窗里说明咖啡壶（上限 60）', 'Out of Energy' in pg.inner_text('#modal') and 'coffee pot' in pg.inner_text('#m-body') and '60' in pg.inner_text('#m-body'), pg.inner_text('#m-body'))
+    close_all(pg)
+    pg.evaluate('MCL.S.energy=100; MCL.S.pot=0; MCL.S.energyTs=MCL.now(); MCL.save()'); skip_time(pg, 2 * 3600000); reload(pg)
+    check('满体力离开 2 小时：恢复不再浪费，壶存满 60，回来提示', S(pg, 'energy') == 100 and S(pg, 'pot') == 60 and '60' in pg.inner_text('#energy-pot'), f"energy={S(pg, 'energy')} pot={S(pg, 'pot')}")
     ctx.close()
 
     # ================= 多分辨率布局 =================

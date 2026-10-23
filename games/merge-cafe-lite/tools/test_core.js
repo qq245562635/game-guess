@@ -264,12 +264,12 @@ test('引导中刷新：存档能续上；棋盘不满足条件则自动结束�
 });
 
 /* ---------- M3 装修 / 星星 / 广告 ---------- */
-test('装修表（区域 1）：3 幕 15 节点；第一幕 6 星不变，二幕 24 星 + 11900 金币，三幕 44 星 + 16800 金币（M6 校准）；漫画在第 1/8/15 节点', () => {
+test('装修表（区域 1）：3 幕 15 节点；第一幕 6 星不变，二幕 24 星 + 15400 金币，三幕 44 星 + 21900 金币（V1.1 加咖啡壶后 ×1.3 校准）；漫画在第 1/8/15 节点', () => {
   assert.strictEqual(CN.areas.length, 1); assert.strictEqual(CN.deco.length, 15);
   const act = (a, k) => CN.deco.filter((d) => d.act === a).reduce((x, d) => x + (d[k] || 0), 0);
   assert.deepStrictEqual([0, 1, 2].map((a) => CN.deco.filter((d) => d.act === a).length), [5, 5, 5]);
   assert.deepStrictEqual([act(0, 'cost'), act(1, 'cost'), act(2, 'cost')], [6, 24, 44]);
-  assert.deepStrictEqual([act(0, 'coins'), act(1, 'coins'), act(2, 'coins')], [0, 11900, 16800]);
+  assert.deepStrictEqual([act(0, 'coins'), act(1, 'coins'), act(2, 'coins')], [0, 15400, 21900]);
   assert.deepStrictEqual(CN.deco.map((d, i) => CN.areas[0].comics[d.id] ? i + 1 : 0).filter(Boolean), [1, 8, 15]);
 });
 test('装修：按顺序解锁，扣星 + 扣金币；星或金币不够都不扣；全部完成后不能再装', () => {
@@ -283,10 +283,10 @@ test('装修：按顺序解锁，扣星 + 扣金币；星或金币不够都不�
     assert.strictEqual(!!r.comic, [0, 7, 14].includes(i)); assert.strictEqual(r.actDone, [4, 9, 14].includes(i));
     spent += nd.cost; coins += nd.coins || 0;
   }
-  assert.strictEqual(spent, 74); assert.strictEqual(coins, 28700); assert.strictEqual(s.stats.coinsSpent.deco, 28700);
+  assert.strictEqual(spent, 74); assert.strictEqual(coins, 37300); assert.strictEqual(s.stats.coinsSpent.deco, 37300);
   assert.strictEqual(Core.renovate(CN, s).reason, 'done');
   const t = fresh(); t.deco = 5; t.stars = 99; t.coins = 99;
-  const r = Core.renovate(CN, t); assert.strictEqual(r.reason, 'coins'); assert.strictEqual(r.need, 1701); assert.deepStrictEqual([t.stars, t.coins, t.deco], [99, 99, 5]);
+  const r = Core.renovate(CN, t); assert.strictEqual(r.reason, 'coins'); assert.strictEqual(r.need, 2201); assert.deepStrictEqual([t.stars, t.coins, t.deco], [99, 99, 5]);
 });
 test('装修图层：只有已解锁节点的图层生效', () => {
   const s = fresh(); s.deco = 2;
@@ -827,6 +827,44 @@ test('v8 存档迁移到 v9：补签到；读档时把上次存档时间记成 l
   const v8 = JSON.parse(Core.serialize(s, T0)); v8.v = 8;
   const back = Core.deserialize(CN, JSON.stringify(v8), T0 + 5000, lcg(1));
   assert.strictEqual(back.v, 9); assert.deepStrictEqual(back.login, { n: 0, day: -1 }); assert.strictEqual(back.lastSeen, T0);
+});
+
+/* ---------- V1.1 ①：备用咖啡壶 ---------- */
+const MIN2 = 120e3;
+test('咖啡壶：体力满了以后的自然恢复存进壶（上限 potMax=60），不再浪费', () => {
+  assert.strictEqual(Core.potMax(CN), 60);
+  const s = fresh(); s.energy = 0; s.energyTs = T0; s.pot = 0;
+  Core.settleEnergy(CN, s, T0 + 12 * 3600e3); // 离线 12 小时 = 360 点
+  assert.deepStrictEqual([s.energy, s.pot], [100, 60]);
+  const t = fresh(); t.energy = 95; t.energyTs = T0; t.pot = 0;
+  assert.strictEqual(Core.settleEnergy(CN, t, T0 + 8 * MIN2), 5); // 返回的是进体力的点数
+  assert.deepStrictEqual([t.energy, t.pot], [100, 3]);
+});
+test('咖啡壶：体力和壶都满时停表；只有体力满时表照走、恢复进壶', () => {
+  const s = fresh(); s.energy = 100; s.pot = 60; s.energyTs = T0;
+  Core.settleEnergy(CN, s, T0 + 3600e3); assert.strictEqual(s.energyTs, T0 + 3600e3); assert.strictEqual(Core.energyNextIn(CN, s, T0 + 3600e3), 0);
+  const t = fresh(); t.energy = 130; t.pot = 0; t.energyTs = T0; // 超上限（升级奖励等）时恢复也进壶
+  Core.settleEnergy(CN, t, T0 + 3 * MIN2 + 1000); assert.deepStrictEqual([t.energy, t.pot], [130, 3]);
+  assert.strictEqual(Core.energyNextIn(CN, t, T0 + 3 * MIN2 + 1000), MIN2 - 1000);
+});
+test('咖啡壶：体力不够点生成器时整壶自动倒进来（结果带 poured），体力够时不倒', () => {
+  const s = fresh(); clearBoard(s); s.energy = 0; s.pot = 40; s.energyTs = T0;
+  const r = Core.tapGen(CN, s, GC, T0, seq(0.1));
+  assert(r.ok); assert.strictEqual(r.poured, 40); assert.deepStrictEqual([s.energy, s.pot], [39, 0]);
+  const t = fresh(); clearBoard(t); t.energy = 5; t.pot = 40; t.energyTs = T0;
+  const r2 = Core.tapGen(CN, t, GC, T0, seq(0.1)); assert.strictEqual(r2.poured, 0); assert.deepStrictEqual([t.energy, t.pot], [4, 40]);
+  const u = fresh(); clearBoard(u); u.energy = 0; u.pot = 0; u.energyTs = T0;
+  assert.strictEqual(Core.tapGen(CN, u, GC, T0, seq(0.1)).reason, 'energy');
+});
+test('咖啡壶：potMax=0 时和原来完全一样（满体力停表、不存壶）', () => {
+  const c2 = loadCfg(); c2.tutorial.enabled = false; c2.economy.energy.potMax = 0; const C2 = Core.index(c2);
+  const s = Core.newState(C2, T0, lcg(1)); s.energy = 0; s.energyTs = T0;
+  Core.settleEnergy(C2, s, T0 + 12 * 3600e3); assert.deepStrictEqual([s.energy, s.pot], [100, 0]); assert.strictEqual(s.energyTs, T0 + 12 * 3600e3);
+});
+test('咖啡壶：老存档没有 pot 字段读出来是空壶，越界的按上限截断；存档版本不变', () => {
+  const s = fresh(); const o = JSON.parse(Core.serialize(s, T0)); delete o.pot;
+  const back = Core.deserialize(CN, JSON.stringify(o), T0, lcg(1)); assert.strictEqual(back.pot, 0); assert.strictEqual(back.v, Core.SAVE_VERSION);
+  o.pot = 999; assert.strictEqual(Core.deserialize(CN, JSON.stringify(o), T0, lcg(1)).pot, 60);
 });
 
 for (const [st, n] of results) console.log(st === 'PASS' ? '  ✓' : '  ✗', n);

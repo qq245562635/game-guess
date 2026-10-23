@@ -21,6 +21,9 @@ body { background: #e6c48f; color: var(--ink); font-family: var(--font); -webkit
 .pill svg, .pill img.ico { width: 30px; height: 30px; flex: none; margin-left: -10px; filter: drop-shadow(0 2px 0 rgba(120,80,40,.3)); object-fit: contain; }
 .pill .sub { font-size: 12px; font-weight: 800; opacity: .65; }
 #energy-timer:empty { display: none; }
+/* 备用咖啡壶（V1.1）：体力旁边一个小杯子 + 壶里存的点数，壶空不显示 */
+#energy-pot { display: none; align-items: center; gap: 1px; margin-left: -2px; padding: 1px 6px; border-radius: 10px; background: #f6e2bf; color: #7a4a24; font-size: 12px; font-weight: 900; }
+#energy-pot.on { display: inline-flex; }
 /* 店铺等级徽章（V1 M1）：圆形徽章 + 外圈经验环（conic-gradient），点开看等级详情；正式图 badge_level 到了换背景 */
 #lvl { pointer-events: auto; position: relative; flex: none; width: 44px; height: 44px; margin: -3px 2px 0 0; border-radius: 50%; cursor: pointer;
   background: conic-gradient(#3bb36a calc(var(--xp, 0) * 1turn), #e3cfa8 0); box-shadow: 0 3px 0 rgba(120,80,40,.35); transition: transform .12s; }
@@ -236,7 +239,7 @@ body.book #book { display: block; }
   <div id="lvl"><b id="level">1</b></div>
   <div class="pill" id="pill-energy">
     <svg viewBox="0 0 30 30"><path d="M18 1.5 5.5 17h8l-3 11.5L24.5 12h-8.2z" fill="#f5c03a" stroke="#c4851a" stroke-width="2" stroke-linejoin="round"/></svg>
-    <span id="energy">100</span><span class="sub" id="energy-timer"></span>
+    <span id="energy">100</span><span class="sub" id="energy-timer"></span><span id="energy-pot"></span>
   </div>
   <div class="pill" id="pill-coins">
     <svg viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#f5c03a" stroke="#c4851a" stroke-width="2.4"/><circle cx="15" cy="15" r="7.5" fill="none" stroke="#fde7a0" stroke-width="2.4"/></svg>

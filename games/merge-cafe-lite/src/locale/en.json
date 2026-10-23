@@ -191,5 +191,8 @@
   "ui.loginBody": "Come back every day. Missed days never reset your progress.",
   "ui.welcomeTitle": "Welcome Back!",
   "ui.welcomeBody": "Your café earned {n} coins while you were away ({t}).",
-  "ui.offlineCap": "Earnings cap at {h} hours. Come back sooner for more!"
+  "ui.offlineCap": "Earnings cap at {h} hours. Come back sooner for more!",
+  "ui.potPour": "Coffee pot poured in: +{n} energy!",
+  "ui.potSaved": "Coffee pot: {n} energy saved",
+  "ui.potHint": "When energy is full, extra brews into your coffee pot (up to {n}) and pours in when you run out."
 }
