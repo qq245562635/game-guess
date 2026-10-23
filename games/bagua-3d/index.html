@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}[hidden]{display:none!important}</style>
+<title>立体八卦</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;900&family=Noto+Sans+SC:wght@300;400;500&display=swap">
+<style>
+/* 布局：全屏 WebGL 卦盘；左上题签与起卦入口，底部"生成"五阶段，右侧（手机为底部）详解面板。刻意单一暗色：墨地、金爻、朱砂点睛 */
+:root{
+  --ink:#0b0c0f;
+  --paper:#ece4d2;
+  --paper-dim:#a39b8a;
+  --gold:#d6b36a;
+  --cinnabar:#c2412d;
+  --line:rgba(214,179,106,.22);
+  --f-brush:"Ma Shan Zheng","STKaiti","KaiTi",serif;
+  --f-serif:"Noto Serif SC","Songti SC","SimSun",serif;
+  --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;}
+body{background:var(--ink);color:var(--paper);font-family:var(--f-sans);overflow:hidden;}
+#stage{position:fixed;inset:0;}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab;}
+canvas.drag{cursor:grabbing;}
+#labels{position:fixed;inset:0;pointer-events:none;}
+.lbl{position:absolute;left:0;top:0;font-family:var(--f-serif);font-weight:600;color:var(--paper);
+  font-size:15px;letter-spacing:.08em;white-space:nowrap;transition:opacity .4s,color .3s;text-shadow:0 0 12px rgba(0,0,0,.9);}
+.lbl small{display:block;text-align:center;font-family:var(--f-sans);font-weight:300;font-size:10px;color:var(--paper-dim);letter-spacing:.2em;margin-top:2px;}
+.lbl.sel{color:var(--gold);}
+.lbl.hx{font-size:13px;color:var(--gold);}
+.lbl.hx b{color:var(--cinnabar);font-weight:600;margin-right:4px;}
+.dir{position:absolute;left:0;top:0;font-family:var(--f-serif);font-size:11px;color:var(--cinnabar);letter-spacing:.1em;opacity:.85;transition:opacity .4s;}
+
+header{position:fixed;top:0;left:0;padding-top:20px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:16px;pointer-events:none;}
+header h1{margin:0;font-family:var(--f-brush);font-weight:400;font-size:44px;line-height:1;color:var(--paper);letter-spacing:.06em;}
+header h1 span{color:var(--cinnabar);}
+header p{margin:10px 0 0;font-family:var(--f-serif);font-size:13px;color:var(--paper-dim);letter-spacing:.15em;}
+.hrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;pointer-events:auto;}
+.layout-toggle{display:inline-flex;border:1px solid var(--line);border-radius:2px;overflow:hidden;}
+.layout-toggle button,.divine-btn{background:transparent;border:0;color:var(--paper-dim);font-family:var(--f-serif);font-size:13px;padding:7px 14px;cursor:pointer;letter-spacing:.1em;}
+.layout-toggle button[aria-pressed="true"]{background:var(--gold);color:var(--ink);font-weight:600;}
+.divine-btn{border:1px solid var(--cinnabar);color:var(--paper);border-radius:2px;}
+.divine-btn:hover,.divine-btn[aria-pressed="true"]{background:var(--cinnabar);}
+button:focus-visible{outline:2px solid var(--cinnabar);outline-offset:2px;}
+
+footer{position:fixed;left:0;right:0;bottom:0;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:none;}
+.caption{text-align:center;max-width:34em;min-height:3.6em;}
+.caption q{display:block;font-family:var(--f-serif);font-weight:900;font-size:20px;color:var(--gold);letter-spacing:.2em;quotes:"「" "」";}
+.caption div{margin-top:6px;font-size:13px;line-height:1.7;color:var(--paper-dim);}
+.steps{display:flex;pointer-events:auto;align-items:center;}
+.steps button{background:transparent;border:0;color:var(--paper-dim);font-family:var(--f-serif);font-size:15px;
+  padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:62px;letter-spacing:.12em;}
+.steps button i{width:9px;height:9px;border-radius:50%;border:1px solid var(--gold);display:block;transition:background .3s,transform .3s;}
+.steps button[aria-current="step"]{color:var(--paper);}
+.steps button[aria-current="step"] i{background:var(--cinnabar);border-color:var(--cinnabar);transform:scale(1.25);}
+.steps .bar{width:22px;height:1px;background:var(--line);margin-bottom:22px;}
+
+#panel{position:fixed;top:0;right:0;bottom:0;width:360px;max-width:100%;background:linear-gradient(90deg,rgba(11,12,15,0),rgba(11,12,15,.93) 16%);
+  padding:28px max(24px,env(safe-area-inset-right,0px)) 28px 60px;transform:translateX(105%);transition:transform .5s cubic-bezier(.2,.8,.2,1);overflow-y:auto;z-index:5;}
+#panel.open{transform:none;}
+#close{position:absolute;top:18px;right:max(18px,env(safe-area-inset-right,0px));background:none;border:1px solid var(--line);color:var(--paper-dim);width:30px;height:30px;cursor:pointer;font-size:16px;line-height:1;}
+.p-kicker{font-size:11px;color:var(--paper-dim);letter-spacing:.3em;}
+.p-head{display:flex;align-items:flex-end;gap:16px;margin-top:6px;}
+.p-name{font-family:var(--f-brush);font-size:84px;line-height:.9;color:var(--paper);}
+.p-sym{font-size:44px;color:var(--gold);line-height:1;}
+.p-nat{margin-top:8px;font-family:var(--f-serif);font-size:15px;color:var(--cinnabar);letter-spacing:.25em;}
+.p-title{margin:8px 0 0;font-family:var(--f-serif);font-weight:600;font-size:20px;letter-spacing:.1em;text-wrap:balance;}
+.p-quote{margin:22px 0 6px;font-family:var(--f-serif);font-size:16px;line-height:1.8;color:var(--paper);border-left:2px solid var(--cinnabar);padding-left:12px;}
+.p-src{font-size:11px;color:var(--paper-dim);letter-spacing:.15em;padding-left:14px;}
+.p-read{margin-top:16px;font-size:13px;line-height:1.85;color:var(--paper-dim);}
+.p-read em{font-style:normal;color:var(--paper);}
+dl{display:grid;grid-template-columns:auto 1fr;gap:9px 18px;margin:22px 0 0;padding-top:18px;border-top:1px solid var(--line);font-size:13px;}
+dt{color:var(--paper-dim);letter-spacing:.2em;}
+dd{margin:0;font-family:var(--f-serif);color:var(--paper);font-variant-numeric:tabular-nums;}
+.chip{background:none;border:1px solid var(--line);color:var(--gold);font-family:var(--f-serif);font-size:13px;padding:3px 10px;cursor:pointer;border-radius:2px;}
+.chip:hover{border-color:var(--gold);}
+dd small{color:var(--paper-dim);font-family:var(--f-sans);font-size:11px;margin-left:6px;}
+
+.toss{display:block;width:100%;margin-top:18px;background:var(--cinnabar);color:var(--paper);border:0;font-family:var(--f-serif);font-size:16px;letter-spacing:.25em;padding:12px;cursor:pointer;border-radius:2px;}
+.toss:disabled{opacity:.5;cursor:default;}
+.toss.ghost{background:none;border:1px solid var(--line);color:var(--paper-dim);font-size:14px;margin-top:10px;}
+.p-note{margin:12px 0 0;font-size:12px;line-height:1.8;color:var(--paper-dim);}
+.yao{list-style:none;margin:18px 0 0;padding:16px 0 0;border-top:1px solid var(--line);display:grid;gap:9px;}
+.yao li{display:grid;grid-template-columns:3.4em 72px 1fr;align-items:center;gap:12px;font-size:13px;color:var(--paper-dim);font-variant-numeric:tabular-nums;}
+.yao li.on{color:var(--paper);}
+.yao li .t{font-family:var(--f-serif);}
+.gl{display:flex;gap:10px;height:7px;}
+.gl i{flex:1;background:var(--gold);border-radius:1px;}
+.gl.empty i{background:var(--line);}
+.yao li.mv .gl i{background:var(--cinnabar);}
+.yao li.mv .v{color:var(--cinnabar);}
+.res{display:flex;align-items:center;gap:10px;margin-top:18px;flex-wrap:wrap;}
+.res .chip{font-size:15px;padding:8px 12px;}
+.res .chip b{font-family:var(--f-brush);font-weight:400;font-size:22px;margin-left:6px;color:var(--paper);}
+.res span{color:var(--paper-dim);}
+.hint{position:fixed;top:24px;right:max(24px,env(safe-area-inset-right,0px));font-size:12px;color:var(--paper-dim);letter-spacing:.15em;pointer-events:none;transition:opacity .4s;}
+
+@media (max-width:640px){
+  header h1{font-size:32px;}
+  header p{display:none;}
+  .hrow{margin-top:12px;}
+  .hint{display:none;}
+  #panel{top:auto;width:100%;max-height:58%;background:rgba(11,12,15,.95);border-top:1px solid var(--line);
+    padding:20px max(16px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));transform:translateY(105%);}
+  .p-name{font-size:56px;}
+  .caption q{font-size:16px;}
+  .caption div{font-size:12px;}
+  .steps button{min-width:48px;font-size:13px;letter-spacing:.05em;}
+  .steps .bar{width:10px;}
+  .lbl{font-size:12px;}
+}
+@media (prefers-reduced-motion:reduce){#panel{transition:none;}}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c" aria-label="可旋转的立体八卦图"></canvas></div>
+<div id="labels"></div>
+
+<header>
+  <h1>立体<span>·</span>八卦</h1>
+  <p>易有太极 · 是生两仪</p>
+  <div class="hrow">
+    <div class="layout-toggle" role="group" aria-label="卦位">
+      <button id="bt-fx" aria-pressed="true">先天 · 伏羲</button>
+      <button id="bt-kw" aria-pressed="false">后天 · 文王</button>
+    </div>
+    <button class="divine-btn" id="bt-div" aria-pressed="false">起卦</button>
+  </div>
+</header>
+<div class="hint" id="hint">拖动旋转 · 滚轮缩放 · 点卦观象</div>
+
+<footer>
+  <div class="caption" id="caption"><q></q><div></div></div>
+  <nav class="steps" aria-label="生成次第">
+    <button data-s="0"><i></i>太极</button><span class="bar"></span>
+    <button data-s="1"><i></i>两仪</button><span class="bar"></span>
+    <button data-s="2"><i></i>四象</button><span class="bar"></span>
+    <button data-s="3"><i></i>八卦</button><span class="bar"></span>
+    <button data-s="4"><i></i>六十四</button>
+  </nav>
+</footer>
+
+<aside id="panel" aria-live="polite">
+  <button id="close" aria-label="关闭">×</button>
+  <div id="p-body"></div>
+</aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script>
+(function(){
+/* =========================================================
+   数据
+   ========================================================= */
+const G = {
+  乾:{l:[1,1,1],u:"☰",nat:"天",xing:"健",fam:"父",dir:"西北",wx:"金",body:"首",ani:"马",fx:1,lo:6,
+      q:"天行健，君子以自强不息。",r:"三爻皆阳，纯粹的创生之力。它不停歇，也不依附任何事物，是「开始」本身。"},
+  兑:{l:[1,1,0],u:"☱",nat:"泽",xing:"说",fam:"少女",dir:"西",wx:"金",body:"口",ani:"羊",fx:2,lo:7,
+      q:"丽泽，兑；君子以朋友讲习。",r:"两阳在下而一阴在上，内里刚实，外表柔和。如湖泽映物，主喜悦与交流。"},
+  离:{l:[1,0,1],u:"☲",nat:"火",xing:"丽",fam:"中女",dir:"南",wx:"火",body:"目",ani:"雉",fx:3,lo:9,
+      q:"明两作，离；大人以继明照于四方。",r:"中虚而外明。火不能独存，必附着于物才能燃烧，所以「丽」是依附，也是光明。"},
+  震:{l:[1,0,0],u:"☳",nat:"雷",xing:"动",fam:"长男",dir:"东",wx:"木",body:"足",ani:"龙",fx:4,lo:3,
+      q:"洊雷，震；君子以恐惧修省。",r:"一阳生于二阴之下，是沉寂中第一次萌动。春雷惊蛰，万物由此而起。"},
+  巽:{l:[0,1,1],u:"☴",nat:"风",xing:"入",fam:"长女",dir:"东南",wx:"木",body:"股",ani:"鸡",fx:5,lo:4,
+      q:"随风，巽；君子以申命行事。",r:"一阴伏于二阳之下。风无孔不入，以柔顺渗透，不靠力量而靠持续。"},
+  坎:{l:[0,1,0],u:"☵",nat:"水",xing:"陷",fam:"中男",dir:"北",wx:"水",body:"耳",ani:"豕",fx:6,lo:1,
+      q:"水洊至，习坎；君子以常德行，习教事。",r:"一阳陷于二阴之中，外柔内刚。水行险而不失其信，困境中守住中心。"},
+  艮:{l:[0,0,1],u:"☶",nat:"山",xing:"止",fam:"少男",dir:"东北",wx:"土",body:"手",ani:"狗",fx:7,lo:8,
+      q:"兼山，艮；君子以思不出其位。",r:"一阳止于二阴之上。山不移动，知止而后有定，是行动之后的安顿。"},
+  坤:{l:[0,0,0],u:"☷",nat:"地",xing:"顺",fam:"母",dir:"西南",wx:"土",body:"腹",ani:"牛",fx:8,lo:2,
+      q:"地势坤，君子以厚德载物。",r:"三爻皆阴，纯粹的承载与成就。乾始之，坤成之，没有坤，创生便无处落地。"}
+};
+const TRI = ["乾","兑","离","震","巽","坎","艮","坤"];
+const FUXI = ["乾","巽","坎","艮","坤","震","离","兑"];
+const KINGWEN = ["离","坤","兑","乾","坎","艮","震","巽"];
+// 上卦 → 依下卦 乾兑离震巽坎艮坤 排列：卦名,文王序
+const HX = {
+ 乾:"乾为天,1|天泽履,10|天火同人,13|天雷无妄,25|天风姤,44|天水讼,6|天山遁,33|天地否,12",
+ 兑:"泽天夬,43|兑为泽,58|泽火革,49|泽雷随,17|泽风大过,28|泽水困,47|泽山咸,31|泽地萃,45",
+ 离:"火天大有,14|火泽睽,38|离为火,30|火雷噬嗑,21|火风鼎,50|火水未济,64|火山旅,56|火地晋,35",
+ 震:"雷天大壮,34|雷泽归妹,54|雷火丰,55|震为雷,51|雷风恒,32|雷水解,40|雷山小过,62|雷地豫,16",
+ 巽:"风天小畜,9|风泽中孚,61|风火家人,37|风雷益,42|巽为风,57|风水涣,59|风山渐,53|风地观,20",
+ 坎:"水天需,5|水泽节,60|水火既济,63|水雷屯,3|水风井,48|坎为水,29|水山蹇,39|水地比,8",
+ 艮:"山天大畜,26|山泽损,41|山火贲,22|山雷颐,27|山风蛊,18|山水蒙,4|艮为山,52|山地剥,23",
+ 坤:"地天泰,11|地泽临,19|地火明夷,36|地雷复,24|地风升,46|地水师,7|地山谦,15|坤为地,2"
+};
+// 伏羲先天次序：下卦变得慢、上卦变得快；圆图乾起南方，左半逆行至复，右半自姤顺行至坤
+const HEX = [], HEXKEY = {};
+for(let f=0; f<64; f++){
+  const lo = TRI[Math.floor(f/8)], up = TRI[f%8];
+  const [full, kw] = HX[up].split("|")[TRI.indexOf(lo)].split(",");
+  const lines = G[lo].l.concat(G[up].l);
+  HEX.push({f, lo, up, full, kw:+kw, lines,
+    name: full.includes("为") ? full[0] : full.slice(2),
+    a: f<32 ? Math.PI/2 + (f+0.5)*Math.PI/32 : Math.PI/2 - (f-32+0.5)*Math.PI/32});
+  HEXKEY[lines.join("")] = f;
+}
+const uniHex = h => String.fromCodePoint(0x4DC0 + h.kw - 1);
+const yaoTitle = (i,b) => { const n = b ? "九" : "六"; return i===0 ? "初"+n : i===5 ? "上"+n : n+"二三四五"[i-1]; };
+const BIGRAM = {"1":"阳","0":"阴","11":"太阳","10":"少阴","01":"少阳","00":"太阴"};
+const STAGES = [
+  ["易有太极","阴阳未分，动静之机已含其中。万物都从这一个整体开始。"],
+  ["是生两仪","一画开天：阳爻与阴爻，世界第一次有了分别。"],
+  ["两仪生四象","每一仪之上再加一画，成太阳、少阴、少阳、太阴，对应四时。"],
+  ["四象生八卦","三画成卦：天、地、雷、风、水、火、山、泽，万象由此而备。"],
+  ["因而重之","八卦两两相叠成六十四卦。外环即伏羲圆图：乾起于南，坤终于北。"]
+];
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const lerp = (a,b,t) => a+(b-a)*t;
+const clamp = (x,a=0,b=1) => Math.max(a,Math.min(b,x));
+const approach = (a,b,s) => a + clamp(b-a,-s,s);
+const ease = x => x<.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2;
+const rnd = () => { const u = new Uint32Array(1); crypto.getRandomValues(u); return u[0]/4294967296; };
+
+/* =========================================================
+   渲染器与后期
+   ========================================================= */
+const canvas = document.getElementById("c");
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+const PR = Math.min(devicePixelRatio, 2);
+renderer.setPixelRatio(PR);
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x0b0c0f, 0.009);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 400);
+camera.position.set(0, 0, 70);
+
+scene.add(new THREE.AmbientLight(0xfff2dc, 0.45));
+const key = new THREE.DirectionalLight(0xffe7b8, 1.25); key.position.set(8,14,18); scene.add(key);
+const rim = new THREE.PointLight(0xc2412d, 1.8, 90); rim.position.set(-16,-12,8); scene.add(rim);
+const fill = new THREE.PointLight(0x6b7da8, 0.7, 90); fill.position.set(16,8,-8); scene.add(fill);
+
+/* 水墨背景：全屏 fbm 墨烟 + 阶段切换时的墨晕涟漪 */
+const bgMat = new THREE.ShaderMaterial({
+  depthTest:false, depthWrite:false, fog:false,
+  uniforms:{uTime:{value:0}, uAspect:{value:1}, uPulse:{value:99}, uDim:{value:0}},
+  vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.9999,1.0); }`,
+  fragmentShader:`
+    uniform float uTime,uAspect,uPulse,uDim; varying vec2 vUv;
+    float h(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+    float n(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f);
+      return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y); }
+    float fbm(vec2 p){ float v=0.,a=.5; for(int i=0;i<5;i++){ v+=a*n(p); p=p*2.03+vec2(1.7,9.2); a*=.5; } return v; }
+    void main(){
+      vec2 p=(vUv-.5)*vec2(uAspect,1.)*2.4;
+      float a=fbm(p*.8+vec2(uTime*.018,-uTime*.012));
+      float b=fbm(p*1.7+a*1.6-vec2(uTime*.03,0.));
+      float ink=smoothstep(.38,.92,b);
+      vec3 base=vec3(.043,.047,.059), smoke=vec3(.12,.125,.145);
+      vec3 col=mix(base,smoke,ink*.85);
+      col+=vec3(.30,.06,.04)*smoothstep(.72,.98,a)*.22;
+      float d=length(p), R=uPulse*3.2;
+      float ring=exp(-pow((d-R)*1.8,2.))*exp(-uPulse*.9);
+      col+=vec3(.84,.70,.42)*ring*(.05+.18*ink);
+      col*=mix(1.,.55,uDim);
+      gl_FragColor=vec4(col,1.);
+    }`
+});
+const bg = new THREE.Mesh(new THREE.PlaneGeometry(2,2), bgMat);
+bg.frustumCulled = false; bg.renderOrder = -10; scene.add(bg);
+
+let composer = null, bloom = null, grade = null;
+if(THREE.EffectComposer && THREE.UnrealBloomPass && THREE.ShaderPass){
+  composer = new THREE.EffectComposer(renderer);
+  composer.setPixelRatio(PR);
+  composer.addPass(new THREE.RenderPass(scene, camera));
+  bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256,256), 0.8, 0.55, 0.6);
+  composer.addPass(bloom);
+  grade = new THREE.ShaderPass({
+    uniforms:{tDiffuse:{value:null}, uTime:{value:0}, uRes:{value:new THREE.Vector2(1,1)}},
+    vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+    fragmentShader:`
+      uniform sampler2D tDiffuse; uniform float uTime; uniform vec2 uRes; varying vec2 vUv;
+      float h(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+      void main(){
+        vec3 c=texture2D(tDiffuse,vUv).rgb;
+        vec2 q=vUv-.5; q.x*=uRes.x/uRes.y;
+        c*=mix(.42,1.,smoothstep(1.15,.25,length(q)));
+        c+=(h(vUv*uRes+fract(uTime)*91.)-.5)*.028;
+        c=pow(max(c,0.),vec3(.94)); c.r*=1.02;
+        gl_FragColor=vec4(c,1.);
+      }`
+  });
+  composer.addPass(grade);
+}
+
+/* =========================================================
+   卦盘
+   ========================================================= */
+const world = new THREE.Group(); scene.add(world);
+
+{ // 金色尘埃
+  const n = 1400, pos = new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    const r = 26 + Math.random()*60, t = Math.random()*Math.PI*2, p = Math.acos(2*Math.random()-1);
+    pos[i*3]=r*Math.sin(p)*Math.cos(t); pos[i*3+1]=r*Math.sin(p)*Math.sin(t); pos[i*3+2]=r*Math.cos(p);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos,3));
+  var dust = new THREE.Points(g, new THREE.PointsMaterial({color:0xd6b36a,size:0.12,transparent:true,opacity:.5,depthWrite:false}));
+  scene.add(dust);
+}
+
+/* 太极 */
+const taiji = new THREE.Group(); world.add(taiji);
+{
+  const R = 3, s = new THREE.Shape();
+  s.moveTo(0,R);
+  s.absarc(0,0,R,Math.PI/2,-Math.PI/2,true);
+  s.absarc(0,-R/2,R/2,-Math.PI/2,Math.PI/2,true);
+  s.absarc(0,R/2,R/2,-Math.PI/2,Math.PI/2,false);
+  const geo = new THREE.ExtrudeGeometry(s,{depth:0.5,bevelEnabled:true,bevelThickness:0.12,bevelSize:0.06,bevelSegments:4,curveSegments:64});
+  geo.translate(0,0,-0.25);
+  const yangM = new THREE.MeshStandardMaterial({color:0xe2dac6,roughness:.4,metalness:.1});
+  const yinM = new THREE.MeshStandardMaterial({color:0x17181d,roughness:.25,metalness:.6});
+  const yang = new THREE.Mesh(geo, yangM), yin = new THREE.Mesh(geo, yinM);
+  yin.rotation.z = Math.PI;
+  const eye = new THREE.CylinderGeometry(R*0.13,R*0.13,0.9,40); eye.rotateX(Math.PI/2);
+  const e1 = new THREE.Mesh(eye, yinM); e1.position.y = -R/2;
+  const e2 = new THREE.Mesh(eye, yangM); e2.position.y = R/2;
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(R+0.25,0.06,12,160), new THREE.MeshStandardMaterial({color:0xd6b36a,metalness:.9,roughness:.25}));
+  taiji.add(yang, yin, e1, e2, ring);
+}
+
+/* 气流：绕太极螺旋内收的粒子 */
+const vortexMat = new THREE.ShaderMaterial({
+  transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, fog:false,
+  uniforms:{uTime:{value:0}, uInt:{value:.6}, uPix:{value:PR}, uCol:{value:new THREE.Color(0.95,0.82,0.55)}},
+  vertexShader:`
+    uniform float uTime,uInt,uPix; attribute float aR,aA,aH,aS,aSp; varying float vA;
+    void main(){
+      float life=fract(aR+uTime*.06*aSp);
+      float r=mix(6.8,3.35,life);
+      float ang=aA-uTime*aSp*(2.2/r)-life*3.2;
+      vec3 p=vec3(cos(ang)*r,sin(ang)*r,aH*(1.-life)*1.4);
+      vec4 mv=modelViewMatrix*vec4(p,1.);
+      gl_Position=projectionMatrix*mv;
+      gl_PointSize=aS*uPix*(40./-mv.z);
+      vA=smoothstep(0.,.15,life)*smoothstep(1.,.7,life)*uInt;
+    }`,
+  fragmentShader:`
+    uniform vec3 uCol; varying float vA;
+    void main(){ float d=length(gl_PointCoord-.5); float a=smoothstep(.5,0.,d); gl_FragColor=vec4(uCol*a*vA,a*vA); }`
+});
+{
+  const n = 1800, g = new THREE.BufferGeometry();
+  const mk = f => { const a = new Float32Array(n); for(let i=0;i<n;i++) a[i]=f(); return a; };
+  g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(n*3),3));
+  g.setAttribute("aR", new THREE.BufferAttribute(mk(Math.random),1));
+  g.setAttribute("aA", new THREE.BufferAttribute(mk(()=>Math.random()*Math.PI*2),1));
+  g.setAttribute("aH", new THREE.BufferAttribute(mk(()=>(Math.random()-.5)*2),1));
+  g.setAttribute("aS", new THREE.BufferAttribute(mk(()=>.6+Math.random()*1.6),1));
+  g.setAttribute("aSp", new THREE.BufferAttribute(mk(()=>.6+Math.random()*.9),1));
+  const pts = new THREE.Points(g, vortexMat); pts.frustumCulled = false;
+  taiji.add(pts);
+}
+
+/* 刻度环 */
+{
+  const goldM = new THREE.MeshStandardMaterial({color:0xd6b36a,metalness:.85,roughness:.35,transparent:true,opacity:.5});
+  [[16.2,.03],[5.2,.02],[23.0,.025]].forEach(([r,t])=>world.add(new THREE.Mesh(new THREE.TorusGeometry(r,t,8,260), goldM)));
+  const tick = new THREE.BoxGeometry(0.05,0.5,0.05);
+  for(let i=0;i<24;i++){
+    const a = i/24*Math.PI*2, m = new THREE.Mesh(tick, goldM);
+    m.position.set(Math.cos(a)*16.2, Math.sin(a)*16.2, 0); m.rotation.z = a - Math.PI/2;
+    if(i%3===0) m.scale.y = 2;
+    world.add(m);
+  }
+}
+
+/* 八卦内环 */
+const R0 = 7.2, GAP = 1.15, LEN = 4.2, TH = 0.42;
+const trig = {}, pickables = [];
+const labelsEl = document.getElementById("labels");
+Object.keys(G).forEach(name=>{
+  const g = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({color:0xd6b36a,metalness:.75,roughness:.28,emissive:0xc2412d,emissiveIntensity:0});
+  const lines = [];
+  G[name].l.forEach((bit,i)=>{
+    const lg = new THREE.Group(); lg.position.y = i*GAP;
+    (bit ? [[0,LEN]] : [[-LEN*0.29,LEN*0.42],[LEN*0.29,LEN*0.42]]).forEach(([x,w])=>{
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w,TH,TH*1.6), mat);
+      m.position.x = x; m.userData = {name, idx:i};
+      lg.add(m); pickables.push(m);
+    });
+    lg.userData.s = 1; g.add(lg); lines.push(lg);
+  });
+  world.add(g);
+  const lbl = document.createElement("div"); lbl.className = "lbl"; labelsEl.appendChild(lbl);
+  trig[name] = {g, mat, lines, lbl, a:0, ta:0, lift:0};
+});
+
+/* 六十四卦外环（InstancedMesh：阳爻一段，阴爻两段） */
+const R64 = 18.6, GAP64 = 0.6, LEN64 = 1.25, TH64 = 0.2;
+const insts = [];
+HEX.forEach(h=>h.lines.forEach((b,i)=>{
+  if(b) insts.push({h:h.f,i,x:0,w:LEN64});
+  else { insts.push({h:h.f,i,x:-LEN64*0.3,w:LEN64*0.4}); insts.push({h:h.f,i,x:LEN64*0.3,w:LEN64*0.4}); }
+}));
+const ring64 = new THREE.InstancedMesh(new THREE.BoxGeometry(1,TH64,TH64*1.4),
+  new THREE.MeshStandardMaterial({color:0xffffff,metalness:.7,roughness:.32}), insts.length);
+ring64.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+ring64.frustumCulled = false;
+const gr = new Float32Array(insts.length);
+const hexLift = new Float32Array(64);
+const C_GOLD = new THREE.Color(0.80,0.66,0.40), C_HOT = new THREE.Color(1.0,0.88,0.62),
+      C_IVORY = new THREE.Color(0.97,0.93,0.85), C_CIN = new THREE.Color(0.9,0.3,0.18);
+insts.forEach((_,n)=>ring64.setColorAt(n, C_GOLD));
+world.add(ring64);
+const hexLbls = [0,1].map(()=>{ const d=document.createElement("div"); d.className="lbl hx"; labelsEl.appendChild(d); return d; });
+
+/* 方位 */
+const dirs = [["南",Math.PI/2],["西",0],["北",-Math.PI/2],["东",Math.PI]].map(([t,a])=>{
+  const d = document.createElement("div"); d.className="dir"; d.textContent=t; labelsEl.appendChild(d); return {d,a};
+});
+
+/* =========================================================
+   立体六爻（展开的大卦 / 起卦时逐爻生成）
+   ========================================================= */
+const big = new THREE.Group(); scene.add(big);
+const BLEN = 6.4, BGAP = 1.3, BTH = 0.62;
+const bigMat = new THREE.MeshStandardMaterial({color:0xd6b36a,metalness:.75,roughness:.25});
+const bigMove = new THREE.MeshStandardMaterial({color:0xe0b070,metalness:.6,roughness:.3,emissive:0xc2412d,emissiveIntensity:.75});
+const markMat = new THREE.MeshStandardMaterial({color:0xc2412d,emissive:0xc2412d,emissiveIntensity:1.3,metalness:.2,roughness:.5});
+const yangG = new THREE.BoxGeometry(BLEN,BTH,BTH*1.5), yinG = new THREE.BoxGeometry(BLEN*0.42,BTH,BTH*1.5);
+const slots = [];
+for(let i=0;i<6;i++){
+  const s = new THREE.Group();
+  const yang = new THREE.Mesh(yangG,bigMat), yl = new THREE.Mesh(yinG,bigMat), yr = new THREE.Mesh(yinG,bigMat);
+  yl.position.x = -BLEN*0.29; yr.position.x = BLEN*0.29;
+  const o = new THREE.Mesh(new THREE.TorusGeometry(0.34,0.07,10,40), markMat);
+  const x = new THREE.Group();
+  [1,-1].forEach(d=>{ const b = new THREE.Mesh(new THREE.BoxGeometry(0.85,0.13,0.13), markMat); b.rotation.z = d*Math.PI/4; x.add(b); });
+  o.position.x = x.position.x = BLEN/2 + 1.0;
+  s.add(yang,yl,yr,o,x);
+  s.userData = {yang,yl,yr,o,x,bit:1,orig:1,mark:null,p:0,tp:0,wait:0,f:0,tf:0,next:null,home:new THREE.Vector3(0,(i-2.5)*BGAP,0)};
+  s.visible = false; big.add(s); slots.push(s);
+}
+function applySlot(i){
+  const u = slots[i].userData;
+  u.yang.visible = !!u.bit; u.yl.visible = u.yr.visible = !u.bit;
+  u.yang.material = u.yl.material = u.yr.material = u.mark ? bigMove : bigMat;
+  u.o.visible = u.mark==="o"; u.x.visible = u.mark==="x";
+}
+function setSlot(i, bit, mark, wait){
+  const u = slots[i].userData;
+  Object.assign(u, {bit, orig:bit, mark, next:null, f:0, tf:0, p:0, tp:1, wait:wait||0});
+  applySlot(i);
+}
+function hideSlots(){ slots.forEach((s,i)=>{ s.userData.tp = 0; s.userData.wait = (5-i)*0.04; }); }
+
+/* =========================================================
+   铜钱（三钱法）
+   ========================================================= */
+const table = new THREE.Group(); scene.add(table);
+table.rotation.x = 0.85;
+{
+  const t = new THREE.Mesh(new THREE.TorusGeometry(5.4,0.03,8,200), new THREE.MeshStandardMaterial({color:0xc2412d,emissive:0xc2412d,emissiveIntensity:.6}));
+  t.rotation.x = Math.PI/2; table.add(t);
+}
+function coinCanvas(face){
+  const c = document.createElement("canvas"); c.width = c.height = 256; const x = c.getContext("2d");
+  const grd = x.createRadialGradient(100,90,20,128,128,130); grd.addColorStop(0,"#c9a464"); grd.addColorStop(1,"#6e5026");
+  x.fillStyle = grd; x.beginPath(); x.arc(128,128,126,0,Math.PI*2); x.fill();
+  x.strokeStyle = "#e6c682"; x.lineWidth = 10; x.beginPath(); x.arc(128,128,117,0,Math.PI*2); x.stroke();
+  x.lineWidth = 8; x.strokeRect(98,98,60,60);
+  if(face){
+    x.fillStyle = "#f0d79c"; x.textAlign = "center"; x.textBaseline = "middle";
+    x.font = '900 52px "Noto Serif SC","Songti SC","SimSun",serif';
+    x.fillText("开",128,60); x.fillText("元",128,198); x.fillText("通",197,130); x.fillText("宝",59,130);
+  }
+  x.clearRect(102,102,52,52);
+  return c;
+}
+const headTex = new THREE.CanvasTexture(coinCanvas(true)), backTex = new THREE.CanvasTexture(coinCanvas(false));
+if(document.fonts) document.fonts.load('900 52px "Noto Serif SC"',"开元通宝").then(()=>{
+  headTex.image = coinCanvas(true); headTex.needsUpdate = true;
+}).catch(()=>{});
+const coinMats = [
+  new THREE.MeshStandardMaterial({color:0x9a7740,metalness:.75,roughness:.4}),
+  new THREE.MeshStandardMaterial({map:headTex,alphaTest:.5,metalness:.55,roughness:.45}),
+  new THREE.MeshStandardMaterial({map:backTex,alphaTest:.5,metalness:.55,roughness:.45})
+];
+const COIN_T = 0.16;
+const coinGeo = new THREE.CylinderGeometry(1.1,1.1,COIN_T,64);
+const coins = [0,1,2].map(i=>{
+  const g = new THREE.Group(), m = new THREE.Mesh(coinGeo, coinMats);
+  m.rotation.y = Math.PI/2; g.add(m); table.add(g);
+  const c = {g, x:(i-1)*2.7, z:0, y:COIN_T/2, vy:0, rot:0, w:0, face:1, state:"rest", bounce:0, target:0};
+  g.position.set(c.x, c.y, 0);
+  return c;
+});
+function coinValue(c){ return c.face ? 2 : 3; }   // 字面 2，背面 3
+
+/* =========================================================
+   状态
+   ========================================================= */
+let layout = "fx", stage = 4, mode = "explore";
+let selTri = null, hovTri = null, selHex = null, hovHex = null, bigSrc = null;
+let stageT0 = 0, pulseT0 = -99;
+let div = null;
+const clock = new THREE.Clock();
+const panel = document.getElementById("panel"), body = document.getElementById("p-body");
+
+function setLayout(L, instant){
+  layout = L;
+  (L==="fx" ? FUXI : KINGWEN).forEach((n,k)=>{
+    const t = trig[n]; let ta = Math.PI/2 - k*Math.PI/4;
+    while(ta - t.a > Math.PI) ta -= Math.PI*2;
+    while(ta - t.a < -Math.PI) ta += Math.PI*2;
+    t.ta = ta; if(instant) t.a = ta;
+  });
+  document.getElementById("bt-fx").setAttribute("aria-pressed", L==="fx");
+  document.getElementById("bt-kw").setAttribute("aria-pressed", L==="kw");
+}
+function setStage(s){
+  if(s===stage && stageT0) return;
+  stage = s; stageT0 = clock.elapsedTime; pulseT0 = clock.elapsedTime;
+  document.querySelectorAll(".steps button").forEach(b=>{
+    if(+b.dataset.s===s) b.setAttribute("aria-current","step"); else b.removeAttribute("aria-current");
+  });
+  const cap = document.getElementById("caption");
+  cap.querySelector("q").textContent = STAGES[s][0];
+  cap.querySelector("div").textContent = STAGES[s][1];
+  if(s<4 && (mode!=="explore")) closeAll();
+  if(s<3) { selTri = null; if(panel.classList.contains("open")) closeAll(); }
+}
+function labelText(n){
+  if(stage>=3) return n + "<small>" + G[n].nat + "</small>";
+  if(stage===0) return "";
+  return BIGRAM[G[n].l.slice(0,stage).join("")];
+}
+function openPanel(html){ body.innerHTML = html; panel.classList.add("open"); panel.scrollTop = 0; document.getElementById("hint").style.opacity = 0; }
+function closeAll(){
+  if(mode==="hex" || mode==="divine") hideSlots();
+  mode = "explore"; selTri = null; selHex = null;
+  panel.classList.remove("open");
+  document.getElementById("bt-div").setAttribute("aria-pressed","false");
+}
+
+/* ---- 面板：八卦 ---- */
+function showTri(n){
+  if(mode!=="explore") closeAll();
+  selTri = n;
+  const d = G[n];
+  const rows = [["家人",d.fam],["后天方位",d.dir],["五行",d.wx],["人身",d.body],["动物",d.ani],["先天数",d.fx],["洛书数",d.lo]];
+  openPanel(`<div class="p-kicker">八经卦</div>
+    <div class="p-head"><div class="p-name">${n}</div><div class="p-sym">${d.u}</div></div>
+    <div class="p-nat">象 ${d.nat} · 性 ${d.xing}</div>
+    <div class="p-quote">${d.q}</div><div class="p-src">《象传》</div>
+    <div class="p-read">${d.r}</div>
+    <dl>${rows.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join("")}</dl>`);
+}
+
+/* ---- 面板：六十四卦 ---- */
+function relRow(label, lines, note){
+  const f = HEXKEY[lines.join("")], h = HEX[f];
+  return `<dt>${label}</dt><dd><button class="chip" data-hex="${f}">${uniHex(h)} ${h.name}</button><small>${note}</small></dd>`;
+}
+function showHex(f){
+  const prev = mode;
+  if(mode==="divine"){ mode = "explore"; document.getElementById("bt-div").setAttribute("aria-pressed","false"); }
+  selTri = null; selHex = f; mode = "hex"; bigSrc = {type:"hex", f};
+  const h = HEX[f], L = h.lines, lo = G[h.lo], up = G[h.up];
+  L.forEach((b,i)=>setSlot(i, b, null, i*0.07));
+  const cuo = L.map(b=>1-b), zong = L.slice().reverse(), hu = [L[1],L[2],L[3],L[2],L[3],L[4]];
+  openPanel(`<div class="p-kicker">第 ${h.kw} 卦 · 文王序</div>
+    <div class="p-head"><div class="p-name">${h.name}</div><div class="p-sym">${uniHex(h)}</div></div>
+    <div class="p-nat">${h.full} · 上${up.nat}下${lo.nat}</div>
+    <div class="p-read">${lo.nat}在下，${up.nat}在上：<em>内${lo.xing}而外${up.xing}</em>。下卦为内、为体，上卦为外、为用；
+      读一卦，先看这两种性情如何相遇。</div>
+    <dl>
+      <dt>上卦</dt><dd>${up.u} ${h.up} · ${up.nat}</dd>
+      <dt>下卦</dt><dd>${lo.u} ${h.lo} · ${lo.nat}</dd>
+      <dt>先天序</dt><dd>${f+1} / 64</dd>
+      <dt>爻题</dt><dd>${L.map((b,i)=>yaoTitle(i,b)).reverse().join(" · ")}</dd>
+    </dl>
+    <dl>
+      ${relRow("错卦",cuo,"六爻皆反")}
+      ${relRow("综卦",zong,"上下颠倒")}
+      ${relRow("互卦",hu,"取二至五爻")}
+    </dl>`);
+}
+
+/* ---- 面板：起卦 ---- */
+const YAO_NAME = {6:"老阴",7:"少阳",8:"少阴",9:"老阳"};
+function resetDivine(){ div = {lines:[], last:null, tossing:false, done:false, bian:false, ben:null, bianF:null}; hideSlots(); }
+function enterDivine(){
+  if(mode==="hex") hideSlots();
+  selTri = null; selHex = null;
+  if(stage!==4) setStage(4);
+  mode = "divine"; bigSrc = {type:"coins"};
+  document.getElementById("bt-div").setAttribute("aria-pressed","true");
+  if(!div) resetDivine();
+  else div.lines.forEach((v,i)=>{
+    const b = (v===7||v===9)?1:0;
+    setSlot(i, b, v===9?"o":v===6?"x":null, i*0.06);
+    if(div.bian && (v===6||v===9)){ const u=slots[i].userData; u.next=1-b; u.tf=1; }
+  });
+  renderDivine();
+}
+function renderDivine(){
+  const n = div.lines.length;
+  const rows = [5,4,3,2,1,0].map(i=>{
+    const v = div.lines[i];
+    if(v===undefined) return `<li><span class="t">${["初","二","三","四","五","上"][i]}爻</span><span class="gl empty"><i></i></span><span></span></li>`;
+    const b = (v===7||v===9)?1:0, mv = v===6||v===9;
+    return `<li class="on${mv?" mv":""}"><span class="t">${yaoTitle(i,b)}</span><span class="gl">${b?"<i></i>":"<i></i><i></i>"}</span>
+      <span class="v">${v} · ${YAO_NAME[v]}${mv?(b?" ○":" ×"):""}</span></li>`;
+  }).join("");
+  let res = "";
+  if(div.done){
+    const ben = HEX[div.ben];
+    const moving = div.lines.map((v,i)=>v===6||v===9 ? yaoTitle(i,v===9) : null).filter(Boolean);
+    res = `<div class="res"><button class="chip" data-hex="${div.ben}">本卦<b>${ben.name}</b></button>`;
+    if(div.bianF!==null){
+      res += `<span>→</span><button class="chip" data-hex="${div.bianF}">变卦<b>${HEX[div.bianF].name}</b></button></div>
+        <p class="p-note">动爻：${moving.join("、")}。本卦是当下的处境，变卦是事情的走向。</p>
+        <button class="toss ghost" id="flip">${div.bian?"看本卦":"看变卦"}</button>`;
+    } else res += `</div><p class="p-note">六爻皆静，无变卦。以本卦卦辞为断。</p>`;
+  }
+  const last = div.last ? `<p class="p-note">本次：${div.last.map(c=>c?"字":"背").join(" ")} = ${div.last.reduce((s,c)=>s+(c?2:3),0)}</p>` : "";
+  openPanel(`<div class="p-kicker">起卦 · 三钱法</div>
+    <h2 class="p-title">掷钱六次，自下而上成卦</h2>
+    <button class="toss" id="toss" ${div.tossing?"disabled":""}>${div.done?"重新起卦":div.tossing?"铜钱落定中…":`掷钱 · 第 ${n+1} / 6 次`}</button>
+    ${last}
+    <p class="p-note">背面计 3，字面计 2。三钱之和：6 老阴、7 少阳、8 少阴、9 老阳；老阴老阳为动爻，会变。</p>
+    <ol class="yao">${rows}</ol>
+    ${res}`);
+}
+function toss(){
+  if(!div || div.tossing) return;
+  if(div.done){ resetDivine(); renderDivine(); return; }
+  div.tossing = true; pulseT0 = clock.elapsedTime;
+  coins.forEach((c,i)=>{
+    Object.assign(c, {state:"air", bounce:0, face: rnd()<.5 ? 1 : 0,
+      vy:16+rnd()*5, w:(14+rnd()*9)*(rnd()<.5?-1:1),
+      tx:(i-1)*2.7+(rnd()-.5)*0.8, tz:(rnd()-.5)*1.6});
+  });
+  renderDivine();
+}
+function resolveToss(){
+  const v = coins.reduce((s,c)=>s+coinValue(c),0);
+  const i = div.lines.length;
+  div.lines.push(v); div.last = coins.map(c=>c.face); div.tossing = false;
+  setSlot(i, (v===7||v===9)?1:0, v===9?"o":v===6?"x":null, 0);
+  if(div.lines.length===6){
+    div.done = true;
+    const ben = div.lines.map(v=>(v===7||v===9)?1:0);
+    div.ben = HEXKEY[ben.join("")];
+    div.bianF = div.lines.some(v=>v===6||v===9) ? HEXKEY[div.lines.map((v,k)=>v===6?1:v===9?0:ben[k]).join("")] : null;
+    pulseT0 = clock.elapsedTime;
+  }
+  renderDivine();
+}
+function flipBian(){
+  div.bian = !div.bian;
+  div.lines.forEach((v,i)=>{
+    if(v!==6 && v!==9) return;
+    const u = slots[i].userData, b = v===9?1:0;
+    u.next = div.bian ? 1-b : b; u.tf = div.bian ? 1 : 0;
+  });
+  renderDivine();
+}
+
+/* ---- 事件 ---- */
+document.getElementById("close").onclick = closeAll;
+document.getElementById("bt-fx").onclick = ()=>setLayout("fx");
+document.getElementById("bt-kw").onclick = ()=>setLayout("kw");
+document.getElementById("bt-div").onclick = ()=>{ mode==="divine" ? closeAll() : enterDivine(); };
+document.querySelectorAll(".steps button").forEach(b=>b.onclick=()=>setStage(+b.dataset.s));
+panel.addEventListener("click", e=>{
+  const hb = e.target.closest("[data-hex]");
+  if(hb){ showHex(+hb.dataset.hex); return; }
+  if(e.target.closest("#toss")) toss();
+  if(e.target.closest("#flip")) flipBian();
+});
+addEventListener("keydown", e=>{
+  if(e.key==="Escape") closeAll();
+  if(e.code==="Space" && mode==="divine" && !e.target.closest("button")){ e.preventDefault(); toss(); }
+});
+
+let rotX = -0.35, rotY = 0, vX = 0, vY = 0, dragging = false, moved = 0, px = 0, py = 0, zoom = 70;
+canvas.addEventListener("pointerdown",e=>{dragging=true;moved=0;px=e.clientX;py=e.clientY;canvas.setPointerCapture(e.pointerId);canvas.classList.add("drag");});
+canvas.addEventListener("pointermove",e=>{
+  if(dragging){
+    const dx=e.clientX-px, dy=e.clientY-py; px=e.clientX; py=e.clientY; moved+=Math.abs(dx)+Math.abs(dy);
+    vY = dx*0.005; vX = dy*0.005; rotY += vY; rotX = clamp(rotX+vX, -1.3, 1.0);
+  } else hover(e);
+});
+canvas.addEventListener("pointerup",e=>{dragging=false;canvas.classList.remove("drag"); if(moved<6) click(e);});
+canvas.addEventListener("wheel",e=>{e.preventDefault(); zoom = clamp(zoom + e.deltaY*0.04, 26, 110);},{passive:false});
+
+const ray = new THREE.Raycaster(), mv = new THREE.Vector2();
+function pick(e){
+  mv.set((e.clientX/innerWidth)*2-1, -(e.clientY/innerHeight)*2+1);
+  ray.setFromCamera(mv, camera);
+  const objs = pickables.filter(m=>m.userData.idx < Math.min(stage,3));
+  if(stage===4) objs.push(ring64);
+  for(const h of ray.intersectObjects(objs,false)){
+    if(h.object===ring64){ if(gr[h.instanceId]>0.5) return {type:"hex", f:insts[h.instanceId].h}; }
+    else return {type:"tri", n:h.object.userData.name};
+  }
+  return null;
+}
+function hover(e){
+  hovHex = hovTri = null;
+  if(mode!=="divine" && stage>=3){
+    const p = pick(e);
+    if(p && p.type==="hex") hovHex = p.f; else if(p) hovTri = p.n;
+  }
+  canvas.style.cursor = (hovHex!==null || hovTri) ? "pointer" : "";
+}
+function click(e){
+  if(mode==="divine" || stage<3) return;
+  const p = pick(e);
+  if(!p) return closeAll();
+  if(p.type==="hex") p.f===selHex ? closeAll() : showHex(p.f);
+  else p.n===selTri ? closeAll() : showTri(p.n);
+}
+
+/* ---- 尺寸 ---- */
+let W = 1, H = 1, fit = 1;
+function resize(){
+  W = innerWidth; H = innerHeight;
+  renderer.setSize(W,H,false);
+  if(composer){ composer.setSize(W,H); grade.uniforms.uRes.value.set(W*PR,H*PR); }
+  fit = W/H < 0.8 ? 1.7 : W/H < 1.2 ? 1.25 : 1;
+  bgMat.uniforms.uAspect.value = W/H;
+}
+addEventListener("resize", resize); resize();
+
+/* =========================================================
+   主循环
+   ========================================================= */
+setLayout("fx", true); setStage(4);
+const v3 = new THREE.Vector3(), dummy = new THREE.Object3D(), col = new THREE.Color();
+let offX = 0, offY = 0;
+const place = (el, v) => { el.style.transform = `translate(${(v.x*0.5+0.5)*W}px,${(-v.y*0.5+0.5)*H}px) translate(-50%,-50%)`; };
+function ringLinePoint(f, i, out){
+  const h = HEX[f], r = R64 + i*GAP64 + hexLift[f]*0.8;
+  return out.set(Math.cos(h.a)*r, Math.sin(h.a)*r, hexLift[f]*0.8).applyMatrix4(world.matrixWorld);
+}
+
+function tick(){
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+  const k = 1 - Math.pow(0.002, dt);
+  const focus = mode!=="explore";
+
+  /* 相机与视口偏移（面板打开时把画面中心让出来） */
+  const open = panel.classList.contains("open"), mobile = W<=640;
+  offX = lerp(offX, open && !mobile ? 320 : 0, k);
+  offY = lerp(offY, open && mobile ? panel.offsetHeight*0.9 : 0, k);
+  camera.aspect = (W+offX)/(H+offY);
+  if(offX>0.5 || offY>0.5) camera.setViewOffset(W+offX, H+offY, offX, offY, W, H); else camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+  camera.position.z = lerp(camera.position.z, (focus ? 46 : zoom)*fit, k);
+
+  if(!dragging){ vX*=0.92; vY*=0.92; rotY+=vY; rotX=clamp(rotX+vX,-1.3,1.0); if(!reduce) rotY += Math.sin(t*0.15)*0.0006; }
+  world.rotation.x = rotX; world.rotation.y = rotY;
+  world.position.z = lerp(world.position.z, focus ? -24 : 0, k);
+  world.updateMatrixWorld();
+
+  /* 太极与气流 */
+  taiji.scale.setScalar(lerp(taiji.scale.x, stage===0 ? 1.9 : 1, k));
+  taiji.rotation.z -= dt * (reduce ? 0.05 : stage===0 ? 0.35 : div && div.tossing ? 0.9 : 0.18);
+  taiji.position.z = Math.sin(t*0.8)*0.15;
+  vortexMat.uniforms.uTime.value = t;
+  vortexMat.uniforms.uInt.value = lerp(vortexMat.uniforms.uInt.value, stage===0 ? 1.1 : div && div.tossing && mode==="divine" ? 1.4 : 0.55, k);
+
+  /* 八卦内环 */
+  Object.keys(trig).forEach(n=>{
+    const T = trig[n];
+    T.a = lerp(T.a, T.ta, k*0.8);
+    T.lift = lerp(T.lift, n===selTri ? 1.6 : n===hovTri ? 0.6 : 0, k);
+    const r = R0 + T.lift*0.6;
+    T.g.position.set(Math.cos(T.a)*r, Math.sin(T.a)*r, T.lift);
+    T.g.rotation.z = T.a - Math.PI/2;
+    T.mat.emissiveIntensity = lerp(T.mat.emissiveIntensity, n===selTri?0.55:n===hovTri?0.25:0, k);
+    T.lines.forEach((lg,i)=>{
+      lg.userData.s = lerp(lg.userData.s, i<Math.min(stage,3) ? 1 : 0.001, k*(0.6+i*0.1));
+      lg.scale.setScalar(lg.userData.s);
+    });
+    v3.set(Math.cos(T.a)*(R0+3.9+T.lift*0.6), Math.sin(T.a)*(R0+3.9+T.lift*0.6), T.lift).applyMatrix4(world.matrixWorld).project(camera);
+    const html = labelText(n);
+    if(T.lbl._h !== html){ T.lbl.innerHTML = html; T.lbl._h = html; }
+    T.lbl.classList.toggle("sel", n===selTri);
+    place(T.lbl, v3);
+    T.lbl.style.opacity = v3.z<1 && html && !focus ? 1 : 0;
+  });
+  dirs.forEach(D=>{
+    v3.set(Math.cos(D.a)*24.6, Math.sin(D.a)*24.6, 0).applyMatrix4(world.matrixWorld).project(camera);
+    place(D.d, v3); D.d.style.opacity = focus ? 0 : .85;
+  });
+
+  /* 六十四卦外环 */
+  const divBen = mode==="divine" && div && div.done ? div.ben : null;
+  const divBian = mode==="divine" && div && div.done ? div.bianF : null;
+  for(let f=0; f<64; f++){
+    const L = f===selHex ? 1.4 : f===hovHex ? 0.8 : (f===divBen || f===divBian) ? 1.2 : 0;
+    hexLift[f] = lerp(hexLift[f], L, k);
+  }
+  const showRing = stage===4;
+  for(let n=0; n<insts.length; n++){
+    const I = insts[n], h = HEX[I.h];
+    if(showRing){
+      const delay = (I.h<32 ? I.h : I.h-32)*0.035 + I.i*0.07;
+      gr[n] = ease(clamp((t - stageT0 - delay)/0.5));
+    } else gr[n] = lerp(gr[n], 0, k*1.5);
+    const ca = Math.cos(h.a), sa = Math.sin(h.a), r = R64 + I.i*GAP64 + hexLift[I.h]*0.8, s = Math.max(gr[n], 1e-4);
+    dummy.position.set(ca*r + sa*I.x, sa*r - ca*I.x, hexLift[I.h]*0.8);
+    dummy.rotation.set(0,0,h.a - Math.PI/2);
+    dummy.scale.set(I.w*s, s, s);
+    dummy.updateMatrix(); ring64.setMatrixAt(n, dummy.matrix);
+    ring64.setColorAt(n, I.h===divBian ? C_CIN : (I.h===selHex || I.h===divBen) ? C_IVORY : I.h===hovHex ? C_HOT : C_GOLD);
+  }
+  ring64.instanceMatrix.needsUpdate = true; ring64.instanceColor.needsUpdate = true;
+
+  /* 卦名标签 */
+  const tags = [];
+  if(mode==="explore" && hovHex!==null) tags.push(["",hovHex]);
+  if(divBen!==null){ tags.push(["本",divBen]); if(divBian!==null) tags.push(["变",divBian]); }
+  hexLbls.forEach((el,j)=>{
+    const tg = tags[j];
+    if(!tg){ el.style.opacity = 0; return; }
+    const html = (tg[0]?`<b>${tg[0]}</b>`:"") + HEX[tg[1]].name;
+    if(el._h!==html){ el.innerHTML = html; el._h = html; }
+    ringLinePoint(tg[1], 7.5, v3).project(camera); place(el, v3); el.style.opacity = 1;
+  });
+
+  /* 立体六爻 */
+  const div_ = mode==="divine";
+  big.position.lerp(v3.set(0, div_ ? 3.4 : 0, 6), k);
+  big.scale.setScalar(lerp(big.scale.x, div_ ? 0.72 : 1, k));
+  big.rotation.y = reduce ? 0 : Math.sin(t*0.4)*0.22;
+  big.updateMatrixWorld();
+  slots.forEach((s,i)=>{
+    const u = s.userData;
+    if(u.wait>0) u.wait -= dt; else u.p = approach(u.p, u.tp, dt*(u.tp ? 1.4 : 2.2));
+    if(u.p<=0.001 && u.tp===0){ s.visible = false; return; }
+    s.visible = true;
+    if(bigSrc && bigSrc.type==="hex") ringLinePoint(bigSrc.f, i, v3); else table.localToWorld(v3.set(0,1,0));
+    big.worldToLocal(v3);
+    const e = ease(u.p);
+    s.position.lerpVectors(v3, u.home, e);
+    s.scale.setScalar(lerp(0.18, 1, e));
+    s.rotation.z = (1-e)*(bigSrc && bigSrc.type==="hex" ? HEX[bigSrc.f].a - Math.PI/2 : 1.2);
+    if(u.f!==u.tf){
+      u.f = approach(u.f, u.tf, dt*2.4);
+      if(u.next!==null && ((u.tf===1 && u.f>0.5) || (u.tf===0 && u.f<0.5))){ u.bit = u.next; u.next = null; applySlot(i); }
+    }
+    s.rotation.x = u.f*Math.PI;
+  });
+
+  /* 铜钱 */
+  table.position.set(0, -6.2, 6);
+  const ts = lerp(table.scale.x, div_ ? 1 : 0.001, k);
+  table.scale.setScalar(ts); table.visible = ts>0.01;
+  let allRest = true;
+  coins.forEach(c=>{
+    if(c.state==="air"){
+      allRest = false;
+      c.vy += -50*dt; c.y += c.vy*dt; c.rot += c.w*dt;
+      c.x = lerp(c.x, c.tx, dt*2.5); c.z = lerp(c.z, c.tz, dt*2.5);
+      if(c.y <= COIN_T/2 && c.vy < 0){
+        c.y = COIN_T/2; c.vy = -c.vy*0.36; c.w *= 0.5; c.bounce++;
+        if(c.vy < 3 || c.bounce >= 3){
+          c.vy = 0; c.state = "settle";
+          const off = c.face ? 0 : Math.PI;
+          c.target = Math.round((c.rot - off)/(Math.PI*2))*Math.PI*2 + off;
+        }
+      }
+    } else if(c.state==="settle"){
+      c.rot = lerp(c.rot, c.target, k*1.4);
+      if(Math.abs(c.rot - c.target) < 0.01){ c.rot = c.target; c.state = "rest"; } else allRest = false;
+    }
+    c.g.position.set(c.x, c.y, c.z);
+    c.g.rotation.x = c.rot;
+  });
+  if(div && div.tossing && allRest) resolveToss();
+
+  /* 背景与后期 */
+  bgMat.uniforms.uTime.value = t;
+  bgMat.uniforms.uPulse.value = t - pulseT0;
+  bgMat.uniforms.uDim.value = lerp(bgMat.uniforms.uDim.value, focus ? 1 : 0, k);
+  dust.rotation.y += dt*0.01; dust.rotation.x += dt*0.004;
+
+  if(composer){ grade.uniforms.uTime.value = t; composer.render(); }
+  else renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+tick();
+})();
+</script>
+
+</body>
+</html>
