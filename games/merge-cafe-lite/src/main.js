@@ -68,15 +68,16 @@
     LY.W = W; LY.H = H; LY.portrait = H >= W * 1.05;
     const cs = getComputedStyle(document.documentElement);
     const safeT = parseFloat(cs.getPropertyValue('--sat')) || 0, safeB = parseFloat(cs.getPropertyValue('--sab')) || 0;
-    const hudH = 54 + safeT, navH = 60;
+    const hudH = 54 + safeT, navH = H >= W * 1.05 && H < 760 ? 54 : 60; // 矮屏（微信等内置浏览器）底栏收一点，高度让给棋盘
     if (LY.portrait) {
       const cw = Math.min(W - 16, 620), cx = (W - cw) / 2;
-      const gensH = Math.round(Math.min(84, Math.max(56, cw * 0.15)));
-      const ordersH = Math.round(Math.min(140, Math.max(92, cw * 0.22))); // 效果图订单卡约 0.21 屏宽，省下的高度给头图
+      // 2026-10-23 真机反馈（微信内置浏览器 430×738）：格子只有 41px、手指点着吃力。订单卡 / 生成器 / 头图按屏高收窄，高度全部让给棋盘
+      const gensH = Math.round(Math.min(84, Math.max(48, Math.min(cw * 0.15, H * 0.072))));
+      const ordersH = Math.round(Math.min(140, Math.max(78, Math.min(cw * 0.22, H * 0.115))));
       const stripBox = Math.floor(Math.min(46, (cw - 8 - 30) / 11)), stripH = stripBox + 8; // V1.1 ③ 回收桶 + 储物架一条
-      const fixed = hudH + ordersH + gensH + stripH + navH + safeB + gap * 6 + 8; // +8：生成器等级牌会往上探出卡片，别压到储物架
-      const sceneMin = Math.max(56, H * 0.1);
-      const bs = Math.floor(Math.min(cw * 0.86, H - fixed - sceneMin)); // 按 #38 效果图收窄，两侧放绿植
+      const fixed = hudH + ordersH + gensH + stripH + navH + safeB + gap * 6 + 6; // +6：生成器等级牌会往上探出卡片，别压到储物架
+      const sceneMin = 38; // 头图至少露出放静音按钮的一条；高屏多出来的高度仍然给头图
+      const bs = Math.floor(Math.min(cw * 0.94, H - fixed - sceneMin)); // 原来按 #38 效果图收到 0.86 屏宽放绿植；真机格子太小，放宽到 0.94
       const sceneH = H - fixed - bs; // 场景吃掉剩余高度
       let y = hudH + sceneH;
       LY.scene = { x: 0, y: 0, w: W, h: y };
@@ -85,7 +86,7 @@
       y += gap + ordersH + gap;
       LY.bs = bs; LY.bx = Math.round((W - bs) / 2); LY.by = Math.round(y);
       y += bs + gap;
-      LY.strip = buildStrip(cx, y, cw, 1, stripBox); y += stripH + gap + 8;
+      LY.strip = buildStrip(cx, y, cw, 1, stripBox); y += stripH + gap + 6;
       const gw = (cw - gap) / 2;
       LY.gens = C.genList.map((g, k) => ({ id: g.id, x: cx + k * (gw + gap), y, w: gw, h: gensH }));
       y += gensH + gap;
@@ -130,7 +131,7 @@
     LY.hudBottom = Math.max(...[...document.querySelectorAll('.pill')].map((e) => e.getBoundingClientRect().bottom)) + 4; LY.navH = navH;
     const pc = $('pill-coins').getBoundingClientRect(), ps = $('pill-stars').getBoundingClientRect();
     LY.coinTarget = [pc.left + 18, pc.top + pc.height / 2]; LY.starTarget = [ps.left + 18, ps.top + ps.height / 2];
-    const sd = $('snd').style; sd.right = (Math.max(8, (W - Math.min(W - 16, 620)) / 2) + 2) + 'px'; sd.top = (LY.hudBottom + 6) + 'px'; // 头图右上角，不压顶栏
+    const sd = $('snd').style; sd.right = (Math.max(8, (W - Math.min(W - 16, 620)) / 2) + 2) + 'px'; sd.top = (LY.hudBottom + 2) + 'px'; // 头图右上角，不压顶栏（矮屏头图只剩 38px，贴紧顶栏）
   }
   function placeNav(x, y, w, h) {
     const s = $('nav').style; s.left = x + 'px'; s.top = y + 'px'; s.width = w + 'px'; s.height = h + 'px';
