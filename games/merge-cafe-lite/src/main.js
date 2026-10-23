@@ -313,7 +313,8 @@
       if (!r.ok) { if (r.reason === 'coins') toast(L.t('ui.noCoins')); return; }
       spent(); cardPops.set(k, clock()); const R = LY.orders[k]; burst(R.x + R.w / 2, R.y + R.h / 2, '#f5c03a', 12);
     } });
-    modal(L.t('ui.howToMake', { item: target }), L.t('ui.chainTip'), btns, null, `<div class="chain">${steps}</div>`);
+    const o = k !== undefined ? S.orders[k] : null, back = o ? Core.orderEnergyBack(C, o) : 0; // V1.1 ②：高级单说明
+    modal(L.t('ui.howToMake', { item: target }), L.t('ui.chainTip') + (o && !Core.orderExpires(C, o) ? ' ' + L.t('ui.bigOrder', { n: back }) : ''), btns, null, `<div class="chain">${steps}</div>`);
   }
 
   /* 激励视频：offer 计展示、click 计点击（策划案 §11 主动点击率 ≥40% 的数据口径） */
@@ -671,6 +672,7 @@
       cardPops.set(k, clock() + 0.2);
       flyRewards(R.x + R.w / 2, R.y + R.h / 2, r.coins, r.stars + r.bonusStar);
       if (r.xp) floatText(R.x + R.w / 2, R.y - 4, '+' + r.xp + ' XP', '#2e9a5a');
+      if (r.energyBack) setTimeout(() => { bump('pill-energy'); hudCache = ''; floatText(R.x + R.w / 2, R.y - 22, '+' + r.energyBack + ' ⚡', '#c4851a'); toast(L.t('ui.energyBack', { n: r.energyBack })); }, 450);
       queueLevelUps(r.levelUps); Sfx.deliver();
       if (r.pay.perfect) { floatText(R.x + R.w / 2, R.y - 22, L.t('ui.perfect', { n: r.pay.perfect }), '#c4851a'); burst(R.x + R.w / 2, R.y + R.h / 2, '#ffd84a', 18); Sfx.chestOpen(); }
       for (const u of r.recipeUps) floatText(R.x + R.w * 0.62, R.y + R.h * 0.35, L.t('ui.recipeStar', { item: L.t(C.chains[u.chain].items[u.lvl - 1].name), n: u.stars }), '#d89a22');
@@ -1289,6 +1291,15 @@
     const pay = Core.orderCoins(C, S, o, now());
     cx += GL.text(String(pay.total), cx, by, { size: fs, weight: 900, fill: pay.total > pay.base ? '#2e9a5a' : '#3a2416', align: 'left' }) + 4;
     if (o.stars) { GL.img(Art.star(ic), cx + ic / 2, by, ic, ic); GL.text(String(o.stars), cx + ic + 1, by, { size: fs * 0.85, weight: 900, fill: '#3a2416', align: 'left' }); }
+    const back = Core.orderEnergyBack(C, o);
+    if (!Core.orderExpires(C, o)) { // V1.1 ②：高级单不限时，倒计时的位置改成"交齐返体力"
+      if (back && w > 90) {
+        const tw = GL.measure('+' + back, { size: fs * 0.9, weight: 900 });
+        GL.text('+' + back, x + w - pad * 1.8, by, { size: fs * 0.9, weight: 900, fill: '#2e9a5a', align: 'right' });
+        GL.img(Art.bolt(ic * 0.9), x + w - pad * 1.8 - tw - ic * 0.5, by, ic * 0.9, ic * 0.9);
+      }
+      GL.restore(); return;
+    }
     const left = o.needs.some((nd) => nd.done) ? null : o.expiresAt - now();
     if (left !== null && (k !== 0 || !Core.tutStep(C, S)) && w > 100) {
       const tw = GL.measure(mmss(left), { size: fs * 0.9, weight: 800 });

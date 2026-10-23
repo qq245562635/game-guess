@@ -194,5 +194,7 @@
   "ui.offlineCap": "Earnings cap at {h} hours. Come back sooner for more!",
   "ui.potPour": "Coffee pot poured in: +{n} energy!",
   "ui.potSaved": "Coffee pot: {n} energy saved",
-  "ui.potHint": "When energy is full, extra brews into your coffee pot (up to {n}) and pours in when you run out."
+  "ui.potHint": "When energy is full, extra brews into your coffee pot (up to {n}) and pours in when you run out.",
+  "ui.bigOrder": "Big order: no time limit, and +{n} energy back when served.",
+  "ui.energyBack": "Big order tip: +{n} energy!"
 }

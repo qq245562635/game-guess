@@ -661,10 +661,27 @@ with sync_playwright() as p:
     check('体力 0 点生成器：整壶倒进体力（+40 提示），照常出物品，壶清空、杯子隐藏', S(pg, 'energy') == 39 and S(pg, 'pot') == 0 and 'Coffee pot' in pg.inner_text('#toast')
           and not pg.is_visible('#energy-pot.on') and not pg.is_visible('#modal.show'), f"energy={S(pg, 'energy')} pot={S(pg, 'pot')} toast={pg.inner_text('#toast')!r} potEl={pg.is_visible('#energy-pot.on')} modal={pg.inner_text('#m-title') if pg.is_visible('#modal.show') else ''!r}")
     pg.evaluate("MCL.S.energy=0; MCL.S.energyTs=MCL.now()"); tap_gen(pg, GC); pg.wait_for_selector('#modal.show', timeout=3000)
-    check('壶也空了才弹体力见底，弹窗里说明咖啡壶（上限 60）', 'Out of Energy' in pg.inner_text('#modal') and 'coffee pot' in pg.inner_text('#m-body') and '60' in pg.inner_text('#m-body'), pg.inner_text('#m-body'))
+    check('壶也空了才弹体力见底，弹窗里说明咖啡壶（上限 40）', 'Out of Energy' in pg.inner_text('#modal') and 'coffee pot' in pg.inner_text('#m-body') and '40' in pg.inner_text('#m-body'), pg.inner_text('#m-body'))
     close_all(pg)
     pg.evaluate('MCL.S.energy=100; MCL.S.pot=0; MCL.S.energyTs=MCL.now(); MCL.save()'); skip_time(pg, 2 * 3600000); reload(pg)
-    check('满体力离开 2 小时：恢复不再浪费，壶存满 60，回来提示', S(pg, 'energy') == 100 and S(pg, 'pot') == 60 and '60' in pg.inner_text('#energy-pot'), f"energy={S(pg, 'energy')} pot={S(pg, 'pot')}")
+    check('满体力离开 2 小时：恢复不再浪费，壶存满 40，回来提示', S(pg, 'energy') == 100 and S(pg, 'pot') == 40 and '40' in pg.inner_text('#energy-pot'), f"energy={S(pg, 'energy')} pot={S(pg, 'pot')}")
+    ctx.close()
+
+    # ================= V1.1 ②：高级单小费回体力 + 不过期 =================
+    ctx = br.new_context(viewport={'width': 405, 'height': 720}, device_scale_factor=2)
+    pg = ctx.new_page(); watch(pg); boot(pg)
+    pg.evaluate("(()=>{const s=MCL.S; Core.skipTutorial(s); for(let i=0;i<49;i++) s.cells[i]=null; const t=MCL.now(); s.energy=50; s.energyTs=t;"
+      "s.orders[0]={uid:881,tid:'r_c8',needs:[{chain:'coffee',lvl:8,done:false}],coins:280,stars:1,rare:true,cust:0,start:t,expiresAt:t+60000};"
+      "s.orders[1]={uid:882,tid:'n_c3',needs:[{chain:'coffee',lvl:3,done:false}],coins:30,stars:0,rare:false,cust:1,start:t,expiresAt:t+60000}; s.cells[2]={k:'item',chain:'coffee',lvl:8};})()")
+    pg.wait_for_timeout(400); pg.screenshot(path=str(out / 'v11-big-order.png'))
+    pg.evaluate('MCL.save()'); skip_time(pg, 2 * 3600000); reload(pg); close_all(pg); settle_rewards(pg)  # 时间偏移刷新后才生效；收掉欢迎回来卡
+    check('V1.1 高级单：8 级单 2 小时后还在（不过期），普通单照常超时换掉', S(pg, 'orders[0].uid') == 881 and S(pg, 'orders[1].uid') != 882, f"{S(pg, 'orders[0].uid')} {S(pg, 'orders[1].uid')}")
+    ox, oy = order_xy(pg, 0); click(pg, ox, oy); pg.wait_for_selector('#modal.show', timeout=3000)
+    check('点高级单：合成路线弹窗写明不限时 + 交齐返 20 体力', 'no time limit' in pg.inner_text('#m-body') and '+20' in pg.inner_text('#m-body'), pg.inner_text('#m-body'))
+    close_all(pg)
+    e0 = S(pg, 'energy'); drag_to_order(pg, 2, 0); pg.wait_for_timeout(900)
+    check('交齐 8 级单：体力 +20、提示小费', S(pg, 'energy') - e0 == 20 and 'tip' in pg.inner_text('#toast'), f"+{S(pg, 'energy') - e0} toast={pg.inner_text('#toast')!r}")
+    close_all(pg); settle_rewards(pg)
     ctx.close()
 
     # ================= 多分辨率布局 =================

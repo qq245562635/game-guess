@@ -831,17 +831,17 @@ test('v8 存档迁移到 v9：补签到；读档时把上次存档时间记成 l
 
 /* ---------- V1.1 ①：备用咖啡壶 ---------- */
 const MIN2 = 120e3;
-test('咖啡壶：体力满了以后的自然恢复存进壶（上限 potMax=60），不再浪费', () => {
-  assert.strictEqual(Core.potMax(CN), 60);
+test('咖啡壶：体力满了以后的自然恢复存进壶（上限 potMax=40；V1.1 ② 加了小费回体力后从 60 调到 40），不再浪费', () => {
+  assert.strictEqual(Core.potMax(CN), 40);
   const s = fresh(); s.energy = 0; s.energyTs = T0; s.pot = 0;
   Core.settleEnergy(CN, s, T0 + 12 * 3600e3); // 离线 12 小时 = 360 点
-  assert.deepStrictEqual([s.energy, s.pot], [100, 60]);
+  assert.deepStrictEqual([s.energy, s.pot], [100, 40]);
   const t = fresh(); t.energy = 95; t.energyTs = T0; t.pot = 0;
   assert.strictEqual(Core.settleEnergy(CN, t, T0 + 8 * MIN2), 5); // 返回的是进体力的点数
   assert.deepStrictEqual([t.energy, t.pot], [100, 3]);
 });
 test('咖啡壶：体力和壶都满时停表；只有体力满时表照走、恢复进壶', () => {
-  const s = fresh(); s.energy = 100; s.pot = 60; s.energyTs = T0;
+  const s = fresh(); s.energy = 100; s.pot = 40; s.energyTs = T0;
   Core.settleEnergy(CN, s, T0 + 3600e3); assert.strictEqual(s.energyTs, T0 + 3600e3); assert.strictEqual(Core.energyNextIn(CN, s, T0 + 3600e3), 0);
   const t = fresh(); t.energy = 130; t.pot = 0; t.energyTs = T0; // 超上限（升级奖励等）时恢复也进壶
   Core.settleEnergy(CN, t, T0 + 3 * MIN2 + 1000); assert.deepStrictEqual([t.energy, t.pot], [130, 3]);
@@ -864,7 +864,35 @@ test('咖啡壶：potMax=0 时和原来完全一样（满体力停表、不存�
 test('咖啡壶：老存档没有 pot 字段读出来是空壶，越界的按上限截断；存档版本不变', () => {
   const s = fresh(); const o = JSON.parse(Core.serialize(s, T0)); delete o.pot;
   const back = Core.deserialize(CN, JSON.stringify(o), T0, lcg(1)); assert.strictEqual(back.pot, 0); assert.strictEqual(back.v, Core.SAVE_VERSION);
-  o.pot = 999; assert.strictEqual(Core.deserialize(CN, JSON.stringify(o), T0, lcg(1)).pot, 60);
+  o.pot = 999; assert.strictEqual(Core.deserialize(CN, JSON.stringify(o), T0, lcg(1)).pot, 40);
+});
+
+/* ---------- V1.1 ②：高级单小费回体力 + 不过期 ---------- */
+const mkOrder = (needs, t) => ({ uid: 880, tid: 'r_c8', needs: needs.map(([chain, lvl]) => ({ chain, lvl, done: false })), coins: 280, stars: 1, rare: true, cust: 0, start: t, expiresAt: t + 1000 });
+test('高级单：需求里最高 6 / 7 / 8 级返 5 / 10 / 20 体力，5 级及以下不返', () => {
+  const back = (needs) => Core.orderEnergyBack(CN, { needs: needs.map(([chain, lvl]) => ({ chain, lvl })) });
+  assert.deepStrictEqual([back([['coffee', 5]]), back([['coffee', 6]]), back([['coffee', 6], ['bake', 4]]), back([['bake', 7]]), back([['coffee', 8]])], [0, 5, 5, 10, 20]);
+});
+test('高级单：交齐时体力 +返还（不受上限限制），结果带 energyBack；部分交不返', () => {
+  const s = fresh(); clearBoard(s); s.energy = 100; s.energyTs = T0;
+  s.orders[0] = mkOrder([['coffee', 8], ['bake', 4]], T0);
+  put(s, 0, 0, 'coffee', 8); put(s, 0, 1, 'bake', 4);
+  const r1 = Core.deliver(CN, s, 0, 0, T0, lcg(2)); assert.strictEqual(r1.type, 'partial'); assert.strictEqual(s.energy, 100);
+  const r2 = Core.deliver(CN, s, 1, 0, T0, lcg(2)); assert.strictEqual(r2.type, 'complete'); assert.strictEqual(r2.energyBack, 20); assert.strictEqual(s.energy, 120 + r2.levelUps.reduce((x, u) => x + u.energy + (u.chest ? u.chest.energy : 0), 0)); // 升级奖励的体力另算
+  const t = fresh(); clearBoard(t); t.orders[0] = { uid: 1, tid: 'n_c3', needs: [{ chain: 'coffee', lvl: 3, done: false }], coins: 30, stars: 0, rare: false, cust: 0, start: T0, expiresAt: T0 + 300e3 };
+  put(t, 0, 0, 'coffee', 3); assert.strictEqual(Core.deliver(CN, t, 0, 0, T0, lcg(2)).energyBack, 0);
+});
+test('高级单不过期：6 级以上的单到点也不换，5 级以下照常超时刷新；老存档的订单同样按需求等级算', () => {
+  const s = fresh(); s.orders[0] = mkOrder([['coffee', 6]], T0); s.orders[1] = mkOrder([['bake', 7]], T0); delete s.orders[1].rare;
+  s.orders[2] = { uid: 3, tid: 'n_c3', needs: [{ chain: 'coffee', lvl: 3, done: false }], coins: 30, stars: 0, rare: false, cust: 2, start: T0, expiresAt: T0 + 1000 };
+  const u = s.orders.map((o) => o.uid);
+  const refreshed = Core.settleOrders(CN, s, T0 + 48 * 3600e3, lcg(3));
+  assert.deepStrictEqual(refreshed, [2]); assert.strictEqual(s.orders[0].uid, u[0]); assert.strictEqual(s.orders[1].uid, u[1]); assert.notStrictEqual(s.orders[2].uid, u[2]);
+  assert.strictEqual(Core.orderExpires(CN, s.orders[0]), false); assert.strictEqual(Core.orderExpires(CN, s.orders[2]), true);
+});
+test('高级单不过期但可以花金币换掉（没交过的）', () => {
+  const s = fresh(); s.coins = 100; s.orders[0] = mkOrder([['coffee', 8]], T0);
+  const r = Core.swapOrder(CN, s, 0, T0, lcg(4)); assert(r.ok); assert.notStrictEqual(s.orders[0].uid, 880);
 });
 
 for (const [st, n] of results) console.log(st === 'PASS' ? '  ✓' : '  ✗', n);

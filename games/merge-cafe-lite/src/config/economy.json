@@ -4,7 +4,7 @@
     "max": 100,
     "start": 150,
     "regenSec": 120,
-    "potMax": 60
+    "potMax": 40
   },
   "startCoins": 100,
   "startStars": 0,
