@@ -220,6 +220,7 @@ function sign(text,bg,fg,w,h,x,y,z,ry,parent){
   m.position.set(x,y,z); m.rotation.y = ry||0; return put(m,parent,false,true);
 }
 
+const MODELS = {};             // type -> [variant parts], filled when models/harbor-pack/*.glb load
 const winLit = new THREE.MeshStandardMaterial({color:'#33414d', emissive:'#ffc46b', emissiveIntensity:0, roughness:.3, flatShading:true});
 const winDark = new THREE.MeshStandardMaterial({color:'#33414d', roughness:.3, flatShading:true});
 const lampMat = new THREE.MeshStandardMaterial({color:'#f6f1e2', emissive:'#ffe0a0', emissiveIntensity:0, roughness:.4});
@@ -336,6 +337,7 @@ const BOAT_STYLES = [
   {stripe:'#6b4fa0',bottom:'#b5463c',mast:2}
 ];
 function boatModel(styleIdx){
+  if(MODELS.boat) return modelBoat(styleIdx);
   const o = BOAT_STYLES[styleIdx % BOAT_STYLES.length];
   const L = 4.0, B = 1.5;
   const root = new THREE.Group();
@@ -1149,6 +1151,106 @@ function fitK(){ const a = innerWidth/innerHeight; return a < 1.2 ? Math.min(2.1
 function resetView(){ const t = new THREE.Vector3(0,-1.5,2.5); camera.position.copy(t).add(new THREE.Vector3(8,40,46).multiplyScalar(fitK())); controls.target.copy(t); controls.update(); }
 addEventListener('resize', ()=>{ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
 
+// ---------- model pack (models/harbor-pack): low-poly glb replacements ----------
+// Each glb is merged by material; Window/Lamp become the shared night-glow materials,
+// Sign panels get a canvas text plane. Until a file loads (or if it fails, e.g. file://),
+// the procedural builders above are used.
+const PACK = 'models/harbor-pack/';
+const MODEL_FILES = {house:['house-a','house-b'], lumber:['lumber-camp'], market:['fish-market'], warehouse:['warehouse'],
+  pier:['pier'], farm:['fish-farm'], park:['cherry-park'], boat:['fishing-boat-small'], lighthouse:['lighthouse']};
+const SIGN_TEXT = {market:['鲜鱼市场','#2f6f52','#ffffff'], warehouse:['仓库','#ffffff','#355d74']};
+function partsFrom(root, xf){
+  root.updateMatrixWorld(true);
+  const byMat = new Map();
+  root.traverse(o=>{
+    if(!o.isMesh) return;
+    const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    g.applyMatrix4(o.matrixWorld); if(xf) g.applyMatrix4(xf);
+    if(!g.attributes.normal) g.computeVertexNormals();
+    const name = o.material.name || 'm'+byMat.size;
+    if(!byMat.has(name)) byMat.set(name, {name, src:o.material, pos:[], nor:[]});
+    byMat.get(name).pos.push(g.attributes.position.array); byMat.get(name).nor.push(g.attributes.normal.array);
+    g.dispose();
+  });
+  const cat = arrs => { const out = new Float32Array(arrs.reduce((a,b)=>a+b.length,0)); let o = 0; arrs.forEach(a=>{ out.set(a,o); o += a.length; }); return out; };
+  const parts = [];
+  byMat.forEach(e=>{
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(cat(e.pos),3));
+    g.setAttribute('normal', new THREE.BufferAttribute(cat(e.nor),3));
+    g.computeBoundingBox();
+    parts.push({geo:g, name:e.name, color:'#'+e.src.color.getHexString(), rough:e.src.roughness, metal:e.src.metalness});
+  });
+  return parts;
+}
+function partMat(p, o){
+  o = o || {};
+  if(p.name==='Window') return winLit;
+  if(p.name==='Lamp') return o.lamp || lampMat;
+  if(o.tint && p.name===o.tint[0]) return mat(o.tint[1]);
+  return mat(p.color, {roughness:p.rough, metalness:p.metal});
+}
+function modelGroup(parts, o){
+  const g = new THREE.Group();
+  parts.forEach(p=>{
+    const m = new THREE.Mesh(p.geo, partMat(p,o)); m.userData.shared = true; put(m, g, !o || o.cast!==false, true);
+    if(p.name==='Sign' && o && o.sign){
+      const bb = p.geo.boundingBox, sz = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
+      const [txt,bg,fg] = o.sign;
+      if(sz.z <= sz.x){ const w = sz.x*.94, h = sz.y*.86; sign(txt,bg,fg,w,h,c.x,c.y, c.z>=0 ? bb.max.z+.006 : bb.min.z-.006, c.z>=0 ? 0 : Math.PI, g); }
+      else { const w = sz.z*.94, h = sz.y*.86; sign(txt,bg,fg,w,h, c.x>=0 ? bb.max.x+.006 : bb.min.x-.006, c.y, c.z, c.x>=0 ? Math.PI/2 : -Math.PI/2, g); }
+    }
+  });
+  return g;
+}
+function modelBoat(styleIdx){
+  const root = new THREE.Group(), g = modelGroup(MODELS.boat[0], {tint:['HarborBlue', BOAT_STYLES[styleIdx % BOAT_STYLES.length].stripe]});
+  root.add(g); return {root, g};
+}
+const PROC = Object.assign({}, BUILD);
+['house','lumber','market','warehouse','pier','farm','park'].forEach(type=>{
+  BUILD[type] = b => {
+    const vs = MODELS[type]; if(!vs) return PROC[type](b);
+    const g = modelGroup(vs[Math.floor((b.v||0)*vs.length) % vs.length], {sign:SIGN_TEXT[type]});
+    if(type==='pier' || type==='farm') g.position.y = WATER_TOP;
+    const wrap = new THREE.Group(); wrap.add(g); return wrap;
+  };
+});
+function applyLighthouse(){
+  const parts = MODELS.lighthouse[0];
+  lighthouse.children.slice().forEach(c=>{ if(c!==beam) c.visible = false; });
+  lighthouse.add(modelGroup(parts, {lamp:lhLampMat}));
+  const lp = parts.find(p=>p.name==='Lamp');
+  if(lp) beam.position.y = lp.geo.boundingBox.getCenter(new THREE.Vector3()).y;
+  lhLight.position.y = lhBase.position.y + BW_TOP + beam.position.y;
+}
+function swapBoat(bt, m){ disposeGroup(bt.root); bt.root = m.root; bt.g = m.g; scene.add(m.root); }
+function refreshType(type){
+  if(type==='lighthouse') return applyLighthouse();
+  if(type==='boat'){ buildings.forEach(b=>{ if(b.boat && b.boat.k==='boat') swapBoat(b.boat, boatModel(b.boat.style)); }); }
+  else buildings.forEach(b=>{
+    if(b.type!==type) return;
+    const old = b.group, pos = old.position.clone(), rot = old.rotation.y, sc = old.scale.x;
+    disposeGroup(old); b.group = BUILD[type](b); b.group.position.copy(pos); b.group.rotation.y = rot; b.group.scale.setScalar(sc); scene.add(b.group);
+    pops.forEach(p=>{ if(p.g===old) p.g = b.group; });
+  });
+  if(ghostType===type) setGhost(type);
+}
+if(THREE.GLTFLoader){
+  const boatXf = new THREE.Matrix4().makeScale(1.68/3.124, 1.68/3.124, 1.68/3.124);
+  Object.keys(MODEL_FILES).forEach(type=>{
+    const names = MODEL_FILES[type], got = [];
+    names.forEach((n,i)=>{
+      try{
+        new THREE.GLTFLoader().load(PACK+n+'.glb', gltf=>{
+          got[i] = partsFrom(gltf.scene, type==='boat' ? boatXf : null);
+          if(got.filter(Boolean).length === names.length){ MODELS[type] = got; refreshType(type); }
+        }, undefined, ()=>{});
+      }catch(e){}
+    });
+  });
+}
+
 // ---------- boot ----------
 const had = load();
 if(!had) newGame();
@@ -1226,7 +1328,7 @@ function frame(){
 }
 requestAnimationFrame(frame);
 const ld = $('loading'); ld.style.opacity = 0; setTimeout(()=>ld.hidden = true, 700);
-window.__game = {proj:(cx,rz)=>{ const v = worldOf(cx,rz); if(isSeaRow(rz)) v.y = WATER_TOP; v.project(camera); return {x:(v.x*.5+.5)*innerWidth, y:(-v.y*.5+.5)*innerHeight}; }, G, D, apply, setTool, cells:()=>cells, buildings:()=>buildings, tickHour, check};
+window.__game = {scene, camera, controls, proj:(cx,rz)=>{ const v = worldOf(cx,rz); if(isSeaRow(rz)) v.y = WATER_TOP; v.project(camera); return {x:(v.x*.5+.5)*innerWidth, y:(-v.y*.5+.5)*innerHeight}; }, G, D, apply, setTool, cells:()=>cells, buildings:()=>buildings, tickHour, check};
 })();
 </script>
 </body>
