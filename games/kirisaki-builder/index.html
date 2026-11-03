@@ -150,6 +150,11 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 (function(){
 'use strict';
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Colour management: every hex in this file is an sRGB colour. Convert them to linear on parse so
+// lighting is computed in linear space (like the glb models, whose colours are stored linear), then
+// encode to sRGB with filmic tone mapping on output.
+const _setStyle = THREE.Color.prototype.setStyle;
+THREE.Color.prototype.setStyle = function(style){ _setStyle.call(this, style); return this.convertSRGBToLinear(); };
 
 // ---------- deterministic random (scenery) + free random (gameplay) ----------
 let seed = 20261103;
@@ -164,10 +169,13 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
 stage.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#e2e7e5');
+const clearC = new THREE.Color();
 scene.fog = new THREE.Fog('#e2e7e5', 150, 300);
 const camera = new THREE.PerspectiveCamera(30, innerWidth/innerHeight, 0.5, 700);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -212,7 +220,7 @@ function signMat(text,bg,fg,ratio){
   x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 4; x.strokeRect(8,8,w-16,h-16);
   x.fillStyle = fg; x.font = `700 ${Math.round(h*.5)}px ${FONT}`; x.textAlign='center'; x.textBaseline='middle';
   x.fillText(text, w/2, h/2+3);
-  const t = new THREE.CanvasTexture(c); t.anisotropy = 4;
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; t.encoding = THREE.sRGBEncoding;
   return signCache[k] = new THREE.MeshStandardMaterial({map:t, roughness:.7});
 }
 function sign(text,bg,fg,w,h,x,y,z,ry,parent){
@@ -247,7 +255,7 @@ boxB(40,6.6,0.3,'#bcb7ad',0,-6.5,QUAY_Z+0.15);
   const c = document.createElement('canvas'); c.width = 64; c.height = 16; const x = c.getContext('2d');
   x.fillStyle = '#e8b830'; x.fillRect(0,0,64,16); x.fillStyle = '#26282b';
   for(let i=-16;i<64;i+=16){ x.beginPath(); x.moveTo(i,16); x.lineTo(i+8,16); x.lineTo(i+16,0); x.lineTo(i+8,0); x.fill(); }
-  const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.repeat.set(60,1);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping; t.repeat.set(60,1);
   const m = new THREE.Mesh(new THREE.BoxGeometry(40,0.03,0.3), new THREE.MeshStandardMaterial({map:t, roughness:.8}));
   m.position.set(0,0.115,QUAY_Z+0.15); put(m,scene,false,true);
 })();
@@ -385,7 +393,7 @@ function mergeGltf(root){
     g.setAttribute('position', new THREE.BufferAttribute(cat(e.pos),3));
     g.setAttribute('normal', new THREE.BufferAttribute(cat(e.nor),3));
     g.applyMatrix4(xf);
-    const m = new THREE.MeshStandardMaterial({color:e.src.color.clone(), roughness:e.src.roughness, metalness:e.src.metalness});
+    const m = new THREE.MeshStandardMaterial({color:e.src.color.clone(), roughness:e.src.roughness, metalness:e.src.metalness, flatShading:true});
     parts.push({geo:g, mat:m});
   });
   return parts;
@@ -705,7 +713,7 @@ const TIMES = {
   day:  {bg:'#e2e7e5', sky:'#ffffff', ground:'#b7ae9c', hemiI:.62, sun:'#fff1dc', sunI:1.2, sunPos:[22,40,26], win:0, lamp:0, beam:0, night:false},
   dusk: {bg:'#e8c9b4', sky:'#ffd5b5', ground:'#7a6a7e', hemiI:.5, sun:'#ff9b5a', sunI:1.05, sunPos:[-36,13,16], win:.9, lamp:1, beam:.55, night:false},
   dawn: {bg:'#d9d6e2', sky:'#ffe2cf', ground:'#8a8090', hemiI:.5, sun:'#ffc9a0', sunI:.9, sunPos:[36,12,10], win:.4, lamp:.5, beam:.4, night:false},
-  night:{bg:'#1b2336', sky:'#7184ad', ground:'#1d2232', hemiI:.42, sun:'#a7bbe4', sunI:.4, sunPos:[-18,40,-14], win:1.3, lamp:1.5, beam:1, night:true}
+  night:{bg:'#1b2336', sky:'#7184ad', ground:'#1d2232', hemiI:.18, sun:'#a7bbe4', sunI:.2, sunPos:[-18,40,-14], win:1.3, lamp:1.5, beam:1, night:true}
 };
 const WEATHER = {
   clear: {rain:0, rainbow:0, dim:1, haze:0, label:'晴', wave:.05},
@@ -733,7 +741,7 @@ function stepState(dt, snap){
   const k = snap ? 1 : 1-Math.exp(-dt*1.6);
   cur.bg.lerp(tgt.bg,k); cur.sky.lerp(tgt.sky,k); cur.ground.lerp(tgt.ground,k); cur.sun.lerp(tgt.sun,k); cur.sunPos.lerp(tgt.sunPos,k);
   for(const key of ['hemiI','sunI','win','lamp','beam','rain','rainbow','wave','fogNear']) cur[key] += (tgt[key]-cur[key])*k;
-  scene.background.copy(cur.bg); scene.fog.color.copy(cur.bg); scene.fog.near = cur.fogNear; scene.fog.far = cur.fogNear+150;
+  renderer.setClearColor(clearC.copy(cur.bg).convertLinearToSRGB()); scene.fog.color.copy(cur.bg); scene.fog.near = cur.fogNear; scene.fog.far = cur.fogNear+150;
   hemi.color.copy(cur.sky); hemi.groundColor.copy(cur.ground); hemi.intensity = cur.hemiI;
   sun.color.copy(cur.sun); sun.intensity = cur.sunI; sun.position.copy(cur.sunPos);
   winLit.emissiveIntensity = cur.win; lampMat.emissiveIntensity = cur.lamp;
@@ -1152,6 +1160,8 @@ function resetView(){ const t = new THREE.Vector3(0,-1.5,2.5); camera.position.c
 addEventListener('resize', ()=>{ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
 
 // ---------- model pack (models/harbor-pack): low-poly glb replacements ----------
+// glTF stores colours in linear space; partMat() goes through a hex string, which the
+// patched Color.setStyle converts back to linear, so convert to sRGB hex first.
 // Each glb is merged by material; Window/Lamp become the shared night-glow materials,
 // Sign panels get a canvas text plane. Until a file loads (or if it fails, e.g. file://),
 // the procedural builders above are used.
@@ -1179,7 +1189,7 @@ function partsFrom(root, xf){
     g.setAttribute('position', new THREE.BufferAttribute(cat(e.pos),3));
     g.setAttribute('normal', new THREE.BufferAttribute(cat(e.nor),3));
     g.computeBoundingBox();
-    parts.push({geo:g, name:e.name, color:'#'+e.src.color.getHexString(), rough:e.src.roughness, metal:e.src.metalness});
+    parts.push({geo:g, name:e.name, color:'#'+e.src.color.clone().convertLinearToSRGB().getHexString(), rough:e.src.roughness, metal:e.src.metalness});
   });
   return parts;
 }
