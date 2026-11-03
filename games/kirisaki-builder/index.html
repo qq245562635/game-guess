@@ -229,7 +229,7 @@ function sign(text,bg,fg,w,h,x,y,z,ry,parent){
 }
 
 const MODELS = {};             // type -> [variant parts], filled when models/harbor-pack/*.glb load
-const winLit = new THREE.MeshStandardMaterial({color:'#33414d', emissive:'#ffc46b', emissiveIntensity:0, roughness:.3, flatShading:true});
+const winLit = new THREE.MeshStandardMaterial({color:'#33414d', emissive:'#ffc46b', emissiveIntensity:0, roughness:.08, metalness:.45, flatShading:true});
 const winDark = new THREE.MeshStandardMaterial({color:'#33414d', roughness:.3, flatShading:true});
 const lampMat = new THREE.MeshStandardMaterial({color:'#f6f1e2', emissive:'#ffe0a0', emissiveIntensity:0, roughness:.4});
 const lampLights = [];
@@ -269,7 +269,7 @@ box(40.05,0.05,0.05,glassEdge,0,WATER_TOP,SEA_Z1);
 box(0.05,0.05,SEA_D,glassEdge,-20.0,WATER_TOP,SEA_Z); box(0.05,0.05,SEA_D,glassEdge,20.0,WATER_TOP,SEA_Z);
 box(40.05,0.05,0.05,glassEdge,0,-5.6,SEA_Z1);
 const surfGeo = new THREE.PlaneGeometry(40,SEA_D,80,32); surfGeo.rotateX(-Math.PI/2);
-const surfMat = new THREE.MeshStandardMaterial({color:'#4fa89f', transparent:true, opacity:.66, roughness:.18, metalness:.05, flatShading:true, depthWrite:false});
+const surfMat = new THREE.MeshStandardMaterial({color:'#4fa89f', transparent:true, opacity:.66, roughness:.12, metalness:.1, flatShading:true, depthWrite:false});
 const surface = new THREE.Mesh(surfGeo, surfMat); surface.position.set(0,WATER_TOP+0.02,SEA_Z); surface.renderOrder = 3; put(surface,scene,false,true);
 const surfBase = surfGeo.attributes.position.array.slice();
 
@@ -710,10 +710,10 @@ function checkGoal(){
 
 // ---------- day/night + weather visuals ----------
 const TIMES = {
-  day:  {bg:'#e2e7e5', sky:'#ffffff', ground:'#b7ae9c', hemiI:.62, sun:'#fff1dc', sunI:1.2, sunPos:[22,40,26], win:0, lamp:0, beam:0, night:false},
-  dusk: {bg:'#e8c9b4', sky:'#ffd5b5', ground:'#7a6a7e', hemiI:.5, sun:'#ff9b5a', sunI:1.05, sunPos:[-36,13,16], win:.9, lamp:1, beam:.55, night:false},
-  dawn: {bg:'#d9d6e2', sky:'#ffe2cf', ground:'#8a8090', hemiI:.5, sun:'#ffc9a0', sunI:.9, sunPos:[36,12,10], win:.4, lamp:.5, beam:.4, night:false},
-  night:{bg:'#1b2336', sky:'#7184ad', ground:'#1d2232', hemiI:.18, sun:'#a7bbe4', sunI:.2, sunPos:[-18,40,-14], win:1.3, lamp:1.5, beam:1, night:true}
+  day:  {bg:'#e2e7e5', sky:'#ffffff', ground:'#b7ae9c', hemiI:.62, envTop:'#7fb6e6', sun:'#fff1dc', sunI:1.2, sunPos:[22,40,26], win:0, lamp:0, beam:0, night:false},
+  dusk: {bg:'#e8c9b4', sky:'#ffd5b5', ground:'#7a6a7e', hemiI:.5, envTop:'#e6a27c', sun:'#ff9b5a', sunI:1.05, sunPos:[-36,13,16], win:.9, lamp:1, beam:.55, night:false},
+  dawn: {bg:'#d9d6e2', sky:'#ffe2cf', ground:'#8a8090', hemiI:.5, envTop:'#bfb3dc', sun:'#ffc9a0', sunI:.9, sunPos:[36,12,10], win:.4, lamp:.5, beam:.4, night:false},
+  night:{bg:'#1b2336', sky:'#7184ad', ground:'#1d2232', hemiI:.18, envTop:'#26385f', sun:'#a7bbe4', sunI:.2, sunPos:[-18,40,-14], win:1.3, lamp:1.5, beam:1, night:true}
 };
 const WEATHER = {
   clear: {rain:0, rainbow:0, dim:1, haze:0, label:'晴', wave:.05},
@@ -722,14 +722,14 @@ const WEATHER = {
 };
 function phaseOf(h){ h = h % 24; if(h>=5 && h<7) return 'dawn'; if(h>=7 && h<17) return 'day'; if(h>=17 && h<20) return 'dusk'; return 'night'; }
 let curPhase = null;
-const cur = {bg:new THREE.Color('#e2e7e5'), sky:new THREE.Color('#fff'), ground:new THREE.Color('#b7ae9c'), sun:new THREE.Color('#fff1dc'), hemiI:.8, sunI:1.5, sunPos:new THREE.Vector3(22,40,26), win:0, lamp:0, beam:0, rain:0, rainbow:0, wave:.05, fogNear:150};
+const cur = {envTop:new THREE.Color('#7fb6e6'), bg:new THREE.Color('#e2e7e5'), sky:new THREE.Color('#fff'), ground:new THREE.Color('#b7ae9c'), sun:new THREE.Color('#fff1dc'), hemiI:.8, sunI:1.5, sunPos:new THREE.Vector3(22,40,26), win:0, lamp:0, beam:0, rain:0, rainbow:0, wave:.05, fogNear:150};
 const tgt = {};
 function computeTarget(){
   curPhase = phaseOf(Math.floor(G.hours));
   const T = TIMES[curPhase], W = WEATHER[G.weather];
   const grey = new THREE.Color(T.night ? '#2a3140' : '#9ea7ab');
   tgt.bg = new THREE.Color(T.bg).lerp(grey, W.haze);
-  tgt.sky = new THREE.Color(T.sky); tgt.ground = new THREE.Color(T.ground); tgt.sun = new THREE.Color(T.sun);
+  tgt.envTop = new THREE.Color(T.envTop).lerp(grey, W.haze); tgt.sky = new THREE.Color(T.sky); tgt.ground = new THREE.Color(T.ground); tgt.sun = new THREE.Color(T.sun);
   tgt.hemiI = T.hemiI*(W.rain>.9?.85:1); tgt.sunI = T.sunI*W.dim; tgt.sunPos = new THREE.Vector3(...T.sunPos);
   tgt.win = T.win + (W.rain>.9 && !T.night ? .35 : 0); tgt.lamp = T.lamp + (W.rain>.9 && !T.night ? .4 : 0);
   tgt.beam = Math.max(T.beam, W.rain>.9 ? .45 : 0);
@@ -739,10 +739,13 @@ function computeTarget(){
 }
 function stepState(dt, snap){
   const k = snap ? 1 : 1-Math.exp(-dt*1.6);
-  cur.bg.lerp(tgt.bg,k); cur.sky.lerp(tgt.sky,k); cur.ground.lerp(tgt.ground,k); cur.sun.lerp(tgt.sun,k); cur.sunPos.lerp(tgt.sunPos,k);
+  cur.bg.lerp(tgt.bg,k); cur.envTop.lerp(tgt.envTop,k); cur.sky.lerp(tgt.sky,k); cur.ground.lerp(tgt.ground,k); cur.sun.lerp(tgt.sun,k); cur.sunPos.lerp(tgt.sunPos,k);
   for(const key of ['hemiI','sunI','win','lamp','beam','rain','rainbow','wave','fogNear']) cur[key] += (tgt[key]-cur[key])*k;
   renderer.setClearColor(clearC.copy(cur.bg).convertLinearToSRGB()); scene.fog.color.copy(cur.bg); scene.fog.near = cur.fogNear; scene.fog.far = cur.fogNear+150;
-  hemi.color.copy(cur.sky); hemi.groundColor.copy(cur.ground); hemi.intensity = cur.hemiI;
+  hemi.color.copy(cur.sky); hemi.groundColor.copy(cur.ground); hemi.intensity = cur.hemiI*.3;
+  const now = performance.now();
+  const sig = cur.hemiI + cur.sunI + cur.envTop.r + cur.envTop.g + cur.envTop.b + cur.bg.r + cur.bg.g + cur.bg.b + cur.sunPos.x*.01;
+  if(snap || (Math.abs(sig - envSig) > .004 && now - envLast > 400)){ envLast = now; envSig = sig; buildEnv(); }
   sun.color.copy(cur.sun); sun.intensity = cur.sunI; sun.position.copy(cur.sunPos);
   winLit.emissiveIntensity = cur.win; lampMat.emissiveIntensity = cur.lamp;
   lampLights.forEach(L=>L.intensity = cur.lamp*.9);
@@ -750,6 +753,35 @@ function stepState(dt, snap){
   rainbowMats.forEach(m=>m.opacity = cur.rainbow*.24); rainbow.visible = cur.rainbow > .01;
   rain.visible = cur.rain > .01; rainGeo.setDrawRange(0, Math.floor(RAIN_N*cur.rain)*2);
   rainMat.opacity = TIMES[curPhase].night ? .32 : .58;
+}
+
+// ---------- image-based lighting: a gradient sky + sun rendered to a PMREM environment ----------
+// Gives the PBR materials something to reflect (glass, metal, sea) and a soft sky-coloured ambient.
+// Rebuilt from the current (lerping) sky colours while time of day or weather changes.
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envScene = new THREE.Scene();
+const envSkyGeo = new THREE.SphereGeometry(50, 32, 16);
+envSkyGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(envSkyGeo.attributes.position.count*3), 3));
+envScene.add(new THREE.Mesh(envSkyGeo, new THREE.MeshBasicMaterial({side:THREE.BackSide, vertexColors:true, fog:false})));
+const envSunMat = new THREE.MeshBasicMaterial({fog:false});
+const envSun = new THREE.Mesh(new THREE.SphereGeometry(2.5, 12, 8), envSunMat); envScene.add(envSun);
+let envRT = null, envSig = -1, envLast = -1;
+const _ec = new THREE.Color(), _top = new THREE.Color(), _hor = new THREE.Color(), _bot = new THREE.Color();
+function buildEnv(){
+  const k = cur.hemiI*1.25;                      // overall sky brightness follows the time of day
+  _top.copy(cur.envTop).multiplyScalar(k); _hor.copy(cur.bg).multiplyScalar(k*1.1); _bot.copy(cur.ground).multiplyScalar(k*.55);
+  const pos = envSkyGeo.attributes.position, col = envSkyGeo.attributes.color;
+  for(let i=0;i<pos.count;i++){
+    const y = pos.getY(i)/50;
+    if(y >= 0) _ec.copy(_hor).lerp(_top, Math.pow(y,.6)); else _ec.copy(_hor).lerp(_bot, Math.min(1,-y*3));
+    col.setXYZ(i, _ec.r, _ec.g, _ec.b);
+  }
+  col.needsUpdate = true;
+  envSun.position.copy(cur.sunPos).normalize().multiplyScalar(40);
+  envSunMat.color.copy(cur.sun).multiplyScalar(cur.sunI*cur.sunI*16);
+  if(envRT) envRT.dispose();
+  envRT = pmrem.fromScene(envScene, .02);
+  scene.environment = envRT.texture;
 }
 
 // ---------- lighthouse + islets (outer sea, decoration) ----------
@@ -1168,6 +1200,13 @@ addEventListener('resize', ()=>{ camera.aspect = innerWidth/innerHeight; camera.
 const PACK = 'models/harbor-pack/';
 const MODEL_FILES = {house:['house-a','house-b'], lumber:['lumber-camp'], market:['fish-market'], warehouse:['warehouse'],
   pier:['pier'], farm:['fish-farm'], park:['cherry-park'], boat:['fishing-boat-small'], lighthouse:['lighthouse']};
+// per-material PBR tuning for the model pack (names from 交付清单.md): r = roughness, m = metalness
+const PBR = {
+  Metal:{r:.38, m:.75}, Steel:{r:.45, m:.6}, RoofBlue:{r:.55, m:.1}, RoofBrown:{r:.6}, RoofTile:{r:.6},
+  HarborBlue:{r:.5}, RescueRed:{r:.5}, Yellow:{r:.5}, FishBox:{r:.45}, Ivory:{r:.7}, Sand:{r:.8},
+  Concrete:{r:.92}, Path:{r:.95}, Grass:{r:.95}, Leaf:{r:.85}, Pink:{r:.8}, PinkLight:{r:.8},
+  Wood:{r:.78}, WoodDark:{r:.72}, EndGrain:{r:.9}, Net:{r:.9}, Green:{r:.55}, Sign:{r:.6}
+};
 const SIGN_TEXT = {market:['鲜鱼市场','#2f6f52','#ffffff'], warehouse:['仓库','#ffffff','#355d74']};
 function partsFrom(root, xf){
   root.updateMatrixWorld(true);
@@ -1197,8 +1236,10 @@ function partMat(p, o){
   o = o || {};
   if(p.name==='Window') return winLit;
   if(p.name==='Lamp') return o.lamp || lampMat;
-  if(o.tint && p.name===o.tint[0]) return mat(o.tint[1]);
-  return mat(p.color, {roughness:p.rough, metalness:p.metal});
+  const pbr = PBR[p.name] || {};
+  const r = pbr.r!=null ? pbr.r : p.rough, m = pbr.m!=null ? pbr.m : p.metal;
+  if(o.tint && p.name===o.tint[0]) return mat(o.tint[1], {roughness:r, metalness:m});
+  return mat(p.color, {roughness:r, metalness:m});
 }
 function modelGroup(parts, o){
   const g = new THREE.Group();
