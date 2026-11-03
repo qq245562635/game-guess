@@ -1,0 +1,1177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>雾岬港町</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;900&display=swap">
+<style>
+:root{
+  --ink:#1f2b2e; --ink-soft:#5d6b6d; --glass:rgba(248,250,249,.8); --line:rgba(31,43,46,.14);
+  --accent:#2c7a6f; --accent-ink:#ffffff; --bg:#e2e7e5; --warn:#b7791f; --bad:#c0453a; --good:#2f8a5a;
+  --f-display:"Noto Serif SC","Songti SC","SimSun",serif;
+  --f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+body.night{ --ink:#edf1f4; --ink-soft:#a5b1c0; --glass:rgba(22,29,44,.78); --line:rgba(255,255,255,.15); --accent:#e7b55a; --accent-ink:#1a2233; --bg:#1b2336; --warn:#f0b54a; --bad:#ff7b6b; --good:#7fd6a0; }
+html,body{height:100%}
+[hidden]{display:none!important}
+body{margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--f-body);transition:background .8s;-webkit-user-select:none;user-select:none}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+.glass{background:var(--glass);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(20,30,35,.12)}
+.top{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:calc(16px + env(safe-area-inset-left,0px));right:calc(16px + env(safe-area-inset-right,0px));display:flex;gap:10px;align-items:flex-start;justify-content:space-between;pointer-events:none}
+.top > *{pointer-events:auto}
+.left{display:grid;gap:8px;min-width:0}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:900;font-size:24px;letter-spacing:.08em}
+.brand span{font-family:var(--f-mono);font-size:10px;letter-spacing:.3em;color:var(--ink-soft)}
+.res{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px}
+.chip{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);font-size:12px;white-space:nowrap}
+.chip i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.chip b{font-family:var(--f-mono);font-weight:500;font-variant-numeric:tabular-nums}
+.chip small{color:var(--ink-soft);font-family:var(--f-mono);font-size:10px}
+.chip.low b{color:var(--bad)}
+.goal{padding:10px 12px;max-width:300px;font-size:12px;line-height:1.55}
+.goal .eyebrow,.clock .eyebrow,.info .eyebrow{font-family:var(--f-mono);font-size:10px;letter-spacing:.28em;color:var(--ink-soft)}
+.goal .t{font-weight:700;margin-top:3px}
+.goal .r{color:var(--ink-soft)}
+.bar{height:4px;border-radius:4px;background:var(--line);margin-top:6px;overflow:hidden}
+.bar > div{height:100%;background:var(--accent);transition:width .3s}
+.clock{padding:10px 12px;text-align:right;display:grid;gap:6px;justify-items:end}
+.clock .now{font-size:15px;font-weight:700;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.clock .sub{font-size:11px;color:var(--ink-soft)}
+.seg{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+button{font:500 12px/1 var(--f-body);color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 11px;cursor:pointer;transition:background .2s,color .2s,border-color .2s;letter-spacing:.04em}
+button:hover{border-color:var(--accent)}
+button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tools{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;padding:8px;max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none}
+.tools::-webkit-scrollbar{display:none}
+.tool{flex:0 0 auto;display:grid;justify-items:center;gap:4px;min-width:62px;padding:8px 8px 7px;border-radius:12px;font-size:12px}
+.tool .ico{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font:700 13px/1 var(--f-display);color:#fff}
+.tool .cost{font-family:var(--f-mono);font-size:9.5px;color:var(--ink-soft);letter-spacing:0}
+.tool[aria-pressed="true"] .cost{color:var(--accent-ink);opacity:.85}
+.tool.poor:not([aria-pressed="true"]){opacity:.5}
+.sep{width:1px;background:var(--line);margin:4px 2px;flex:0 0 auto}
+.info{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(104px + env(safe-area-inset-bottom,0px));width:280px;padding:12px 14px;font-size:12px;line-height:1.6;display:grid;gap:6px}
+.info h2{margin:0;font-family:var(--f-display);font-size:18px;letter-spacing:.06em}
+.info .st{font-weight:700}
+.info .st.ok{color:var(--good)} .info .st.warn{color:var(--warn)} .info .st.bad{color:var(--bad)}
+.info .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;color:var(--ink-soft)}
+.info .kv dd{margin:0;color:var(--ink);font-family:var(--f-mono);text-align:right}
+.info .desc{color:var(--ink-soft)}
+.info .row{display:flex;gap:6px;justify-content:flex-end}
+.info .x{position:absolute;top:8px;right:8px;border:none;padding:6px 8px}
+.toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:9px 16px;font-size:13px;pointer-events:none;transition:opacity .3s;max-width:calc(100vw - 32px);text-align:center}
+.float{position:fixed;left:0;top:0;pointer-events:none;font:700 13px/1 var(--f-mono);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.55);white-space:nowrap;will-change:transform,opacity}
+.loading{position:fixed;inset:0;display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;letter-spacing:.3em;color:var(--ink-soft);pointer-events:none;transition:opacity .6s}
+.modal{position:fixed;inset:0;display:grid;place-items:center;background:rgba(10,15,20,.3);padding:16px}
+.modal .card{max-width:420px;padding:22px 24px;display:grid;gap:12px;font-size:13px;line-height:1.7}
+.modal h2{margin:0;font-family:var(--f-display);font-size:24px;letter-spacing:.08em}
+.modal ul{margin:0;padding-left:18px;color:var(--ink-soft)}
+.modal .row{display:flex;gap:8px;justify-content:flex-end}
+.modal button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);padding:10px 18px;font-size:13px}
+@media (max-width:760px){
+  .brand span,.goal .r{display:none}
+  .brand h1{font-size:18px}
+  .top{flex-direction:column;align-items:stretch}
+  .clock{grid-template-columns:1fr auto;align-items:center;text-align:left;justify-items:stretch}
+  .goal{max-width:none}
+  .info{left:12px;right:12px;width:auto;bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+  .tool{min-width:56px;padding:7px 6px 6px}
+  .res{padding:6px 8px}
+  .clock{padding:8px 10px}
+  .clock .eyebrow{display:none}
+  .clock .now{font-size:13px;white-space:nowrap}
+  .seg button{padding:7px 9px}
+  .goal{padding:8px 10px}
+  .info{max-height:30vh;overflow:auto;padding:10px 12px;gap:4px}
+  .info h2{font-size:16px}
+  .info .hint-m{display:none}
+}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="loading" id="loading">正在搭建港町…</div>
+
+<div class="top">
+  <div class="left">
+    <div class="brand"><h1>雾岬港町</h1><span>KIRISAKI · HARBOR BUILDER</span></div>
+    <div class="res glass" id="res">
+      <div class="chip" id="r-coin"><i style="background:#e0a92e"></i>金币 <b>0</b></div>
+      <div class="chip" id="r-wood"><i style="background:#8b5e3c"></i>木材 <b>0</b><small></small></div>
+      <div class="chip" id="r-fish"><i style="background:#3c84c4"></i>鲜鱼 <b>0</b><small></small></div>
+      <div class="chip" id="r-pop"><i style="background:#c8574a"></i>人口 <b>0</b><small></small></div>
+      <div class="chip" id="r-job"><i style="background:#6c7a86"></i>工人 <b>0</b><small></small></div>
+      <div class="chip" id="r-hap"><i style="background:#e98aa6"></i>满意度 <b>0</b></div>
+    </div>
+    <div class="goal glass" id="goal">
+      <div class="eyebrow">目标 GOAL <span id="g-n"></span></div>
+      <div class="t" id="g-t"></div>
+      <div class="r" id="g-r"></div>
+      <div class="bar"><div id="g-bar" style="width:0"></div></div>
+    </div>
+  </div>
+  <div class="clock glass">
+    <div>
+      <div class="eyebrow">HARBOR LOG</div>
+      <div class="now" id="c-now">第 1 天 · 08:00</div>
+      <div class="sub" id="c-sub">晴 · 鱼价 4</div>
+    </div>
+    <div class="seg" id="speed">
+      <button type="button" data-s="0" aria-pressed="false">暂停</button>
+      <button type="button" data-s="1" aria-pressed="true">1×</button>
+      <button type="button" data-s="2" aria-pressed="false">2×</button>
+      <button type="button" data-s="4" aria-pressed="false">4×</button>
+      <button type="button" id="menu-btn" aria-pressed="false">菜单</button>
+    </div>
+  </div>
+</div>
+
+<div class="tools glass" id="tools" role="toolbar" aria-label="建造"></div>
+
+<aside class="info glass" id="info" hidden aria-live="polite"></aside>
+<div class="toast glass" id="toast" style="opacity:0"></div>
+<div id="floats"></div>
+
+<div class="modal" id="modal" hidden>
+  <div class="card glass" id="modal-card"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+'use strict';
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- deterministic random (scenery) + free random (gameplay) ----------
+let seed = 20261103;
+function rnd(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+const rr = (a,b)=>a+(b-a)*rnd();
+const pick = arr => arr[Math.floor(rnd()*arr.length)];
+
+// ---------- renderer / scene ----------
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#e2e7e5');
+scene.fog = new THREE.Fog('#e2e7e5', 150, 300);
+const camera = new THREE.PerspectiveCamera(30, innerWidth/innerHeight, 0.5, 700);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 12; controls.maxDistance = 140;
+controls.maxPolarAngle = Math.PI*0.47;
+controls.screenSpacePanning = false;
+
+const hemi = new THREE.HemisphereLight('#ffffff','#b7ae9c',0.8); scene.add(hemi);
+const sun = new THREE.DirectionalLight('#fff1dc',1.6);
+sun.position.set(22,40,26); sun.castShadow = true;
+sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-30,right:30,top:30,bottom:-30,near:1,far:160});
+sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.02;
+scene.add(sun); scene.add(sun.target);
+
+// ---------- helpers ----------
+const matCache = {};
+function mat(color, o){ const k = color + (o?JSON.stringify(o):''); if(!matCache[k]) matCache[k] = new THREE.MeshStandardMaterial(Object.assign({color, roughness:.88, metalness:0, flatShading:true}, o||{})); return matCache[k]; }
+function M(m){ return (m && m.isMaterial) ? m : mat(m); }
+function put(mesh, parent, cast=true, recv=true){ mesh.castShadow = cast; mesh.receiveShadow = recv; (parent||scene).add(mesh); return mesh; }
+function box(w,h,d,c,x,y,z,parent){ const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), M(c)); m.position.set(x,y,z); return put(m,parent); }
+function boxB(w,h,d,c,x,y,z,parent){ return box(w,h,d,c,x,y+h/2,z,parent); }
+function cylB(rt,rb,h,c,x,y,z,seg,parent){ const m = new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||8), M(c)); m.position.set(x,y+h/2,z); return put(m,parent); }
+function group(x,y,z,parent){ const g = new THREE.Group(); g.position.set(x||0,y||0,z||0); (parent||scene).add(g); return g; }
+function jitter(geo, amt){
+  const p = geo.attributes.position, map = {};
+  for(let i=0;i<p.count;i++){
+    const k = p.getX(i).toFixed(3)+','+p.getY(i).toFixed(3)+','+p.getZ(i).toFixed(3);
+    if(!map[k]) map[k] = [(rnd()-.5)*amt,(rnd()-.5)*amt,(rnd()-.5)*amt];
+    const d = map[k]; p.setXYZ(i, p.getX(i)+d[0], p.getY(i)+d[1], p.getZ(i)+d[2]);
+  }
+  geo.computeVertexNormals(); return geo;
+}
+const FONT = '"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif';
+const signCache = {};
+function signMat(text,bg,fg,ratio){
+  const k = text+bg+fg+ratio; if(signCache[k]) return signCache[k];
+  const h = 112, w = Math.min(1600, Math.round(h*ratio));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0,0,w,h);
+  x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 4; x.strokeRect(8,8,w-16,h-16);
+  x.fillStyle = fg; x.font = `700 ${Math.round(h*.5)}px ${FONT}`; x.textAlign='center'; x.textBaseline='middle';
+  x.fillText(text, w/2, h/2+3);
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4;
+  return signCache[k] = new THREE.MeshStandardMaterial({map:t, roughness:.7});
+}
+function sign(text,bg,fg,w,h,x,y,z,ry,parent){
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w,h), signMat(text,bg,fg,w/h));
+  m.position.set(x,y,z); m.rotation.y = ry||0; return put(m,parent,false,true);
+}
+
+const winLit = new THREE.MeshStandardMaterial({color:'#33414d', emissive:'#ffc46b', emissiveIntensity:0, roughness:.3, flatShading:true});
+const winDark = new THREE.MeshStandardMaterial({color:'#33414d', roughness:.3, flatShading:true});
+const lampMat = new THREE.MeshStandardMaterial({color:'#f6f1e2', emissive:'#ffe0a0', emissiveIntensity:0, roughness:.4});
+const lampLights = [];
+
+// ---------- grid ----------
+const COLS = 20, ROWS = 14, LAND_ROWS = 8, CELL = 2;
+const WATER_TOP = -0.75;
+const cx2x = cx => -19 + cx*CELL;
+const rz2z = rz => -13 + rz*CELL;
+const isSeaRow = rz => rz >= LAND_ROWS;
+const inGrid = (cx,rz) => cx>=0 && cx<COLS && rz>=0 && rz<ROWS;
+
+// ---------- base: land strata, quay, sea ----------
+const LAND_Z0 = -14, QUAY_Z = 2, SEA_Z1 = 19;
+boxB(41.2,0.6,SEA_Z1-LAND_Z0+1.2,'#5e4535',0,-7.1,(LAND_Z0+SEA_Z1)/2);
+const LD = QUAY_Z-LAND_Z0, LZ = (LAND_Z0+QUAY_Z)/2;
+boxB(40,2.0,LD,'#76675a',0,-6.5,LZ);
+boxB(40,2.2,LD,'#94785b',0,-4.5,LZ);
+boxB(40,1.9,LD,'#ad8a64',0,-2.3,LZ);
+boxB(40,0.4,LD,'#7ca55b',0,-0.4,LZ);
+boxB(40,6.6,0.3,'#bcb7ad',0,-6.5,QUAY_Z+0.15);
+(function(){
+  const c = document.createElement('canvas'); c.width = 64; c.height = 16; const x = c.getContext('2d');
+  x.fillStyle = '#e8b830'; x.fillRect(0,0,64,16); x.fillStyle = '#26282b';
+  for(let i=-16;i<64;i+=16){ x.beginPath(); x.moveTo(i,16); x.lineTo(i+8,16); x.lineTo(i+16,0); x.lineTo(i+8,0); x.fill(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.repeat.set(60,1);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(40,0.03,0.3), new THREE.MeshStandardMaterial({map:t, roughness:.8}));
+  m.position.set(0,0.115,QUAY_Z+0.15); put(m,scene,false,true);
+})();
+const SEA_D = SEA_Z1-QUAY_Z-0.3, SEA_Z = (QUAY_Z+0.3+SEA_Z1)/2;
+boxB(40,0.9,SEA_D,'#d8c69a',0,-6.5,SEA_Z);
+const waterBody = new THREE.Mesh(new THREE.BoxGeometry(40, WATER_TOP+5.6, SEA_D),
+  new THREE.MeshStandardMaterial({color:'#2f8f88', transparent:true, opacity:.5, roughness:.15, depthWrite:false}));
+waterBody.position.set(0,(WATER_TOP-5.6)/2,SEA_Z); waterBody.renderOrder = 2; put(waterBody,scene,false,false);
+const glassEdge = mat('#f4fbf8',{roughness:.2});
+box(40.05,0.05,0.05,glassEdge,0,WATER_TOP,SEA_Z1);
+box(0.05,0.05,SEA_D,glassEdge,-20.0,WATER_TOP,SEA_Z); box(0.05,0.05,SEA_D,glassEdge,20.0,WATER_TOP,SEA_Z);
+box(40.05,0.05,0.05,glassEdge,0,-5.6,SEA_Z1);
+const surfGeo = new THREE.PlaneGeometry(40,SEA_D,80,32); surfGeo.rotateX(-Math.PI/2);
+const surfMat = new THREE.MeshStandardMaterial({color:'#4fa89f', transparent:true, opacity:.66, roughness:.18, metalness:.05, flatShading:true, depthWrite:false});
+const surface = new THREE.Mesh(surfGeo, surfMat); surface.position.set(0,WATER_TOP+0.02,SEA_Z); surface.renderOrder = 3; put(surface,scene,false,true);
+const surfBase = surfGeo.attributes.position.array.slice();
+
+const weeds = [];
+for(let i=0;i<80;i++){
+  const x = rr(-19.4,19.4), z = rr(2.8,18.6);
+  const h = rr(.6,1.8); const g = new THREE.BoxGeometry(.07,h,.18); g.translate(0,h/2,0);
+  const m = new THREE.Mesh(g, mat(pick(['#3f7d4a','#4f8f4f','#6a9a4a','#2f6b4f']))); m.position.set(x,-5.6,z); m.rotation.y = rnd()*Math.PI;
+  put(m,scene,false,false); weeds.push({m, ph:rnd()*6.28, sp:rr(.8,1.6)});
+}
+for(let i=0;i<40;i++){
+  const g = jitter(new THREE.DodecahedronGeometry(rr(.12,.42),0),.08);
+  const m = new THREE.Mesh(g, mat(pick(['#8d8a83','#a39d92','#6f6c67']))); m.position.set(rr(-19.5,19.5),-5.6+.08,rr(2.6,18.7)); m.scale.y=.6; put(m,scene,true,true);
+}
+
+// promenade lamps along the quay (fixed decoration)
+[-15,-5,5,15].forEach(x=>{
+  cylB(.05,.06,2.0,'#4a5258',x+1,0,1.85,6); boxB(.05,.05,.4,'#4a5258',x+1,2.0,1.7);
+  boxB(.24,.12,.26,lampMat,x+1,1.88,1.55);
+  const L = new THREE.PointLight('#ffd08a',0,7,2); L.position.set(x+1,1.7,1.55); scene.add(L); lampLights.push(L);
+});
+
+// ---------- vegetation ----------
+const GREENS = ['#5e9a4c','#6fae55','#4f8a45','#7cb85f'];
+function tree(x,z,s,y,kind,parent){
+  const g = group(x,y||0,z,parent); s = s||1;
+  if(kind==='pine'){
+    cylB(.07*s,.1*s,.45*s,'#6b4e3a',0,0,0,6,g);
+    const c = pick(['#2f6b45','#3d7a4c','#2a5e40']);
+    for(let i=0;i<3;i++){ const m = new THREE.Mesh(new THREE.ConeGeometry((.7-i*.18)*s,.8*s,7), mat(c)); m.position.y = (.7+i*.42)*s; put(m,g); }
+    return g;
+  }
+  cylB(.08*s,.12*s,.7*s,'#7a5a42',0,0,0,6,g);
+  const col = kind==='sakura' ? pick(['#f2b8c8','#eea9be','#f6c7d3']) : pick(GREENS);
+  const n = 2 + Math.floor(rnd()*2);
+  for(let i=0;i<n;i++){
+    const r = rr(.45,.65)*s; const geo = jitter(new THREE.IcosahedronGeometry(r,0), r*.25);
+    const m = new THREE.Mesh(geo, mat(col)); m.position.set(rr(-.3,.3)*s, (.95+rr(0,.4))*s, rr(-.3,.3)*s); put(m,g);
+  }
+  return g;
+}
+
+// ---------- building pieces ----------
+function prismRoof(w,d,rh,color,over){
+  over = over==null ? .2 : over;
+  const s = new THREE.Shape(); s.moveTo(-(d/2+over),0); s.lineTo(d/2+over,0); s.lineTo(0,rh); s.closePath();
+  const geo = new THREE.ExtrudeGeometry(s,{depth:w+over*1.2, bevelEnabled:false});
+  geo.translate(0,0,-(w+over*1.2)/2); geo.rotateY(Math.PI/2);
+  return new THREE.Mesh(geo, mat(color));
+}
+function windowsOn(g, w, d, floors, cols, y0, fh, opts){
+  opts = opts||{}; const ww = opts.ww||.32, wh = opts.wh||.38;
+  for(let f=0;f<floors;f++) for(let c=0;c<cols;c++){
+    if(opts.skip && opts.skip(f,c)) continue;
+    const x = -w/2 + (c+.5)*(w/cols);
+    const m = rnd()<.66 ? winLit : winDark;
+    box(ww,wh,.05,m,x,y0+f*fh,d/2+.02,g);
+    if(opts.back) box(ww,wh,.05,m,x,y0+f*fh,-d/2-.02,g);
+  }
+}
+const CRATE = ['#2f6fb0','#3c84c4','#2a5e95'];
+const WALLS = ['#ece5d7','#e2d6c2','#efe8db','#d9cdb8','#e8e0d0','#efe2cc','#dfe6e8'];
+const ROOFS = ['#46586b','#5d4a3e','#45576a','#6a4a3c','#3f5163','#55463c','#4b5f74','#7a4a3a'];
+
+function hullShape(l,b){ const s = new THREE.Shape(); s.moveTo(-l/2,-b/2); s.lineTo(l*.12,-b/2); s.quadraticCurveTo(l*.42,-b/2,l/2,0); s.quadraticCurveTo(l*.42,b/2,l*.12,b/2); s.lineTo(-l/2,b/2); s.closePath(); return s; }
+function hullPiece(l,b,depth,color,y,parent){ const g = new THREE.ExtrudeGeometry(hullShape(l,b),{depth,bevelEnabled:false}); g.rotateX(-Math.PI/2); const m = new THREE.Mesh(g, M(color)); m.position.y = y; return put(m,parent); }
+const wireMat = new THREE.LineBasicMaterial({color:'#2b2d31'});
+const BOAT_STYLES = [
+  {stripe:'#2f5d8a',bottom:'#b5463c',mast:2.2},
+  {stripe:'#c9473d',bottom:'#3e6d8e'},
+  {stripe:'#2f7f73',bottom:'#9b3f36',mast:1.8},
+  {stripe:'#d39a2c',bottom:'#3e6d8e'},
+  {stripe:'#6b4fa0',bottom:'#b5463c',mast:2}
+];
+function boatModel(styleIdx){
+  const o = BOAT_STYLES[styleIdx % BOAT_STYLES.length];
+  const L = 4.0, B = 1.5;
+  const root = new THREE.Group();
+  const g = group(0,0,0,root); g.scale.setScalar(.42);
+  hullPiece(L*.93,B*.84,.5,o.bottom,-.5,g);
+  hullPiece(L,B,.58,'#f3f0e7',0,g);
+  hullPiece(L*1.005,B*1.01,.09,o.stripe,.3,g);
+  hullPiece(L*.9,B*.8,.04,'#b39b78',.56,g);
+  const cx = -L*.18, cw = L*.28;
+  boxB(cw,.8,B*.6,'#f7f5ef',cx,.58,0,g);
+  boxB(cw+.02,.22,B*.6+.02,'#2c3a46',cx,1.0,0,g);
+  boxB(cw+.2,.06,B*.66,o.stripe,cx,1.38,0,g);
+  if(o.mast){ cylB(.06,.08,o.mast,'#e9e4d8',L*.14,.6,0,6,g); boxB(.05,.05,B*1.2,'#c9c3b5',L*.14,.6+o.mast*.62,0,g);
+    const flag = new THREE.Mesh(new THREE.PlaneGeometry(.5,.3), new THREE.MeshStandardMaterial({color:'#d8453a',side:THREE.DoubleSide})); flag.position.set(L*.14-.27,.45+o.mast,0); g.add(flag); }
+  for(let i=0;i<2;i++) boxB(.4,.22,.32,CRATE[i],L*.12+i*.42,.6,0,g);
+  return {root, g};
+}
+
+// ---------- building definitions ----------
+// place: land | sea | pier ;  jobs: workers needed ; road: needs adjacent road to work
+const DEFS = {
+  road:     {name:'道路', ico:'路', col:'#4a4c51', place:'land', cost:{coin:5}, desc:'连接建筑。陆地建筑必须紧邻道路才能运转；岸边道路下方才能起码头。'},
+  house:    {name:'民居', ico:'家', col:'#c8574a', place:'land', road:true, cost:{coin:40,wood:15}, cap:4, desc:'可住 4 人。居民按满意度缴税，也是港町的劳动力，每人每小时吃掉少量鲜鱼。'},
+  lumber:   {name:'伐木场', ico:'木', col:'#8b5e3c', place:'land', road:true, jobs:2, cost:{coin:30}, desc:'需 2 名工人。基础每小时 1 木材，周围 8 格每有一棵树再 +0.3。'},
+  market:   {name:'鲜鱼市场', ico:'市', col:'#2f6f52', place:'land', road:true, jobs:2, cost:{coin:80,wood:20}, desc:'需 2 名工人。把库存超过 15 的鲜鱼按当日鱼价卖出，每小时最多 3 条。'},
+  warehouse:{name:'仓库', ico:'仓', col:'#7d8a94', place:'land', road:true, cost:{coin:60,wood:25}, store:100, desc:'木材和鲜鱼的储量上限各 +100。'},
+  park:     {name:'樱花公园', ico:'樱', col:'#e98aa6', place:'land', cost:{coin:25,wood:5}, desc:'每座公园让满意度目标 +6（最多 +30）。满意度高，税收和人口增长都更好。'},
+  pier:     {name:'码头', ico:'埠', col:'#a7835a', place:'sea', cost:{coin:15,wood:10}, desc:'第一排码头要建在岸边道路正下方；之后可以接着已有码头往外延伸。每座码头能停一条渔船。'},
+  boat:     {name:'渔船', ico:'船', col:'#2f5d8a', place:'pier', jobs:2, cost:{coin:80,wood:20}, desc:'需 2 名工人，停在空码头上。每趟出海 8 小时，带回约 6 条鲜鱼；下雨减产，太阳雨鱼群活跃。'},
+  farm:     {name:'养殖网箱', ico:'箱', col:'#3c84c4', place:'sea', jobs:1, cost:{coin:40,wood:10}, desc:'需 1 名工人。放在任意海面格子，每小时稳定产出 0.5 条鲜鱼。'},
+  tree:     {name:'树木', place:'land', natural:true, desc:'拆除可获得 4 木材，但伐木场周围的树越多产量越高。'}
+};
+const TOOL_ORDER = ['select','road','house','lumber','market','warehouse','park','|','pier','boat','farm','|','demolish'];
+const RES_NAME = {coin:'金币', wood:'木材', fish:'鲜鱼'};
+function costText(c){ return Object.keys(c).map(k=>(k==='coin'?'¥':'木')+c[k]).join(' '); }
+
+// ---------- models per building type ----------
+const BUILD = {
+  road(b){ const g = new THREE.Group(); boxB(2,.06,2,'#45474c',0,0,0,g).castShadow=false; return g; },
+  house(b){
+    const g = new THREE.Group(); const r = b.v;
+    const w = 1.6, d = 1.4, h = r<.5 ? 1.3 : 1.9;
+    boxB(w+.1,.12,d+.1,'#9c968b',0,0,0,g);
+    boxB(w,h,d,WALLS[Math.floor(r*97)%WALLS.length],0,.12,0,g);
+    const roof = prismRoof(w,d,.65,ROOFS[Math.floor(r*53)%ROOFS.length]); roof.position.y = h+.12; put(roof,g);
+    windowsOn(g,w,d,h>1.5?2:1,3,.65,.8,{skip:(f,c)=>f===0&&c===0,back:true});
+    boxB(.36,.62,.05,'#6a4f3b',-w/2+w/6,.12,d/2+.02,g);
+    boxB(.5,.04,.3,'#5f6b75',-w/2+w/6,.82,d/2+.15,g);
+    if(r>.3) for(let i=0;i<3;i++) boxB(.5,.05,.05,'#efe9dc',-.4+i*.5,.05,.92,g);
+    cylB(.13,.16,.25,'#6f9e4f',.65,0,.85,6,g);
+    return g;
+  },
+  lumber(b){
+    const g = new THREE.Group();
+    boxB(1.9,.04,1.9,'#a98d66',0,0,0,g);
+    for(const [x,z] of [[-.7,-.7],[.3,-.7],[-.7,.0],[.3,0]]) boxB(.08,1.0,.08,'#6b4e3a',x,0,z,g);
+    boxB(1.2,.06,1.0,'#7b5b3f',-.2,1.0,-.35,g);
+    const logG = new THREE.CylinderGeometry(.11,.11,1.0,7); logG.rotateZ(Math.PI/2);
+    for(let i=0;i<3;i++) for(let j=0;j<3-i;j++){ const m = new THREE.Mesh(logG, mat('#9b6b45')); m.position.set(.35, .11+i*.2, .25+j*.22+i*.11); put(m,g); }
+    cylB(.2,.22,.25,'#8a6a4a',-.55,0,.6,8,g); box(.04,.3,.04,'#5c6670',-.55,.4,.6,g);
+    boxB(.6,.4,.4,'#c9a873',-.3,0,-.4,g);
+    return g;
+  },
+  market(b){
+    const g = new THREE.Group();
+    boxB(1.9,.12,1.8,'#9c968b',0,0,0,g);
+    boxB(1.8,1.2,1.4,'#e9e4d8',0,.12,-.15,g);
+    const r = prismRoof(1.8,1.4,.45,'#4b5f74',.2); r.position.set(0,1.32,-.15); put(r,g);
+    sign('鲜鱼市场','#2f6f52','#ffffff',1.4,.32,0,1.08,.57,0,g);
+    boxB(1.5,.7,.05,'#3a4148',0,.12,.56,g);
+    boxB(1.9,.04,.5,'#2f6f52',0,1.28,.75,g);
+    for(let i=0;i<3;i++) boxB(.34,.2,.28,CRATE[i],-.6+i*.42,.12,.8,g);
+    return g;
+  },
+  warehouse(b){
+    const g = new THREE.Group();
+    boxB(1.9,.1,1.9,'#9c968b',0,0,0,g);
+    boxB(1.7,1.1,1.6,'#a9b3b9',0,.1,0,g);
+    const rg = new THREE.CylinderGeometry(.85,.85,1.6,12,1,false,0,Math.PI); rg.rotateX(Math.PI/2); rg.rotateZ(Math.PI/2);
+    const roof = new THREE.Mesh(rg, mat('#7d8a94')); roof.scale.y = .45; roof.position.y = 1.2; put(roof,g);
+    boxB(.9,.8,.05,'#59646c',0,.1,.81,g);
+    for(let y=.2;y<.9;y+=.12) boxB(.9,.02,.06,'#6d7880',0,.1+y,.82,g);
+    sign('仓','#ffffff','#355d74',.4,.3,.65,.7,.81,0,g);
+    return g;
+  },
+  park(b){
+    const g = new THREE.Group();
+    boxB(1.96,.05,1.96,'#8fbf5f',0,0,0,g);
+    boxB(.4,.012,1.96,'#d8c9a5',.2,.05,0,g);
+    tree(-.5,-.45,.85,.05,'sakura',g); tree(.75,.55,.6,.05,'sakura',g);
+    boxB(.6,.05,.18,'#7a5a42',-.45,.26,.5,g); boxB(.05,.21,.16,'#4a4f55',-.7,.05,.5,g); boxB(.05,.21,.16,'#4a4f55',-.2,.05,.5,g);
+    cylB(.03,.03,.8,'#4a5258',.75,.05,-.6,5,g); boxB(.14,.1,.14,lampMat,.75,.85,-.6,g);
+    return g;
+  },
+  pier(b){
+    const g = new THREE.Group(); const y = WATER_TOP + .52;
+    boxB(.8,.1,2.0,'#a7835a',-.55,y,0,g);
+    for(let z=-.85;z<=.9;z+=.3) boxB(.8,.012,.04,'#8d6c48',-.55,y+.1,z,g);
+    for(const z of [-.8,.0,.8]) for(const x of [-.9,-.2]) cylB(.07,.07,1.5,'#6b5038',x,WATER_TOP-1.0,z,6,g);
+    cylB(.06,.08,.18,'#3a3e43',-.18,y+.1,.5,6,g); cylB(.06,.08,.18,'#3a3e43',-.18,y+.1,-.5,6,g);
+    const t = new THREE.Mesh(new THREE.TorusGeometry(.1,.04,5,10), mat('#222428')); t.position.set(-.13,y-.05,.0); t.rotation.y = Math.PI/2; put(t,g);
+    return g;
+  },
+  farm(b){
+    const g = new THREE.Group();
+    const net = new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.5), new THREE.MeshStandardMaterial({color:'#24474a',transparent:true,opacity:.55,depthWrite:false,side:THREE.DoubleSide}));
+    net.rotation.x = -Math.PI/2; net.position.y = WATER_TOP+.06; g.add(net);
+    const ring = [];
+    for(let i=0;i<4;i++){ const a = i*Math.PI/2; const m = boxB(i%2?.12:1.7, .12, i%2?1.7:.12,'#e3c25a',Math.cos(a)*.8,WATER_TOP-.02,Math.sin(a)*.8,g); ring.push(m); }
+    for(const [x,z] of [[.8,.8],[-.8,.8],[.8,-.8],[-.8,-.8]]){ const s = new THREE.Mesh(new THREE.SphereGeometry(.13,8,6), mat('#e2573f')); s.position.set(x,WATER_TOP+.06,z); put(s,g); }
+    boxB(.5,.3,.4,'#efe9dc',.55,WATER_TOP+.08,-.55,g);
+    return g;
+  },
+  tree(b){
+    const g = new THREE.Group(); const save = seed; seed = Math.floor(b.v*1e9);
+    const k = b.v<.25 ? 'pine' : (b.v>.92 ? 'sakura' : undefined);
+    tree(rr(-.35,.35), rr(-.35,.35), rr(.85,1.15), 0, k, g);
+    if(b.v>.55) tree(rr(-.6,.6), rr(-.6,.6), rr(.6,.8), 0, k, g);
+    seed = save; return g;
+  }
+};
+
+// ---------- game state ----------
+const SAVE_KEY = 'kirisaki-builder-v1';
+const G = {
+  coin:250, wood:60, fish:30, pop:6, happy:60,
+  hours:8, day:1, weather:'clear', price:4, speed:1,
+  goal:0, nextId:1, foodOk:true
+};
+let cells = [];               // cells[rz][cx] -> building
+let buildings = [];           // by placement order
+function resetCells(){ cells = Array.from({length:ROWS},()=>Array(COLS).fill(null)); }
+resetCells();
+const cellAt = (cx,rz) => inGrid(cx,rz) ? cells[rz][cx] : null;
+
+function worldOf(cx,rz){ return new THREE.Vector3(cx2x(cx), 0, rz2z(rz)); }
+function facingRot(cx,rz){
+  const dirs = [[0,1,0],[0,-1,2],[1,0,1],[-1,0,3]];
+  for(const [dx,dz,r] of dirs){ const n = cellAt(cx+dx,rz+dz); if(n && n.type==='road') return r; }
+  return 0;
+}
+function disposeGroup(g){ g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); if(g.parent) g.parent.remove(g); }
+
+function addBuilding(type,cx,rz,opts){
+  opts = opts || {};
+  const b = {id:G.nextId++, type, cx, rz, v: opts.v!=null ? opts.v : Math.random(), rot: opts.rot!=null ? opts.rot : (DEFS[type].place==='land' && type!=='road' ? facingRot(cx,rz) : 0)};
+  b.group = BUILD[type](b);
+  b.group.position.copy(worldOf(cx,rz)); b.group.rotation.y = b.rot*Math.PI/2;
+  scene.add(b.group);
+  cells[rz][cx] = b; buildings.push(b);
+  b.acc = 0; b.ok = false;
+  if(!opts.quiet) popIn(b.group);
+  return b;
+}
+function removeBuilding(b){
+  if(b.boat) removeBoat(b);
+  disposeGroup(b.group);
+  cells[b.rz][b.cx] = null;
+  buildings = buildings.filter(x=>x!==b);
+}
+
+// ---------- boats ----------
+let boatCount = 0;
+function addBoat(pier, opts){
+  opts = opts || {};
+  const style = opts.style!=null ? opts.style : boatCount++;
+  const m = boatModel(style);
+  scene.add(m.root);
+  const bt = {pier, style, root:m.root, g:m.g, phase:opts.phase||'dock', t:opts.t||0, ph:Math.random()*6.28, heading:-Math.PI/2, id:G.nextId++};
+  pier.boat = bt;
+  placeBoatAt(bt, berthOf(pier));
+  if(!opts.quiet) popIn(m.root);
+  return bt;
+}
+function removeBoat(pier){ const bt = pier.boat; if(!bt) return; disposeGroup(bt.root); pier.boat = null; }
+function berthOf(pier){ const p = worldOf(pier.cx,pier.rz); p.x += .42; p.y = WATER_TOP; return p; }
+function placeBoatAt(bt,p){ bt.root.position.copy(p); bt.root.rotation.y = bt.heading; }
+
+const TRIP = 8, DOCK = 2;
+function tripPos(bt, p){
+  const base = berthOf(bt.pier);
+  const out = new THREE.Vector3(base.x, WATER_TOP, 16.0);
+  const dir = base.x > 0 ? -1 : 1;
+  const sm = x => x*x*(3-2*x);
+  if(p < .15){ return base.clone().lerp(out, sm(p/.15)); }
+  if(p > .85){ return out.clone().lerp(base, sm((p-.85)/.15)); }
+  const u = (p-.15)/.7, a = u*Math.PI*2;
+  return new THREE.Vector3(out.x + Math.sin(a)*3.2*dir, WATER_TOP, 16.0 + (1-Math.cos(a))*.9);
+}
+
+// ---------- derived state ----------
+const D = {cap:0, jobs:0, workers:0, storeCap:100, parks:0, markets:0, boats:0, houses:0, lumbers:0, warehouses:0};
+function adjRoad(b){ return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dz])=>{ const n = cellAt(b.cx+dx,b.rz+dz); return n && n.type==='road'; }); }
+function recompute(){
+  // pier connectivity: BFS from first sea row piers under roads
+  const piers = buildings.filter(b=>b.type==='pier');
+  piers.forEach(p=>p.conn=false);
+  const q = piers.filter(p=>p.rz===LAND_ROWS && (cellAt(p.cx,LAND_ROWS-1)||{}).type==='road');
+  q.forEach(p=>p.conn=true);
+  while(q.length){ const p = q.shift();
+    for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){ const n = cellAt(p.cx+dx,p.rz+dz); if(n && n.type==='pier' && !n.conn){ n.conn = true; q.push(n); } } }
+  let cap = 0, store = 100, parks = 0;
+  buildings.forEach(b=>{
+    const d = DEFS[b.type];
+    if(d.place==='land' && d.road) b.conn = adjRoad(b);
+    else if(b.type==='farm') b.conn = true;
+    else if(b.type!=='pier') b.conn = true;
+    if(b.type==='house' && b.conn) cap += d.cap;
+    if(b.type==='warehouse' && b.conn) store += d.store;
+    if(b.type==='park') parks++;
+  });
+  D.cap = cap; D.storeCap = store; D.parks = parks;
+  D.houses = buildings.filter(b=>b.type==='house').length;
+  D.lumbers = buildings.filter(b=>b.type==='lumber').length;
+  D.warehouses = buildings.filter(b=>b.type==='warehouse').length;
+  D.markets = buildings.filter(b=>b.type==='market' && b.conn).length;
+  D.boats = piers.filter(p=>p.boat).length;
+  staff();
+}
+function staff(){
+  // assign workers in placement order; boats live on piers
+  let free = Math.floor(G.pop), jobs = 0;
+  const units = [];
+  buildings.forEach(b=>{ if(DEFS[b.type].jobs) units.push({u:b, jobs:DEFS[b.type].jobs, conn:b.conn}); if(b.boat) units.push({u:b.boat, jobs:DEFS.boat.jobs, conn:b.conn}); });
+  units.sort((a,b)=>a.u.id-b.u.id);
+  units.forEach(x=>{ jobs += x.jobs; if(x.conn && free >= x.jobs){ x.u.staffed = true; free -= x.jobs; } else x.u.staffed = false; });
+  D.jobs = jobs; D.workers = Math.floor(G.pop) - free;
+}
+function treesAround(b){ let n = 0; for(let dx=-1;dx<=1;dx++) for(let dz=-1;dz<=1;dz++){ if(!dx&&!dz) continue; const c = cellAt(b.cx+dx,b.rz+dz); if(c && c.type==='tree') n++; } return n; }
+function lumberRate(b){ return 1 + .3*treesAround(b); }
+const WEATHER_MULT = {clear:1, rain:.6, shower:1.15};
+function status(b){
+  if(b.type==='tree') return {cls:'ok', text:'自然生长中'};
+  if(b.type==='road') return {cls:'ok', text:'通行中'};
+  if(b.type==='pier') return b.conn ? {cls:'ok', text: b.boat ? '已停泊渔船' : '空泊位，可停一条渔船'} : {cls:'bad', text:'未连到岸边道路'};
+  if(!b.conn) return {cls:'bad', text:'未紧邻道路，无法运转'};
+  if(DEFS[b.type].jobs && !b.staffed) return {cls:'warn', text:'缺少工人（多建民居）'};
+  if(b.type==='house') return {cls:'ok', text:'有人居住'};
+  return {cls:'ok', text:'运转中'};
+}
+
+// ---------- economy tick (one game hour) ----------
+function tickHour(){
+  G.hours = Math.floor(G.hours) + 1;
+  const hour = G.hours % 24;
+  if(hour===0){ newDay(); }
+  if(phaseOf(hour)!==curPhase) computeTarget();
+  recompute();
+  const cap = D.storeCap;
+  // production
+  buildings.forEach(b=>{
+    if(!b.conn) return;
+    if(b.type==='lumber' && b.staffed){ const r = lumberRate(b); G.wood = Math.min(cap, G.wood + r); b.acc += r; if(b.acc >= 3){ floatAt(b, '+'+Math.floor(b.acc)+' 木材', '#f2c98a'); b.acc -= Math.floor(b.acc); } }
+    if(b.type==='farm' && b.staffed){ G.fish = Math.min(cap, G.fish + .5); b.acc += .5; if(b.acc >= 2){ floatAt(b, '+2 鲜鱼', '#a9d6ff'); b.acc -= 2; } }
+  });
+  // markets sell surplus
+  buildings.forEach(b=>{
+    if(b.type!=='market' || !b.conn || !b.staffed) return;
+    const sell = Math.min(3, Math.max(0, Math.floor(G.fish - 15)));
+    if(sell>0){ G.fish -= sell; const c = sell*G.price; G.coin += c; b.acc += c; }
+    if(b.acc >= 20){ floatAt(b, '+'+Math.floor(b.acc)+' 金币', '#ffe08a'); b.acc = 0; }
+  });
+  // residents eat
+  const need = G.pop*.06;
+  if(G.fish >= need){ G.fish -= need; G.foodOk = true; } else { G.fish = 0; G.foodOk = G.pop < 1; }
+  // tax
+  const tax = G.pop*.3*(G.happy/50);
+  G.coin += tax;
+  // happiness drifts toward target
+  const unemployed = Math.floor(G.pop) - D.workers;
+  let target = 50 + Math.min(30, D.parks*6) + (D.markets>0?5:0) - (G.foodOk?0:30) - (G.weather==='rain'?5:0) - (unemployed > Math.max(4,G.pop*.5) ? 8 : 0);
+  target = Math.max(0, Math.min(100, target));
+  G.happy += (target - G.happy)*.2;
+  // population
+  if(G.pop < D.cap && G.happy >= 40 && G.foodOk && G.hours % 2 === 0) G.pop += 1;
+  if(G.pop > D.cap) G.pop = D.cap;
+  if(G.happy < 25 && G.pop > 0 && G.hours % 3 === 0){ G.pop -= 1; toast('居民对生活不满，有人搬走了'); }
+  G.wood = Math.min(cap, G.wood); G.fish = Math.min(cap, G.fish);
+  checkGoal();
+  updateHUD();
+  if(G.hours % 24 === 0) save();
+}
+function newDay(){
+  G.day++;
+  const r = Math.random();
+  G.weather = r < .55 ? 'clear' : (r < .8 ? 'shower' : 'rain');
+  G.price = 3 + Math.floor(Math.random()*4);
+  computeTarget();
+  toast(`第 ${G.day} 天 · ${WEATHER[G.weather].label} · 今日鱼价 ${G.price}`);
+}
+
+// ---------- goals ----------
+const GOALS = [
+  {t:'再建一座民居', r:'奖励 ¥60', ok:()=>D.houses>=3, p:()=>Math.min(1,(D.houses-2)/1), give:{coin:60}},
+  {t:'建一座伐木场，放在树林旁边', r:'奖励 木材 20', ok:()=>D.lumbers>=1, p:()=>D.lumbers?1:0, give:{wood:20}},
+  {t:'人口达到 16', r:'奖励 ¥100', ok:()=>G.pop>=16, p:()=>G.pop/16, give:{coin:100}},
+  {t:'拥有 3 艘渔船', r:'奖励 ¥150', ok:()=>D.boats>=3, p:()=>D.boats/3, give:{coin:150}},
+  {t:'建一座仓库，并让满意度达到 70', r:'奖励 ¥200', ok:()=>D.warehouses>=1 && G.happy>=70, p:()=>(D.warehouses?.5:0)+Math.min(.5,G.happy/140), give:{coin:200}},
+  {t:'人口 40，金币 2000', r:'港町繁荣', ok:()=>G.pop>=40 && G.coin>=2000, p:()=>Math.min(1,G.pop/40)*.5+Math.min(1,G.coin/2000)*.5, give:{}}
+];
+function checkGoal(){
+  const g = GOALS[G.goal]; if(!g) return;
+  if(g.ok()){
+    for(const k in g.give) G[k] += g.give[k];
+    G.goal++;
+    if(G.goal >= GOALS.length) showWin();
+    else toast(`目标完成：${g.t}　${g.r}`);
+  }
+}
+
+// ---------- day/night + weather visuals ----------
+const TIMES = {
+  day:  {bg:'#e2e7e5', sky:'#ffffff', ground:'#b7ae9c', hemiI:.62, sun:'#fff1dc', sunI:1.2, sunPos:[22,40,26], win:0, lamp:0, beam:0, night:false},
+  dusk: {bg:'#e8c9b4', sky:'#ffd5b5', ground:'#7a6a7e', hemiI:.5, sun:'#ff9b5a', sunI:1.05, sunPos:[-36,13,16], win:.9, lamp:1, beam:.55, night:false},
+  dawn: {bg:'#d9d6e2', sky:'#ffe2cf', ground:'#8a8090', hemiI:.5, sun:'#ffc9a0', sunI:.9, sunPos:[36,12,10], win:.4, lamp:.5, beam:.4, night:false},
+  night:{bg:'#1b2336', sky:'#7184ad', ground:'#1d2232', hemiI:.42, sun:'#a7bbe4', sunI:.4, sunPos:[-18,40,-14], win:1.3, lamp:1.5, beam:1, night:true}
+};
+const WEATHER = {
+  clear: {rain:0, rainbow:0, dim:1, haze:0, label:'晴', wave:.05},
+  rain:  {rain:1, rainbow:0, dim:.42, haze:.38, label:'雨', wave:.12},
+  shower:{rain:.6, rainbow:1, dim:.95, haze:.08, label:'太阳雨', wave:.07}
+};
+function phaseOf(h){ h = h % 24; if(h>=5 && h<7) return 'dawn'; if(h>=7 && h<17) return 'day'; if(h>=17 && h<20) return 'dusk'; return 'night'; }
+let curPhase = null;
+const cur = {bg:new THREE.Color('#e2e7e5'), sky:new THREE.Color('#fff'), ground:new THREE.Color('#b7ae9c'), sun:new THREE.Color('#fff1dc'), hemiI:.8, sunI:1.5, sunPos:new THREE.Vector3(22,40,26), win:0, lamp:0, beam:0, rain:0, rainbow:0, wave:.05, fogNear:150};
+const tgt = {};
+function computeTarget(){
+  curPhase = phaseOf(Math.floor(G.hours));
+  const T = TIMES[curPhase], W = WEATHER[G.weather];
+  const grey = new THREE.Color(T.night ? '#2a3140' : '#9ea7ab');
+  tgt.bg = new THREE.Color(T.bg).lerp(grey, W.haze);
+  tgt.sky = new THREE.Color(T.sky); tgt.ground = new THREE.Color(T.ground); tgt.sun = new THREE.Color(T.sun);
+  tgt.hemiI = T.hemiI*(W.rain>.9?.85:1); tgt.sunI = T.sunI*W.dim; tgt.sunPos = new THREE.Vector3(...T.sunPos);
+  tgt.win = T.win + (W.rain>.9 && !T.night ? .35 : 0); tgt.lamp = T.lamp + (W.rain>.9 && !T.night ? .4 : 0);
+  tgt.beam = Math.max(T.beam, W.rain>.9 ? .45 : 0);
+  tgt.rain = W.rain; tgt.rainbow = (T.night || curPhase==='dawn') ? 0 : W.rainbow; tgt.wave = W.wave;
+  tgt.fogNear = W.rain>.9 ? 60 : 150;
+  document.body.classList.toggle('night', T.night);
+}
+function stepState(dt, snap){
+  const k = snap ? 1 : 1-Math.exp(-dt*1.6);
+  cur.bg.lerp(tgt.bg,k); cur.sky.lerp(tgt.sky,k); cur.ground.lerp(tgt.ground,k); cur.sun.lerp(tgt.sun,k); cur.sunPos.lerp(tgt.sunPos,k);
+  for(const key of ['hemiI','sunI','win','lamp','beam','rain','rainbow','wave','fogNear']) cur[key] += (tgt[key]-cur[key])*k;
+  scene.background.copy(cur.bg); scene.fog.color.copy(cur.bg); scene.fog.near = cur.fogNear; scene.fog.far = cur.fogNear+150;
+  hemi.color.copy(cur.sky); hemi.groundColor.copy(cur.ground); hemi.intensity = cur.hemiI;
+  sun.color.copy(cur.sun); sun.intensity = cur.sunI; sun.position.copy(cur.sunPos);
+  winLit.emissiveIntensity = cur.win; lampMat.emissiveIntensity = cur.lamp;
+  lampLights.forEach(L=>L.intensity = cur.lamp*.9);
+  lhLampMat.emissiveIntensity = .3 + cur.beam*1.4; beamMat.opacity = cur.beam*.16; lhLight.intensity = cur.beam*1.2;
+  rainbowMats.forEach(m=>m.opacity = cur.rainbow*.24); rainbow.visible = cur.rainbow > .01;
+  rain.visible = cur.rain > .01; rainGeo.setDrawRange(0, Math.floor(RAIN_N*cur.rain)*2);
+  rainMat.opacity = TIMES[curPhase].night ? .32 : .58;
+}
+
+// ---------- lighthouse + islets (outer sea, decoration) ----------
+const lhBase = group(17.2,0,17.2);
+cylB(1.3,1.5,WATER_TOP+5.6+1.0,'#c4bfb4',0,-5.6,0,14,lhBase);
+const BW_TOP = WATER_TOP+1.0;
+const lighthouse = group(0,BW_TOP,0,lhBase);
+cylB(.8,.85,.3,'#efebe2',0,0,0,12,lighthouse);
+for(let i=0;i<6;i++){ const r0 = .66-i*.04, r1 = .66-(i+1)*.04; cylB(r1,r0,.48,i%2?'#f4f1ea':'#d14b45',0,.3+i*.48,0,12,lighthouse); }
+const LH_TOP = .3+6*.48;
+cylB(.6,.6,.07,'#2f3a40',0,LH_TOP,0,14,lighthouse);
+const lhLampMat = new THREE.MeshStandardMaterial({color:'#fff6d8',emissive:'#ffe39a',emissiveIntensity:.3,transparent:true,opacity:.92});
+cylB(.32,.32,.48,lhLampMat,0,LH_TOP+.07,0,10,lighthouse);
+const lcap = new THREE.Mesh(new THREE.ConeGeometry(.44,.4,10), mat('#2f5d50')); lcap.position.y = LH_TOP+.75; put(lcap,lighthouse);
+const beam = group(0,LH_TOP+.3,0,lighthouse);
+const beamMat = new THREE.MeshBasicMaterial({color:'#fff2c2',transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+[1,-1].forEach(sx=>{ const g = new THREE.ConeGeometry(1.2,15,18,1,true); g.translate(0,-7.5,0); g.rotateZ(sx*Math.PI/2); beam.add(new THREE.Mesh(g,beamMat)); });
+const lhLight = new THREE.PointLight('#ffe6a8',0,14,2); lhLight.position.set(17.2,BW_TOP+LH_TOP+.4,17.2); scene.add(lhLight);
+
+const foamRings = [];
+function islet(x,z,s,pines){
+  const g = group(x,0,z);
+  const col = jitter(new THREE.CylinderGeometry(s*.85,s*1.25,6.4,7,3), s*.35);
+  const m = new THREE.Mesh(col, mat('#6d6862')); m.position.y = -5.6+3.2; put(m,g);
+  const capG = jitter(new THREE.DodecahedronGeometry(s*.95,0), s*.25); const c = new THREE.Mesh(capG, mat('#7b756c')); c.scale.y = .55; c.position.y = .75; put(c,g);
+  const top = jitter(new THREE.CylinderGeometry(s*.72,s*.82,.3,7), .12); const t = new THREE.Mesh(top, mat('#5f8f45')); t.position.y = 1.15; put(t,g);
+  for(let i=0;i<pines;i++){ const a = rnd()*6.28, d = rnd()*s*.4; tree(x+Math.cos(a)*d, z+Math.sin(a)*d, rr(.8,1.15)*s*.75, 1.28, 'pine'); }
+  const ring = new THREE.Mesh(new THREE.RingGeometry(s*1.15,s*1.45,12), new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.5,depthWrite:false}));
+  ring.rotation.x = -Math.PI/2; ring.position.set(x,WATER_TOP+.06,z); scene.add(ring); foamRings.push({ring,ph:rnd()*6});
+}
+islet(-16.5,17.4,1.2,2);
+islet(-2.0,18.0,.8,1);
+
+// ---------- seagulls ----------
+const gulls = [];
+for(let i=0;i<6;i++){
+  const g = group(0,0,0); const wingG = new THREE.BoxGeometry(.5,.03,.15); wingG.translate(.25,0,0);
+  const l = new THREE.Mesh(wingG, mat('#f6f6f2')), r = new THREE.Mesh(wingG, mat('#f6f6f2')); r.rotation.y = Math.PI; g.add(l); g.add(r);
+  box(.3,.08,.1,'#e9e9e4',0,0,0,g).castShadow = false;
+  gulls.push({g,l,r,rad:rr(5,12),h:rr(6,10),sp:rr(.18,.32)*(rnd()<.5?1:-1),ph:rnd()*6.28,cx:rr(-8,8),cz:rr(4,12)});
+}
+
+// ---------- rain, ripples, rainbow ----------
+const RAIN_N = 4000;
+const rainPos = new Float32Array(RAIN_N*6), rainSpd = new Float32Array(RAIN_N);
+for(let i=0;i<RAIN_N;i++){ const x = rr(-24,24), y = rr(-1,24), z = rr(-18,22); rainPos.set([x,y,z,x+.06,y+.55,z],i*6); rainSpd[i] = rr(16,22); }
+const rainGeo = new THREE.BufferGeometry(); rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos,3));
+const rainMat = new THREE.LineBasicMaterial({color:'#ffffff',transparent:true,opacity:.6,depthWrite:false});
+const rain = new THREE.LineSegments(rainGeo, rainMat); rain.frustumCulled = false; scene.add(rain);
+const ripples = [];
+const rippleGeo = new THREE.RingGeometry(.08,.14,16); rippleGeo.rotateX(-Math.PI/2);
+for(let i=0;i<46;i++){ const m = new THREE.Mesh(rippleGeo, new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:0,depthWrite:false})); m.position.set(rr(-19,19),WATER_TOP+.07,rr(3,18.5)); scene.add(m); ripples.push({m,age:rnd()*1.2}); }
+const rainbow = group(4,-8,-36);
+const RB = ['#e56b6b','#f0a35e','#f2d36b','#8fcf7a','#6fb5d9','#7a8fd6','#a98bd0'];
+const rainbowMats = RB.map((c,i)=>{ const m = new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0,depthWrite:false,fog:false}); rainbow.add(new THREE.Mesh(new THREE.TorusGeometry(38-i*.9,.45,6,90,Math.PI), m)); return m; });
+
+// ---------- grid overlay, hover tile ----------
+const gridLines = (function(){
+  const pts = [];
+  for(let i=0;i<=COLS;i++){ const x = -20+i*CELL; pts.push(x,.03,LAND_Z0, x,.03,QUAY_Z); pts.push(x,WATER_TOP+.1,QUAY_Z+.3, x,WATER_TOP+.1,QUAY_Z+12); }
+  for(let j=0;j<=LAND_ROWS;j++){ const z = LAND_Z0+j*CELL; pts.push(-20,.03,z, 20,.03,z); }
+  for(let j=0;j<=ROWS-LAND_ROWS;j++){ const z = QUAY_Z+j*CELL; pts.push(-20,WATER_TOP+.1,z, 20,WATER_TOP+.1,z); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
+  const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({color:'#ffffff',transparent:true,opacity:.28,depthWrite:false}));
+  l.visible = false; scene.add(l); return l;
+})();
+const hoverMat = new THREE.MeshBasicMaterial({color:'#4ccf8a',transparent:true,opacity:.35,depthWrite:false});
+const hoverTile = new THREE.Mesh(new THREE.PlaneGeometry(1.94,1.94), hoverMat);
+hoverTile.rotation.x = -Math.PI/2; hoverTile.renderOrder = 5; hoverTile.visible = false; scene.add(hoverTile);
+const ghostMat = new THREE.MeshStandardMaterial({color:'#ffffff',transparent:true,opacity:.55,depthWrite:false});
+let ghost = null, ghostType = null;
+function setGhost(type){
+  if(ghost){ disposeGroup(ghost); ghost = null; }
+  ghostType = type;
+  if(!type || !BUILD[type] && type!=='boat') return;
+  if(type==='boat'){ ghost = boatModel(boatCount).root; }
+  else ghost = BUILD[type]({v:.7, cx:0, rz:0});
+  ghost.traverse(o=>{ if(o.isMesh){ o.material = ghostMat; o.castShadow = false; o.receiveShadow = false; o.renderOrder = 6; } });
+  ghost.visible = false; scene.add(ghost);
+}
+
+// ---------- placement rules ----------
+function canAfford(c){ return Object.keys(c).every(k=>G[k] >= c[k]); }
+function check(tool,cx,rz){
+  if(!inGrid(cx,rz)) return {ok:false};
+  const here = cellAt(cx,rz);
+  if(tool==='demolish'){
+    if(!here) return {ok:false, why:'这里没有东西'};
+    if(here.type==='pier' && here.boat) return {ok:true, why:'先拆渔船'};
+    return {ok:true};
+  }
+  const d = DEFS[tool];
+  if(d.place==='land' && isSeaRow(rz)) return {ok:false, why:d.name+'只能建在陆地上'};
+  if(d.place==='sea' && !isSeaRow(rz)) return {ok:false, why:d.name+'只能建在海面上'};
+  if(tool==='boat'){
+    if(!here || here.type!=='pier') return {ok:false, why:'渔船要停在码头上'};
+    if(here.boat) return {ok:false, why:'这座码头已经有船了'};
+    if(!canAfford(d.cost)) return {ok:false, why:'资源不足：需要 '+costText(d.cost)};
+    return {ok:true, warn: here.conn ? null : '码头未连到岸边道路，渔船无法出海'};
+  }
+  if(here) return {ok:false, why: here.type==='tree' ? '先拆除树木（可得木材）' : '这里已经有建筑了'};
+  if(tool==='pier'){
+    const firstRow = rz===LAND_ROWS;
+    const nearPier = [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dz])=>{ const n = cellAt(cx+dx,rz+dz); return n && n.type==='pier'; });
+    if(!firstRow && !nearPier) return {ok:false, why:'码头要从岸边建起，或接在已有码头旁'};
+  }
+  if(!canAfford(d.cost)) return {ok:false, why:'资源不足：需要 '+costText(d.cost)};
+  let warn = null;
+  if(d.road && !adjRoad({cx,rz})) warn = '旁边没有道路，建成后无法运转';
+  if(tool==='pier' && rz===LAND_ROWS && (cellAt(cx,LAND_ROWS-1)||{}).type!=='road') warn = '正上方岸边没有道路，码头不会连通';
+  return {ok:true, warn};
+}
+function pay(c){ for(const k in c) G[k] -= c[k]; }
+function refund(c){ const out = {}; for(const k in c){ out[k] = Math.floor(c[k]*.5); G[k] += out[k]; } return out; }
+function apply(tool,cx,rz){
+  const r = check(tool,cx,rz);
+  if(!r.ok){ if(r.why) toast(r.why); return false; }
+  const here = cellAt(cx,rz);
+  if(tool==='demolish'){
+    if(here.type==='pier' && here.boat){ refund(DEFS.boat.cost); removeBoat(here); floatXYZ(berthOf(here),'拆除渔船','#ffffff'); }
+    else if(here.type==='tree'){ G.wood = Math.min(D.storeCap, G.wood+4); floatAt(here,'+4 木材','#f2c98a'); removeBuilding(here); }
+    else {
+      if(here.type==='pier'){ // cannot strand piers further out? allow, they simply disconnect
+      }
+      const back = refund(DEFS[here.type].cost); floatAt(here, '拆除 返还 '+costText(back), '#ffffff'); removeBuilding(here);
+      if(selected===here) select(null);
+    }
+  } else if(tool==='boat'){
+    pay(DEFS.boat.cost); addBoat(here);
+    if(r.warn) toast(r.warn);
+  } else {
+    pay(DEFS[tool].cost); addBuilding(tool,cx,rz);
+    if(tool==='road') refreshFacing(cx,rz);
+    if(r.warn) toast(r.warn);
+  }
+  recompute(); checkGoal(); updateHUD(); refreshInfo(); save();
+  return true;
+}
+// when a road appears, buildings next to it that weren't facing a road turn to face it
+function refreshFacing(cx,rz){
+  for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    const n = cellAt(cx+dx,rz+dz); if(!n || n.type==='road' || n.type==='tree' || DEFS[n.type].place!=='land') continue;
+    const fr = DEFS[n.type].road ? facingRot(n.cx,n.rz) : n.rot;
+    const cur = [[0,1],[0,-1],[1,0],[-1,0]][[0,2,1,3].indexOf(n.rot)];
+    const facing = cellAt(n.cx+cur[0], n.rz+cur[1]);
+    if(!facing || facing.type!=='road'){ n.rot = fr; n.group.rotation.y = fr*Math.PI/2; }
+  }
+}
+
+// ---------- pop-in animation ----------
+const pops = [];
+function popIn(g){ if(reduceMotion) return; g.scale.setScalar(.01); pops.push({g,t:0}); }
+
+// ---------- floating text ----------
+const floatsEl = document.getElementById('floats');
+const floats = [];
+function floatXYZ(p, text, color){
+  if(floats.length > 30) return;
+  const el = document.createElement('div'); el.className = 'float'; el.textContent = text; el.style.color = color||'#fff';
+  floatsEl.appendChild(el); floats.push({el, p:p.clone().add(new THREE.Vector3(0,1.6,0)), t:0});
+}
+function floatAt(b, text, color){ floatXYZ(worldOf(b.cx,b.rz).setY(isSeaRow(b.rz)?WATER_TOP:0), text, color); }
+const tmpV = new THREE.Vector3();
+function stepFloats(dt){
+  for(let i=floats.length-1;i>=0;i--){ const f = floats[i]; f.t += dt;
+    if(f.t > 1.8){ f.el.remove(); floats.splice(i,1); continue; }
+    tmpV.copy(f.p); tmpV.y += f.t*.8; tmpV.project(camera);
+    const x = (tmpV.x*.5+.5)*innerWidth, y = (-tmpV.y*.5+.5)*innerHeight;
+    f.el.style.transform = `translate(${x}px,${y}px) translate(-50%,-50%)`;
+    f.el.style.opacity = String(f.t < .2 ? f.t/.2 : Math.max(0, 1-(f.t-1.1)/.7));
+  }
+}
+
+// ---------- toast ----------
+const toastEl = document.getElementById('toast'); let toastT = 0;
+function toast(msg){ toastEl.textContent = msg; toastEl.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(()=>toastEl.style.opacity = 0, 2600); }
+
+// ---------- HUD ----------
+const $ = id => document.getElementById(id);
+function chip(id, val, small, low){ const el = $(id); el.querySelector('b').textContent = val; const s = el.querySelector('small'); if(s) s.textContent = small||''; el.classList.toggle('low', !!low); }
+function updateHUD(){
+  chip('r-coin', Math.floor(G.coin));
+  chip('r-wood', Math.floor(G.wood), '/'+D.storeCap, G.wood >= D.storeCap);
+  chip('r-fish', Math.floor(G.fish), '/'+D.storeCap, !G.foodOk);
+  chip('r-pop', Math.floor(G.pop), '/'+D.cap);
+  chip('r-job', D.workers, '/'+D.jobs+' 岗', D.jobs > Math.floor(G.pop));
+  chip('r-hap', Math.round(G.happy), '', G.happy < 40);
+  const h = Math.floor(G.hours)%24;
+  $('c-now').textContent = `第 ${G.day} 天 · ${String(h).padStart(2,'0')}:00`;
+  $('c-sub').textContent = `${WEATHER[G.weather].label} · 鱼价 ${G.price}` + (G.foodOk ? '' : ' · 缺鱼！');
+  const g = GOALS[G.goal];
+  if(g){ $('g-n').textContent = `${G.goal+1}/${GOALS.length}`; $('g-t').textContent = g.t; $('g-r').textContent = g.r; $('g-bar').style.width = Math.round(Math.max(0,Math.min(1,g.p()))*100)+'%'; }
+  else { $('g-n').textContent = ''; $('g-t').textContent = '雾岬港町已经繁荣起来了'; $('g-r').textContent = '继续自由建造吧'; $('g-bar').style.width = '100%'; }
+  document.querySelectorAll('.tool[data-t]').forEach(el=>{ const d = DEFS[el.dataset.t]; if(d && d.cost) el.classList.toggle('poor', !canAfford(d.cost)); });
+}
+
+// ---------- toolbar ----------
+let tool = 'select', selected = null;
+const toolsEl = $('tools');
+TOOL_ORDER.forEach((t,i)=>{
+  if(t==='|'){ const s = document.createElement('div'); s.className = 'sep'; toolsEl.appendChild(s); return; }
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'tool'; b.dataset.t = t;
+  let name, ico, col, cost = '';
+  if(t==='select'){ name = '查看'; ico = '看'; col = '#5d6b6d'; }
+  else if(t==='demolish'){ name = '拆除'; ico = '拆'; col = '#c0453a'; cost = '返还一半'; }
+  else { const d = DEFS[t]; name = d.name; ico = d.ico; col = d.col; cost = costText(d.cost); }
+  b.innerHTML = `<span class="ico" style="background:${col}">${ico}</span><span>${name}</span><span class="cost">${cost||'&nbsp;'}</span>`;
+  b.setAttribute('aria-pressed', String(t===tool));
+  b.title = name;
+  b.addEventListener('click', ()=>setTool(t===tool && t!=='select' ? 'select' : t));
+  toolsEl.appendChild(b);
+});
+function setTool(t){
+  tool = t;
+  document.querySelectorAll('.tool').forEach(el=>el.setAttribute('aria-pressed', String(el.dataset.t===t)));
+  gridLines.visible = t!=='select';
+  setGhost(t!=='select' && t!=='demolish' ? t : null);
+  if(t!=='select') select(null, true);
+  refreshInfo();
+}
+
+// ---------- info panel ----------
+const infoEl = $('info');
+function select(b, keepPanel){ selected = b; if(!keepPanel) refreshInfo(); }
+function refreshInfo(){
+  if(selected && !buildings.includes(selected)) selected = null;
+  if(tool!=='select' && tool!=='demolish'){
+    const d = DEFS[tool];
+    setInfo(`<div class="eyebrow">建造 BUILD</div><h2>${d.name}</h2><div class="desc">${d.desc}</div>
+      <dl class="kv"><dt>花费</dt><dd>${Object.keys(d.cost).map(k=>RES_NAME[k]+' '+d.cost[k]).join('　')}</dd>${d.jobs?`<dt>工人</dt><dd>${d.jobs}</dd>`:''}</dl>
+      <div class="desc hint-m">点击地块放置，右键或 Esc 取消。</div>`);
+    return;
+  }
+  if(tool==='demolish'){
+    setInfo(`<div class="eyebrow">拆除 DEMOLISH</div><h2>拆除</h2><div class="desc">点击建筑拆除，返还一半花费。点树木可砍伐得 4 木材。码头上有船时先拆船。</div>`);
+    return;
+  }
+  if(!selected){ infoEl.hidden = true; infoHTML = ''; return; }
+  const b = selected, d = DEFS[b.type], s = status(b);
+  const rows = [];
+  if(b.type==='house') rows.push(['住户上限', d.cap]);
+  if(b.type==='lumber') rows.push(['周围树木', treesAround(b)+' 棵'], ['产量', lumberRate(b).toFixed(1)+' 木材/时']);
+  if(b.type==='market') rows.push(['今日鱼价', G.price+' 金币/条'], ['售卖', '库存 15 条以上的部分']);
+  if(b.type==='warehouse') rows.push(['储量', '+100']);
+  if(b.type==='farm') rows.push(['产量', '0.5 鲜鱼/时']);
+  if(d.jobs) rows.push(['工人', (b.staffed?d.jobs:0)+' / '+d.jobs]);
+  let extra = '';
+  if(b.type==='pier' && b.boat){
+    const bt = b.boat;
+    const st = !b.conn ? '码头未连通，停泊中' : !bt.staffed ? '缺少工人，停泊中' : bt.phase==='trip' ? `出海捕鱼中 · 还有 ${Math.ceil(TRIP-bt.t)} 小时` : '卸货补给中';
+    extra = `<div class="eyebrow" style="margin-top:4px">渔船</div><dl class="kv"><dt>状态</dt><dd>${st}</dd><dt>每趟</dt><dd>约 ${Math.round(6*WEATHER_MULT[G.weather])} 条（今日天气）</dd><dt>工人</dt><dd>${bt.staffed?2:0} / 2</dd></dl>`;
+  }
+  setInfo(`<button type="button" class="x" id="i-x" aria-label="关闭">✕</button>
+    <div class="eyebrow">${isSeaRow(b.rz)?'海面':'陆地'} · ${b.cx+1},${b.rz+1}</div><h2>${d.name}</h2>
+    <div class="st ${s.cls}">${s.text}</div>
+    ${rows.length?`<dl class="kv">${rows.map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('')}</dl>`:''}
+    ${extra}
+    <div class="row">${b.type==='pier' && !b.boat && b.conn ? `<button type="button" id="i-boat">停一条渔船 ${costText(DEFS.boat.cost)}</button>`:''}
+    ${b.type==='pier' && b.boat ? `<button type="button" id="i-delboat">拆渔船</button>`:''}
+    <button type="button" id="i-del">${b.type==='tree'?'砍伐 +4 木材':'拆除'}</button></div>`);
+}
+let infoHTML = '';
+function setInfo(html){ infoEl.hidden = false; if(html===infoHTML) return; infoHTML = html; infoEl.innerHTML = html; }
+infoEl.addEventListener('click', e=>{
+  const btn = e.target.closest('button'); if(!btn) return; const b = selected;
+  if(btn.id==='i-x') return select(null);
+  if(!b) return;
+  if(btn.id==='i-del'){ if(b.boat) apply('demolish',b.cx,b.rz); apply('demolish',b.cx,b.rz); }
+  if(btn.id==='i-boat') apply('boat',b.cx,b.rz);
+  if(btn.id==='i-delboat') apply('demolish',b.cx,b.rz);
+});
+
+// ---------- picking ----------
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+const planeLand = new THREE.Plane(new THREE.Vector3(0,1,0), 0), planeSea = new THREE.Plane(new THREE.Vector3(0,1,0), -WATER_TOP);
+const hitP = new THREE.Vector3();
+function pickCell(ev){
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX-r.left)/r.width)*2-1, -((ev.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc, camera);
+  if(!ray.ray.intersectPlane(planeLand, hitP)) return null;
+  if(hitP.z > QUAY_Z){ if(!ray.ray.intersectPlane(planeSea, hitP)) return null; if(hitP.z < QUAY_Z) hitP.z = QUAY_Z+.01; }
+  const cx = Math.floor((hitP.x+20)/CELL), rz = Math.floor((hitP.z-LAND_Z0)/CELL);
+  return inGrid(cx,rz) ? {cx,rz} : null;
+}
+let hover = null;
+function updateHover(){
+  if(!hover){ hoverTile.visible = false; if(ghost) ghost.visible = false; return; }
+  const {cx,rz} = hover, sea = isSeaRow(rz);
+  const p = worldOf(cx,rz); hoverTile.position.set(p.x, (sea?WATER_TOP+.12:.08), p.z);
+  hoverTile.visible = true;
+  if(tool==='select'){ hoverMat.color.set('#ffffff'); hoverMat.opacity = cellAt(cx,rz) ? .25 : .12; if(ghost) ghost.visible = false; renderer.domElement.style.cursor = cellAt(cx,rz)?'pointer':''; return; }
+  const r = check(tool,cx,rz);
+  hoverMat.color.set(!r.ok ? '#e2574a' : (tool==='demolish' ? '#e2574a' : (r.warn ? '#f0b54a' : '#4ccf8a')));
+  hoverMat.opacity = .4;
+  renderer.domElement.style.cursor = r.ok ? 'pointer' : 'not-allowed';
+  if(ghost){
+    ghost.visible = true;
+    if(tool==='boat'){ const bp = p.clone(); bp.x += .42; bp.y = WATER_TOP; ghost.position.copy(bp); ghost.rotation.y = -Math.PI/2; }
+    else { ghost.position.copy(p); ghost.rotation.y = (DEFS[tool].place==='land' && tool!=='road' ? facingRot(cx,rz) : 0)*Math.PI/2; }
+    ghostMat.color.set(r.ok ? (r.warn ? '#ffe0a0' : '#c8f5da') : '#ffb0a8');
+  }
+}
+let down = null;
+const cvs = renderer.domElement;
+cvs.addEventListener('pointermove', ev=>{
+  if(ev.pointerType==='mouse' || !down){ hover = pickCell(ev); updateHover(); }
+  if(down && Math.hypot(ev.clientX-down.x, ev.clientY-down.y) > 6) down.moved = true;
+});
+cvs.addEventListener('pointerleave', ()=>{ hover = null; updateHover(); });
+cvs.addEventListener('pointerdown', ev=>{ down = {x:ev.clientX, y:ev.clientY, b:ev.button, moved:false, t:performance.now()}; });
+cvs.addEventListener('pointerup', ev=>{
+  const d = down; down = null; if(!d || d.moved) return;
+  if(d.b===2){ if(tool!=='select') setTool('select'); return; }
+  if(d.b!==0) return;
+  const c = pickCell(ev); hover = c; updateHover();
+  if(!c) { if(tool==='select') select(null); return; }
+  if(tool==='select'){ select(cellAt(c.cx,c.rz)); return; }
+  if(apply(tool,c.cx,c.rz)) updateHover();
+});
+cvs.addEventListener('contextmenu', ev=>ev.preventDefault());
+addEventListener('keydown', ev=>{
+  if(ev.target.closest && ev.target.closest('input,textarea')) return;
+  if(ev.key==='Escape'){ if(!$('modal').hidden) return closeModal(); setTool('select'); select(null); }
+  const k = parseInt(ev.key,10);
+  const order = TOOL_ORDER.filter(t=>t!=='|');
+  if(k>=1 && k<=9 && order[k-1]) setTool(order[k-1]);
+  if(ev.key==='0') setTool('demolish');
+  if(ev.key===' '){ ev.preventDefault(); setSpeed(G.speed ? 0 : (lastSpeed||1)); }
+});
+
+// ---------- speed / menu ----------
+let lastSpeed = 1;
+function setSpeed(s){ if(s) lastSpeed = s; G.speed = s; document.querySelectorAll('#speed [data-s]').forEach(b=>b.setAttribute('aria-pressed', String(+b.dataset.s===s))); }
+document.querySelectorAll('#speed [data-s]').forEach(b=>b.addEventListener('click', ()=>setSpeed(+b.dataset.s)));
+const modal = $('modal'), modalCard = $('modal-card');
+let speedBeforeModal = 1;
+function openModal(html){ speedBeforeModal = G.speed; setSpeed(0); modalCard.innerHTML = html; modal.hidden = false; const p = modalCard.querySelector('.primary'); if(p) p.focus(); }
+function closeModal(){ modal.hidden = true; setSpeed(speedBeforeModal); }
+modal.addEventListener('click', e=>{ if(e.target===modal) closeModal(); });
+function helpHTML(first){
+  return `<h2>雾岬港町</h2>
+  <div>把雾岬的小渔港建成繁荣的港町。渔船出海捕鱼，鲜鱼喂饱居民，多出来的拿去鱼市卖钱，再用金币和木材扩建。</div>
+  <ul>
+    <li>底部选建筑，点击地块放置；绿色可建，黄色能建但不会运转，红色不行。</li>
+    <li>陆地建筑要紧邻<b>道路</b>；第一排<b>码头</b>要建在岸边道路正下方，再往外延伸。</li>
+    <li>每座码头停一条<b>渔船</b>。渔船、伐木场、鱼市都需要工人，工人来自民居的居民。</li>
+    <li>居民每小时吃鱼；缺鱼会让满意度暴跌，人口流失。</li>
+    <li>左键拖动旋转视角，右键拖动平移，滚轮缩放。快捷键 1–9 选建筑，0 拆除，空格暂停。</li>
+  </ul>
+  <div class="row">${first?'':'<button type="button" id="m-new">重新开始</button>'}<button type="button" class="primary" id="m-ok">${first?'开始建设':'继续'}</button></div>`;
+}
+function bindModal(){
+  const ok = $('m-ok'); if(ok) ok.onclick = closeModal;
+  const nw = $('m-new'); if(nw) nw.onclick = ()=>{ if(confirm('清空当前存档，重新开始？')){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} newGame(); closeModal(); } };
+}
+$('menu-btn').addEventListener('click', ()=>{ openModal(helpHTML(false)); bindModal(); });
+function showWin(){
+  openModal(`<h2>港町繁荣</h2><div>雾岬已经从一个小渔港变成了热闹的港町：${Math.floor(G.pop)} 位居民、${D.boats} 艘渔船、${Math.floor(G.coin)} 金币，用了 ${G.day} 天。</div><div class="row"><button type="button" class="primary" id="m-ok">继续自由建造</button></div>`);
+  bindModal();
+}
+
+// ---------- save / load ----------
+function save(){
+  try{
+    const data = {v:1, G:Object.assign({}, G), boatCount,
+      b: buildings.map(b=>({t:b.type,x:b.cx,z:b.rz,v:+b.v.toFixed(4),r:b.rot, boat: b.boat ? {s:b.boat.style, p:b.boat.phase, t:+b.boat.t.toFixed(2)} : null}))};
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  }catch(e){}
+}
+function clearWorld(){ buildings.slice().forEach(removeBuilding); buildings = []; resetCells(); }
+function load(){
+  let data = null;
+  try{ data = JSON.parse(localStorage.getItem(SAVE_KEY)); }catch(e){}
+  if(!data || data.v!==1 || !Array.isArray(data.b)) return false;
+  clearWorld();
+  Object.assign(G, data.G); boatCount = data.boatCount||0;
+  data.b.forEach(s=>{ if(!DEFS[s.t] || !inGrid(s.x,s.z) || cellAt(s.x,s.z)) return; const b = addBuilding(s.t,s.x,s.z,{v:s.v,rot:s.r,quiet:true}); if(s.boat && s.t==='pier') addBoat(b,{style:s.boat.s,phase:s.boat.p,t:s.boat.t,quiet:true}); });
+  return true;
+}
+function newGame(){
+  clearWorld();
+  Object.assign(G, {coin:250, wood:60, fish:30, pop:6, happy:60, hours:8, day:1, weather:'clear', price:4, goal:0, nextId:1, foodOk:true});
+  boatCount = 0;
+  for(let cx=0;cx<COLS;cx++) addBuilding('road',cx,LAND_ROWS-1,{quiet:true});
+  for(let rz=3;rz<LAND_ROWS-1;rz++) addBuilding('road',9,rz,{quiet:true});
+  addBuilding('house',8,6,{quiet:true,v:.2}); addBuilding('house',10,6,{quiet:true,v:.8});
+  addBuilding('market',11,6,{quiet:true});
+  const p = addBuilding('pier',8,LAND_ROWS,{quiet:true}); addBoat(p,{quiet:true});
+  // forest: denser on the left and back rows
+  let s = 7;
+  const r2 = ()=>{ s = (s*16807) % 2147483647; return s/2147483647; };
+  for(let rz=0;rz<LAND_ROWS-1;rz++) for(let cx=0;cx<COLS;cx++){
+    if(cellAt(cx,rz)) continue;
+    const dense = (cx<6 ? .55 : cx>15 ? .4 : .15) * (rz<3 ? 1.3 : 1);
+    if(Math.abs(cx-9)<=2 && rz>=4) continue;
+    if(r2() < dense) addBuilding('tree',cx,rz,{quiet:true,v:r2()});
+  }
+  recompute(); computeTarget(); updateHUD(); refreshInfo(); save();
+}
+
+// ---------- camera ----------
+function fitK(){ const a = innerWidth/innerHeight; return a < 1.2 ? Math.min(2.1, 1.15/a) : 1; }
+function resetView(){ const t = new THREE.Vector3(0,-1.5,2.5); camera.position.copy(t).add(new THREE.Vector3(8,40,46).multiplyScalar(fitK())); controls.target.copy(t); controls.update(); }
+addEventListener('resize', ()=>{ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+// ---------- boot ----------
+const had = load();
+if(!had) newGame();
+setSpeed(1);
+recompute(); computeTarget(); stepState(0,true); updateHUD(); resetView();
+setTool('select');
+if(!had){ openModal(helpHTML(true)); bindModal(); }
+addEventListener('beforeunload', save);
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); });
+
+// ---------- loop ----------
+const HOUR_SEC = 2.5;        // real seconds per game hour at 1×
+const clock = new THREE.Clock();
+let infoTimer = 0;
+function angLerp(a,b,k){ let d = ((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; return a + d*k; }
+function frame(){
+  const dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
+  // game time
+  const dh = dt*G.speed/HOUR_SEC;
+  if(dh > 0){
+    const before = Math.floor(G.hours);
+    G.hours += dh;
+    // boats advance continuously
+    buildings.forEach(b=>{ const bt = b.boat; if(!bt) return;
+      if(!b.conn || !bt.staffed){ if(bt.phase==='dock') bt.t = 0; }
+      if(bt.phase==='dock'){ if(b.conn && bt.staffed){ bt.t += dh; if(bt.t >= DOCK){ bt.phase = 'trip'; bt.t = 0; } } }
+      else { bt.t += dh; if(bt.t >= TRIP){ bt.phase = 'dock'; bt.t = 0; const c = Math.round(6*WEATHER_MULT[G.weather]*(0.85+Math.random()*.3)); G.fish = Math.min(D.storeCap, G.fish + c); floatXYZ(berthOf(b), '+'+c+' 鲜鱼', '#a9d6ff'); updateHUD(); } }
+    });
+    const target = G.hours, after = Math.floor(target);
+    if(after > before){ G.hours = before; for(let h=before; h<after; h++) tickHour(); G.hours = target; }
+  }
+  stepState(dt);
+  controls.update();
+
+  // water
+  const pa = surfGeo.attributes.position.array, amp = cur.wave;
+  for(let i=0;i<pa.length;i+=3){ const x = surfBase[i], z = surfBase[i+2]; pa[i+1] = Math.sin(x*.55+t*1.3)*amp + Math.cos(z*.9+x*.2-t*1.7)*amp*.8; }
+  surfGeo.attributes.position.needsUpdate = true;
+  weeds.forEach(w=>{ w.m.rotation.z = Math.sin(t*w.sp+w.ph)*.16; w.m.rotation.x = Math.cos(t*w.sp*.7+w.ph)*.08; });
+  foamRings.forEach(f=>{ const s = 1+Math.sin(t*1.2+f.ph)*.06; f.ring.scale.set(s,s,s); });
+
+  // boats: position + heading
+  buildings.forEach(b=>{ const bt = b.boat; if(!bt) return;
+    let p, want;
+    if(bt.phase==='trip'){ const u = bt.t/TRIP; p = tripPos(bt,u); const q = tripPos(bt, Math.min(.999,u+.01)); const dx = q.x-p.x, dz = q.z-p.z; want = (dx*dx+dz*dz) > 1e-6 ? -Math.atan2(dz,dx) : bt.heading; }
+    else { p = berthOf(b); want = -Math.PI/2; }
+    bt.heading = angLerp(bt.heading, want, 1-Math.exp(-dt*4));
+    bt.root.position.copy(p); bt.root.rotation.y = bt.heading;
+    bt.g.position.y = Math.sin(t*1.1+bt.ph)*.03; bt.g.rotation.x = Math.sin(t*.9+bt.ph)*.03; bt.g.rotation.z = Math.cos(t*.8+bt.ph)*.02;
+  });
+
+  // pop-ins
+  for(let i=pops.length-1;i>=0;i--){ const p = pops[i]; p.t += dt*3.2; const u = Math.min(1,p.t); const s = 1 + Math.sin(u*Math.PI)*.12*(1-u); p.g.scale.setScalar(Math.max(.01, u<1 ? (1-Math.pow(1-u,3))*s : 1)); if(u>=1){ p.g.scale.setScalar(1); pops.splice(i,1); } }
+
+  // lighthouse, gulls
+  beam.rotation.y = t*.9;
+  gulls.forEach(g=>{ const ang = t*g.sp+g.ph; g.g.position.set(g.cx+Math.cos(ang)*g.rad, g.h+Math.sin(t*.8+g.ph)*.6, g.cz+Math.sin(ang)*g.rad*.6);
+    g.g.rotation.y = -ang + (g.sp>0?Math.PI:0); const f = Math.sin(t*7+g.ph)*.5; g.l.rotation.z = f; g.r.rotation.z = -f; });
+
+  // rain
+  if(rain.visible){ const n = Math.floor(RAIN_N*cur.rain);
+    for(let i=0;i<n;i++){ const o = i*6; let y = rainPos[o+1] - rainSpd[i]*dt;
+      if(y < -1){ y = 24; const x = rr(-24,24), z = rr(-18,22); rainPos[o]=x; rainPos[o+2]=z; rainPos[o+3]=x+.06; rainPos[o+5]=z; }
+      rainPos[o+1] = y; rainPos[o+4] = y+.55; }
+    rainGeo.attributes.position.needsUpdate = true; }
+  ripples.forEach(r=>{ r.age += dt; if(r.age > 1.2){ r.age = 0; r.m.position.x = rr(-19,19); r.m.position.z = rr(3,18.5); }
+    const s = 1 + r.age*5; r.m.scale.set(s,1,s); r.m.material.opacity = cur.rain*(1-r.age/1.2)*.55; });
+  rainbow.rotation.y = Math.atan2(camera.position.x, camera.position.z)*.35;
+
+  stepFloats(dt);
+  infoTimer += dt; if(infoTimer > .5){ infoTimer = 0; if(selected && tool==='select') refreshInfo(); }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+const ld = $('loading'); ld.style.opacity = 0; setTimeout(()=>ld.hidden = true, 700);
+window.__game = {proj:(cx,rz)=>{ const v = worldOf(cx,rz); if(isSeaRow(rz)) v.y = WATER_TOP; v.project(camera); return {x:(v.x*.5+.5)*innerWidth, y:(-v.y*.5+.5)*innerHeight}; }, G, D, apply, setTool, cells:()=>cells, buildings:()=>buildings, tickHour, check};
+})();
+</script>
+</body>
+</html>
