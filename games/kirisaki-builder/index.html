@@ -173,6 +173,7 @@ renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 stage.appendChild(renderer.domElement);
+const INK = renderer.capabilities.isWebGL2;   // outline post-process available (see drawFrame)
 
 const scene = new THREE.Scene();
 const clearC = new THREE.Color();
@@ -192,9 +193,22 @@ Object.assign(sun.shadow.camera,{left:-30,right:30,top:30,bottom:-30,near:1,far:
 sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.02;
 scene.add(sun); scene.add(sun.target);
 
+// ---------- toon shading ----------
+// Every lit material is a MeshToonMaterial with a 3-band ramp: lit / half-shade / shade.
+// Ambient (hemisphere) light fills the shaded side so it stays coloured, never black.
+const TOON_AMB = .95;
+const toonRamp = (()=>{ const d = new Uint8Array([95, 95, 175, 232, 232]);
+  const t = new THREE.DataTexture(d, d.length, 1, THREE.LuminanceFormat);
+  t.minFilter = t.magFilter = THREE.NearestFilter; t.generateMipmaps = false; t.needsUpdate = true; return t; })();
+function SM(p){
+  p = Object.assign({}, p||{});
+  delete p.roughness; delete p.metalness; delete p.envMapIntensity;
+  return new THREE.MeshToonMaterial(Object.assign({gradientMap:toonRamp}, p));
+}
+
 // ---------- helpers ----------
 const matCache = {};
-function mat(color, o){ const k = color + (o?JSON.stringify(o):''); if(!matCache[k]) matCache[k] = new THREE.MeshStandardMaterial(Object.assign({color, roughness:.88, metalness:0, flatShading:true}, o||{})); return matCache[k]; }
+function mat(color, o){ const k = color + (o?JSON.stringify(o):''); if(!matCache[k]) matCache[k] = SM(Object.assign({color, roughness:.88, metalness:0, flatShading:true}, o||{})); return matCache[k]; }
 function M(m){ return (m && m.isMaterial) ? m : mat(m); }
 function put(mesh, parent, cast=true, recv=true){ mesh.castShadow = cast; mesh.receiveShadow = recv; (parent||scene).add(mesh); return mesh; }
 function box(w,h,d,c,x,y,z,parent){ const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), M(c)); m.position.set(x,y,z); return put(m,parent); }
@@ -221,7 +235,7 @@ function signMat(text,bg,fg,ratio){
   x.fillStyle = fg; x.font = `700 ${Math.round(h*.5)}px ${FONT}`; x.textAlign='center'; x.textBaseline='middle';
   x.fillText(text, w/2, h/2+3);
   const t = new THREE.CanvasTexture(c); t.anisotropy = 4; t.encoding = THREE.sRGBEncoding;
-  return signCache[k] = new THREE.MeshStandardMaterial({map:t, roughness:.7});
+  return signCache[k] = SM({map:t, roughness:.7});
 }
 function sign(text,bg,fg,w,h,x,y,z,ry,parent){
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w,h), signMat(text,bg,fg,w/h));
@@ -229,9 +243,9 @@ function sign(text,bg,fg,w,h,x,y,z,ry,parent){
 }
 
 const MODELS = {};             // type -> [variant parts], filled when models/harbor-pack/*.glb load
-const winLit = new THREE.MeshStandardMaterial({color:'#33414d', emissive:'#ffc46b', emissiveIntensity:0, roughness:.08, metalness:.45, flatShading:true});
-const winDark = new THREE.MeshStandardMaterial({color:'#33414d', roughness:.3, flatShading:true});
-const lampMat = new THREE.MeshStandardMaterial({color:'#f6f1e2', emissive:'#ffe0a0', emissiveIntensity:0, roughness:.4});
+const winLit = SM({color:'#33414d', emissive:'#ffc46b', emissiveIntensity:0, roughness:.08, metalness:.45, flatShading:true});
+const winDark = SM({color:'#33414d', roughness:.3, flatShading:true});
+const lampMat = SM({color:'#f6f1e2', emissive:'#ffe0a0', emissiveIntensity:0, roughness:.4});
 const lampLights = [];
 
 // ---------- grid ----------
@@ -256,21 +270,21 @@ boxB(40,6.6,0.3,'#bcb7ad',0,-6.5,QUAY_Z+0.15);
   x.fillStyle = '#e8b830'; x.fillRect(0,0,64,16); x.fillStyle = '#26282b';
   for(let i=-16;i<64;i+=16){ x.beginPath(); x.moveTo(i,16); x.lineTo(i+8,16); x.lineTo(i+16,0); x.lineTo(i+8,0); x.fill(); }
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping; t.repeat.set(60,1);
-  const m = new THREE.Mesh(new THREE.BoxGeometry(40,0.03,0.3), new THREE.MeshStandardMaterial({map:t, roughness:.8}));
+  const m = new THREE.Mesh(new THREE.BoxGeometry(40,0.03,0.3), SM({map:t, roughness:.8}));
   m.position.set(0,0.115,QUAY_Z+0.15); put(m,scene,false,true);
 })();
 const SEA_D = SEA_Z1-QUAY_Z-0.3, SEA_Z = (QUAY_Z+0.3+SEA_Z1)/2;
 boxB(40,0.9,SEA_D,'#d8c69a',0,-6.5,SEA_Z);
 const waterBody = new THREE.Mesh(new THREE.BoxGeometry(40, WATER_TOP+5.6, SEA_D),
-  new THREE.MeshStandardMaterial({color:'#2f8f88', transparent:true, opacity:.5, roughness:.15, depthWrite:false}));
+  SM({color:'#1d6f78', transparent:true, opacity:.55, roughness:.15, depthWrite:false}));
 waterBody.position.set(0,(WATER_TOP-5.6)/2,SEA_Z); waterBody.renderOrder = 2; put(waterBody,scene,false,false);
 const glassEdge = mat('#f4fbf8',{roughness:.2});
 box(40.05,0.05,0.05,glassEdge,0,WATER_TOP,SEA_Z1);
 box(0.05,0.05,SEA_D,glassEdge,-20.0,WATER_TOP,SEA_Z); box(0.05,0.05,SEA_D,glassEdge,20.0,WATER_TOP,SEA_Z);
 box(40.05,0.05,0.05,glassEdge,0,-5.6,SEA_Z1);
 const surfGeo = new THREE.PlaneGeometry(40,SEA_D,80,32); surfGeo.rotateX(-Math.PI/2);
-const surfMat = new THREE.MeshStandardMaterial({color:'#4fa89f', transparent:true, opacity:.66, roughness:.12, metalness:.1, flatShading:true, depthWrite:false});
-const surface = new THREE.Mesh(surfGeo, surfMat); surface.position.set(0,WATER_TOP+0.02,SEA_Z); surface.renderOrder = 3; put(surface,scene,false,true);
+const surfMat = SM({color:'#1f8a8f', transparent:true, opacity:.8, roughness:.12, metalness:.1, flatShading:true, depthWrite:false});
+const surface = new THREE.Mesh(surfGeo, surfMat); surface.position.set(0,WATER_TOP+0.02,SEA_Z); surface.renderOrder = 3; surface.userData.ndKeep = true; put(surface,scene,false,true);
 const surfBase = surfGeo.attributes.position.array.slice();
 
 const weeds = [];
@@ -359,7 +373,7 @@ function boatModel(styleIdx){
   boxB(cw+.02,.22,B*.6+.02,'#2c3a46',cx,1.0,0,g);
   boxB(cw+.2,.06,B*.66,o.stripe,cx,1.38,0,g);
   if(o.mast){ cylB(.06,.08,o.mast,'#e9e4d8',L*.14,.6,0,6,g); boxB(.05,.05,B*1.2,'#c9c3b5',L*.14,.6+o.mast*.62,0,g);
-    const flag = new THREE.Mesh(new THREE.PlaneGeometry(.5,.3), new THREE.MeshStandardMaterial({color:'#d8453a',side:THREE.DoubleSide})); flag.position.set(L*.14-.27,.45+o.mast,0); g.add(flag); }
+    const flag = new THREE.Mesh(new THREE.PlaneGeometry(.5,.3), SM({color:'#d8453a',side:THREE.DoubleSide})); flag.position.set(L*.14-.27,.45+o.mast,0); g.add(flag); }
   for(let i=0;i<2;i++) boxB(.4,.22,.32,CRATE[i],L*.12+i*.42,.6,0,g);
   return {root, g};
 }
@@ -393,7 +407,7 @@ function mergeGltf(root){
     g.setAttribute('position', new THREE.BufferAttribute(cat(e.pos),3));
     g.setAttribute('normal', new THREE.BufferAttribute(cat(e.nor),3));
     g.applyMatrix4(xf);
-    const m = new THREE.MeshStandardMaterial({color:e.src.color.clone(), roughness:e.src.roughness, metalness:e.src.metalness, flatShading:true});
+    const m = SM({color:e.src.color.clone(), roughness:e.src.roughness, metalness:e.src.metalness, flatShading:true});
     parts.push({geo:g, mat:m});
   });
   return parts;
@@ -502,7 +516,7 @@ const BUILD = {
   },
   farm(b){
     const g = new THREE.Group();
-    const net = new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.5), new THREE.MeshStandardMaterial({color:'#24474a',transparent:true,opacity:.55,depthWrite:false,side:THREE.DoubleSide}));
+    const net = new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.5), SM({color:'#24474a',transparent:true,opacity:.55,depthWrite:false,side:THREE.DoubleSide}));
     net.rotation.x = -Math.PI/2; net.position.y = WATER_TOP+.06; g.add(net);
     const ring = [];
     for(let i=0;i<4;i++){ const a = i*Math.PI/2; const m = boxB(i%2?.12:1.7, .12, i%2?1.7:.12,'#e3c25a',Math.cos(a)*.8,WATER_TOP-.02,Math.sin(a)*.8,g); ring.push(m); }
@@ -741,11 +755,8 @@ function stepState(dt, snap){
   const k = snap ? 1 : 1-Math.exp(-dt*1.6);
   cur.bg.lerp(tgt.bg,k); cur.envTop.lerp(tgt.envTop,k); cur.sky.lerp(tgt.sky,k); cur.ground.lerp(tgt.ground,k); cur.sun.lerp(tgt.sun,k); cur.sunPos.lerp(tgt.sunPos,k);
   for(const key of ['hemiI','sunI','win','lamp','beam','rain','rainbow','wave','fogNear']) cur[key] += (tgt[key]-cur[key])*k;
-  renderer.setClearColor(clearC.copy(cur.bg).convertLinearToSRGB()); scene.fog.color.copy(cur.bg); scene.fog.near = cur.fogNear; scene.fog.far = cur.fogNear+150;
-  hemi.color.copy(cur.sky); hemi.groundColor.copy(cur.ground); hemi.intensity = cur.hemiI*.3;
-  const now = performance.now();
-  const sig = cur.hemiI + cur.sunI + cur.envTop.r + cur.envTop.g + cur.envTop.b + cur.bg.r + cur.bg.g + cur.bg.b + cur.sunPos.x*.01;
-  if(snap || (Math.abs(sig - envSig) > .004 && now - envLast > 400)){ envLast = now; envSig = sig; buildEnv(); }
+  renderer.setClearColor(INK ? clearC.copy(cur.bg) : clearC.copy(cur.bg).convertLinearToSRGB());  // the ink pass encodes to sRGB itself scene.fog.color.copy(cur.bg); scene.fog.near = cur.fogNear; scene.fog.far = cur.fogNear+150;
+  hemi.color.copy(cur.sky); hemi.groundColor.copy(cur.ground); hemi.intensity = cur.hemiI*TOON_AMB;
   sun.color.copy(cur.sun); sun.intensity = cur.sunI; sun.position.copy(cur.sunPos);
   winLit.emissiveIntensity = cur.win; lampMat.emissiveIntensity = cur.lamp;
   lampLights.forEach(L=>L.intensity = cur.lamp*.9);
@@ -753,35 +764,6 @@ function stepState(dt, snap){
   rainbowMats.forEach(m=>m.opacity = cur.rainbow*.24); rainbow.visible = cur.rainbow > .01;
   rain.visible = cur.rain > .01; rainGeo.setDrawRange(0, Math.floor(RAIN_N*cur.rain)*2);
   rainMat.opacity = TIMES[curPhase].night ? .32 : .58;
-}
-
-// ---------- image-based lighting: a gradient sky + sun rendered to a PMREM environment ----------
-// Gives the PBR materials something to reflect (glass, metal, sea) and a soft sky-coloured ambient.
-// Rebuilt from the current (lerping) sky colours while time of day or weather changes.
-const pmrem = new THREE.PMREMGenerator(renderer);
-const envScene = new THREE.Scene();
-const envSkyGeo = new THREE.SphereGeometry(50, 32, 16);
-envSkyGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(envSkyGeo.attributes.position.count*3), 3));
-envScene.add(new THREE.Mesh(envSkyGeo, new THREE.MeshBasicMaterial({side:THREE.BackSide, vertexColors:true, fog:false})));
-const envSunMat = new THREE.MeshBasicMaterial({fog:false});
-const envSun = new THREE.Mesh(new THREE.SphereGeometry(2.5, 12, 8), envSunMat); envScene.add(envSun);
-let envRT = null, envSig = -1, envLast = -1;
-const _ec = new THREE.Color(), _top = new THREE.Color(), _hor = new THREE.Color(), _bot = new THREE.Color();
-function buildEnv(){
-  const k = cur.hemiI*1.25;                      // overall sky brightness follows the time of day
-  _top.copy(cur.envTop).multiplyScalar(k); _hor.copy(cur.bg).multiplyScalar(k*1.1); _bot.copy(cur.ground).multiplyScalar(k*.55);
-  const pos = envSkyGeo.attributes.position, col = envSkyGeo.attributes.color;
-  for(let i=0;i<pos.count;i++){
-    const y = pos.getY(i)/50;
-    if(y >= 0) _ec.copy(_hor).lerp(_top, Math.pow(y,.6)); else _ec.copy(_hor).lerp(_bot, Math.min(1,-y*3));
-    col.setXYZ(i, _ec.r, _ec.g, _ec.b);
-  }
-  col.needsUpdate = true;
-  envSun.position.copy(cur.sunPos).normalize().multiplyScalar(40);
-  envSunMat.color.copy(cur.sun).multiplyScalar(cur.sunI*cur.sunI*16);
-  if(envRT) envRT.dispose();
-  envRT = pmrem.fromScene(envScene, .02);
-  scene.environment = envRT.texture;
 }
 
 // ---------- lighthouse + islets (outer sea, decoration) ----------
@@ -793,7 +775,7 @@ cylB(.8,.85,.3,'#efebe2',0,0,0,12,lighthouse);
 for(let i=0;i<6;i++){ const r0 = .66-i*.04, r1 = .66-(i+1)*.04; cylB(r1,r0,.48,i%2?'#f4f1ea':'#d14b45',0,.3+i*.48,0,12,lighthouse); }
 const LH_TOP = .3+6*.48;
 cylB(.6,.6,.07,'#2f3a40',0,LH_TOP,0,14,lighthouse);
-const lhLampMat = new THREE.MeshStandardMaterial({color:'#fff6d8',emissive:'#ffe39a',emissiveIntensity:.3,transparent:true,opacity:.92});
+const lhLampMat = SM({color:'#fff6d8',emissive:'#ffe39a',emissiveIntensity:.3,transparent:true,opacity:.92});
 cylB(.32,.32,.48,lhLampMat,0,LH_TOP+.07,0,10,lighthouse);
 const lcap = new THREE.Mesh(new THREE.ConeGeometry(.44,.4,10), mat('#2f5d50')); lcap.position.y = LH_TOP+.75; put(lcap,lighthouse);
 const beam = group(0,LH_TOP+.3,0,lighthouse);
@@ -851,7 +833,7 @@ const gridLines = (function(){
 const hoverMat = new THREE.MeshBasicMaterial({color:'#4ccf8a',transparent:true,opacity:.35,depthWrite:false});
 const hoverTile = new THREE.Mesh(new THREE.PlaneGeometry(1.94,1.94), hoverMat);
 hoverTile.rotation.x = -Math.PI/2; hoverTile.renderOrder = 5; hoverTile.visible = false; scene.add(hoverTile);
-const ghostMat = new THREE.MeshStandardMaterial({color:'#ffffff',transparent:true,opacity:.55,depthWrite:false});
+const ghostMat = SM({color:'#ffffff',transparent:true,opacity:.55,depthWrite:false});
 let ghost = null, ghostType = null;
 function setGhost(type){
   if(ghost){ disposeGroup(ghost); ghost = null; }
@@ -1189,7 +1171,7 @@ function newGame(){
 // ---------- camera ----------
 function fitK(){ const a = innerWidth/innerHeight; return a < 1.2 ? Math.min(2.1, 1.15/a) : 1; }
 function resetView(){ const t = new THREE.Vector3(0,-1.5,2.5); camera.position.copy(t).add(new THREE.Vector3(8,40,46).multiplyScalar(fitK())); controls.target.copy(t); controls.update(); }
-addEventListener('resize', ()=>{ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+addEventListener('resize', ()=>{ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); inkResize(); });
 
 // ---------- model pack (models/harbor-pack): low-poly glb replacements ----------
 // glTF stores colours in linear space; partMat() goes through a hex string, which the
@@ -1302,6 +1284,70 @@ if(THREE.GLTFLoader){
   });
 }
 
+// ---------- outlines (post-process) ----------
+// The scene is drawn once in colour and once as view-space normals + depth; a full-screen pass
+// draws ink lines where depth or normals jump. Needs WebGL2 (half-float, multisampled targets);
+// without it the scene is drawn directly, still toon-shaded, just without lines.
+let inkColRT = null, inkNdRT = null, inkQuad = null, inkCam = null, inkMat = null;
+const ndMat = new THREE.MeshNormalMaterial({flatShading:true});
+if(INK){
+  const RTC = THREE.WebGLMultisampleRenderTarget || THREE.WebGLRenderTarget;
+  inkColRT = new RTC(1,1,{type:THREE.HalfFloatType});
+  inkNdRT = new THREE.WebGLRenderTarget(1,1);
+  inkNdRT.depthTexture = new THREE.DepthTexture(1,1); inkNdRT.depthTexture.type = THREE.UnsignedIntType;
+  inkMat = new THREE.ShaderMaterial({
+    uniforms:{tCol:{value:inkColRT.texture}, tNd:{value:inkNdRT.texture}, tDep:{value:inkNdRT.depthTexture},
+      px:{value:new THREE.Vector2()}, near:{value:camera.near}, far:{value:camera.far}, ink:{value:new THREE.Color('#2a2420')}, fade:{value:1}},
+    vertexShader:'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy,0.,1.); }',
+    fragmentShader:`
+      #include <packing>
+      uniform sampler2D tCol, tNd, tDep; uniform vec2 px; uniform float near, far, fade; uniform vec3 ink; varying vec2 vUv;
+      float lin(vec2 uv){ return perspectiveDepthToViewZ(texture2D(tDep, uv).x, near, far); }
+      vec3 nrm(vec2 uv){ return texture2D(tNd, uv).xyz*2.-1.; }
+      void main(){
+        vec4 c = texture2D(tCol, vUv);
+        float d0 = -lin(vUv); vec3 n0 = nrm(vUv);
+        float de = 0., ne = 0.;
+        vec2 o[4]; o[0]=vec2(px.x,0.); o[1]=vec2(-px.x,0.); o[2]=vec2(0.,px.y); o[3]=vec2(0.,-px.y);
+        for(int i=0;i<4;i++){ float d = -lin(vUv+o[i]); de += max(0., d - d0); ne += 1. - dot(n0, nrm(vUv+o[i])); }
+        float e = max(smoothstep(.035, .07, de/d0), smoothstep(.35, .7, ne));
+        e *= 1. - smoothstep(120., 260., d0);          // distant lines fade into the haze
+        if(texture2D(tDep, vUv).x > .9999 && de == 0.) e = 0.;   // empty sky
+        gl_FragColor = vec4(mix(c.rgb, c.rgb*ink*1.6, e*.85*fade), 1.);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+      }`,
+    depthTest:false, depthWrite:false, toneMapped:false   // the scene pass is already tone-mapped
+  });
+  inkQuad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), inkMat); inkQuad.frustumCulled = false;
+  inkCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+}
+function inkResize(){
+  if(!INK) return;
+  const pr = renderer.getPixelRatio(), w = Math.floor(innerWidth*pr), h = Math.floor(innerHeight*pr);
+  inkColRT.setSize(w,h); inkNdRT.setSize(w,h);
+  const lw = Math.max(1, pr*.9);                   // line width in device pixels
+  inkMat.uniforms.px.value.set(lw/w, lw/h);
+}
+inkResize();
+const ndHidden = [];
+function drawFrame(){
+  if(!INK){ renderer.render(scene, camera); return; }
+  renderer.setRenderTarget(inkColRT); renderer.render(scene, camera);
+  // normals/depth: only solid meshes (sea surface kept so the shoreline gets a line)
+  scene.traverseVisible(o=>{ if((o.isLine || o.isPoints || o.isSprite || (o.material && o.material.transparent && !o.userData.ndKeep)) ){ ndHidden.push(o); } });
+  ndHidden.forEach(o=>o.visible = false);
+  const bg = scene.background, fog = scene.fog; scene.overrideMaterial = ndMat; scene.fog = null;
+  const cc = renderer.getClearColor(clearC).getHex(), ca = renderer.getClearAlpha();
+  renderer.setClearColor(0x8080ff, 1);
+  renderer.setRenderTarget(inkNdRT); renderer.render(scene, camera);
+  renderer.setClearColor(cc, ca);
+  scene.overrideMaterial = null; scene.fog = fog;
+  ndHidden.forEach(o=>o.visible = true); ndHidden.length = 0;
+  inkMat.uniforms.near.value = camera.near; inkMat.uniforms.far.value = camera.far;
+  renderer.setRenderTarget(null); renderer.render(inkQuad, inkCam);
+}
+
 // ---------- boot ----------
 const had = load();
 if(!had) newGame();
@@ -1374,7 +1420,7 @@ function frame(){
   stepFloats(dt);
   infoTimer += dt; if(infoTimer > .5){ infoTimer = 0; if(selected && tool==='select') refreshInfo(); }
 
-  renderer.render(scene, camera);
+  drawFrame();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
