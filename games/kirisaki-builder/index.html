@@ -49,7 +49,7 @@ button{font:500 12px/1 var(--f-body);color:var(--ink);background:transparent;bor
 button:hover{border-color:var(--accent)}
 button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.tools{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;padding:8px;max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none}
+.tools{position:fixed;left:0;right:0;margin:0 auto;width:max-content;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;padding:8px;max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none}
 .tools::-webkit-scrollbar{display:none}
 .tool{flex:0 0 auto;display:grid;justify-items:center;gap:4px;min-width:62px;padding:8px 8px 7px;border-radius:12px;font-size:12px}
 .tool .ico{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font:700 13px/1 var(--f-display);color:#fff}
@@ -145,6 +145,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 (function(){
 'use strict';
@@ -353,6 +354,56 @@ function boatModel(styleIdx){
   return {root, g};
 }
 
+// ---------- large boat: external glb (models/margo-07.glb), merged by material ----------
+// Falls back to an enlarged procedural boat until / unless the model loads.
+const BIG_LEN = 1.95;
+let bigParts = null;           // [{geo, mat}] shared by every large boat
+function mergeGltf(root){
+  root.updateMatrixWorld(true);
+  const byMat = new Map();
+  root.traverse(o=>{
+    if(!o.isMesh) return;
+    let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    g.applyMatrix4(o.matrixWorld);
+    const key = o.material.name || o.material.uuid;
+    if(!byMat.has(key)) byMat.set(key, {src:o.material, pos:[], nor:[]});
+    const e = byMat.get(key);
+    e.pos.push(g.attributes.position.array);
+    if(!g.attributes.normal) g.computeVertexNormals();
+    e.nor.push(g.attributes.normal.array);
+    g.dispose();
+  });
+  const bb = new THREE.Box3().setFromObject(root), size = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
+  const k = BIG_LEN / size.x;
+  const xf = new THREE.Matrix4().makeScale(k,k,k).multiply(new THREE.Matrix4().makeTranslation(-c.x, -0.5, -c.z));
+  const parts = [];
+  byMat.forEach(e=>{
+    const cat = arrs => { const n = arrs.reduce((a,b)=>a+b.length,0), out = new Float32Array(n); let o = 0; arrs.forEach(a=>{ out.set(a,o); o += a.length; }); return out; };
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(cat(e.pos),3));
+    g.setAttribute('normal', new THREE.BufferAttribute(cat(e.nor),3));
+    g.applyMatrix4(xf);
+    const m = new THREE.MeshStandardMaterial({color:e.src.color.clone(), roughness:e.src.roughness, metalness:e.src.metalness});
+    parts.push({geo:g, mat:m});
+  });
+  return parts;
+}
+function bigBoatModel(){
+  const root = new THREE.Group(), g = group(0,0,0,root);
+  if(bigParts){ bigParts.forEach(p=>{ const m = new THREE.Mesh(p.geo, p.mat); m.castShadow = true; m.receiveShadow = true; m.userData.shared = true; g.add(m); }); }
+  else { const fb = boatModel(0); fb.g.scale.set(.42*1.15,.42*1.15,.42*1.15); root.add(fb.root); return {root, g:fb.g}; }
+  return {root, g};
+}
+if(THREE.GLTFLoader){
+  try{
+    new THREE.GLTFLoader().load('models/margo-07.glb', gltf=>{
+      bigParts = mergeGltf(gltf.scene);
+      buildings.forEach(b=>{ if(b.boat && b.boat.k==='bigboat'){ const bt = b.boat; disposeGroup(bt.root); const m = bigBoatModel(); bt.root = m.root; bt.g = m.g; scene.add(m.root); } });
+      if(ghostType==='bigboat') setGhost('bigboat');
+    }, undefined, ()=>{});
+  }catch(e){}
+}
+
 // ---------- building definitions ----------
 // place: land | sea | pier ;  jobs: workers needed ; road: needs adjacent road to work
 const DEFS = {
@@ -364,10 +415,11 @@ const DEFS = {
   park:     {name:'樱花公园', ico:'樱', col:'#e98aa6', place:'land', cost:{coin:25,wood:5}, desc:'每座公园让满意度目标 +6（最多 +30）。满意度高，税收和人口增长都更好。'},
   pier:     {name:'码头', ico:'埠', col:'#a7835a', place:'sea', cost:{coin:15,wood:10}, desc:'第一排码头要建在岸边道路正下方；之后可以接着已有码头往外延伸。每座码头能停一条渔船。'},
   boat:     {name:'渔船', ico:'船', col:'#2f5d8a', place:'pier', jobs:2, cost:{coin:80,wood:20}, desc:'需 2 名工人，停在空码头上。每趟出海 8 小时，带回约 6 条鲜鱼；下雨减产，太阳雨鱼群活跃。'},
+  bigboat:  {name:'大型渔船', ico:'舶', col:'#1f4f6b', place:'pier', jobs:3, cost:{coin:220,wood:40}, desc:'需 3 名工人，停在空码头上。船大舱深，每趟出海 8 小时带回约 15 条鲜鱼。'},
   farm:     {name:'养殖网箱', ico:'箱', col:'#3c84c4', place:'sea', jobs:1, cost:{coin:40,wood:10}, desc:'需 1 名工人。放在任意海面格子，每小时稳定产出 0.5 条鲜鱼。'},
   tree:     {name:'树木', place:'land', natural:true, desc:'拆除可获得 4 木材，但伐木场周围的树越多产量越高。'}
 };
-const TOOL_ORDER = ['select','road','house','lumber','market','warehouse','park','|','pier','boat','farm','|','demolish'];
+const TOOL_ORDER = ['select','road','house','lumber','market','warehouse','park','|','pier','boat','bigboat','farm','|','demolish'];
 const RES_NAME = {coin:'金币', wood:'木材', fish:'鲜鱼'};
 function costText(c){ return Object.keys(c).map(k=>(k==='coin'?'¥':'木')+c[k]).join(' '); }
 
@@ -476,7 +528,7 @@ function facingRot(cx,rz){
   for(const [dx,dz,r] of dirs){ const n = cellAt(cx+dx,rz+dz); if(n && n.type==='road') return r; }
   return 0;
 }
-function disposeGroup(g){ g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); if(g.parent) g.parent.remove(g); }
+function disposeGroup(g){ g.traverse(o=>{ if(o.geometry && !o.userData.shared) o.geometry.dispose(); }); if(g.parent) g.parent.remove(g); }
 
 function addBuilding(type,cx,rz,opts){
   opts = opts || {};
@@ -500,10 +552,11 @@ function removeBuilding(b){
 let boatCount = 0;
 function addBoat(pier, opts){
   opts = opts || {};
-  const style = opts.style!=null ? opts.style : boatCount++;
-  const m = boatModel(style);
+  const k = opts.k || 'boat';
+  const style = opts.style!=null ? opts.style : (k==='boat' ? boatCount++ : 0);
+  const m = k==='bigboat' ? bigBoatModel() : boatModel(style);
   scene.add(m.root);
-  const bt = {pier, style, root:m.root, g:m.g, phase:opts.phase||'dock', t:opts.t||0, ph:Math.random()*6.28, heading:-Math.PI/2, id:G.nextId++};
+  const bt = {pier, k, style, root:m.root, g:m.g, phase:opts.phase||'dock', t:opts.t||0, ph:Math.random()*6.28, heading:-Math.PI/2, id:G.nextId++};
   pier.boat = bt;
   placeBoatAt(bt, berthOf(pier));
   if(!opts.quiet) popIn(m.root);
@@ -513,7 +566,7 @@ function removeBoat(pier){ const bt = pier.boat; if(!bt) return; disposeGroup(bt
 function berthOf(pier){ const p = worldOf(pier.cx,pier.rz); p.x += .42; p.y = WATER_TOP; return p; }
 function placeBoatAt(bt,p){ bt.root.position.copy(p); bt.root.rotation.y = bt.heading; }
 
-const TRIP = 8, DOCK = 2;
+const TRIP = 8, DOCK = 2, CATCH = {boat:6, bigboat:15};
 function tripPos(bt, p){
   const base = berthOf(bt.pier);
   const out = new THREE.Vector3(base.x, WATER_TOP, 16.0);
@@ -558,7 +611,7 @@ function staff(){
   // assign workers in placement order; boats live on piers
   let free = Math.floor(G.pop), jobs = 0;
   const units = [];
-  buildings.forEach(b=>{ if(DEFS[b.type].jobs) units.push({u:b, jobs:DEFS[b.type].jobs, conn:b.conn}); if(b.boat) units.push({u:b.boat, jobs:DEFS.boat.jobs, conn:b.conn}); });
+  buildings.forEach(b=>{ if(DEFS[b.type].jobs) units.push({u:b, jobs:DEFS[b.type].jobs, conn:b.conn}); if(b.boat) units.push({u:b.boat, jobs:DEFS[b.boat.k].jobs, conn:b.conn}); });
   units.sort((a,b)=>a.u.id-b.u.id);
   units.forEach(x=>{ jobs += x.jobs; if(x.conn && free >= x.jobs){ x.u.staffed = true; free -= x.jobs; } else x.u.staffed = false; });
   D.jobs = jobs; D.workers = Math.floor(G.pop) - free;
@@ -569,7 +622,7 @@ const WEATHER_MULT = {clear:1, rain:.6, shower:1.15};
 function status(b){
   if(b.type==='tree') return {cls:'ok', text:'自然生长中'};
   if(b.type==='road') return {cls:'ok', text:'通行中'};
-  if(b.type==='pier') return b.conn ? {cls:'ok', text: b.boat ? '已停泊渔船' : '空泊位，可停一条渔船'} : {cls:'bad', text:'未连到岸边道路'};
+  if(b.type==='pier') return b.conn ? {cls:'ok', text: b.boat ? '已停泊'+DEFS[b.boat.k].name : '空泊位，可停一条渔船'} : {cls:'bad', text:'未连到岸边道路'};
   if(!b.conn) return {cls:'bad', text:'未紧邻道路，无法运转'};
   if(DEFS[b.type].jobs && !b.staffed) return {cls:'warn', text:'缺少工人（多建民居）'};
   if(b.type==='house') return {cls:'ok', text:'有人居住'};
@@ -761,8 +814,9 @@ let ghost = null, ghostType = null;
 function setGhost(type){
   if(ghost){ disposeGroup(ghost); ghost = null; }
   ghostType = type;
-  if(!type || !BUILD[type] && type!=='boat') return;
+  if(!type || !BUILD[type] && type!=='boat' && type!=='bigboat') return;
   if(type==='boat'){ ghost = boatModel(boatCount).root; }
+  else if(type==='bigboat'){ ghost = bigBoatModel().root; }
   else ghost = BUILD[type]({v:.7, cx:0, rz:0});
   ghost.traverse(o=>{ if(o.isMesh){ o.material = ghostMat; o.castShadow = false; o.receiveShadow = false; o.renderOrder = 6; } });
   ghost.visible = false; scene.add(ghost);
@@ -781,7 +835,7 @@ function check(tool,cx,rz){
   const d = DEFS[tool];
   if(d.place==='land' && isSeaRow(rz)) return {ok:false, why:d.name+'只能建在陆地上'};
   if(d.place==='sea' && !isSeaRow(rz)) return {ok:false, why:d.name+'只能建在海面上'};
-  if(tool==='boat'){
+  if(tool==='boat' || tool==='bigboat'){
     if(!here || here.type!=='pier') return {ok:false, why:'渔船要停在码头上'};
     if(here.boat) return {ok:false, why:'这座码头已经有船了'};
     if(!canAfford(d.cost)) return {ok:false, why:'资源不足：需要 '+costText(d.cost)};
@@ -806,7 +860,7 @@ function apply(tool,cx,rz){
   if(!r.ok){ if(r.why) toast(r.why); return false; }
   const here = cellAt(cx,rz);
   if(tool==='demolish'){
-    if(here.type==='pier' && here.boat){ refund(DEFS.boat.cost); removeBoat(here); floatXYZ(berthOf(here),'拆除渔船','#ffffff'); }
+    if(here.type==='pier' && here.boat){ const nm = DEFS[here.boat.k].name; refund(DEFS[here.boat.k].cost); removeBoat(here); floatXYZ(berthOf(here),'拆除'+nm,'#ffffff'); }
     else if(here.type==='tree'){ G.wood = Math.min(D.storeCap, G.wood+4); floatAt(here,'+4 木材','#f2c98a'); removeBuilding(here); }
     else {
       if(here.type==='pier'){ // cannot strand piers further out? allow, they simply disconnect
@@ -814,8 +868,8 @@ function apply(tool,cx,rz){
       const back = refund(DEFS[here.type].cost); floatAt(here, '拆除 返还 '+costText(back), '#ffffff'); removeBuilding(here);
       if(selected===here) select(null);
     }
-  } else if(tool==='boat'){
-    pay(DEFS.boat.cost); addBoat(here);
+  } else if(tool==='boat' || tool==='bigboat'){
+    pay(DEFS[tool].cost); addBoat(here,{k:tool});
     if(r.warn) toast(r.warn);
   } else {
     pay(DEFS[tool].cost); addBuilding(tool,cx,rz);
@@ -937,15 +991,16 @@ function refreshInfo(){
   if(b.type==='pier' && b.boat){
     const bt = b.boat;
     const st = !b.conn ? '码头未连通，停泊中' : !bt.staffed ? '缺少工人，停泊中' : bt.phase==='trip' ? `出海捕鱼中 · 还有 ${Math.ceil(TRIP-bt.t)} 小时` : '卸货补给中';
-    extra = `<div class="eyebrow" style="margin-top:4px">渔船</div><dl class="kv"><dt>状态</dt><dd>${st}</dd><dt>每趟</dt><dd>约 ${Math.round(6*WEATHER_MULT[G.weather])} 条（今日天气）</dd><dt>工人</dt><dd>${bt.staffed?2:0} / 2</dd></dl>`;
+    const bd = DEFS[bt.k];
+    extra = `<div class="eyebrow" style="margin-top:4px">${bd.name}</div><dl class="kv"><dt>状态</dt><dd>${st}</dd><dt>每趟</dt><dd>约 ${Math.round(CATCH[bt.k]*WEATHER_MULT[G.weather])} 条（今日天气）</dd><dt>工人</dt><dd>${bt.staffed?bd.jobs:0} / ${bd.jobs}</dd></dl>`;
   }
   setInfo(`<button type="button" class="x" id="i-x" aria-label="关闭">✕</button>
     <div class="eyebrow">${isSeaRow(b.rz)?'海面':'陆地'} · ${b.cx+1},${b.rz+1}</div><h2>${d.name}</h2>
     <div class="st ${s.cls}">${s.text}</div>
     ${rows.length?`<dl class="kv">${rows.map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('')}</dl>`:''}
     ${extra}
-    <div class="row">${b.type==='pier' && !b.boat && b.conn ? `<button type="button" id="i-boat">停一条渔船 ${costText(DEFS.boat.cost)}</button>`:''}
-    ${b.type==='pier' && b.boat ? `<button type="button" id="i-delboat">拆渔船</button>`:''}
+    <div class="row">${b.type==='pier' && !b.boat && b.conn ? `<button type="button" id="i-boat">渔船 ${costText(DEFS.boat.cost)}</button><button type="button" id="i-bigboat">大型渔船 ${costText(DEFS.bigboat.cost)}</button>`:''}
+    ${b.type==='pier' && b.boat ? `<button type="button" id="i-delboat">拆${DEFS[b.boat.k].name}</button>`:''}
     <button type="button" id="i-del">${b.type==='tree'?'砍伐 +4 木材':'拆除'}</button></div>`);
 }
 let infoHTML = '';
@@ -956,6 +1011,7 @@ infoEl.addEventListener('click', e=>{
   if(!b) return;
   if(btn.id==='i-del'){ if(b.boat) apply('demolish',b.cx,b.rz); apply('demolish',b.cx,b.rz); }
   if(btn.id==='i-boat') apply('boat',b.cx,b.rz);
+  if(btn.id==='i-bigboat') apply('bigboat',b.cx,b.rz);
   if(btn.id==='i-delboat') apply('demolish',b.cx,b.rz);
 });
 
@@ -985,7 +1041,7 @@ function updateHover(){
   renderer.domElement.style.cursor = r.ok ? 'pointer' : 'not-allowed';
   if(ghost){
     ghost.visible = true;
-    if(tool==='boat'){ const bp = p.clone(); bp.x += .42; bp.y = WATER_TOP; ghost.position.copy(bp); ghost.rotation.y = -Math.PI/2; }
+    if(tool==='boat' || tool==='bigboat'){ const bp = p.clone(); bp.x += .42; bp.y = WATER_TOP; ghost.position.copy(bp); ghost.rotation.y = -Math.PI/2; }
     else { ghost.position.copy(p); ghost.rotation.y = (DEFS[tool].place==='land' && tool!=='road' ? facingRot(cx,rz) : 0)*Math.PI/2; }
     ghostMat.color.set(r.ok ? (r.warn ? '#ffe0a0' : '#c8f5da') : '#ffb0a8');
   }
@@ -1033,7 +1089,7 @@ function helpHTML(first){
   <ul>
     <li>底部选建筑，点击地块放置；绿色可建，黄色能建但不会运转，红色不行。</li>
     <li>陆地建筑要紧邻<b>道路</b>；第一排<b>码头</b>要建在岸边道路正下方，再往外延伸。</li>
-    <li>每座码头停一条<b>渔船</b>。渔船、伐木场、鱼市都需要工人，工人来自民居的居民。</li>
+    <li>每座码头停一条<b>渔船</b>或<b>大型渔船</b>。船、伐木场、鱼市都需要工人，工人来自民居的居民。</li>
     <li>居民每小时吃鱼；缺鱼会让满意度暴跌，人口流失。</li>
     <li>左键拖动旋转视角，右键拖动平移，滚轮缩放。快捷键 1–9 选建筑，0 拆除，空格暂停。</li>
   </ul>
@@ -1053,7 +1109,7 @@ function showWin(){
 function save(){
   try{
     const data = {v:1, G:Object.assign({}, G), boatCount,
-      b: buildings.map(b=>({t:b.type,x:b.cx,z:b.rz,v:+b.v.toFixed(4),r:b.rot, boat: b.boat ? {s:b.boat.style, p:b.boat.phase, t:+b.boat.t.toFixed(2)} : null}))};
+      b: buildings.map(b=>({t:b.type,x:b.cx,z:b.rz,v:+b.v.toFixed(4),r:b.rot, boat: b.boat ? {k:b.boat.k, s:b.boat.style, p:b.boat.phase, t:+b.boat.t.toFixed(2)} : null}))};
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
   }catch(e){}
 }
@@ -1064,7 +1120,7 @@ function load(){
   if(!data || data.v!==1 || !Array.isArray(data.b)) return false;
   clearWorld();
   Object.assign(G, data.G); boatCount = data.boatCount||0;
-  data.b.forEach(s=>{ if(!DEFS[s.t] || !inGrid(s.x,s.z) || cellAt(s.x,s.z)) return; const b = addBuilding(s.t,s.x,s.z,{v:s.v,rot:s.r,quiet:true}); if(s.boat && s.t==='pier') addBoat(b,{style:s.boat.s,phase:s.boat.p,t:s.boat.t,quiet:true}); });
+  data.b.forEach(s=>{ if(!DEFS[s.t] || !inGrid(s.x,s.z) || cellAt(s.x,s.z)) return; const b = addBuilding(s.t,s.x,s.z,{v:s.v,rot:s.r,quiet:true}); if(s.boat && s.t==='pier') addBoat(b,{k:DEFS[s.boat.k] ? s.boat.k : 'boat', style:s.boat.s,phase:s.boat.p,t:s.boat.t,quiet:true}); });
   return true;
 }
 function newGame(){
@@ -1119,7 +1175,7 @@ function frame(){
     buildings.forEach(b=>{ const bt = b.boat; if(!bt) return;
       if(!b.conn || !bt.staffed){ if(bt.phase==='dock') bt.t = 0; }
       if(bt.phase==='dock'){ if(b.conn && bt.staffed){ bt.t += dh; if(bt.t >= DOCK){ bt.phase = 'trip'; bt.t = 0; } } }
-      else { bt.t += dh; if(bt.t >= TRIP){ bt.phase = 'dock'; bt.t = 0; const c = Math.round(6*WEATHER_MULT[G.weather]*(0.85+Math.random()*.3)); G.fish = Math.min(D.storeCap, G.fish + c); floatXYZ(berthOf(b), '+'+c+' 鲜鱼', '#a9d6ff'); updateHUD(); } }
+      else { bt.t += dh; if(bt.t >= TRIP){ bt.phase = 'dock'; bt.t = 0; const c = Math.round(CATCH[bt.k]*WEATHER_MULT[G.weather]*(0.85+Math.random()*.3)); G.fish = Math.min(D.storeCap, G.fish + c); floatXYZ(berthOf(b), '+'+c+' 鲜鱼', '#a9d6ff'); updateHUD(); } }
     });
     const target = G.hours, after = Math.floor(target);
     if(after > before){ G.hours = before; for(let h=before; h<after; h++) tickHour(); G.hours = target; }
