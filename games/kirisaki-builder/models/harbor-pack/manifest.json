@@ -1,0 +1,316 @@
+[
+  {
+    "file": "fishing-boat-small.glb",
+    "dimensions_xyz_m": [
+      3.124,
+      2.135,
+      1.07
+    ],
+    "triangles": 1057,
+    "meshes": 9,
+    "materials": [
+      "RescueRed",
+      "Ivory",
+      "HarborBlue",
+      "Wood",
+      "WoodDark",
+      "Window",
+      "Metal",
+      "Lamp",
+      "FishBox"
+    ],
+    "bytes": 63284,
+    "bounds_min_xyz": [
+      -1.6,
+      -0.37,
+      -0.535
+    ],
+    "bounds_max_xyz": [
+      1.524,
+      1.765,
+      0.535
+    ],
+    "validated": true
+  },
+  {
+    "file": "house-a.glb",
+    "dimensions_xyz_m": [
+      1.94,
+      1.915,
+      1.94
+    ],
+    "triangles": 444,
+    "meshes": 8,
+    "materials": [
+      "Concrete",
+      "Ivory",
+      "WoodDark",
+      "RoofBlue",
+      "Metal",
+      "Window",
+      "Leaf",
+      "HarborBlue"
+    ],
+    "bytes": 31300,
+    "bounds_min_xyz": [
+      -0.97,
+      0.0,
+      -0.97
+    ],
+    "bounds_max_xyz": [
+      0.97,
+      1.915,
+      0.97
+    ],
+    "validated": true
+  },
+  {
+    "file": "house-b.glb",
+    "dimensions_xyz_m": [
+      1.94,
+      2.445,
+      1.94
+    ],
+    "triangles": 564,
+    "meshes": 8,
+    "materials": [
+      "Concrete",
+      "Sand",
+      "WoodDark",
+      "RoofBrown",
+      "Metal",
+      "Window",
+      "Leaf",
+      "HarborBlue"
+    ],
+    "bytes": 37788,
+    "bounds_min_xyz": [
+      -0.97,
+      0.0,
+      -0.97
+    ],
+    "bounds_max_xyz": [
+      0.97,
+      2.445,
+      0.97
+    ],
+    "validated": true
+  },
+  {
+    "file": "fish-market.glb",
+    "dimensions_xyz_m": [
+      1.94,
+      1.545,
+      1.94
+    ],
+    "triangles": 744,
+    "meshes": 10,
+    "materials": [
+      "Concrete",
+      "Ivory",
+      "Green",
+      "Metal",
+      "Steel",
+      "WoodDark",
+      "Sign",
+      "FishBox",
+      "HarborBlue",
+      "Window"
+    ],
+    "bytes": 47948,
+    "bounds_min_xyz": [
+      -0.97,
+      0.0,
+      -0.97
+    ],
+    "bounds_max_xyz": [
+      0.97,
+      1.545,
+      0.97
+    ],
+    "validated": true
+  },
+  {
+    "file": "lumber-camp.glb",
+    "dimensions_xyz_m": [
+      1.95,
+      1.59,
+      1.94
+    ],
+    "triangles": 588,
+    "meshes": 6,
+    "materials": [
+      "Concrete",
+      "WoodDark",
+      "RoofBrown",
+      "Wood",
+      "EndGrain",
+      "Metal"
+    ],
+    "bytes": 34228,
+    "bounds_min_xyz": [
+      -0.98,
+      0.0,
+      -0.97
+    ],
+    "bounds_max_xyz": [
+      0.97,
+      1.59,
+      0.97
+    ],
+    "validated": true
+  },
+  {
+    "file": "warehouse.glb",
+    "dimensions_xyz_m": [
+      1.94,
+      1.83,
+      1.94
+    ],
+    "triangles": 486,
+    "meshes": 6,
+    "materials": [
+      "Concrete",
+      "Steel",
+      "RoofBlue",
+      "Metal",
+      "Sign",
+      "Lamp"
+    ],
+    "bytes": 31056,
+    "bounds_min_xyz": [
+      -0.97,
+      0.0,
+      -0.97
+    ],
+    "bounds_max_xyz": [
+      0.97,
+      1.83,
+      0.97
+    ],
+    "validated": true
+  },
+  {
+    "file": "pier.glb",
+    "dimensions_xyz_m": [
+      0.879,
+      1.723,
+      2.0
+    ],
+    "triangles": 648,
+    "meshes": 3,
+    "materials": [
+      "WoodDark",
+      "Wood",
+      "Metal"
+    ],
+    "bytes": 35904,
+    "bounds_min_xyz": [
+      -0.96,
+      -1.0,
+      -1.0
+    ],
+    "bounds_max_xyz": [
+      -0.081,
+      0.723,
+      1.0
+    ],
+    "validated": true
+  },
+  {
+    "file": "fish-farm.glb",
+    "dimensions_xyz_m": [
+      1.94,
+      1.003,
+      1.938
+    ],
+    "triangles": 432,
+    "meshes": 8,
+    "materials": [
+      "Yellow",
+      "Net",
+      "Metal",
+      "RescueRed",
+      "Wood",
+      "Ivory",
+      "HarborBlue",
+      "Window"
+    ],
+    "bytes": 32388,
+    "bounds_min_xyz": [
+      -0.972,
+      -0.183,
+      -0.974
+    ],
+    "bounds_max_xyz": [
+      0.968,
+      0.82,
+      0.964
+    ],
+    "validated": true
+  },
+  {
+    "file": "lighthouse.glb",
+    "dimensions_xyz_m": [
+      1.88,
+      4.28,
+      1.88
+    ],
+    "triangles": 968,
+    "meshes": 7,
+    "materials": [
+      "Concrete",
+      "Ivory",
+      "RescueRed",
+      "Metal",
+      "Window",
+      "Lamp",
+      "Green"
+    ],
+    "bytes": 52688,
+    "bounds_min_xyz": [
+      -0.94,
+      0.0,
+      -0.94
+    ],
+    "bounds_max_xyz": [
+      0.94,
+      4.28,
+      0.94
+    ],
+    "validated": true
+  },
+  {
+    "file": "cherry-park.glb",
+    "dimensions_xyz_m": [
+      1.94,
+      1.8,
+      1.94
+    ],
+    "triangles": 592,
+    "meshes": 9,
+    "materials": [
+      "Grass",
+      "Path",
+      "WoodDark",
+      "Pink",
+      "PinkLight",
+      "Wood",
+      "Metal",
+      "Lamp",
+      "Green"
+    ],
+    "bytes": 43232,
+    "bounds_min_xyz": [
+      -0.97,
+      0.0,
+      -0.97
+    ],
+    "bounds_max_xyz": [
+      0.97,
+      1.8,
+      0.97
+    ],
+    "validated": true
+  }
+]
