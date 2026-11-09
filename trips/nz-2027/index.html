@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>新西兰南岛自驾 · 2027五一</title>
+<meta name="description" content="2027年五一假期新西兰南岛7天自驾攻略：行程、自驾须知、签证、秋季天气穿衣、住宿与预算。">
+<style>
+:root{
+  --bg:#f6f3ee; --surface:#ffffff; --surface-2:#efe9df; --text:#22262a; --muted:#5f6670;
+  --line:#ddd5c8; --accent:#b4532a; --accent-soft:#f5e3d8; --lake:#2f7f86; --lake-soft:#dcefef;
+  --warn:#8a5a00; --warn-soft:#fff3d6; --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181b; --surface:#1e2226; --surface-2:#262b30; --text:#e9e6e1; --muted:#a3a9b0;
+    --line:#343a41; --accent:#e58a5c; --accent-soft:#3a2a22; --lake:#6cc3c9; --lake-soft:#1d3335;
+    --warn:#f0c46a; --warn-soft:#3a3120; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181b; --surface:#1e2226; --surface-2:#262b30; --text:#e9e6e1; --muted:#a3a9b0;
+  --line:#343a41; --accent:#e58a5c; --accent-soft:#3a2a22; --lake:#6cc3c9; --lake-soft:#1d3335;
+  --warn:#f0c46a; --warn-soft:#3a3120; --shadow:none;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  line-height:1.7;font-size:16px}
+a{color:var(--lake)}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px}
+header.hero{padding:56px 0 32px;border-bottom:1px solid var(--line)}
+.eyebrow{color:var(--accent);font-weight:600;letter-spacing:.08em;font-size:14px}
+h1{font-size:clamp(28px,5vw,44px);line-height:1.2;margin:8px 0 12px}
+.lede{color:var(--muted);max-width:640px;margin:0}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:24px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.fact b{display:block;font-size:20px}
+.fact span{color:var(--muted);font-size:13px}
+nav.toc{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav.toc .wrap{display:flex;gap:4px;overflow-x:auto;padding-top:8px;padding-bottom:8px;scrollbar-width:none}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--text);font-size:14px;padding:6px 12px;border-radius:999px}
+nav.toc a:hover{background:var(--surface-2)}
+#themeBtn{margin-left:auto;border:1px solid var(--line);background:var(--surface);color:var(--text);
+  border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+section{padding:40px 0 8px}
+h2{font-size:26px;margin:0 0 6px}
+h2 small{font-size:14px;color:var(--muted);font-weight:400;margin-left:8px}
+h3{font-size:18px;margin:0 0 6px}
+.sub{color:var(--muted);margin:0 0 20px}
+.note{background:var(--warn-soft);color:var(--text);border-left:4px solid var(--warn);border-radius:8px;padding:12px 16px;margin:16px 0;font-size:15px}
+.note b{color:var(--warn)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.route{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+@media (max-width:760px){.route{grid-template-columns:1fr}.route svg{max-width:320px;margin:0 auto;display:block}}
+.map{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+.map svg{width:100%;height:auto}
+.map text{font-size:11px;fill:var(--text)}
+.map .island{fill:var(--surface-2);stroke:var(--line)}
+.map .path{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-dasharray:6 4}
+.map .spur{fill:none;stroke:var(--lake);stroke-width:2;stroke-dasharray:3 3}
+.map circle{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.map .cap{fill:var(--muted);font-size:10px}
+.days{display:flex;flex-direction:column;gap:12px}
+.day{display:grid;grid-template-columns:64px 1fr;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+.day .n{background:var(--accent-soft);color:var(--accent);border-radius:10px;text-align:center;padding:8px 0;font-weight:700;align-self:start}
+.day .n small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.day h3 .drv{font-size:13px;font-weight:400;color:var(--lake);background:var(--lake-soft);border-radius:999px;padding:2px 10px;margin-left:6px;white-space:nowrap}
+.day p{margin:4px 0}
+.day ul{margin:6px 0 0;padding-left:20px}
+.day .stay{font-size:14px;color:var(--muted);margin-top:8px}
+.tag{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:6px;padding:0 6px;margin-right:4px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--surface-2);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.num{white-space:nowrap;font-variant-numeric:tabular-nums}
+ul.tight{padding-left:20px;margin:6px 0}
+ul.tight li{margin:4px 0}
+.check{list-style:none;padding:0;margin:0;columns:2 260px;column-gap:24px}
+.check li{break-inside:avoid;margin:0 0 6px}
+.check label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.check input{margin-top:6px;accent-color:var(--accent)}
+.check input:checked + span{color:var(--muted);text-decoration:line-through}
+.alt{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+footer{margin-top:48px;padding:24px 0 40px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+@media print{nav.toc,#themeBtn{display:none}.day,.card{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">2027 五一 · 新西兰南岛 · 自驾</div>
+    <h1>秋末的南岛：湖、雪山、峡湾和金色白杨</h1>
+    <p class="lede">基督城进、皇后镇出，7天精华线：特卡波看星空，库克山徒步，瓦纳卡和箭镇看秋叶，皇后镇落脚，米尔福德峡湾坐船。五月初是新西兰深秋，游客少、景色好，但白天短、山区偏冷，下面每一节都按这个季节写。</p>
+    <div class="facts">
+      <div class="fact"><b>7 天</b><span>落地到离境（可增减，见下文）</span></div>
+      <div class="fact"><b>≈1,000 km</b><span>总自驾里程</span></div>
+      <div class="fact"><b>0–14°C</b><span>五月初南岛气温</span></div>
+      <div class="fact"><b>+4 小时</b><span>比北京时间快（无夏令时）</span></div>
+      <div class="fact"><b>≈07:30–17:30</b><span>日出日落，白天约10小时</span></div>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#route">路线行程</a>
+    <a href="#visa">签证入境</a>
+    <a href="#drive">自驾须知</a>
+    <a href="#weather">天气穿衣</a>
+    <a href="#stay">住宿</a>
+    <a href="#budget">预算</a>
+    <a href="#checklist">清单</a>
+    <button id="themeBtn" type="button" aria-label="切换深浅色">◐ 主题</button>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<section id="route">
+  <h2>路线与每日行程<small>基督城 → 皇后镇，7天</small></h2>
+  <p class="sub">除第3天外，每天开车控制在3小时以内，留出拍照、徒步和天黑前到达的余量（五月下午5点半天就黑了）。</p>
+
+  <div class="note"><b>关于天数：</b>2027年五一放假安排国务院一般在2026年11–12月公布，按往年惯例是5天连休。7天地面行程加上往返飞行（各约半天到一天）一共需要约9天，五一假期连上前后周末或请1–2天假即可。</div>
+
+  <div class="route">
+    <div class="days">
+      <div class="day"><div class="n">D1</div><div>
+        <h3>抵达基督城 Christchurch</h3>
+        <p>国内航班一般经奥克兰或悉尼转机到基督城（也可留意广州直飞基督城的季节性航班）。机场取车，第一天不安排长途，倒时差、适应靠左行驶。</p>
+        <ul><li>市区：雅芳河、植物园（秋叶正当时）、纸板教堂</li><li>去大超市 Pak'nSave / Woolworths 补零食饮水</li></ul>
+        <div class="stay">住：基督城市区或机场附近</div>
+      </div></div>
+
+      <div class="day"><div class="n">D2</div><div>
+        <h3>基督城 → 特卡波湖 Lake Tekapo<span class="drv">🚗 约3小时 · 230km</span></h3>
+        <p>途经杰拉尔丁小镇（Geraldine）午餐。下午到特卡波：好牧羊人教堂、湖边散步，开车上约翰山（Mt John）顶看湖景。</p>
+        <ul><li>晚上：特卡波是国际暗夜保护区，推荐报名 Dark Sky Project 观星团（需提前订）</li><li>Tekapo Springs 温泉可泡一泡</li></ul>
+        <div class="stay">住：特卡波（热门，务必提前订）</div>
+      </div></div>
+
+      <div class="day"><div class="n">D3</div><div>
+        <h3>特卡波 → 库克山 → 瓦纳卡 Wanaka<span class="drv">🚗 约4小时 · 315km</span></h3>
+        <p>全程最满的一天，8点前出发。沿普卡基湖（Lake Pukaki）开到库克山，路边 Peter's Lookout 是正对库克山的经典机位。</p>
+        <ul><li>上午走胡克谷步道 Hooker Valley Track：往返约3小时，平缓，终点是冰川湖和库克山正脸</li><li>午饭在普卡基湖边三文鱼店（Mt Cook Alpine Salmon），特威泽尔加油</li><li>下午翻越林迪斯山口（Lindis Pass）到瓦纳卡，秋天满山金黄草甸；争取 17:00 前到，傍晚去湖边看「孤独的树」That Wanaka Tree</li></ul>
+        <div class="stay">住：瓦纳卡</div>
+      </div></div>
+
+      <div class="day"><div class="n">D4</div><div>
+        <h3>瓦纳卡 → 箭镇 → 皇后镇 Queenstown<span class="drv">🚗 约1.2小时 · 70km</span></h3>
+        <p>早上可爬 Mt Iron（往返约1.5小时）俯瞰瓦纳卡。然后走皇冠山路（Crown Range Road）下山到箭镇（Arrowtown）：淘金小镇，秋叶是全国最出名的一处，五月初正是金色。</p>
+        <ul><li>皇冠山路下雪结冰时会要求带防滑链，出发前查 NZTA 路况；不通时改走卡瓦劳峡谷 SH6</li><li>傍晚到皇后镇：天际线缆车 + 斜坡滑车（Skyline Luge）、Fergburger</li></ul>
+        <div class="stay">住：皇后镇</div>
+      </div></div>
+
+      <div class="day"><div class="n">D5</div><div>
+        <h3>皇后镇半天 → 蒂阿瑙 Te Anau<span class="drv">🚗 约2小时 · 170km</span></h3>
+        <p>上午在皇后镇自由活动：沿湖开去格林诺奇（Glenorchy，往返1.5小时，最美湖景公路），或者卡瓦劳大桥蹦极、喷射快艇。午饭后开去蒂阿瑙，作为去米尔福德峡湾的前站。</p>
+        <ul><li>蒂阿瑙萤火虫洞（Te Anau Glowworm Caves）晚场推荐</li><li>在蒂阿瑙加满油！往米尔福德方向 120km 没有加油站</li></ul>
+        <div class="stay">住：蒂阿瑙</div>
+      </div></div>
+
+      <div class="day"><div class="n">D6</div><div>
+        <h3>米尔福德峡湾 Milford Sound 一日<span class="drv">🚗 往返约4小时 · 240km</span></h3>
+        <p>米尔福德公路本身就是景点：镜湖（Mirror Lakes）、Knobs Flat、霍默隧道（Homer Tunnel）。中午坐峡湾游船（约2小时），下雨反而瀑布更多。</p>
+        <ul><li><b>五月起这条路规定必须随车携带防滑链</b>，向租车公司加租</li><li>早出发，下午4点前从峡湾往回开，天黑前回到蒂阿瑙</li><li>不想开山路可在蒂阿瑙报含大巴的一日游</li></ul>
+        <div class="stay">住：蒂阿瑙</div>
+      </div></div>
+
+      <div class="day"><div class="n">D7</div><div>
+        <h3>蒂阿瑙 → 皇后镇机场，还车离境<span class="drv">🚗 约2小时 · 170km</span></h3>
+        <p>回程航班建议订下午出发。皇后镇机场还车（还车前加满油），经奥克兰/悉尼转机回国。异地还车通常有一笔单程费（One-way fee），订车时比较几家。</p>
+      </div></div>
+    </div>
+
+    <div class="map" aria-label="路线示意图">
+      <svg viewBox="0 0 300 380" role="img">
+        <title>南岛路线示意图（非比例）</title>
+        <path class="island" d="M200 20 L250 60 L262 110 L240 160 L232 200 L190 245 L170 290 L140 330 L95 355 L40 345 L15 300 L25 240 L60 190 L100 140 L140 95 L175 55 Z"/>
+        <path class="path" d="M222 168 L160 182 L136 152 L105 212 L96 236 L82 246 L46 270"/>
+        <path class="spur" d="M46 270 L40 222"/>
+        <path class="spur" d="M82 246 L70 226"/>
+        <circle cx="222" cy="168" r="5"/><text x="228" y="172">基督城</text>
+        <circle cx="160" cy="182" r="5"/><text x="152" y="200">特卡波</text>
+        <circle cx="136" cy="152" r="5"/><text x="142" y="148">库克山</text>
+        <circle cx="105" cy="212" r="5"/><text x="113" y="214">瓦纳卡</text>
+        <circle cx="96" cy="236" r="4"/><text x="104" y="238">箭镇</text>
+        <circle cx="82" cy="246" r="5"/><text x="90" y="262">皇后镇</text>
+        <circle cx="70" cy="226" r="3"/><text x="48" y="208" class="cap">格林诺奇</text>
+        <circle cx="46" cy="270" r="5"/><text x="30" y="290">蒂阿瑙</text>
+        <circle cx="40" cy="222" r="5"/><text x="2" y="190">米尔福德</text>
+        <text x="20" y="372" class="cap">虚线=主线 · 点线=往返支线 · 示意非比例</text>
+      </svg>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px">怎么增减天数</h3>
+  <div class="alt">
+    <div class="card"><h3>只有 5–6 天</h3><p>去掉瓦纳卡过夜（D3 库克山直接开到皇后镇，约3.5小时）。米尔福德改成皇后镇出发的大巴一日游或飞机往返，省掉两晚蒂阿瑙，最后一天从皇后镇直接还车。</p></div>
+    <div class="card"><h3>能凑到 9–10 天</h3><p>库克山单独住一晚（不用一天赶两段）；皇后镇多留一个机动日，留给坏天气补行程，或去吉布斯顿酒庄区、坐 TSS 恩斯劳号蒸汽船、跳伞。</p></div>
+    <div class="card"><h3>有 12–14 天</h3><p>皇后镇之后往北走西海岸：哈斯特山口 → 福克斯/弗朗茨约瑟夫冰川（直升机上冰川）→ 霍基蒂卡 → 亚瑟山口回基督城，变成完整环线，基督城进出、免单程还车费。</p></div>
+    <div class="card"><h3>想要北岛</h3><p>加 3–4 天：奥克兰 → 霍比特人村 → 罗托鲁瓦地热和毛利文化 → 怀托摩萤火虫洞。南北岛之间建议坐内陆航班，不建议开车加轮渡。</p></div>
+  </div>
+</section>
+
+<section id="visa">
+  <h2>签证与入境</h2>
+  <p class="sub">护照不同，手续不一样，先确认自己属于哪种。</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>🇨🇳 中国大陆护照：办旅游签证</h3>
+      <ul class="tight">
+        <li>大陆护照<b>不能</b>用 NZeTA，需要在新西兰移民局官网在线申请旅游签证（Visitor Visa）</li>
+        <li>常用材料：护照、在职/收入证明、银行流水、行程和机票酒店预订、户口本等</li>
+        <li>审理时间受季节影响，建议出发前 <b>2–3 个月</b>递交（2027年2月前）</li>
+        <li>签证费 + 国际游客税（IVL）在线一起付，以官网当时价格为准</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>港澳台及免签国护照：办 NZeTA</h3>
+      <ul class="tight">
+        <li>香港特区护照、台湾护照、多数欧美日韩护照为免签，需申请电子旅行许可 NZeTA</li>
+        <li>官方 App 申请更便宜，通常几天内批，最长按 72 小时预留</li>
+        <li>同时缴纳国际游客税 IVL</li>
+        <li>只认官方渠道：immigration.govt.nz 或官方 NZeTA App</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>入境检疫非常严格：</b>入境卡上所有食品（包括零食、茶叶、药材、肉类）、户外鞋和帐篷都要如实申报。申报了没问题的东西会放行；不申报被查到当场罚款 NZD 400 起。登山鞋提前刷干净泥土。入境卡现在可提前在线填写（New Zealand Traveller Declaration）。</div>
+</section>
+
+<section id="drive">
+  <h2>自驾须知</h2>
+  <p class="sub">新西兰开车不难，但和国内习惯差别很大，第一天在城市里慢慢适应。</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>驾照</h3>
+      <ul class="tight">
+        <li>中国驾照需配 <b>NZTA 认可的英文翻译件</b>（中国不是国际驾照公约成员国，国内办不了国际驾照），开车时<b>原件 + 翻译件</b>一起带</li>
+        <li>翻译件可找 NZTA 认可的翻译机构，或租车公司代办（问清是否被认可）</li>
+        <li>持外国驾照可在新西兰开车最长 12 个月</li>
+        <li>租车一般要求满 21 岁、驾龄满 1–2 年，需主驾驶本人的信用卡做押金</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>交通规则</h3>
+      <ul class="tight">
+        <li><b>靠左行驶</b>，方向盘在右，转弯时默念「司机靠路中间」</li>
+        <li>限速：开阔公路一般 100km/h（部分路段已降到 80），城镇 50km/h，测速相机很多</li>
+        <li>环岛顺时针走，让右边来车</li>
+        <li><b>单车道桥</b>（One Lane Bridge）：看标志，红色小箭头一方让行</li>
+        <li>全员系安全带，开车禁止手持手机，酒驾限额远低于国内（建议零饮酒）</li>
+        <li>山路慢车请用路边 Slow Vehicle Bay 让后车，被追尾不怪你但很危险</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>租车</h3>
+      <ul class="tight">
+        <li>推荐紧凑 SUV（如 RAV4），后备箱够放两个大箱子；人多选七座</li>
+        <li>保险建议买<b>零自付（Full cover / Zero excess）</b>，碎石路、挡风玻璃和轮胎是否保要看清</li>
+        <li>五月需在订单里<b>加租防滑链</b>（米尔福德路强制携带，皇冠山路雪天要求）</li>
+        <li>大牌：Hertz、Avis、Europcar；本地性价比：Apex、Jucy、GO Rentals。比较平台：DiscoverCars、Rentalcars</li>
+        <li>取车时绕车拍视频记录划痕，确认油量政策（通常满取满还）</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>路况与加油</h3>
+      <ul class="tight">
+        <li>每天出发前看 <a href="https://www.journeys.nzta.govt.nz/" target="_blank" rel="noopener">NZTA Journey Planner</a>（封路、雪情）和 MetService 天气</li>
+        <li>山区乡镇之间加油站少，<b>油表半箱就加</b>；关键加油点：特威泽尔、瓦纳卡、蒂阿瑙</li>
+        <li>五月清晨路面可能有黑冰，背阴弯道尤其注意，早上 9 点后再上山路更稳</li>
+        <li><b>尽量不在天黑后开山路</b>：路灯少、会遇到羊和鹿，五月 17:30 就天黑</li>
+        <li>导航用 Google 地图（提前下载离线地图），山区很多地方没信号</li>
+        <li>紧急电话 <b>111</b></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="weather">
+  <h2>五月初天气与穿衣</h2>
+  <p class="sub">南半球五月 = 北半球十一月初，深秋转初冬。天气一天多变，山区可能突然下雪，峡湾经常下雨。</p>
+  <div class="tbl"><table>
+    <thead><tr><th>地点</th><th>白天</th><th>夜间</th><th>特点</th></tr></thead>
+    <tbody>
+      <tr><td>基督城</td><td class="num">约 14°C</td><td class="num">约 4°C</td><td>相对温和，偶有大风</td></tr>
+      <tr><td>特卡波 / 库克山</td><td class="num">约 10°C</td><td class="num">0°C 上下</td><td>早晚有霜，观星时非常冷</td></tr>
+      <tr><td>瓦纳卡 / 皇后镇</td><td class="num">约 12°C</td><td class="num">约 2°C</td><td>晴天多，秋叶金黄</td></tr>
+      <tr><td>蒂阿瑙 / 米尔福德</td><td class="num">约 11°C</td><td class="num">约 3°C</td><td>全国最多雨的地区之一，山口可能积雪</td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>洋葱式穿法</h3>
+      <ul class="tight"><li>内层：速干或羊毛（美利奴）打底</li><li>中层：抓绒或薄羽绒</li><li>外层：<b>防风防水冲锋衣</b>（最重要）</li><li>观星和早晨另备厚羽绒服、帽子、手套</li></ul></div>
+    <div class="card"><h3>其他要带</h3>
+      <ul class="tight"><li>防水徒步鞋（胡克谷、Mt Iron）</li><li>墨镜、防晒霜：新西兰紫外线强，秋天也晒</li><li>驱虫液：米尔福德有沙蝇（sandfly），咬了很痒</li><li>转换插头：新西兰是八字斜扁插头（I 型，和澳洲一样），230V</li></ul></div>
+  </div>
+</section>
+
+<section id="stay">
+  <h2>住宿建议</h2>
+  <p class="sub">五月是新西兰淡季，价格比夏天便宜，但五一期间中国游客集中，热门小镇房源少，建议 <b>2027年1–2月前</b>订好，选可免费取消的。</p>
+  <div class="tbl"><table>
+    <thead><tr><th>类型</th><th>参考价/晚（2人）</th><th>适合</th></tr></thead>
+    <tbody>
+      <tr><td>Motel 汽车旅馆</td><td class="num">NZD 150–250</td><td>自驾首选：门口停车，多数带小厨房，能自己做饭省钱</td></tr>
+      <tr><td>Airbnb / Holiday Home</td><td class="num">NZD 180–350</td><td>3人以上或家庭，皇后镇、瓦纳卡连住时划算</td></tr>
+      <tr><td>酒店</td><td class="num">NZD 250–500+</td><td>皇后镇湖景酒店、特卡波湖景酒店</td></tr>
+      <tr><td>YHA / 背包客</td><td class="num">NZD 50–90/床</td><td>预算有限，有独立双人间</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="tight" style="margin-top:12px">
+    <li><b>最难订的两处：</b>特卡波湖景房、米尔福德前后的蒂阿瑙（五一期间房源少）</li>
+    <li>皇后镇比较贵，可考虑弗兰克顿（Frankton，近机场）或箭镇；想在库克山看日出可把 D2 改住库克山 Hermitage</li>
+    <li>五月晚上冷，订之前看评价里有没有提到暖气、电热毯</li>
+  </ul>
+</section>
+
+<section id="budget">
+  <h2>预算参考<small>每人，2人同行，7天</small></h2>
+  <p class="sub">按 1 NZD ≈ 4.2 人民币估算，出发前按实时汇率调整。不含签证和购物。</p>
+  <div class="tbl"><table>
+    <thead><tr><th>项目</th><th>经济</th><th>舒适</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>往返机票</td><td class="num">¥6,000</td><td class="num">¥9,000+</td><td>五一出发高峰，提前 3–4 个月买；开口程（基督城进、皇后镇出）</td></tr>
+      <tr><td>租车 + 保险 + 链条</td><td class="num">¥1,500</td><td class="num">¥2,200</td><td>7 天 SUV 两人分摊，含异地还车费</td></tr>
+      <tr><td>油费</td><td class="num">¥500</td><td class="num">¥600</td><td>约 1,000km，两人分摊；91 号油约 NZD 2.5–3/L</td></tr>
+      <tr><td>住宿 6 晚</td><td class="num">¥2,300</td><td class="num">¥4,000</td><td>Motel 为主 / 酒店为主，两人一间</td></tr>
+      <tr><td>餐饮</td><td class="num">¥1,400</td><td class="num">¥2,400</td><td>超市做饭 + 偶尔下馆子；餐厅主菜约 NZD 30–45</td></tr>
+      <tr><td>门票活动</td><td class="num">¥1,000</td><td class="num">¥2,500</td><td>峡湾游船、观星、缆车、温泉；加跳伞/直升机另算</td></tr>
+      <tr><th>合计</th><th class="num">≈ ¥13,000</th><th class="num">≈ ¥21,000</th><th></th></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><b>省钱小技巧：</b>在 Pak'nSave 超市采购（最便宜）；大多数步道和观景点免费；新西兰餐厅不需要给小费；水龙头的水可以直接喝。</div>
+</section>
+
+<section id="checklist">
+  <h2>出发前清单</h2>
+  <p class="sub">勾选状态只保存在你自己的浏览器里。</p>
+  <div class="card">
+    <ul class="check" id="checklistItems">
+      <li><label><input type="checkbox" data-k="leave"><span>确认假期安排和请假</span></label></li>
+      <li><label><input type="checkbox" data-k="passport"><span>护照有效期超过回程日 3 个月</span></label></li>
+      <li><label><input type="checkbox" data-k="visa"><span>旅游签证 / NZeTA 获批</span></label></li>
+      <li><label><input type="checkbox" data-k="flight"><span>机票（基督城进、皇后镇出）</span></label></li>
+      <li><label><input type="checkbox" data-k="license"><span>驾照 NZTA 认可翻译件</span></label></li>
+      <li><label><input type="checkbox" data-k="car"><span>租车：零自付保险 + 防滑链</span></label></li>
+      <li><label><input type="checkbox" data-k="tekapo"><span>特卡波住宿 + 观星团</span></label></li>
+      <li><label><input type="checkbox" data-k="cook"><span>瓦纳卡、皇后镇住宿</span></label></li>
+      <li><label><input type="checkbox" data-k="milford"><span>米尔福德峡湾游船</span></label></li>
+      <li><label><input type="checkbox" data-k="hotels"><span>蒂阿瑙两晚住宿</span></label></li>
+      <li><label><input type="checkbox" data-k="ins"><span>旅行保险（含医疗和自驾）</span></label></li>
+      <li><label><input type="checkbox" data-k="card"><span>Visa/Master 信用卡（主驾名下）</span></label></li>
+      <li><label><input type="checkbox" data-k="sim"><span>电话卡 / eSIM（One NZ、Spark 信号较好）</span></label></li>
+      <li><label><input type="checkbox" data-k="map"><span>下载 Google 离线地图</span></label></li>
+      <li><label><input type="checkbox" data-k="nztd"><span>线上填写入境申报 NZTD</span></label></li>
+      <li><label><input type="checkbox" data-k="plug"><span>I 型转换插头、冲锋衣、羽绒服</span></label></li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>本页为行前参考，写于 2026 年 11 月。签证政策、费用、路况和价格都可能变化，出发前请以 <a href="https://www.immigration.govt.nz/" target="_blank" rel="noopener">新西兰移民局</a>、<a href="https://www.nzta.govt.nz/" target="_blank" rel="noopener">NZTA 交通局</a>、<a href="https://www.doc.govt.nz/" target="_blank" rel="noopener">DOC 保护部（步道状态）</a> 和 <a href="https://www.metservice.com/" target="_blank" rel="noopener">MetService 天气</a> 官网为准。</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var root=document.documentElement, saved=get('nz-theme');
+  if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark';
+    root.setAttribute('data-theme',next); set('nz-theme',next);
+  });
+  var state={};
+  try{state=JSON.parse(get('nz-check')||'{}')||{}}catch(e){state={}}
+  document.querySelectorAll('#checklistItems input').forEach(function(cb){
+    cb.checked=!!state[cb.dataset.k];
+    cb.addEventListener('change',function(){state[cb.dataset.k]=cb.checked;set('nz-check',JSON.stringify(state))});
+  });
+})();
+</script>
+</body>
+</html>
