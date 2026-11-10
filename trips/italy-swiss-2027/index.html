@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15181b" media="(prefers-color-scheme: dark)">
+<title>瑞士意大利 · 2027五一</title>
+<meta name="description" content="2027年5月1日–9日，四人从上海出发玩瑞士+意大利：四种进出城市方案对比、推荐路线（苏黎世进、威尼斯出）、逐日行程、火车通票、签证、预算计算器，以及和新西兰方案的对比。">
+<style>
+:root{
+  --bg:#f6f3ee; --surface:#ffffff; --surface-2:#efe9df; --text:#22262a; --muted:#5f6670;
+  --line:#ddd5c8; --accent:#b4532a; --accent-soft:#f5e3d8; --lake:#2a7880; --lake-soft:#dcefef;
+  --warn:#8a5a00; --warn-soft:#fff3d6; --ok:#2f7a3d; --ok-soft:#e1f2e3;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181b; --surface:#1e2226; --surface-2:#262b30; --text:#e9e6e1; --muted:#a3a9b0;
+    --line:#343a41; --accent:#e58a5c; --accent-soft:#3a2a22; --lake:#6cc3c9; --lake-soft:#1d3335;
+    --warn:#f0c46a; --warn-soft:#3a3120; --ok:#7fd08c; --ok-soft:#1f3323; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181b; --surface:#1e2226; --surface-2:#262b30; --text:#e9e6e1; --muted:#a3a9b0;
+  --line:#343a41; --accent:#e58a5c; --accent-soft:#3a2a22; --lake:#6cc3c9; --lake-soft:#1d3335;
+  --warn:#f0c46a; --warn-soft:#3a3120; --ok:#7fd08c; --ok-soft:#1f3323; --shadow:none;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:60px;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  line-height:1.7;font-size:16px;-webkit-tap-highlight-color:transparent}
+a{color:var(--lake)}
+.wrap{max-width:1000px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left))}
+header.hero{padding:48px 0 28px;border-bottom:1px solid var(--line)}
+.eyebrow{color:var(--accent);font-weight:600;letter-spacing:.06em;font-size:14px}
+h1{font-size:clamp(26px,5vw,44px);line-height:1.25;margin:8px 0 12px}
+.lede{color:var(--muted);max-width:680px;margin:0}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:22px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.fact b{display:block;font-size:19px}
+.fact span{color:var(--muted);font-size:13px}
+nav.toc{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav.toc .wrap{display:flex;gap:2px;overflow-x:auto;padding-top:8px;padding-bottom:8px;scrollbar-width:none}
+nav.toc .wrap::-webkit-scrollbar{display:none}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--text);font-size:14px;padding:6px 12px;border-radius:999px}
+nav.toc a:hover,nav.toc a:active{background:var(--surface-2)}
+#themeBtn{margin-left:auto;border:1px solid var(--line);background:var(--surface);color:var(--text);
+  border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+section{padding:40px 0 8px}
+h2{font-size:24px;margin:0 0 6px}
+h2 small{font-size:14px;color:var(--muted);font-weight:400;margin-left:8px}
+h3{font-size:18px;margin:0 0 6px}
+h4{font-size:15px;margin:14px 0 4px;color:var(--muted)}
+.sub{color:var(--muted);margin:0 0 18px}
+.note{background:var(--warn-soft);border-left:4px solid var(--warn);border-radius:8px;padding:12px 14px;margin:16px 0;font-size:15px}
+.note b{color:var(--warn)}
+.good{background:var(--ok-soft);border-left:4px solid var(--ok);border-radius:8px;padding:12px 14px;margin:16px 0;font-size:15px}
+.good b{color:var(--ok)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+
+/* overview */
+.overview{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+@media (max-width:760px){.overview{grid-template-columns:1fr}.map{max-width:340px;margin:0 auto;width:100%}}
+.map{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+.map svg{width:100%;height:auto;display:block}
+.map text{font-size:11px;fill:var(--text)}
+.map .island{fill:var(--surface-2);stroke:var(--line)}
+.map .path{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-dasharray:6 4}
+.map .spur{fill:none;stroke:var(--lake);stroke-width:2;stroke-dasharray:3 3}
+.map circle{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.map .cap{fill:var(--muted);font-size:10px}
+.ov{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.ov a{display:grid;grid-template-columns:84px 1fr auto;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--text);align-items:center}
+.ov a:last-child{border-bottom:none}
+.ov a:hover,.ov a:active{background:var(--surface-2)}
+.ov .d{font-weight:700;color:var(--accent);font-size:14px;line-height:1.4}
+.ov .d small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.ov .km{font-size:13px;color:var(--lake);white-space:nowrap}
+@media (max-width:520px){.ov a{grid-template-columns:68px 1fr;gap:4px 10px;padding:11px 14px}.ov .km{grid-column:2}}
+
+/* day */
+.day{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
+.dayhead{display:flex;gap:12px;align-items:flex-start;margin-bottom:8px}
+.badge{background:var(--accent-soft);color:var(--accent);border-radius:10px;text-align:center;padding:6px 8px;font-weight:700;min-width:60px;flex:none}
+.badge small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.dayhead h3{font-size:19px;margin:2px 0 6px;line-height:1.4}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12.5px;border-radius:999px;padding:2px 10px;background:var(--surface-2);color:var(--muted)}
+.chip.drive{background:var(--lake-soft);color:var(--lake)}
+.chip.book{background:var(--accent-soft);color:var(--accent)}
+.tl{list-style:none;margin:12px 0 0 6px;padding:0;border-left:2px solid var(--line)}
+.tl li{position:relative;padding:0 0 12px 18px}
+.tl li::before{content:"";position:absolute;left:-7px;top:8px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
+.tl li.drv::before{border-color:var(--lake);background:var(--lake-soft)}
+.tl .t{font-variant-numeric:tabular-nums;font-weight:700;margin-right:8px;color:var(--accent)}
+.tl li.drv .t{color:var(--lake)}
+.tl p{margin:2px 0 0;color:var(--muted);font-size:14.5px}
+.daytips{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:6px}
+.daytips div{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:14px}
+.daytips b{display:block;font-size:13px;color:var(--muted);margin-bottom:2px}
+
+table{width:100%;border-collapse:collapse;font-size:15px}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--surface-2);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.num,th.num{white-space:nowrap;font-variant-numeric:tabular-nums}
+ul.tight{padding-left:20px;margin:6px 0}
+ul.tight li{margin:4px 0}
+
+/* stay list (card per night, reads well on phone) */
+.stays{display:grid;gap:10px}
+.stay{display:grid;grid-template-columns:76px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.stay .when{font-weight:700;color:var(--accent);font-size:14px;line-height:1.4}
+.stay .when small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.stay h3{font-size:16px;margin:0}
+.stay .price{font-size:13px;color:var(--lake);font-variant-numeric:tabular-nums}
+.stay p{margin:2px 0 0;font-size:14px;color:var(--muted)}
+
+/* calculator */
+.calc{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px}
+@media (max-width:760px){.calc{grid-template-columns:1fr}.calc .result{order:-1}}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px 12px}
+.fields label{display:flex;flex-direction:column;justify-content:flex-end;font-size:13px;color:var(--muted);line-height:1.4}
+.fields input{margin-top:4px;font:inherit;font-size:16px;color:var(--text);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.result .big{font-size:34px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.2}
+.result .row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.result .row span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:12px 0 6px;background:var(--surface-2)}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;background:var(--c)}
+.btn{margin-top:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);border-radius:8px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+
+.check{list-style:none;padding:0;margin:0;columns:2 260px;column-gap:24px}
+.check li{break-inside:avoid;margin:0}
+.check label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:6px 0}
+.check input{margin-top:5px;width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.check input:checked + span{color:var(--muted);text-decoration:line-through}
+.timeline-book{display:grid;gap:10px}
+.timeline-book .card{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:14px 16px}
+@media (max-width:520px){.timeline-book .card{grid-template-columns:1fr;gap:2px}}
+.timeline-book b{color:var(--accent)}
+.totop{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:6;
+  width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--text);
+  box-shadow:0 2px 10px rgba(0,0,0,.12);font-size:18px;display:none;align-items:center;justify-content:center;text-decoration:none}
+.totop.show{display:flex}
+footer{margin-top:44px;padding:24px 0 calc(40px + env(safe-area-inset-bottom));border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+
+
+/* scene illustrations; drop a real photo at img/<id>.jpg and it covers the drawing */
+.scene{position:relative;margin:-20px -20px 14px;border-radius:16px 16px 0 0;overflow:hidden;aspect-ratio:400/150;background:var(--surface-2)}
+.scene svg,.scene img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
+.scene figcaption{position:absolute;left:0;right:0;bottom:0;padding:18px 14px 8px;font-size:12.5px;color:#fff;
+  background:linear-gradient(transparent,rgba(0,0,0,.5));text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.hero-scene{margin:20px 0 0;border-radius:16px;aspect-ratio:400/130;border:1px solid var(--line)}
+@media (max-width:520px){.scene{margin:-16px -14px 12px;border-radius:14px 14px 0 0}.hero-scene{margin:18px 0 0;border-radius:14px;aspect-ratio:400/150}}
+
+/* phone */
+@media (max-width:520px){
+  body{font-size:15.5px}
+  header.hero{padding:32px 0 22px}
+  section{padding:32px 0 4px}
+  h2{font-size:22px}
+  h2 small{display:block;margin:2px 0 0}
+  .card{padding:16px}
+  .day{padding:16px 14px;border-radius:14px}
+  .badge{min-width:54px;padding:5px 6px}
+  .dayhead h3{font-size:17.5px}
+  .tl li{padding-left:14px}
+  .tl .t{display:block;margin:0}
+  .grid2{grid-template-columns:1fr}
+  .daytips{grid-template-columns:1fr}
+  th,td{padding:9px 10px}
+}
+@media print{nav.toc,#themeBtn,.totop{display:none!important}.day,.card{box-shadow:none;break-inside:avoid}}
+/* options */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.opt{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+.opt.rec{border:2px solid var(--accent)}
+.opt .tag{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:var(--surface-2);color:var(--muted);margin-bottom:6px}
+.opt.rec .tag{background:var(--accent);color:#fff}
+.opt h3{margin:0 0 2px}
+.opt .stars{color:var(--accent);letter-spacing:2px;font-size:15px}
+.opt .route{font-size:13.5px;color:var(--lake);margin:6px 0 4px}
+.opt ul{padding-left:0;list-style:none;margin:8px 0 0;font-size:14.5px}
+.opt li{margin:4px 0;padding-left:22px;position:relative}
+.opt li::before{position:absolute;left:0;top:0}
+.opt li.p::before{content:"👍"}
+.opt li.m::before{content:"👎"}
+.opt .verdict{margin-top:10px;font-size:14px;background:var(--surface-2);border-radius:8px;padding:8px 10px}
+.vs{table-layout:fixed}.vs th{white-space:normal}.vs th:first-child,.vs td:first-child{width:84px;color:var(--muted);font-weight:600}
+@media (max-width:520px){.vs th:first-child,.vs td:first-child{width:52px}.vs th,.vs td{font-size:14px;padding:8px 7px}}
+.vs td.win{background:var(--ok-soft)}
+.map .land{fill:var(--surface-2);stroke:var(--line)}
+.map .border{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:2 3}
+.map .water{fill:var(--lake-soft);stroke:none}
+.map .flt{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:1 4;stroke-linecap:round}
+.map .ctry{fill:var(--muted);font-size:13px;font-weight:600;letter-spacing:.2em;opacity:.7}
+.chip.train{background:var(--lake-soft);color:var(--lake)}
+</style>
+</head>
+<body>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="eyebrow">2027.5.1 – 5.9 · 四人 · 上海出发 · 瑞士 + 意大利</div>
+    <h1>上午还在马特洪峰脚下，晚上已经在米兰吃烩饭</h1>
+    <p class="lede">推荐 <b>苏黎世进、威尼斯出</b>：5月1日从上海直飞苏黎世，坐火车一路往南：卢塞恩 → 少女峰 → 采尔马特 → 穿过阿尔卑斯山到米兰 → 威尼斯，5月8日从威尼斯直飞回上海，5月9日到家，<b>5月10日照常上班</b>。全程不走回头路，不用开车，换乘都在火车站里完成。下面先比较你说的四种进出方案，再给逐日行程，最后和新西兰方案放在一起对比，方便你们选。</p>
+    <figure class="scene hero-scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="雪山、湖和威尼斯的贡多拉"><defs><linearGradient id="gh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9cc9ec"/><stop offset="1" stop-color="#eaf4fb"/></linearGradient></defs><rect width="400" height="170" fill="url(#gh)"/><path d="M0 110 L50 78 L90 96 L150 40 L185 74 L230 58 L270 86 L310 50 L360 82 L400 66 V130 H0Z" fill="#7d8aa6"/><path d="M150 40 L164 56 L156 54 L148 60 L140 54 L134 58Z M310 50 L322 64 L312 62 L302 66Z M230 58 L240 68 L222 68Z" fill="#fff"/><path d="M0 120 L60 104 L120 116 L200 100 L280 114 L400 102 V134 H0Z" fill="#4f8a5b"/><rect y="128" width="400" height="42" fill="#3f8fb0"/><path d="M0 132 Q100 126 200 133 T400 131" stroke="#fff" stroke-width="1" opacity=".5" fill="none"/><g transform="translate(260 146)"><path d="M-46 0 Q0 10 46 -6 L42 2 Q0 14 -42 4Z" fill="#1d1d1d"/><path d="M44 -6 L50 -14 L47 -4" stroke="#1d1d1d" stroke-width="2" fill="none"/><rect x="18" y="-22" width="4" height="18" fill="#1d1d1d"/><path d="M16 -24 h8 v4 h-8z" fill="#1d1d1d"/><rect x="17" y="-17" width="6" height="3" fill="#c0392b"/><rect x="17" y="-12" width="6" height="3" fill="#fff"/><line x1="26" y1="-20" x2="-6" y2="20" stroke="#5b3b22" stroke-width="1.5"/></g><g transform="translate(60 92)"><rect x="0" y="0" width="16" height="16" rx="2" fill="#d52b1e"/><rect x="6.5" y="3" width="3" height="10" fill="#fff"/><rect x="3" y="6.5" width="10" height="3" fill="#fff"/><line x1="0" y1="0" x2="0" y2="34" stroke="#555" stroke-width="1.5"/></g></svg><img src="img/hero.jpg" alt="" loading="lazy" onerror="this.remove()"></figure>
+    <div class="facts">
+      <div class="fact"><b>7晚</b><span>瑞士5晚 + 意大利2晚</span></div>
+      <div class="fact"><b>直飞</b><span>去程约13h · 回程约12h</span></div>
+      <div class="fact"><b>全程火车</b><span>最长一段约4小时</span></div>
+      <div class="fact"><b>一个申根签</b><span>两个国家都能进</span></div>
+      <div class="fact"><b>5/9 到家</b><span>5/10 周一正常上班</span></div>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#options">进出方案</a>
+    <a href="#overview">总览</a>
+    <a href="#days">每日行程</a>
+    <a href="#train">火车还是自驾</a>
+    <a href="#vsnz">和新西兰比</a>
+    <a href="#visa">签证</a>
+    <a href="#weather">天气穿衣</a>
+    <a href="#stay">住宿</a>
+    <a href="#budget">预算</a>
+    <a href="#booking">预订时间</a>
+    <a href="#checklist">清单</a>
+    <button id="themeBtn" type="button" aria-label="切换深浅色">◐ 主题</button>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<section id="options">
+  <h2>四种进出方案怎么选<small>结论：瑞士进、威尼斯出</small></h2>
+  <p class="sub">上海浦东到这几个城市都有直飞：瑞士航空飞苏黎世，东航飞罗马、米兰、威尼斯。所以区别不在航班，而在 <b>落地以后路线顺不顺</b>。瑞士在北边，罗马在最南边，威尼斯在东北，这决定了哪种走法最省时间。</p>
+  <div class="opts">
+    <div class="opt rec">
+      <span class="tag">推荐</span>
+      <h3>瑞士进、威尼斯出</h3>
+      <div class="stars">★★★★★</div>
+      <div class="route">苏黎世 → 卢塞恩 → 因特拉肯 → 采尔马特 → 米兰 → 威尼斯</div>
+      <ul>
+        <li class="p">一条线从北走到南，<b>没有回头路</b>，7天里只有1天在火车上坐3–4小时。</li>
+        <li class="p">先看山后看城：刚落地精神好，去爬山；最后两天在城里逛，累了随时坐下喝咖啡。</li>
+        <li class="p">去回都是直飞，时间短，5/8走、5/9到，离上班还有一整天缓冲。</li>
+        <li class="m">开口程机票通常比同一城市往返贵一点，要买「多城市」联程票。</li>
+        <li class="m">东航威尼斯直飞不是每天都有，要先确认5/8有没有班。没有的话就从米兰出（米兰每天都有直飞），行程只改最后一天，见 <a href="#d8">D8</a>。</li>
+      </ul>
+      <div class="verdict">瑞士的雪山和意大利的城市都能看到，路程最省，所以推荐这个。</div>
+    </div>
+    <div class="opt">
+      <span class="tag">次选</span>
+      <h3>意大利进出（米兰进出）</h3>
+      <div class="stars">★★★★</div>
+      <div class="route">米兰 → 采尔马特 → 因特拉肯 → 卢塞恩 → 米兰 → 威尼斯 → 米兰</div>
+      <ul>
+        <li class="p">东航米兰每天都有直飞，往返票最好买，改签也方便。</li>
+        <li class="p">米兰离瑞士近，到采尔马特约3.5小时，到卢塞恩约3小时。</li>
+        <li class="m">从瑞士回米兰、从威尼斯回米兰，<b>要多走两段回头路</b>，比推荐方案多花半天左右。</li>
+      </ul>
+      <div class="verdict">威尼斯5/8没有直飞、开口票又太贵时，选这个。</div>
+    </div>
+    <div class="opt">
+      <span class="tag">适合只玩瑞士</span>
+      <h3>瑞士进出（苏黎世进出）</h3>
+      <div class="stars">★★★</div>
+      <div class="route">苏黎世 → 卢塞恩 → 少女峰 → 采尔马特 → 科莫湖 / 米兰 → 苏黎世</div>
+      <ul>
+        <li class="p">瑞士航空往返直飞，票好买；瑞士的山可以玩得更从容。</li>
+        <li class="p">意大利可以去科莫湖或米兰住一晚，从卢加诺坐火车过去很近。</li>
+        <li class="m">威尼斯基本去不了：从威尼斯回苏黎世要6–7小时火车。</li>
+        <li class="m">瑞士物价高，住得越多越贵。</li>
+      </ul>
+      <div class="verdict">如果你们其实主要想看雪山，意大利只是顺路吃吃喝喝，这个也行。</div>
+    </div>
+    <div class="opt">
+      <span class="tag">不推荐</span>
+      <h3>罗马进出</h3>
+      <div class="stars">★★</div>
+      <div class="route">罗马 → 佛罗伦萨 → 米兰 → 瑞士 → 一路回罗马</div>
+      <ul>
+        <li class="p">能看到罗马和佛罗伦萨，意大利的古迹最多。</li>
+        <li class="m">罗马离瑞士太远，单程火车 <b>6–7小时</b>，一去一回就是两天在火车上。</li>
+        <li class="m">7天里要塞罗马、佛罗伦萨、瑞士、威尼斯，每个地方只能待一天，非常赶。</li>
+      </ul>
+      <div class="verdict">想看罗马，建议这次干脆不去瑞士，改成「罗马进、威尼斯出」的纯意大利路线，或者另找一个假期。</div>
+    </div>
+  </div>
+  <div class="note"><b>为什么不是「威尼斯进、瑞士出」：</b>也能走，就是推荐路线倒过来。但刚下飞机先挤威尼斯的人流、最后几天再爬3000多米的山，会比较累；而且回程从苏黎世飞，最后一天还要从山里赶去机场。先山后城更轻松。</div>
+</section>
+
+<section id="overview">
+  <h2>行程总览</h2>
+  <p class="sub">每天的火车都在白天坐，最长一段是 D6 从采尔马特到米兰（约4小时，风景很好）。点任意一天跳到详情。</p>
+  <div class="note"><b>请假提醒：</b>2027年五一放假安排一般在2026年11–12月公布，按惯例是5月1日–5日。5月6日（周四）、7日（周五）大概率要请假；如果5月8日（周六）被调成补班日，也要一起请。这一点和新西兰方案一样。四个人确认好假期再买机票。</div>
+  <div class="overview">
+    <div class="ov">
+      <a href="#d1"><span class="d">D1 · 5/1<small>周六</small></span><span>上海直飞苏黎世，<b>落地先吃一罐瑞士酸奶</b>，火车去卢塞恩，逛廊桥</span><span class="km">✈ 13h · 🚆 1h</span></a>
+      <a href="#d2"><span class="d">D2 · 5/2<small>周日</small></span><span>坐船 + 齿轨火车上瑞吉山，「群山之后」看湖</span><span class="km">⛴ 🚞</span></a>
+      <a href="#d3"><span class="d">D3 · 5/3<small>周一</small></span><span>黄金列车去因特拉肯，劳特布伦嫩瀑布山谷</span><span class="km">🚆 2h</span></a>
+      <a href="#d4"><span class="d">D4 · 5/4<small>周二</small></span><span>少女峰：艾格快线上「欧洲之巅」，下山走温根</span><span class="km">🚞 环线</span></a>
+      <a href="#d5"><span class="d">D5 · 5/5<small>周三</small></span><span>去采尔马特，戈尔内格拉特看马特洪峰</span><span class="km">🚆 2.3h</span></a>
+      <a href="#d6"><span class="d">D6 · 5/6<small>周四</small></span><span>日照金山 → 穿越阿尔卑斯 → 米兰大教堂屋顶</span><span class="km">🚆 4h</span></a>
+      <a href="#d7"><span class="d">D7 · 5/7<small>周五</small></span><span>《最后的晚餐》→ 高铁到威尼斯，大运河、圣马可</span><span class="km">🚄 2.5h</span></a>
+      <a href="#d8"><span class="d">D8 · 5/8<small>周六</small></span><span>清晨的圣马可广场，中午直飞回上海</span><span class="km">✈ 12h</span></a>
+      <a href="#d8"><span class="d">5/9 周日<small>到家</small></span><span>白天到上海，休息一晚，<b>5/10 上班</b></span><span class="km">✅</span></a>
+    </div>
+    <div class="map" aria-label="路线示意图">
+      <svg viewBox="0 0 300 380" role="img">
+        <title>瑞士意大利路线示意图（非比例）</title>
+        <path class="land" d="M20 30 L280 30 L280 370 L20 370Z"/>
+        <path class="border" d="M30 120 Q80 112 120 128 Q150 140 175 120 Q205 104 240 116 L280 112"/>
+        <path class="water" d="M100 88 q14 -6 22 2 q-6 10 -22 -2Z"/>
+        <path class="water" d="M84 110 q16 -2 26 4 q-10 6 -26 -4Z"/>
+        <path class="water" d="M150 160 q4 16 -2 30 q-6 -14 2 -30Z"/>
+        <path class="water" d="M250 250 q12 6 18 22 q-14 -2 -18 -22Z"/>
+        <path class="path" d="M128 52 L112 90 L96 114 L86 150 L132 208 L258 262"/>
+        <path class="flt" d="M128 52 L180 8"/>
+        <path class="flt" d="M258 262 L292 230"/>
+        <circle cx="128" cy="52" r="5"/><text x="136" y="56">苏黎世</text>
+        <circle cx="112" cy="90" r="5"/><text x="120" y="92">卢塞恩</text>
+        <circle cx="96" cy="114" r="5"/><text x="104" y="106">因特拉肯</text>
+        <circle cx="86" cy="150" r="5"/><text x="30" y="168">采尔马特</text>
+        <circle cx="132" cy="208" r="5"/><text x="140" y="212">米兰</text>
+        <circle cx="258" cy="262" r="5"/><text x="226" y="284">威尼斯</text>
+        <text x="196" y="72" class="ctry">瑞士</text>
+        <text x="180" y="190" class="ctry">意大利</text>
+        <text x="174" y="20" class="cap">✈ 上海</text>
+        <text x="236" y="224" class="cap">✈ 上海</text>
+        <circle cx="160" cy="352" r="3" style="fill:var(--muted)"/><text x="168" y="355" class="cap">罗马在更南边 ↓</text>
+        <text x="30" y="352" class="cap">虚线=火车 · 示意非比例</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section id="days">
+  <h2>每日行程<small>时间是建议，可以前后挪</small></h2>
+  <p class="sub">时间按「早上到苏黎世、中午从威尼斯起飞」排的。航班定了以后，D1 和 D8 的时间跟着航班调就行，中间几天不受影响。</p>
+
+  <div class="day" id="d1">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="卢塞恩：卡佩尔廊桥和水塔，后面是皮拉图斯山"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcdcf2"/><stop offset="1" stop-color="#eef6fb"/></linearGradient></defs><rect width="400" height="170" fill="url(#g1)"/><path d="M0 96 L60 60 L100 76 L150 30 L200 70 L250 52 L320 84 L400 64 V112 H0Z" fill="#8c97ad"/><path d="M150 30 L162 44 L150 42 L140 46Z" fill="#fff"/><path d="M0 100 L400 100 V114 H0Z" fill="#cdbfa6"/><g fill="#e8dcc6"><rect x="10" y="78" width="22" height="24"/><rect x="40" y="72" width="20" height="30"/><rect x="330" y="76" width="22" height="26"/><rect x="360" y="70" width="26" height="32"/></g><g fill="#b4532a"><path d="M8 78 L21 66 L34 78Z"/><path d="M38 72 L50 60 L62 72Z"/><path d="M328 76 L341 64 L354 76Z"/><path d="M358 70 L373 58 L388 70Z"/></g><rect y="112" width="400" height="58" fill="#3f8fb0"/><path d="M-10 150 L420 104" stroke="#6b4a2c" stroke-width="10"/><path d="M-10 140 L420 94 L420 100 L-10 146Z" fill="#8b3a1e"/><g stroke="#6b4a2c" stroke-width="2"><line x1="40" y1="145" x2="40" y2="168"/><line x1="120" y1="137" x2="120" y2="168"/><line x1="200" y1="128" x2="200" y2="168"/><line x1="280" y1="120" x2="280" y2="168"/><line x1="360" y1="111" x2="360" y2="168"/></g><g fill="#e94b6a"><circle cx="20" cy="150" r="2"/><circle cx="60" cy="146" r="2"/><circle cx="100" cy="141" r="2"/><circle cx="140" cy="137" r="2"/><circle cx="180" cy="133" r="2"/><circle cx="260" cy="124" r="2"/><circle cx="300" cy="120" r="2"/><circle cx="340" cy="116" r="2"/><circle cx="380" cy="111" r="2"/></g><g transform="translate(212 84)"><path d="M0 50 V6 L10 0 L20 6 V50Z" fill="#b08a5a"/><path d="M-2 8 L10 -10 L22 8Z" fill="#8b3a1e"/><rect x="7" y="16" width="5" height="7" fill="#5b3b22"/></g></svg><img src="img/d1.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>卢塞恩：卡佩尔廊桥、八角水塔和远处的皮拉图斯山</figcaption></figure>
+    <div class="dayhead"><div class="badge">D1<small>5/1 周六</small></div><div>
+      <h3>上海直飞苏黎世，落地先吃酸奶，下午逛卢塞恩</h3>
+      <div class="chips"><span class="chip train">✈ 约13h · 🚆 约1h</span><span class="chip">住：卢塞恩</span><span class="chip book">要预订：机票、住宿</span></div>
+    </div></div>
+    <ul class="tl">
+      <li><span class="t">出发</span>上海浦东 → 苏黎世，瑞士航空直飞约13小时。<p>瑞士比北京 <b>慢6小时</b>。最好选深夜或凌晨起飞、当地早上到的班次：4/30 下班直接去机场，机上睡一觉，落地就是一整天。如果只有白天起飞、傍晚到的班次，今天只做最后两项。</p></li>
+      <li><span class="t">约07:00</span>到苏黎世机场，在这里办申根入境。准备好酒店订单和回程机票截图，可能会被问。</li>
+      <li><span class="t">07:45</span><b>🥛 急头白脸吃酸奶，欧洲分部。</b>机场火车站楼上的 Coop 超市周末也开门，冷藏柜里一整排 Emmi、Migros 的瑞士酸奶，杏子、榛子、焦糖口味都值得试。一人一杯，站在超市门口开吃。顺手买水和明天的早饭。</li>
+      <li class="drv"><span class="t">08:30</span>机场站坐火车去卢塞恩，约1小时10分（有的班次在苏黎世中央车站换一次车，同站台对面就是）。用 SBB 手机 App 查车次和买票。</li>
+      <li><span class="t">10:00</span>酒店寄存行李。步行去 <b>卡佩尔廊桥</b>（Kapellbrücke）和八角水塔，桥顶上有一百多幅三角形木板画。再过河逛老城，看墙上画满壁画的房子。</li>
+      <li><span class="t">12:00</span>午饭。老城广场附近随便找家咖啡馆，点个瑞士香肠配薯饼（Rösti）。</li>
+      <li><span class="t">13:00</span><b>狮子纪念碑</b>（Löwendenkmal），步行15分钟，免费。马克·吐温说它是「世界上最悲伤的石头」。</li>
+      <li><span class="t">14:00</span>回酒店入住，补觉两小时。<b>今天别硬撑</b>，后面几天都要早起。</li>
+      <li><span class="t">17:00</span>穆塞格城墙（Museggmauer），四月到十一月开放，爬上钟楼能俯瞰整个老城和湖。</li>
+      <li><span class="t">18:30</span>晚饭，湖边散步。<b>明天是周日，瑞士的超市基本都关门</b>，今晚把明天的早饭和零食买好。</li>
+    </ul>
+    <div class="daytips">
+      <div><b>今天要做的事</b>手机装好 eSIM；下载 SBB App；四个人建一个分账群；如果买了瑞士通票或半价卡，在 App 里确认已经生效。</div>
+      <div><b>雨天方案</b>瑞士交通博物馆（Verkehrshaus），火车、飞机、缆车都有，室内能逛半天。</div>
+    </div>
+  </div>
+
+  <div class="day" id="d2">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="瑞吉山：红色齿轨火车开在云海上方"><defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fb2e6"/><stop offset="1" stop-color="#d8ecf8"/></linearGradient></defs><rect width="400" height="170" fill="url(#g2)"/><path d="M0 70 L40 50 L80 62 L120 30 L160 58 L210 38 L260 60 L310 26 L360 54 L400 44 V90 H0Z" fill="#a9b4c8"/><path d="M120 30 L130 40 L112 40Z M310 26 L320 38 L300 38Z M210 38 L218 46 L202 46Z" fill="#fff"/><g fill="#fff" opacity=".95"><ellipse cx="40" cy="94" rx="70" ry="14"/><ellipse cx="150" cy="98" rx="80" ry="16"/><ellipse cx="270" cy="94" rx="80" ry="14"/><ellipse cx="380" cy="98" rx="60" ry="14"/></g><path d="M0 170 L0 130 L120 118 L260 96 L400 76 V170Z" fill="#5f9a55"/><path d="M0 150 L400 96" stroke="#555" stroke-width="2"/><path d="M0 154 L400 100" stroke="#777" stroke-width="1" stroke-dasharray="3 3"/><g transform="translate(220 112) rotate(-7.7)"><rect x="0" y="-22" width="70" height="22" rx="3" fill="#c0392b"/><g fill="#d9eef8"><rect x="6" y="-18" width="12" height="9"/><rect x="22" y="-18" width="12" height="9"/><rect x="38" y="-18" width="12" height="9"/><rect x="54" y="-18" width="10" height="9"/></g><rect x="0" y="-5" width="70" height="3" fill="#fff"/><circle cx="12" cy="2" r="3" fill="#333"/><circle cx="58" cy="2" r="3" fill="#333"/></g><g transform="translate(60 120)"><rect x="0" y="0" width="10" height="7" fill="#d52b1e"/><rect x="4" y="1.5" width="2" height="4" fill="#fff"/><rect x="3" y="2.5" width="4" height="2" fill="#fff"/><line x1="0" y1="0" x2="0" y2="18" stroke="#555"/></g></svg><img src="img/d2.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>瑞吉山：欧洲最早的齿轨火车，山顶常在云海上面</figcaption></figure>
+    <div class="dayhead"><div class="badge">D2<small>5/2 周日</small></div><div>
+      <h3>瑞吉山环线：坐船上山，坐缆车下山</h3>
+      <div class="chips"><span class="chip train">⛴ 1h · 🚞 30min · 🚡 10min</span><span class="chip">住：卢塞恩</span><span class="chip book">通票免费 / 半价卡五折</span></div>
+    </div></div>
+    <ul class="tl">
+      <li class="drv"><span class="t">09:10</span>卢塞恩火车站对面码头坐游船，去菲茨瑙（Vitznau），约1小时。坐到船头的露天甲板，四周都是山。</li>
+      <li class="drv"><span class="t">10:20</span>换 <b>瑞吉齿轨火车</b>（1871年开通，欧洲第一条登山铁路），约30分钟上到山顶站 Rigi Kulm（1798米）。</li>
+      <li><span class="t">11:00</span>山顶360度看：一边是卢塞恩湖和楚格湖，另一边是一整排阿尔卑斯雪山。运气好能看到脚下的云海。</li>
+      <li><span class="t">12:00</span>山顶酒店餐厅吃午饭，或者自己带三明治坐在草地上吃。</li>
+      <li><span class="t">13:00</span>从山顶沿铁路旁的步道走到 Rigi Kaltbad，下坡约1小时，路很好走。五月初阴面可能还有积雪，穿防滑的鞋；有雪就坐一站火车下去。</li>
+      <li class="drv"><span class="t">14:30</span>Kaltbad 坐大缆车下到韦吉斯（Weggis），再坐船回卢塞恩。</li>
+      <li><span class="t">16:30</span>湖边 KKL 文化中心一带晒太阳。今天周日，商店不开门，正好休息。</li>
+      <li><span class="t">19:00</span>晚饭吃 <b>奶酪火锅</b>（Fondue）。四个人点两锅就够，配面包块和小土豆。</li>
+    </ul>
+    <div class="daytips">
+      <div><b>为什么选瑞吉不选皮拉图斯</b>皮拉图斯山最陡的那段齿轨火车一般5月中旬才开，5月初只能坐缆车上下。瑞吉全年开，而且船、火车、缆车一圈下来最好玩。</div>
+      <div><b>天气不好</b>山顶全是云就别上去了。改坐船游湖，下午去交通博物馆。</div>
+    </div>
+  </div>
+
+  <div class="day" id="d3">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="劳特布伦嫩：悬崖之间的施陶巴赫瀑布和山谷小教堂"><defs><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a7d0ee"/><stop offset="1" stop-color="#eef6fb"/></linearGradient></defs><rect width="400" height="170" fill="url(#g3)"/><path d="M150 60 L200 22 L250 60Z" fill="#fff"/><path d="M160 60 L200 30 L240 60Z" fill="#dfe8f2"/><path d="M0 0 L120 0 L140 40 L150 120 L160 170 H0Z" fill="#6f7a7f"/><path d="M400 0 L290 0 L270 50 L262 120 L250 170 H400Z" fill="#646f75"/><path d="M0 0 L120 0 L128 18 L0 22Z M400 0 L290 0 L282 20 L400 24Z" fill="#4f7a4a"/><path d="M136 30 Q138 80 142 120" stroke="#fff" stroke-width="3" fill="none" opacity=".9"/><path d="M142 120 q-6 4 -2 10 q8 2 8 -6" fill="#fff" opacity=".7"/><path d="M0 170 L140 130 L270 128 L400 170Z" fill="#6aa85e"/><g transform="translate(200 118)"><rect x="0" y="0" width="18" height="16" fill="#f4efe6"/><path d="M-2 2 L9 -6 L20 2Z" fill="#8b3a1e"/><rect x="14" y="-14" width="5" height="16" fill="#f4efe6"/><path d="M13 -14 L16.5 -24 L20 -14Z" fill="#555"/></g><g fill="#7a4b2a"><rect x="168" y="134" width="14" height="10"/><rect x="236" y="132" width="14" height="10"/><rect x="290" y="146" width="16" height="11"/></g><g fill="#8b3a1e"><path d="M166 135 L175 128 L184 135Z"/><path d="M234 133 L243 126 L252 133Z"/><path d="M288 147 L298 139 L308 147Z"/></g></svg><img src="img/d3.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>劳特布伦嫩：72条瀑布的U形冰川谷</figcaption></figure>
+    <div class="dayhead"><div class="badge">D3<small>5/3 周一</small></div><div>
+      <h3>黄金列车去因特拉肯，下午走瀑布山谷</h3>
+      <div class="chips"><span class="chip train">🚆 约2h · 🚆 20min</span><span class="chip">住：因特拉肯（2晚）</span></div>
+    </div></div>
+    <ul class="tl">
+      <li class="drv"><span class="t">09:05</span>卢塞恩坐 <b>Luzern–Interlaken Express</b>（黄金列车线路的一段）去因特拉肯东站，约1小时50分。翻过布吕尼希山口，沿途是龙格恩湖和蓝绿色的布里恩茨湖，一路都好看，不需要订座。</li>
+      <li><span class="t">11:00</span>到因特拉肯，酒店寄存行李。住在东站附近，接下来两天进山都从这里出发。</li>
+      <li class="drv"><span class="t">11:30</span>坐火车去劳特布伦嫩（Lauterbrunnen），约20分钟。</li>
+      <li><span class="t">12:00</span>站旁边吃午饭，走10分钟到 <b>施陶巴赫瀑布</b>（Staubbachfall），近300米高从悬崖上直落下来。山谷里的小教堂配瀑布是最经典的机位。</li>
+      <li><span class="t">13:30</span>坐邮政巴士（或沿河步行约50分钟）去 <b>特吕默尔巴赫瀑布</b>（Trümmelbachfälle），冰川融水在山体里冲出来的10段瀑布，坐山洞电梯上去再走下来。五月融雪，水量很大，会溅一身水，带件防水外套。</li>
+      <li class="drv"><span class="t">16:00</span>回因特拉肯，入住。</li>
+      <li><span class="t">17:30</span>坐小火车上 <b>哈德昆姆</b>（Harder Kulm），10分钟，看图恩湖和布里恩茨湖夹着的因特拉肯，正对少女峰。看完日落再下来（缆车末班时间以官网为准）。</li>
+      <li><span class="t">19:30</span>晚饭。明天起得早，买好早饭，早点睡。</li>
+    </ul>
+    <div class="daytips">
+      <div><b>看天气换顺序</b>今晚看明天少女峰的天气和山顶摄像头。如果今天晴、明天预报阴天，就把顺序反过来：今天中午直接上少女峰，劳特布伦嫩的瀑布挪到明天（阴天看瀑布也不影响）。</div>
+      <div><b>五月要注意</b>5月初是阿尔卑斯的淡季检修期，菲斯特（First）、雪朗峰等缆车可能停运，所以这里没排。出发前一周查各家官网。</div>
+    </div>
+  </div>
+
+  <div class="day" id="d4">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="少女峰：斯芬克斯观景台和阿莱奇冰川"><defs><linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f78c4"/><stop offset="1" stop-color="#bfe0f5"/></linearGradient></defs><rect width="400" height="170" fill="url(#g4)"/><path d="M0 90 L60 40 L110 70 L170 20 L220 66 L280 30 L340 70 L400 50 V170 H0Z" fill="#f4f8fc"/><path d="M60 40 L80 60 L60 64 L50 54Z M170 20 L190 50 L172 46 L160 54Z M280 30 L300 56 L284 54Z" fill="#b8c8d8"/><path d="M0 170 Q120 120 200 120 Q300 120 400 170Z" fill="#e2ecf5"/><path d="M90 170 Q170 130 210 128 M140 170 Q200 136 240 130 M200 170 Q240 140 270 132" stroke="#c4d4e2" stroke-width="2" fill="none"/><path d="M290 110 L300 70 L330 64 L346 110Z" fill="#5b5f66"/><g transform="translate(312 46)"><rect x="-10" y="14" width="22" height="12" fill="#d8dde3"/><path d="M-12 14 A12 12 0 0 1 14 14Z" fill="#c9ced6"/><line x1="1" y1="2" x2="1" y2="-12" stroke="#555" stroke-width="1"/><rect x="1" y="-12" width="9" height="7" fill="#d52b1e"/><rect x="4.5" y="-11" width="2" height="5" fill="#fff"/><rect x="3" y="-9.5" width="5" height="2" fill="#fff"/></g><g fill="#333"><circle cx="120" cy="138" r="2"/><rect x="119" y="140" width="2" height="6"/><circle cx="128" cy="136" r="2"/><rect x="127" y="138" width="2" height="6"/></g></svg><img src="img/d4.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>少女峰：3454米的斯芬克斯观景台，脚下是阿莱奇冰川</figcaption></figure>
+    <div class="dayhead"><div class="badge">D4<small>5/4 周二</small></div><div>
+      <h3>少女峰：坐艾格快线上「欧洲之巅」</h3>
+      <div class="chips"><span class="chip train">🚞 上山约1.5h · 环线下山</span><span class="chip">住：因特拉肯</span><span class="chip book">要预订：少女峰车票+座位</span></div>
+    </div></div>
+    <ul class="tl">
+      <li class="drv"><span class="t">07:35</span>因特拉肯东站 → 格林德瓦 Terminal 站，约35分钟。</li>
+      <li class="drv"><span class="t">08:15</span><b>艾格快线</b>（Eiger Express）缆车15分钟到艾格冰川站，再换 <b>少女峰铁路</b> 在山体隧道里爬到少女峰站（3454米），约30分钟。早上的车人少、天也更通透。</li>
+      <li><span class="t">09:15</span>山顶按顺序逛：斯芬克斯观景台（看阿莱奇冰川，欧洲最长的冰川）→ 冰宫 → 高原雪地（Plateau）。<p>海拔高，<b>走路慢一点，别跑跳</b>。头疼、喘不上气就先下山，下到2000米左右就会好。</p></li>
+      <li><span class="t">11:30</span>山顶餐厅吃午饭。山上东西贵，也可以早上带好三明治和热水。</li>
+      <li class="drv"><span class="t">12:45</span>坐少女峰铁路下到小沙伊德格（Kleine Scheidegg），在这里喝杯咖啡看艾格北壁。</li>
+      <li class="drv"><span class="t">14:00</span>换另一条线下到 <b>温根</b>（Wengen），无车小镇，在镇上走走，看劳特布伦嫩山谷。</li>
+      <li class="drv"><span class="t">15:30</span>温根 → 劳特布伦嫩 → 因特拉肯。这样上山、下山走不同的路，一圈都不重复。</li>
+      <li><span class="t">16:30</span>回酒店休息，或者在因特拉肯的何维克街（Höheweg）逛逛，草地上常有滑翔伞落地。</li>
+      <li><span class="t">19:00</span>晚饭吃 <b>瑞士烤奶酪</b>（Raclette），或者去 Coop 买菜回公寓做饭省点钱。</li>
+    </ul>
+    <div class="daytips">
+      <div><b>买票</b>少女峰往返是这趟最贵的单项。用瑞士通票或半价卡都有折扣，五一前后要提前在官网订艾格快线的座位。买可以改日期的票，看天气再定哪天上。</div>
+      <div><b>穿什么</b>山顶五月一般零下5到零下10度，风大。羽绒服、帽子、手套、墨镜（雪地反光很强）、防晒霜都要带。</div>
+    </div>
+  </div>
+
+  <div class="day" id="d5">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="采尔马特：马特洪峰和木头小屋"><defs><linearGradient id="g5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d9bd6"/><stop offset="1" stop-color="#dcecf8"/></linearGradient></defs><rect width="400" height="170" fill="url(#g5)"/><path d="M0 110 L80 80 L140 96 L180 70 L196 74 L232 10 L250 28 L262 26 L300 84 L340 74 L400 92 V130 H0Z" fill="#7b8598"/><path d="M232 10 L250 28 L262 26 L276 52 L258 44 L246 50 L236 40 L220 46Z" fill="#fff"/><path d="M80 80 L100 88 L80 90Z M340 74 L356 80 L340 82Z" fill="#fff"/><path d="M0 170 L0 118 L120 112 L260 120 L400 108 V170Z" fill="#4f8a4a"/><g fill="#1f4d2b"><path d="M20 120 l8 -22 l8 22Z"/><path d="M40 122 l7 -18 l7 18Z"/><path d="M340 116 l8 -22 l8 22Z"/><path d="M362 118 l7 -18 l7 18Z"/><path d="M380 116 l8 -22 l8 22Z"/></g><g transform="translate(110 122)"><rect x="0" y="0" width="34" height="26" fill="#6b3f22"/><path d="M-4 2 L17 -14 L38 2Z" fill="#4a3a30"/><rect x="5" y="6" width="8" height="7" fill="#f2d48a"/><rect x="21" y="6" width="8" height="7" fill="#f2d48a"/><g fill="#e94b6a"><rect x="5" y="13" width="8" height="2"/><rect x="21" y="13" width="8" height="2"/></g></g><g transform="translate(200 128)"><rect x="0" y="0" width="30" height="24" fill="#7a4b2a"/><path d="M-4 2 L15 -12 L34 2Z" fill="#4a3a30"/><rect x="6" y="6" width="7" height="6" fill="#f2d48a"/><rect x="18" y="6" width="7" height="6" fill="#f2d48a"/></g><g transform="translate(270 124)"><rect x="0" y="0" width="12" height="18" fill="#8a5a32"/><path d="M-2 0 L6 -8 L14 0Z" fill="#4a3a30"/><rect x="0" y="18" width="2" height="6" fill="#555"/><rect x="10" y="18" width="2" height="6" fill="#555"/></g></svg><img src="img/d5.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>采尔马特：无车小镇，抬头就是马特洪峰</figcaption></figure>
+    <div class="dayhead"><div class="badge">D5<small>5/5 周三</small></div><div>
+      <h3>去采尔马特，下午上戈尔内格拉特看马特洪峰</h3>
+      <div class="chips"><span class="chip train">🚆 约2h20 · 🚞 33min</span><span class="chip">住：采尔马特</span><span class="chip book">要预订：采尔马特住宿</span></div>
+    </div></div>
+    <ul class="tl">
+      <li class="drv"><span class="t">09:00</span>退房，因特拉肯 → 施皮茨 → 菲斯普 → 采尔马特，换两次车，约2小时20分。施皮茨到菲斯普走勒奇山基线隧道，很快；菲斯普以后是红色小火车沿山谷往上爬。</li>
+      <li><span class="t">11:30</span>到采尔马特。镇上 <b>不许开燃油车</b>，车站门口有酒店的电动接驳车，提前问好。寄存行李，吃午饭。</li>
+      <li class="drv"><span class="t">13:00</span>车站对面坐 <b>戈尔内格拉特齿轨铁路</b>（Gornergrat Bahn），33分钟到3089米。坐 <b>右边</b> 的座位，上山路上马特洪峰在右手边。</li>
+      <li><span class="t">13:45</span>山顶看马特洪峰、戈尔内冰川和瑞士最高峰杜富尔峰，一圈有29座4000米以上的雪山。山顶有观景台和餐厅。</li>
+      <li><span class="t">15:00</span>坐火车下到 Rotenboden 站，去 <b>利菲尔湖</b>（Riffelsee）看马特洪峰倒影。五月湖面可能还冻着或被雪盖住，就在站台附近拍拍；没雪的话步道走到下一站 Riffelberg 约40分钟。</li>
+      <li class="drv"><span class="t">16:30</span>回镇上，入住。</li>
+      <li><span class="t">17:30</span>逛主街 Bahnhofstrasse 和老村子 Hinterdorf，几百年的木头粮仓下面垫着圆石板防老鼠。</li>
+      <li><span class="t">19:00</span>晚饭。镇上吃饭贵，可以去 Coop 买熟食回酒店吃，留着钱明天去意大利吃。</li>
+    </ul>
+    <div class="daytips">
+      <div><b>想去更高</b>可以把戈尔内格拉特换成 <b>马特洪冰川天堂</b>（3883米，欧洲最高的缆车站），看到的是马特洪峰的另一面，票价更高，五月同样可能有雪。</div>
+      <div><b>行李</b>四个人带大箱子在瑞士换车很累。建议每人一个24寸以内的箱子，或者用瑞士的行李托运服务（Bagage），从车站寄到下一站。</div>
+    </div>
+  </div>
+
+  <div class="day" id="d6">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="米兰大教堂：白色大理石尖塔"><defs><linearGradient id="g6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6c58f"/><stop offset="1" stop-color="#fcefe0"/></linearGradient></defs><rect width="400" height="170" fill="url(#g6)"/><path d="M90 150 V84 H310 V150Z" fill="#f3ece2"/><path d="M150 84 L200 52 L250 84Z" fill="#ece3d6"/><g fill="#e6dccd"><path d="M96 84 l4 -40 l4 40Z"/><path d="M118 84 l4 -34 l4 34Z"/><path d="M140 84 l4 -38 l4 38Z"/><path d="M252 84 l4 -38 l4 38Z"/><path d="M274 84 l4 -34 l4 34Z"/><path d="M296 84 l4 -40 l4 40Z"/><path d="M168 66 l4 -30 l4 30Z"/><path d="M224 66 l4 -30 l4 30Z"/></g><path d="M196 52 l4 -40 l4 40Z" fill="#e6dccd"/><circle cx="200" cy="10" r="3" fill="#d9a520"/><g fill="#c9bba6"><path d="M185 150 V118 Q200 100 215 118 V150Z"/><path d="M130 150 V124 Q140 112 150 124 V150Z"/><path d="M250 150 V124 Q260 112 270 124 V150Z"/></g><g fill="#c9bba6"><rect x="108" y="96" width="8" height="18" rx="4"/><rect x="284" y="96" width="8" height="18" rx="4"/><rect x="160" y="96" width="8" height="18" rx="4"/><rect x="232" y="96" width="8" height="18" rx="4"/></g><circle cx="200" cy="80" r="9" fill="#d8cbb7"/><rect y="150" width="400" height="20" fill="#d8cfc2"/><g fill="#555"><circle cx="40" cy="152" r="2"/><rect x="39" y="154" width="2" height="7"/><circle cx="350" cy="152" r="2"/><rect x="349" y="154" width="2" height="7"/><circle cx="360" cy="153" r="2"/><rect x="359" y="155" width="2" height="7"/></g></svg><img src="img/d6.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>米兰大教堂：可以在屋顶的尖塔之间走一圈</figcaption></figure>
+    <div class="dayhead"><div class="badge">D6<small>5/6 周四</small></div><div>
+      <h3>日照金山，然后坐火车穿过阿尔卑斯去米兰</h3>
+      <div class="chips"><span class="chip train">🚆 约4h（换1次）</span><span class="chip">住：米兰</span><span class="chip book">要预订：大教堂屋顶票</span></div>
+    </div></div>
+    <ul class="tl">
+      <li><span class="t">06:00</span>去教堂旁边的 <b>Kirchbrücke</b> 小桥等 <b>日照金山</b>：日出后几分钟，马特洪峰的尖顶先变成金色。5月初日出大约6点15分，提前15分钟到占位置。</li>
+      <li><span class="t">07:00</span>回酒店吃早饭，收拾行李。</li>
+      <li class="drv"><span class="t">09:15</span>采尔马特 → 菲斯普（约1小时），在菲斯普换去 <b>米兰中央车站</b> 的 EC 国际列车（约2小时10分，经布里格、穿辛普朗隧道、沿马焦雷湖往南）。<p>申根区内过境 <b>不查护照</b>，但要带在身上。瑞士通票只管到边境，意大利段要单独买票（在 SBB App 里就能买全程）。</p></li>
+      <li><span class="t">12:45</span>到米兰中央车站。酒店放行李，午饭吃 <b>米兰烩饭</b>（藏红花黄色的那种）或者米兰炸猪排。</li>
+      <li><span class="t">15:00</span><b>米兰大教堂</b>：先上 <b>屋顶露台</b>（坐电梯，比爬楼贵一点），在几百座尖塔和雕像之间走一圈，再下来看教堂里面。进教堂要遮肩膀和膝盖。</li>
+      <li><span class="t">17:00</span>旁边的 <b>埃马努埃莱二世长廊</b>，玻璃穹顶下全是老牌店。找到地上的公牛马赛克，用脚后跟踩着转一圈，传说会再回米兰。</li>
+      <li><span class="t">18:30</span>坐地铁去 <b>运河区</b>（Navigli），沿河的酒吧6–9点有 <b>Aperitivo</b>：点一杯饮料，小吃自助随便拿。四个人每人一杯 Spritz，基本可以当晚饭。</li>
+    </ul>
+    <div class="daytips">
+      <div><b>米兰小心</b>大教堂广场、地铁上小偷多，手机别放后兜。广场上主动往你手上系「友谊绳」、塞玉米喂鸽子的，直接摆手走开。</div>
+      <div><b>时间不够怎么办</b>如果早上错过一班车，米兰的屋顶可以挪到明早，《最后的晚餐》则别动（票是定时的）。</div>
+    </div>
+  </div>
+
+  <div class="day" id="d7">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="威尼斯：大运河、彩色房子、里亚托桥和贡多拉"><defs><linearGradient id="g7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7b98a"/><stop offset="1" stop-color="#fde9d6"/></linearGradient></defs><rect width="400" height="170" fill="url(#g7)"/><g><rect x="0" y="50" width="40" height="80" fill="#d9a066"/><rect x="40" y="64" width="34" height="66" fill="#c0563a"/><rect x="74" y="44" width="38" height="86" fill="#e8c38a"/><rect x="290" y="56" width="36" height="74" fill="#d07a54"/><rect x="326" y="40" width="40" height="90" fill="#efd3a0"/><rect x="366" y="60" width="34" height="70" fill="#b9553b"/></g><g fill="#5a3a2a" opacity=".7"><rect x="8" y="62" width="6" height="10" rx="3"/><rect x="24" y="62" width="6" height="10" rx="3"/><rect x="8" y="84" width="6" height="10" rx="3"/><rect x="24" y="84" width="6" height="10" rx="3"/><rect x="48" y="76" width="6" height="10" rx="3"/><rect x="60" y="76" width="6" height="10" rx="3"/><rect x="82" y="56" width="6" height="10" rx="3"/><rect x="98" y="56" width="6" height="10" rx="3"/><rect x="82" y="80" width="6" height="10" rx="3"/><rect x="98" y="80" width="6" height="10" rx="3"/><rect x="298" y="68" width="6" height="10" rx="3"/><rect x="312" y="68" width="6" height="10" rx="3"/><rect x="334" y="52" width="6" height="10" rx="3"/><rect x="350" y="52" width="6" height="10" rx="3"/><rect x="334" y="76" width="6" height="10" rx="3"/><rect x="350" y="76" width="6" height="10" rx="3"/><rect x="374" y="72" width="6" height="10" rx="3"/><rect x="386" y="72" width="6" height="10" rx="3"/></g><path d="M120 120 Q200 62 280 120 L280 128 L120 128Z" fill="#efe6d6"/><path d="M146 128 Q200 84 254 128Z" fill="#f7b98a"/><path d="M168 100 h64 v-10 h-64z" fill="#e2d6c2"/><path d="M180 90 h40 l-6 -10 h-28z" fill="#cdbfa8"/><rect y="126" width="400" height="44" fill="#3d8c8c"/><path d="M0 134 Q60 130 120 135 T240 134 T400 134" stroke="#fff" stroke-width="1" opacity=".4" fill="none"/><g fill="#2a3b4a"><rect x="30" y="112" width="3" height="30"/><rect x="36" y="114" width="3" height="28"/><rect x="360" y="112" width="3" height="30"/></g><g fill="#fff" opacity=".7"><rect x="30" y="118" width="3" height="3"/><rect x="30" y="126" width="3" height="3"/><rect x="360" y="118" width="3" height="3"/><rect x="360" y="126" width="3" height="3"/></g><g transform="translate(200 152)"><path d="M-50 0 Q0 10 50 -6 L46 2 Q0 14 -46 4Z" fill="#1d1d1d"/><path d="M48 -6 L54 -14 L51 -4" stroke="#1d1d1d" stroke-width="2" fill="none"/><path d="M-8 -4 h16 v4 h-16z" fill="#a8322a"/><rect x="24" y="-24" width="4" height="18" fill="#1d1d1d"/><rect x="23" y="-19" width="6" height="3" fill="#c0392b"/><rect x="23" y="-14" width="6" height="3" fill="#fff"/><circle cx="26" cy="-27" r="3" fill="#e9c08a"/><path d="M22 -29 h8 v-2 h-8z" fill="#e9d36a"/><line x1="30" y1="-20" x2="0" y2="20" stroke="#5b3b22" stroke-width="1.5"/></g></svg><img src="img/d7.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>威尼斯：大运河上的里亚托桥</figcaption></figure>
+    <div class="dayhead"><div class="badge">D7<small>5/7 周五</small></div><div>
+      <h3>《最后的晚餐》，高铁去威尼斯，坐船游大运河</h3>
+      <div class="chips"><span class="chip train">🚄 约2.5h · ⛴ 水上巴士</span><span class="chip">住：威尼斯本岛</span><span class="chip book">要预订：最后的晚餐、高铁、圣马可</span></div>
+    </div></div>
+    <ul class="tl">
+      <li><span class="t">08:15</span>圣玛利亚感恩教堂看达·芬奇 <b>《最后的晚餐》</b>，每批人限时15分钟。<p>票按季度放出，经常几分钟就抢光，<b>2–3月就要盯着官网</b>。抢不到可以买含门票的导览团，或者换成斯福尔扎城堡（里面有米开朗基罗最后一件雕塑）。</p></li>
+      <li class="drv"><span class="t">10:35</span>米兰中央车站坐高铁（Frecciarossa 或 Italo）去 <b>威尼斯圣卢西亚站</b>（Venezia S. Lucia），约2小时25分。<b>别在梅斯特雷站（Mestre）下车</b>，那是陆地上的站，岛上还要再坐一站。</li>
+      <li><span class="t">13:00</span>一出车站就是大运河。买 <b>水上巴士通票</b>（24/48小时），先把行李送到酒店，在小巷里找个地方吃午饭。</li>
+      <li class="drv"><span class="t">14:30</span>坐 <b>1号线</b> 水上巴士慢慢开过整条大运河，约45分钟到圣马可。抢船头或船尾的露天位，两岸都是几百年的宫殿，经过里亚托桥。</li>
+      <li><span class="t">15:30</span><b>圣马可大教堂</b>（提前在官网订时段票，免排队）和圣马可广场。想看总督宫和叹息桥再加1.5小时。</li>
+      <li><span class="t">17:30</span><b>贡多拉</b>：官方定价，白天30分钟约90欧一船（晚上更贵），一船最多5人，四个人分摊刚好。上船前确认价格和时长。</li>
+      <li><span class="t">19:00</span>走到 <b>学院桥</b>（Ponte dell'Accademia）看大运河日落，五月大约8点半天黑。</li>
+      <li><span class="t">20:00</span>晚饭吃 <b>Cicchetti</b>：威尼斯的小酒馆（bacaro）站着吃的小份下酒菜，配一杯当地白葡萄酒，一家吃两三样再换下一家。最后一人一个 gelato。</li>
+    </ul>
+    <div class="daytips">
+      <div><b>进城费</b>威尼斯在春夏旺季的部分日子向 <b>一日游</b> 游客收进城费（2025年是5–10欧）。住在岛上的人免交，但可能需要在官网登记拿豁免码，出发前查当年规定。</div>
+      <div><b>迷路是正常的</b>岛上小巷像迷宫，地图经常不准，跟着墙上「Per Rialto」「Per S. Marco」的黄色指示牌走就行。</div>
+    </div>
+  </div>
+
+  <div class="day" id="d8">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="清晨的威尼斯潟湖，飞机起飞回家"><defs><linearGradient id="g8" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c7d8ee"/><stop offset="1" stop-color="#fbe3cf"/></linearGradient></defs><rect width="400" height="170" fill="url(#g8)"/><circle cx="90" cy="100" r="18" fill="#fff1d6"/><g fill="#8a8fa0" opacity=".8"><rect x="200" y="86" width="12" height="34"/><path d="M198 86 L206 66 L214 86Z"/><rect x="230" y="96" width="70" height="24"/><path d="M240 96 a10 10 0 0 1 20 0Z M268 96 a10 10 0 0 1 20 0Z"/><rect x="310" y="100" width="40" height="20"/><path d="M318 100 a12 12 0 0 1 24 0Z"/></g><rect y="118" width="400" height="52" fill="#9cbcc8"/><path d="M0 128 Q100 124 200 129 T400 127 M0 146 Q100 142 200 147 T400 145" stroke="#fff" stroke-width="1" opacity=".5" fill="none"/><g fill="#5a6b78"><rect x="40" y="122" width="3" height="22"/><rect x="46" y="124" width="3" height="20"/><rect x="140" y="124" width="3" height="20"/></g><g transform="translate(300 40) rotate(-14)"><path d="M-30 0 L30 0 Q38 0 38 3 Q38 6 30 6 L-30 6Z" fill="#fff"/><path d="M-4 3 L-18 22 L-10 22 L10 3Z" fill="#e6e9ee"/><path d="M-4 3 L-14 -12 L-8 -12 L8 3Z" fill="#e6e9ee"/><path d="M-30 0 L-38 -10 L-32 -10 L-24 0Z" fill="#c0392b"/></g><path d="M200 70 Q240 60 270 50" stroke="#fff" stroke-width="2" stroke-dasharray="2 4" fill="none" opacity=".8"/></svg><img src="img/d8.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>清晨的潟湖，飞回上海</figcaption></figure>
+    <div class="dayhead"><div class="badge">D8<small>5/8 周六</small></div><div>
+      <h3>清晨的圣马可，中午直飞回上海（5/9 到家）</h3>
+      <div class="chips"><span class="chip train">⛴ 去机场约1h · ✈ 约12h</span><span class="chip book">要预订：回程机票</span></div>
+    </div></div>
+    <ul class="tl">
+      <li><span class="t">06:30</span>早起去 <b>圣马可广场</b>，这时候几乎没人，是一天里唯一能拍到空广场的时间。</li>
+      <li><span class="t">07:30</span>回来路上找家咖啡吧站着喝一杯 cappuccino，配一个可颂。</li>
+      <li><span class="t">08:15</span><b>里亚托市场</b>（周二到周六上午开，今天周六正好），看鱼市和菜市，买点小东西。</li>
+      <li class="drv"><span class="t">09:30</span>退房去机场。两种走法：从罗马广场（Piazzale Roma）坐机场巴士约25分钟，或者从里亚托附近坐 Alilaguna 机场船约1小时15分（慢但风景好，行李多就坐巴士）。</li>
+      <li><span class="t">10:30</span>到马可·波罗机场办登机、退税（在机场办退税要留出排队时间）。</li>
+      <li><span class="t">中午</span>东航威尼斯 → 上海浦东直飞，约12小时，5/9 白天到上海。</li>
+      <li><span class="t">5/9 周日</span>到家，洗澡，按北京时间睡觉。往东飞时差会难受一点，但有一整晚休息，<b>5/10 周一正常上班</b>没问题。</li>
+    </ul>
+    <div class="daytips">
+      <div><b>如果5/8威尼斯没有直飞</b>改成米兰出：今天早上坐 6:30 左右的高铁回米兰（约2.5小时），换马尔彭萨快线去机场（约50分钟），赶东航中午前后的米兰直飞。或者买经伊斯坦布尔、迪拜、多哈转机的航班，下午从威尼斯走，5/9 晚上到。</div>
+      <div><b>为什么不留到5/9再走</b>欧洲飞上海都是第二天才到。5/9 走就是 5/10 落地，直接从机场去上班，航班一晚点就迟到。5/8 走留了一天缓冲。</div>
+    </div>
+  </div>
+</section>
+
+<section id="train">
+  <h2>火车还是自驾<small>结论：这趟坐火车</small></h2>
+  <p class="sub">新西兰方案是自驾，所以专门比一下。这条路线上火车比开车省心很多。</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>🚆 坐火车（推荐）</h3>
+      <ul class="tight">
+        <li>采尔马特镇上不许开燃油车，少女峰、瑞吉山顶都只能坐山上的火车或缆车，开车也到不了。</li>
+        <li>瑞士火车准点、班次密，换乘基本是同站台或隔壁站台，四个人拖箱子也还行。</li>
+        <li>威尼斯本岛没有车，米兰市中心有 ZTL 限行区，开进去就罚款。</li>
+        <li>所有人都能看风景，没有人需要专门开车。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>🚗 自驾（不推荐）</h3>
+      <ul class="tight">
+        <li>瑞士租车、意大利还车属于 <b>跨国异地还车</b>，异地费常常几百欧起，有的公司干脆不允许。</li>
+        <li>瑞士高速要买年票贴纸（Vignette），意大利高速按段收费，山区停车很贵。</li>
+        <li>五月部分高山垭口（比如大圣伯纳德、富尔卡）还没开通，要绕路。</li>
+        <li>唯一适合自驾的是多洛米蒂山区，但这次行程放不下。</li>
+      </ul>
+    </div>
+  </div>
+  <h3 style="margin-top:22px">瑞士车票怎么买</h3>
+  <p class="sub" style="margin-bottom:10px">瑞士段是 5/1 到 5/6，共6天要坐车。常见三种买法，出发前把行程填进 SBB 官网比一下价：</p>
+  <div class="tbl"><table>
+    <tr><th>买法</th><th>适合</th><th>这趟的情况</th></tr>
+    <tr><td><b>瑞士通票</b><br>Swiss Travel Pass</td><td>天天坐车、不想算钱</td><td>火车、船、瑞吉山全包，少女峰和戈尔内格拉特有折扣。要买6天的，比较贵。</td></tr>
+    <tr><td><b>半价卡 + 单程票</b><br>Half Fare Card</td><td>山上缆车多、长途车少</td><td>一个月内所有火车和大部分山上交通五折，再提前在 App 抢 Supersaver 特价票。<b>这趟大概率最省</b>。</td></tr>
+    <tr><td><b>全部单买</b></td><td>只坐一两趟车</td><td>这条路线不划算。</td></tr>
+  </table></div>
+  <p style="font-size:13px;color:var(--muted)">意大利段（布里格以南、米兰到威尼斯）不在瑞士通票里，单独在 Trenitalia 或 Italo 官网买，提前买有特价。</p>
+</section>
+
+<section id="vsnz">
+  <h2>和新西兰方案比一比<small>帮你们选</small></h2>
+  <p class="sub">两个方案的日期一样：5/1 出发、5/9 到家、5/10 上班。新西兰方案见 <a href="../nz-2027/">南岛自驾攻略</a>。绿色格子是那一项更占优的一方。</p>
+  <div class="tbl"><table class="vs">
+    <tr><th></th><th>🇨🇭🇮🇹 瑞士 + 意大利</th><th>🇳🇿 新西兰南岛</th></tr>
+    <tr><td>飞行</td><td class="win">上海直飞，去约13h、回约12h</td><td>转机，单程约15–18h</td></tr>
+    <tr><td>时差</td><td>比北京慢6小时，回来那周会困</td><td class="win">比北京快4小时，几乎没感觉</td></tr>
+    <tr><td>季节</td><td class="win">春天，天亮14个多小时，晚上8点半才天黑；高山上还是雪景</td><td>深秋，秋叶最好看，但天黑早（5点多），山区冷</td></tr>
+    <tr><td>怎么玩</td><td>坐火车，雪山 + 古城 + 美食，换5个地方住</td><td>自驾，湖、雪山、峡湾、星空，大自然为主</td></tr>
+    <tr><td>累不累</td><td class="win">不用开车，每天最多坐4小时火车</td><td>两个人轮流开，一共约1300km，有一天开4小时</td></tr>
+    <tr><td>人多吗</td><td>五一也是欧洲旅游旺季开始，威尼斯、少女峰人多</td><td class="win">新西兰淡季，景点人少</td></tr>
+    <tr><td>签证</td><td>一个申根签（按停留最久的国家办，这趟是瑞士），要预约递交、录指纹</td><td>新西兰访客签证，网上申请</td></tr>
+    <tr><td>预算（每人）</td><td>约 2.4–2.8 万元，瑞士的住宿和山上交通最贵</td><td class="win">约 1.7–2 万元</td></tr>
+    <tr><td>酸奶</td><td>瑞士超市酸奶也很强，到意大利换 gelato</td><td class="win">大罐酸奶便宜到能当饭吃，正宗老家</td></tr>
+  </table></div>
+  <div class="grid2" style="margin-top:14px">
+    <div class="good"><b>选欧洲，如果：</b>不想转机、不想开车；想雪山和城市都看；能接受多花几千块、回来那周有点倒时差。</div>
+    <div class="good"><b>选新西兰，如果：</b>喜欢自驾和户外，想去人少的地方看风景；预算更紧；不想倒时差。</div>
+  </div>
+</section>
+
+<section id="visa">
+  <h2>签证和证件</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>申根签证</h3>
+      <ul class="tight">
+        <li>瑞士和意大利都在申根区，<b>办一个申根签就够</b>。</li>
+        <li>向停留时间最长的国家申请：这趟瑞士5晚、意大利2晚，所以 <b>办瑞士签证</b>，在上海的瑞士签证中心递交。如果你们改成意大利住得更久，就办意大利签。</li>
+        <li>最早可以出发前6个月递交，五一前后预约很满，<b>建议2027年2–3月递</b>。</li>
+        <li>材料一般要：机票订单、全程酒店订单、在职证明、银行流水、保额3万欧以上的旅行医疗保险。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>其他</h3>
+      <ul class="tight">
+        <li>护照在离开申根区后还要有3个月以上有效期，并且有空白页。</li>
+        <li>瑞士用 <b>J 型插头</b>（三个圆孔），意大利用 <b>L 型</b> 和欧标两孔，买一个多国转换插头。</li>
+        <li>瑞士用瑞士法郎，意大利用欧元。都能刷卡，瑞士很多地方也收欧元但找零给法郎、汇率不好。</li>
+        <li>意大利买东西满一定金额可以退税，机场办理，留出时间。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="weather">
+  <h2>天气和穿衣<small>五月初</small></h2>
+  <p class="sub">同一趟行程里温差很大：山顶零下，米兰、威尼斯已经能穿短袖。洋葱式穿法，一层层加减。</p>
+  <div class="tbl"><table>
+    <tr><th>地方</th><th class="num">大概气温</th><th>穿什么</th></tr>
+    <tr><td>卢塞恩、因特拉肯</td><td class="num">7–18°C</td><td>长袖 + 抓绒或薄羽绒，早晚凉，可能下雨</td></tr>
+    <tr><td>采尔马特（1600米）</td><td class="num">2–14°C</td><td>薄羽绒，早上看日照金山要穿厚</td></tr>
+    <tr><td>少女峰、戈尔内格拉特</td><td class="num">−10 – 0°C</td><td>羽绒服、帽子、手套、墨镜、防滑鞋</td></tr>
+    <tr><td>米兰、威尼斯</td><td class="num">13–23°C</td><td>T恤 + 薄外套；进教堂要遮肩膀和膝盖</td></tr>
+  </table></div>
+  <p style="font-size:13px;color:var(--muted)">日出约6:10，日落约20:40，白天很长。</p>
+</section>
+
+<section id="stay">
+  <h2>住宿<small>四人，尽量订整套公寓</small></h2>
+  <p class="sub">瑞士酒店的标间很小，四个人订一套两卧公寓通常比两间房便宜，还能做早饭。价格是五一前后的粗估。</p>
+  <div class="stays">
+    <div class="stay"><div class="when">5/1–5/2<small>2晚</small></div><div><h3>卢塞恩</h3><div class="price">约 CHF 350–450 / 晚 整套</div><p>住火车站和老城之间，坐船、坐火车都走路就到。</p></div></div>
+    <div class="stay"><div class="when">5/3–5/4<small>2晚</small></div><div><h3>因特拉肯</h3><div class="price">约 CHF 300–400 / 晚 整套</div><p>住东站（Interlaken Ost）附近，第二天去少女峰从这里上车。想住山里也可以选劳特布伦嫩或温根，但拖箱子麻烦一些。</p></div></div>
+    <div class="stay"><div class="when">5/5<small>1晚</small></div><div><h3>采尔马特</h3><div class="price">约 CHF 400–550 / 晚 整套</div><p><b>最难订、最贵的一处，最先订。</b>能看到马特洪峰的房间值得多花一点；问好有没有车站接驳。</p></div></div>
+    <div class="stay"><div class="when">5/6<small>1晚</small></div><div><h3>米兰</h3><div class="price">约 €220–320 / 晚 两间房</div><p>住中央车站附近最方便，第二天一早坐车；想晚上热闹就住大教堂和运河区之间。</p></div></div>
+    <div class="stay"><div class="when">5/7<small>1晚</small></div><div><h3>威尼斯本岛</h3><div class="price">约 €280–400 / 晚 整套或两间房</div><p>一定住岛上，不要住梅斯特雷，否则看不到早晚没人的威尼斯。选离水上巴士站近、不用拖箱子过很多座桥的。</p></div></div>
+  </div>
+</section>
+
+<section id="budget">
+  <h2>预算计算器<small>改数字自动算</small></h2>
+  <p class="sub">默认值按2027年五一、四人、住整套公寓估算。机票、签证、交通、吃饭、门票按人算，住宿四个人平摊。</p>
+  <div class="calc">
+    <div class="card result">
+      <div style="color:var(--muted);font-size:14px">每人约</div>
+      <div class="big" id="perPerson">—</div>
+      <div style="color:var(--muted);font-size:14px;margin-bottom:8px"><span id="peopleLabel">四人</span>合计 <span id="total">—</span></div>
+      <div class="bar" id="bar"></div>
+      <div class="legend" id="legend"></div>
+      <div id="rows" style="margin-top:10px"></div>
+      <button type="button" class="btn" id="resetCalc">恢复默认</button>
+    </div>
+    <div class="card">
+      <div class="fields" id="calcFields">
+        <label>人数<input type="number" inputmode="numeric" min="1" step="1" data-k="people" value="4"></label>
+        <label>1 瑞士法郎 = ? 元<input type="number" inputmode="decimal" min="0" step="0.01" data-k="chf" value="9.0"></label>
+        <label>1 欧元 = ? 元<input type="number" inputmode="decimal" min="0" step="0.01" data-k="eur" value="8.2"></label>
+        <label>开口程机票 元/人<input type="number" inputmode="numeric" min="0" step="100" data-k="flight" value="7500"></label>
+        <label>申根签证 元/人<input type="number" inputmode="numeric" min="0" step="50" data-k="visa" value="800"></label>
+        <label>瑞士交通 CHF/人<input type="number" inputmode="numeric" min="0" step="10" data-k="chtrans" value="600"></label>
+        <label>意大利交通 EUR/人<input type="number" inputmode="numeric" min="0" step="5" data-k="ittrans" value="100"></label>
+        <label>瑞士住宿 CHF/晚 整套<input type="number" inputmode="numeric" min="0" step="10" data-k="chlodge" value="400"></label>
+        <label>瑞士住几晚<input type="number" inputmode="numeric" min="0" step="1" data-k="chn" value="5"></label>
+        <label>意大利住宿 EUR/晚<input type="number" inputmode="numeric" min="0" step="10" data-k="itlodge" value="320"></label>
+        <label>意大利住几晚<input type="number" inputmode="numeric" min="0" step="1" data-k="itn" value="2"></label>
+        <label>吃饭 元/人/天<input type="number" inputmode="numeric" min="0" step="10" data-k="food" value="550"></label>
+        <label>天数<input type="number" inputmode="numeric" min="0" step="1" data-k="days" value="8"></label>
+        <label>门票 EUR/人<input type="number" inputmode="numeric" min="0" step="5" data-k="fun" value="80"></label>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin:12px 0 0">瑞士交通＝半价卡 + 全部火车、船、瑞吉山、少女峰、戈尔内格拉特，按半价估。意大利交通＝布里格到米兰、米兰到威尼斯、水上巴士、机场巴士。门票＝最后的晚餐、大教堂屋顶、圣马可、分摊的贡多拉。汇率和价格都是估算，以实际为准。</p>
+    </div>
+  </div>
+</section>
+
+<section id="booking">
+  <h2>预订时间表</h2>
+  <p class="sub">从现在（2026年11月）到出发，按这个顺序订。</p>
+  <div class="timeline-book">
+    <div class="card"><b>2026年11–12月</b><div>四个人确认请假，<b>先定选欧洲还是新西兰</b>。选欧洲就先查东航 <b>5/8 威尼斯 → 上海</b> 有没有班，再买 <b>多城市机票</b>：上海 → 苏黎世，威尼斯（或米兰）→ 上海。</div></div>
+    <div class="card"><b>2026年12月</b><div>先订 <b>采尔马特</b> 住宿（最难订），再订卢塞恩、因特拉肯、威尼斯。都选可免费取消的，签证要用酒店订单。</div></div>
+    <div class="card"><b>2027年1–2月</b><div>买旅行保险（申根要求医疗保额3万欧以上）；准备签证材料，预约上海瑞士签证中心。</div></div>
+    <div class="card"><b>2027年2–3月</b><div><b>递交签证</b>；盯 <b>《最后的晚餐》</b> 放票（5月的票大约在2–3月放出）；订米兰大教堂屋顶、圣马可大教堂时段票。</div></div>
+    <div class="card"><b>2027年3–4月</b><div>订少女峰车票和艾格快线座位（选可改期的）；买瑞士半价卡或通票；在 SBB App、Trenitalia/Italo 抢特价火车票（一般提前1–2个月放出）。</div></div>
+    <div class="card"><b>出发前一周</b><div>查各缆车是否在检修期、山顶天气；查威尼斯进城费是否需要登记；买 eSIM；所有确认单截图存手机。</div></div>
+  </div>
+</section>
+
+<section id="checklist">
+  <h2>出发前清单</h2>
+  <p class="sub">勾选状态只保存在你自己的手机浏览器里。</p>
+  <div class="card">
+    <ul class="check" id="checklistItems">
+      <li><label><input type="checkbox" data-k="leave"><span>四人确认假期和请假</span></label></li>
+      <li><label><input type="checkbox" data-k="passport"><span>护照有效期够、有空白页</span></label></li>
+      <li><label><input type="checkbox" data-k="flight"><span>机票（苏黎世进、威尼斯/米兰出）</span></label></li>
+      <li><label><input type="checkbox" data-k="ins"><span>旅行保险（医疗3万欧以上）</span></label></li>
+      <li><label><input type="checkbox" data-k="visa"><span>四人申根签证获批</span></label></li>
+      <li><label><input type="checkbox" data-k="h1"><span>住宿：卢塞恩 5/1–5/2</span></label></li>
+      <li><label><input type="checkbox" data-k="h2"><span>住宿：因特拉肯 5/3–5/4</span></label></li>
+      <li><label><input type="checkbox" data-k="h3"><span>住宿：采尔马特 5/5</span></label></li>
+      <li><label><input type="checkbox" data-k="h4"><span>住宿：米兰 5/6</span></label></li>
+      <li><label><input type="checkbox" data-k="h5"><span>住宿：威尼斯本岛 5/7</span></label></li>
+      <li><label><input type="checkbox" data-k="pass"><span>瑞士半价卡 / 通票</span></label></li>
+      <li><label><input type="checkbox" data-k="jfj"><span>少女峰车票 + 艾格快线座位（5/4）</span></label></li>
+      <li><label><input type="checkbox" data-k="cena"><span>《最后的晚餐》（5/7 早上）</span></label></li>
+      <li><label><input type="checkbox" data-k="duomo"><span>米兰大教堂屋顶（5/6）</span></label></li>
+      <li><label><input type="checkbox" data-k="trains"><span>意大利火车：米兰 → 威尼斯（5/7）</span></label></li>
+      <li><label><input type="checkbox" data-k="smarco"><span>圣马可大教堂时段票（5/7）</span></label></li>
+      <li><label><input type="checkbox" data-k="sim"><span>eSIM（瑞士不在欧盟，确认覆盖瑞士）</span></label></li>
+      <li><label><input type="checkbox" data-k="apps"><span>SBB、Trenitalia、Google 地图离线包</span></label></li>
+      <li><label><input type="checkbox" data-k="gear"><span>羽绒服、帽子手套、墨镜、防滑鞋</span></label></li>
+      <li><label><input type="checkbox" data-k="plug"><span>多国转换插头（瑞士 J 型 + 意大利 L 型）</span></label></li>
+      <li><label><input type="checkbox" data-k="card"><span>能在境外刷的 Visa/Master 卡</span></label></li>
+      <li><label><input type="checkbox" data-k="spoon"><span>折叠勺（酸奶传统不能断）</span></label></li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<a href="#top" class="totop" id="totop" aria-label="回到顶部">↑</a>
+
+<footer>
+  <div class="wrap">
+    <p>本页写于2026年11月，供出发前参考。航班、票价、缆车开放时间和签证政策都可能变，出发前请以官网为准：<a href="https://www.sbb.ch/" target="_blank" rel="noopener">SBB 瑞士铁路</a> · <a href="https://www.jungfrau.ch/" target="_blank" rel="noopener">少女峰铁路</a> · <a href="https://www.trenitalia.com/" target="_blank" rel="noopener">Trenitalia</a> · <a href="https://www.ceair.com/" target="_blank" rel="noopener">东方航空</a> · <a href="https://www.swiss.com/" target="_blank" rel="noopener">瑞士航空</a></p>
+    <p>另一个候选：<a href="../nz-2027/">新西兰南岛自驾攻略</a></p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var root=document.documentElement, saved=get('eu-theme');
+  if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark';
+    root.setAttribute('data-theme',next); set('eu-theme',next);
+  });
+
+  var totop=document.getElementById('totop');
+  window.addEventListener('scroll',function(){totop.classList.toggle('show',window.scrollY>900)},{passive:true});
+
+  var state={};
+  try{state=JSON.parse(get('eu-check')||'{}')||{}}catch(e){state={}}
+  document.querySelectorAll('#checklistItems input').forEach(function(cb){
+    cb.checked=!!state[cb.dataset.k];
+    cb.addEventListener('change',function(){state[cb.dataset.k]=cb.checked;set('eu-check',JSON.stringify(state))});
+  });
+
+  var inputs=[].slice.call(document.querySelectorAll('#calcFields input'));
+  var defaults={}; inputs.forEach(function(i){defaults[i.dataset.k]=i.value});
+  var savedCalc={}; try{savedCalc=JSON.parse(get('eu-calc')||'{}')||{}}catch(e){savedCalc={}}
+  inputs.forEach(function(i){ if(savedCalc[i.dataset.k]!=null) i.value=savedCalc[i.dataset.k]; });
+  var colors=['#b4532a','#2a7880','#d39b3a','#7a6bb0','#4f8f4f','#9a9a9a'];
+  var cn=['零','一','两','三','四','五','六','七','八','九','十'];
+  function fmt(n){return '¥'+Math.round(n).toLocaleString('zh-CN')}
+  function calc(){
+    var v={}; inputs.forEach(function(i){v[i.dataset.k]=Math.max(0,parseFloat(i.value)||0)});
+    var p=Math.max(1,Math.round(v.people));
+    var parts=[
+      ['机票',v.flight],
+      ['签证',v.visa],
+      ['火车缆车',v.chtrans*v.chf+v.ittrans*v.eur],
+      ['住宿',(v.chlodge*v.chn*v.chf+v.itlodge*v.itn*v.eur)/p],
+      ['吃饭',v.food*v.days],
+      ['门票',v.fun*v.eur]
+    ];
+    var per=parts.reduce(function(s,x){return s+x[1]},0);
+    document.getElementById('perPerson').textContent=fmt(per);
+    document.getElementById('total').textContent=fmt(per*p);
+    document.getElementById('peopleLabel').textContent=(p<=10?cn[p]:p)+'人';
+    var bar='',leg='',rows='';
+    parts.forEach(function(x,i){
+      var pct=per>0?x[1]/per*100:0;
+      bar+='<i style="width:'+pct.toFixed(2)+'%;background:'+colors[i]+'"></i>';
+      leg+='<span style="--c:'+colors[i]+'">'+x[0]+'</span>';
+      rows+='<div class="row"><span>'+x[0]+'</span><span>'+fmt(x[1])+' / 人</span></div>';
+    });
+    document.getElementById('bar').innerHTML=bar;
+    document.getElementById('legend').innerHTML=leg;
+    document.getElementById('rows').innerHTML=rows;
+    var s={}; inputs.forEach(function(i){s[i.dataset.k]=i.value}); set('eu-calc',JSON.stringify(s));
+  }
+  inputs.forEach(function(i){i.addEventListener('input',calc)});
+  document.getElementById('resetCalc').addEventListener('click',function(){
+    inputs.forEach(function(i){i.value=defaults[i.dataset.k]}); calc();
+  });
+  calc();
+})();
+</script>
+</body>
+</html>
