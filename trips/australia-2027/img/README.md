@@ -22,4 +22,5 @@
 |---|---|---|
 | tas- | 塔斯马尼亚 | tas-hero、tas-d1 … tas-d8 |
 | cns- | 悉尼 + 大堡礁 | cns-hero、cns-d4 … cns-d8 |
+| fin- | 定稿（悉尼 + 凯恩斯 + 墨尔本） | fin-hero、fin-d1 … fin-d8 |
 | gc- | 布里斯班 + 黄金海岸 | gc-hero、gc-d1 … gc-d8 |
