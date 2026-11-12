@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15181b" media="(prefers-color-scheme: dark)">
+<title>布里斯班 + 黄金海岸 · 2027五一</title>
+<meta name="description" content="2027年5月1日–9日，四人从上海出发：布里斯班进出，黄金海岸、坦伯林山、拜伦湾自驾，主题乐园、考拉、冲浪，逐日行程、住宿、预算。">
+<style>
+:root{
+  --bg:#f6f3ee; --surface:#ffffff; --surface-2:#efe9df; --text:#22262a; --muted:#5f6670;
+  --line:#ddd5c8; --accent:#b4532a; --accent-soft:#f5e3d8; --lake:#2a7880; --lake-soft:#dcefef;
+  --warn:#8a5a00; --warn-soft:#fff3d6; --ok:#2f7a3d; --ok-soft:#e1f2e3;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181b; --surface:#1e2226; --surface-2:#262b30; --text:#e9e6e1; --muted:#a3a9b0;
+    --line:#343a41; --accent:#e58a5c; --accent-soft:#3a2a22; --lake:#6cc3c9; --lake-soft:#1d3335;
+    --warn:#f0c46a; --warn-soft:#3a3120; --ok:#7fd08c; --ok-soft:#1f3323; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181b; --surface:#1e2226; --surface-2:#262b30; --text:#e9e6e1; --muted:#a3a9b0;
+  --line:#343a41; --accent:#e58a5c; --accent-soft:#3a2a22; --lake:#6cc3c9; --lake-soft:#1d3335;
+  --warn:#f0c46a; --warn-soft:#3a3120; --ok:#7fd08c; --ok-soft:#1f3323; --shadow:none;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:60px;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  line-height:1.7;font-size:16px;-webkit-tap-highlight-color:transparent}
+a{color:var(--lake)}
+.wrap{max-width:1000px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left))}
+header.hero{padding:48px 0 28px;border-bottom:1px solid var(--line)}
+.eyebrow{color:var(--accent);font-weight:600;letter-spacing:.06em;font-size:14px}
+h1{font-size:clamp(26px,5vw,44px);line-height:1.25;margin:8px 0 12px}
+.lede{color:var(--muted);max-width:680px;margin:0}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:22px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.fact b{display:block;font-size:19px}
+.fact span{color:var(--muted);font-size:13px}
+nav.toc{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav.toc .wrap{display:flex;gap:2px;overflow-x:auto;padding-top:8px;padding-bottom:8px;scrollbar-width:none}
+nav.toc .wrap::-webkit-scrollbar{display:none}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--text);font-size:14px;padding:6px 12px;border-radius:999px}
+nav.toc a:hover,nav.toc a:active{background:var(--surface-2)}
+#themeBtn{margin-left:auto;border:1px solid var(--line);background:var(--surface);color:var(--text);
+  border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+section{padding:40px 0 8px}
+h2{font-size:24px;margin:0 0 6px}
+h2 small{font-size:14px;color:var(--muted);font-weight:400;margin-left:8px}
+h3{font-size:18px;margin:0 0 6px}
+h4{font-size:15px;margin:14px 0 4px;color:var(--muted)}
+.sub{color:var(--muted);margin:0 0 18px}
+.note{background:var(--warn-soft);border-left:4px solid var(--warn);border-radius:8px;padding:12px 14px;margin:16px 0;font-size:15px}
+.note b{color:var(--warn)}
+.good{background:var(--ok-soft);border-left:4px solid var(--ok);border-radius:8px;padding:12px 14px;margin:16px 0;font-size:15px}
+.good b{color:var(--ok)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+
+/* overview */
+.overview{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+@media (max-width:760px){.overview{grid-template-columns:1fr}.map{max-width:340px;margin:0 auto;width:100%}}
+.map{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+.map svg{width:100%;height:auto;display:block}
+.map text{font-size:11px;fill:var(--text)}
+.map .island{fill:var(--surface-2);stroke:var(--line)}
+.map .path{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-dasharray:6 4}
+.map .spur{fill:none;stroke:var(--lake);stroke-width:2;stroke-dasharray:3 3}
+.map circle{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.map .cap{fill:var(--muted);font-size:10px}
+.ov{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.ov a{display:grid;grid-template-columns:84px 1fr auto;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--text);align-items:center}
+.ov a:last-child{border-bottom:none}
+.ov a:hover,.ov a:active{background:var(--surface-2)}
+.ov .d{font-weight:700;color:var(--accent);font-size:14px;line-height:1.4}
+.ov .d small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.ov .km{font-size:13px;color:var(--lake);white-space:nowrap}
+@media (max-width:520px){.ov a{grid-template-columns:68px 1fr;gap:4px 10px;padding:11px 14px}.ov .km{grid-column:2}}
+
+/* day */
+.day{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
+.dayhead{display:flex;gap:12px;align-items:flex-start;margin-bottom:8px}
+.badge{background:var(--accent-soft);color:var(--accent);border-radius:10px;text-align:center;padding:6px 8px;font-weight:700;min-width:60px;flex:none}
+.badge small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.dayhead h3{font-size:19px;margin:2px 0 6px;line-height:1.4}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12.5px;border-radius:999px;padding:2px 10px;background:var(--surface-2);color:var(--muted)}
+.chip.drive{background:var(--lake-soft);color:var(--lake)}
+.chip.book{background:var(--accent-soft);color:var(--accent)}
+.tl{list-style:none;margin:12px 0 0 6px;padding:0;border-left:2px solid var(--line)}
+.tl li{position:relative;padding:0 0 12px 18px}
+.tl li::before{content:"";position:absolute;left:-7px;top:8px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
+.tl li.drv::before{border-color:var(--lake);background:var(--lake-soft)}
+.tl .t{font-variant-numeric:tabular-nums;font-weight:700;margin-right:8px;color:var(--accent)}
+.tl li.drv .t{color:var(--lake)}
+.tl p{margin:2px 0 0;color:var(--muted);font-size:14.5px}
+.daytips{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:6px}
+.daytips div{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:14px}
+.daytips b{display:block;font-size:13px;color:var(--muted);margin-bottom:2px}
+
+table{width:100%;border-collapse:collapse;font-size:15px}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--surface-2);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.num,th.num{white-space:nowrap;font-variant-numeric:tabular-nums}
+ul.tight{padding-left:20px;margin:6px 0}
+ul.tight li{margin:4px 0}
+
+/* stay list (card per night, reads well on phone) */
+.stays{display:grid;gap:10px}
+.stay{display:grid;grid-template-columns:76px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.stay .when{font-weight:700;color:var(--accent);font-size:14px;line-height:1.4}
+.stay .when small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.stay h3{font-size:16px;margin:0}
+.stay .price{font-size:13px;color:var(--lake);font-variant-numeric:tabular-nums}
+.stay p{margin:2px 0 0;font-size:14px;color:var(--muted)}
+
+/* calculator */
+.calc{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px}
+@media (max-width:760px){.calc{grid-template-columns:1fr}.calc .result{order:-1}}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px 12px}
+.fields label{display:flex;flex-direction:column;justify-content:flex-end;font-size:13px;color:var(--muted);line-height:1.4}
+.fields input{margin-top:4px;font:inherit;font-size:16px;color:var(--text);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.result .big{font-size:34px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.2}
+.result .row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.result .row span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:12px 0 6px;background:var(--surface-2)}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;background:var(--c)}
+.btn{margin-top:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);border-radius:8px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+
+.check{list-style:none;padding:0;margin:0;columns:2 260px;column-gap:24px}
+.check li{break-inside:avoid;margin:0}
+.check label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:6px 0}
+.check input{margin-top:5px;width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.check input:checked + span{color:var(--muted);text-decoration:line-through}
+.timeline-book{display:grid;gap:10px}
+.timeline-book .card{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:14px 16px}
+@media (max-width:520px){.timeline-book .card{grid-template-columns:1fr;gap:2px}}
+.timeline-book b{color:var(--accent)}
+.totop{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:6;
+  width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--text);
+  box-shadow:0 2px 10px rgba(0,0,0,.12);font-size:18px;display:none;align-items:center;justify-content:center;text-decoration:none}
+.totop.show{display:flex}
+footer{margin-top:44px;padding:24px 0 calc(40px + env(safe-area-inset-bottom));border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+
+
+/* scene illustrations; drop a real photo at img/<id>.jpg and it covers the drawing */
+.scene{position:relative;margin:-20px -20px 14px;border-radius:16px 16px 0 0;overflow:hidden;aspect-ratio:400/150;background:var(--surface-2)}
+.scene svg,.scene img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
+.scene figcaption{position:absolute;left:0;right:0;bottom:0;padding:18px 14px 8px;font-size:12.5px;color:#fff;
+  background:linear-gradient(transparent,rgba(0,0,0,.5));text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.hero-scene{margin:20px 0 0;border-radius:16px;aspect-ratio:400/130;border:1px solid var(--line)}
+@media (max-width:520px){.scene{margin:-16px -14px 12px;border-radius:14px 14px 0 0}.hero-scene{margin:18px 0 0;border-radius:14px;aspect-ratio:400/150}}
+
+/* phone */
+@media (max-width:520px){
+  body{font-size:15.5px}
+  header.hero{padding:32px 0 22px}
+  section{padding:32px 0 4px}
+  h2{font-size:22px}
+  h2 small{display:block;margin:2px 0 0}
+  .card{padding:16px}
+  .day{padding:16px 14px;border-radius:14px}
+  .badge{min-width:54px;padding:5px 6px}
+  .dayhead h3{font-size:17.5px}
+  .tl li{padding-left:14px}
+  .tl .t{display:block;margin:0}
+  .grid2{grid-template-columns:1fr}
+  .daytips{grid-template-columns:1fr}
+  th,td{padding:9px 10px}
+}
+@media print{nav.toc,#themeBtn,.totop{display:none!important}.day,.card{box-shadow:none;break-inside:avoid}}
+/* options */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.opt{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+.opt.rec{border:2px solid var(--accent)}
+.opt .tag{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:var(--surface-2);color:var(--muted);margin-bottom:6px}
+.opt.rec .tag{background:var(--accent);color:#fff}
+.opt h3{margin:0 0 2px}
+.opt .stars{color:var(--accent);letter-spacing:2px;font-size:15px}
+.opt .route{font-size:13.5px;color:var(--lake);margin:6px 0 4px}
+.opt ul{padding-left:0;list-style:none;margin:8px 0 0;font-size:14.5px}
+.opt li{margin:4px 0;padding-left:22px;position:relative}
+.opt li::before{position:absolute;left:0;top:0}
+.opt li.p::before{content:"👍"}
+.opt li.m::before{content:"👎"}
+.opt .verdict{margin-top:10px;font-size:14px;background:var(--surface-2);border-radius:8px;padding:8px 10px}
+.vs{table-layout:fixed}.vs th{white-space:normal}.vs th:first-child,.vs td:first-child{width:84px;color:var(--muted);font-weight:600}
+@media (max-width:520px){.vs th:first-child,.vs td:first-child{width:52px}.vs th,.vs td{font-size:14px;padding:8px 7px}}
+.vs td.win{background:var(--ok-soft)}
+.map .land{fill:var(--surface-2);stroke:var(--line)}
+.map .border{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:2 3}
+.map .water{fill:var(--lake-soft);stroke:none}
+.map .flt{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:1 4;stroke-linecap:round}
+.map .ctry{fill:var(--muted);font-size:13px;font-weight:600;letter-spacing:.2em;opacity:.7}
+.chip.train{background:var(--lake-soft);color:var(--lake)}
+.vs3 th:first-child,.vs3 td:first-child{width:64px}
+@media (max-width:520px){.vs3 th:first-child,.vs3 td:first-child{width:44px}.vs3 th,.vs3 td{font-size:13px;padding:8px 6px}}
+.chip.car{background:var(--lake-soft);color:var(--lake)}
+
+.plans{display:flex;gap:6px;flex-wrap:wrap;margin-top:16px}
+.plans a{font-size:13.5px;text-decoration:none;color:var(--text);border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px}
+.plans a.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.plans span{font-size:13px;color:var(--muted);align-self:center;margin-right:2px}
+</style>
+</head>
+<body>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="eyebrow">方案 D · 2027.5.1 – 5.9 · 四人 · 布里斯班进出</div>
+    <h1>喂袋鼠、坐过山车、学冲浪：在黄金海岸躺平一周</h1>
+    <p class="lede">布里斯班进出，中间自驾6天：黄金海岸主题乐园、坦伯林山雨林、拜伦湾灯塔、可伦宾彩虹鹦鹉，最后一天学冲浪。五月还能下海，路程最短也最便宜，<b>5/8 飞回，5/10 照常上班</b>。</p>
+    <nav class="plans" aria-label="四种玩法"><span>四种玩法：</span><a href="index.html">A 悉尼 + 墨尔本 + 大洋路</a><a href="tasmania.html">B 塔斯马尼亚自驾</a><a href="cairns.html">C 悉尼 + 大堡礁</a><a href="goldcoast.html" class="on">D 布里斯班 + 黄金海岸</a></nav>
+    <figure class="scene hero-scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="黄金海岸"><defs><linearGradient id="gh2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#78bde9"/><stop offset="1" stop-color="#e6f4fc"/></linearGradient></defs><rect width="400" height="170" fill="url(#gh2)"/><g fill="#c9d6e2"><rect x="200" y="30" width="16" height="80"/><rect x="220" y="14" width="14" height="96"/><path d="M220 14 L227 2 L234 14Z"/><rect x="238" y="44" width="18" height="66"/><rect x="260" y="24" width="16" height="86"/><rect x="280" y="50" width="20" height="60"/><rect x="304" y="36" width="16" height="74"/><rect x="324" y="60" width="18" height="50"/></g><g fill="#a9b9c9" opacity=".6"><rect x="203" y="40" width="3" height="60"/><rect x="224" y="24" width="3" height="80"/><rect x="264" y="34" width="3" height="70"/><rect x="308" y="46" width="3" height="60"/></g><rect y="104" width="400" height="30" fill="#2b8cc4"/><path d="M0 112 Q60 106 120 112 T240 112 T400 110" stroke="#fff" stroke-width="2.5" fill="none"/><path d="M0 124 Q80 118 160 124 T400 122" stroke="#fff" stroke-width="2" fill="none" opacity=".7"/><path d="M0 130 Q200 122 400 134 V170 H0Z" fill="#efdcaa"/><g transform="translate(110 108) rotate(-8)"><ellipse cx="0" cy="0" rx="18" ry="3" fill="#f3c34a"/><circle cx="0" cy="-14" r="3" fill="#333"/><path d="M0 -11 L0 -3 M-6 -8 L6 -6 M0 -3 L-4 0 M0 -3 L4 0" stroke="#333" stroke-width="2"/></g><g fill="#e74c3c"><path d="M60 150 a12 12 0 0 1 24 0Z"/></g><line x1="72" y1="150" x2="72" y2="164" stroke="#555"/><g fill="#3fa0d0"><path d="M320 152 a12 12 0 0 1 24 0Z"/></g><line x1="332" y1="152" x2="332" y2="166" stroke="#555"/></svg><img src="img/gc-hero.jpg" alt="" loading="lazy" onerror="this.remove()"></figure>
+    <div class="facts"><div class="fact"><b>7晚</b><span>布里斯班2晚 · 海边5晚</span></div><div class="fact"><b>往返布里斯班</b><span>上海直飞约10h</span></div><div class="fact"><b>14–25°C</b><span>还能下海</span></div><div class="fact"><b>自驾6天</b><span>约500km，每天≤1.5h</span></div><div class="fact"><b>5/9 到家</b><span>5/10 正常上班</span></div></div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#why">适合谁</a><a href="#overview">总览</a><a href="#days">每日行程</a><a href="#drive">自驾天气</a><a href="#stay">住宿</a><a href="#budget">预算</a><a href="#booking">预订</a><a href="#checklist">清单</a>
+    <button id="themeBtn" type="button" aria-label="切换深浅色">◐ 主题</button>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<section id="why">
+  <h2>这条线适合谁<small>D · 布里斯班进出 + 黄金海岸</small></h2>
+  <p class="sub">昆士兰东南角是澳洲人自己最爱的度假地：<b>五月 14–25°C，海水还能下</b>，有主题乐园、雨林山、冲浪小镇，到处都能看考拉袋鼠。路程短，每天开车不超过1.5小时，最轻松也最便宜。</p>
+  <div class="grid2">
+    <div class="good"><b>适合：</b>想要轻松度假、晒太阳、玩乐园和冲浪；预算最紧；不想在路上折腾。</div>
+    <div class="note"><b>要接受：</b>风景以海滩为主，变化比另外三条少；没有歌剧院、十二门徒那种「澳洲明信片」。</div>
+  </div>
+</section>
+
+<section id="overview">
+  <h2>行程总览</h2>
+  <p class="sub">布里斯班进出，<b>不用坐国内航班</b>。自驾 D2–D7，总共约500km，每天都在天黑前到住处。</p>
+  <div class="overview">
+    <div class="ov"><a href="#d1"><span class="d">D1 · 5/1<small>周六</small></span><span>上海直飞布里斯班，<b>落地先吃酸奶</b>，南岸公园、故事桥</span><span class="km">✈ 10h</span></a><a href="#d2"><span class="d">D2 · 5/2<small>周日</small></span><span>游船去考拉保护区喂袋鼠，取车去黄金海岸</span><span class="km">⛴ 🚗 80km</span></a><a href="#d3"><span class="d">D3 · 5/3<small>周一</small></span><span>主题乐园玩一整天</span><span class="km">🚗 20km</span></a><a href="#d4"><span class="d">D4 · 5/4<small>周二</small></span><span>坦伯林山：雨林空中步道、萤火虫洞</span><span class="km">🚗 100km</span></a><a href="#d5"><span class="d">D5 · 5/5<small>周三</small></span><span>拜伦湾：大陆最东端灯塔、冲浪小镇</span><span class="km">🚗 100km</span></a><a href="#d6"><span class="d">D6 · 5/6<small>周四</small></span><span>可伦宾喂彩虹鹦鹉，伯利角日落</span><span class="km">🚗 80km</span></a><a href="#d7"><span class="d">D7 · 5/7<small>周五</small></span><span>冲浪课，回布里斯班还车，集装箱夜市</span><span class="km">🚗 90km</span></a><a href="#d8"><span class="d">D8 · 5/8<small>周六</small></span><span>布里斯班直飞回上海</span><span class="km">✈ 10h</span></a><a href="#d8"><span class="d">5/9 周日<small>到家</small></span><span>在家休息，<b>5/10 上班</b></span><span class="km">✅</span></a></div>
+    <div class="map" aria-label="路线示意图"><svg viewBox="0 0 300 380" role="img">
+        <title>布里斯班和黄金海岸路线示意图（非比例）</title>
+        <rect x="0" y="0" width="300" height="380" class="water"/>
+        <path class="land" d="M0 0 L196 0 L200 60 L202 96 L186 108 L192 128 L210 150 L224 190 L234 228 L244 268 L254 300 L250 340 L246 380 L0 380Z"/>
+        <path class="land" d="M216 62 L226 64 L228 112 L218 110Z"/>
+        <path class="land" d="M222 122 L232 124 L236 170 L226 168Z"/>
+        <path class="border" d="M0 252 Q120 240 238 246"/>
+        <path class="path" d="M182 112 L226 196 L250 296 L236 236 L226 196 L182 112"/>
+        <path class="spur" d="M226 196 L184 190"/>
+        <path class="spur" d="M182 112 L160 122"/>
+        <path class="flt" d="M182 112 L250 10"/>
+        <circle cx="182" cy="112" r="5"/><text x="116" y="104">布里斯班</text>
+        <circle cx="160" cy="122" r="4"/><text x="104" y="138" style="font-size:10px">考拉保护区</text>
+        <circle cx="226" cy="196" r="5"/><text x="234" y="196">黄金海岸</text>
+        <circle cx="184" cy="190" r="4"/><text x="128" y="186" style="font-size:10px">坦伯林山</text>
+        <circle cx="236" cy="236" r="4"/><text x="170" y="230" style="font-size:10px">可伦宾</text>
+        <circle cx="250" cy="296" r="5"/><text x="204" y="316">拜伦湾</text>
+        <text x="30" y="60" class="ctry">昆士兰</text>
+        <text x="30" y="290" class="ctry">新南威尔士</text>
+        <text x="250" y="22" class="cap">✈ 上海</text>
+        <text x="8" y="360" class="cap">红线=自驾 · 点线=飞机</text>
+        <text x="8" y="374" class="cap">示意非比例</text>
+      </svg></div>
+  </div>
+</section>
+
+<section id="days">
+  <h2>每日行程<small>时间是建议，可以前后挪</small></h2>
+  <p class="sub">按「5/1 早上到布里斯班、5/8 中午起飞」排的。</p>
+
+  <div class="day" id="d1">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="布里斯班：故事桥和河上的 CityCat 双体渡轮"><defs><linearGradient id="b1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fc6ea"/><stop offset="1" stop-color="#eef6fb"/></linearGradient></defs><rect width="400" height="170" fill="url(#b1)"/><g fill="#c3cfdb"><rect x="250" y="30" width="18" height="70"/><rect x="272" y="16" width="16" height="84"/><rect x="292" y="40" width="20" height="60"/><rect x="316" y="26" width="16" height="74"/><rect x="336" y="46" width="22" height="54"/><rect x="362" y="34" width="18" height="66"/></g><rect y="96" width="400" height="74" fill="#6b8a72"/><path d="M0 100 L400 100" stroke="#5a6470" stroke-width="3"/><g stroke="#5a6470" stroke-width="2" fill="none"><path d="M40 100 L80 50 L120 100"/><path d="M120 100 L160 70 L200 100"/><path d="M80 50 L80 100 M160 70 L160 100 M60 75 L100 75"/></g><rect y="104" width="400" height="66" fill="#5c7f90"/><path d="M0 116 Q100 112 200 117 T400 115" stroke="#fff" stroke-width="1" opacity=".4" fill="none"/><g transform="translate(180 120)"><path d="M-36 0 L36 0 L30 8 L-30 8Z" fill="#1d5fa8"/><rect x="-26" y="-10" width="46" height="10" fill="#fff"/><g fill="#5aa0c8"><rect x="-22" y="-8" width="8" height="5"/><rect x="-10" y="-8" width="8" height="5"/><rect x="2" y="-8" width="8" height="5"/></g><path d="M36 4 Q46 6 52 2" stroke="#fff" stroke-width="2" fill="none"/></g></svg><img src="img/gc-d1.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>布里斯班：故事桥下坐 CityCat 渡轮游河</figcaption></figure>
+    <div class="dayhead"><div class="badge">D1<small>5/1 周六</small></div><div>
+      <h3>上海直飞布里斯班，落地吃酸奶，南岸公园和故事桥</h3>
+      <div class="chips"><span class="chip drive">✈ 约10h · 🚆 20分钟</span><span class="chip">住：布里斯班</span><span class="chip book">要预订：机票、住宿</span></div>
+    </div></div>
+    <ul class="tl"><li><span class="t">出发</span>上海浦东 → 布里斯班，直飞约10小时。<p>布里斯班比北京 <b>快2小时</b>。选 4/30 晚上起飞、5/1 早上到的班次。<b>往返同一个城市，票最好买。</b></p></li><li><span class="t">约08:00</span>到布里斯班机场，入境卡如实申报食品。</li><li class="drv"><span class="t">09:00</span>坐机场快线（Airtrain）进城，约20分钟，信用卡直接刷。</li><li><span class="t">09:45</span><b>🥛 急头白脸吃酸奶，昆士兰分部。</b>市中心 Coles / Woolworths 找 Jalna、Gippsland Dairy，或者昆士兰本地的 Maleny Dairies。拿到河边开吃。</li><li><span class="t">10:30</span>寄存行李。过河到 <b>南岸公园</b>（South Bank）：<b>Streets Beach</b> 是市中心的免费人造沙滩泳池，五月白天还能下水；旁边有布里斯班摩天轮和三角梅长廊。</li><li><span class="t">12:30</span>南岸午饭。</li><li class="drv"><span class="t">14:00</span>坐免费的 <b>CityHopper</b> 渡轮（或付费的 CityCat）游布里斯班河，从水上看城市和故事桥。</li><li><span class="t">15:00</span>回酒店入住，补觉。</li><li><span class="t">17:00</span><b>袋鼠角悬崖</b>（Kangaroo Point Cliffs）看日落，故事桥和城市天际线都在对面。</li><li><span class="t">18:30</span>晚饭去故事桥下的 <b>Howard Smith Wharves</b>，河边一排餐厅和酒吧。</li></ul>
+    <div class="daytips"><div><b>今天要做的事</b>手机装好 eSIM；四个人建分账群；确认明天的考拉保护区游船时间。</div><div><b>天气</b>布里斯班五月 14–25°C，白天穿短袖都行，晚上加件薄外套。</div></div>
+  </div>
+  <div class="day" id="d2">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="在考拉保护区亲手喂袋鼠"><defs><linearGradient id="b2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9dcf0"/><stop offset="1" stop-color="#f2f7f2"/></linearGradient></defs><rect width="400" height="170" fill="url(#b2)"/><g fill="#7f9a6a"><ellipse cx="60" cy="60" rx="70" ry="30"/><ellipse cx="330" cy="56" rx="80" ry="30"/></g><path d="M0 100 Q200 86 400 100 V170 H0Z" fill="#b8b46a"/><g transform="translate(220 112)" fill="#a8774a"><ellipse cx="0" cy="0" rx="16" ry="22"/><ellipse cx="8" cy="-26" rx="8" ry="9"/><path d="M8 -34 l2 -12 l4 12Z M14 -32 l5 -10 l2 12Z"/><ellipse cx="18" cy="-24" rx="5" ry="3.5"/><circle cx="10" cy="-29" r="1.4" fill="#222"/><path d="M-12 14 Q-40 20 -46 8" stroke="#a8774a" stroke-width="7" fill="none"/><path d="M-4 18 h22 v6 h-22Z"/><path d="M8 -10 q10 4 16 0" stroke="#8a5a32" stroke-width="3" fill="none"/></g><path d="M300 170 Q296 110 268 90" stroke="#e9c49a" stroke-width="14" fill="none"/><ellipse cx="258" cy="86" rx="12" ry="7" fill="#e9c49a"/><g fill="#c9a26a"><circle cx="252" cy="82" r="2"/><circle cx="257" cy="80" r="2"/><circle cx="262" cy="82" r="2"/></g><g transform="translate(90 120) scale(.7)" fill="#9a6c42"><ellipse cx="0" cy="0" rx="16" ry="22"/><ellipse cx="-8" cy="-26" rx="8" ry="9"/><path d="M-8 -34 l-2 -12 l-4 12Z"/><path d="M12 14 Q40 20 46 8" stroke="#9a6c42" stroke-width="7" fill="none"/></g></svg><img src="img/gc-d2.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>龙柏考拉保护区：看考拉，草坪上亲手喂袋鼠</figcaption></figure>
+    <div class="dayhead"><div class="badge">D2<small>5/2 周日</small></div><div>
+      <h3>考拉保护区喂袋鼠，下午取车去黄金海岸</h3>
+      <div class="chips"><span class="chip drive">⛴ 1.3h · 🚗 约80km / 1.2h</span><span class="chip">住：黄金海岸</span><span class="chip book">要预订：考拉保护区、租车</span></div>
+    </div></div>
+    <ul class="tl"><li class="drv"><span class="t">09:00</span>市中心码头坐 <b>游船去龙柏考拉保护区</b>（Lone Pine Koala Sanctuary），沿河约1小时15分钟，路上就是一段游河。也可以坐公交，约40分钟。</li><li><span class="t">10:30</span><b>龙柏考拉保护区</b>：世界上最大最老的考拉保护区，一百多只考拉。<b>袋鼠草坪</b> 上买一包饲料亲手喂袋鼠。还有鸭嘴兽、袋熊、牧羊犬表演。</li><li class="drv"><span class="t">13:00</span>园区午饭，坐公交或打车回市区。</li><li><span class="t">14:30</span>市区取车。四个人加行李租中型 SUV。<b>靠左行驶</b>。</li><li class="drv"><span class="t">15:00</span>走 M1 高速去 <b>黄金海岸</b>，约1小时15分钟。</li><li><span class="t">16:30</span>冲浪者天堂（Surfers Paradise）入住，海滩上走走。</li><li><span class="t">17:15</span>上 <b>SkyPoint 观景台</b>（Q1 大楼77层）看日落，一边是海，一边是内陆的山。</li><li><span class="t">19:00</span>晚饭。周日晚上冲浪者天堂海边有 <b>海滨夜市</b>（Beachfront Markets，周三、周五、周日开）。</li></ul>
+    <div class="daytips"><div><b>抱考拉</b>昆士兰州法律允许抱考拉，但龙柏已经不再提供抱考拉拍照了，现在都是近距离看。想抱要出发前另外查。</div><div><b>租车</b>在市区取车不用付机场附加费。车牌识别收费的路段会自动扣钱，问清租车公司的收费方式。</div></div>
+  </div>
+  <div class="day" id="d3">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="主题乐园的过山车和摩天轮"><defs><linearGradient id="b3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fc0ee"/><stop offset="1" stop-color="#eaf6fc"/></linearGradient></defs><rect width="400" height="170" fill="url(#b3)"/><path d="M0 120 L40 60 Q60 30 80 60 L110 110 Q130 140 150 100 L190 40 Q210 20 230 50 L260 110 L300 70 Q320 54 340 80 L400 120" stroke="#e74c3c" stroke-width="5" fill="none"/><path d="M0 126 L40 66 Q60 36 80 66 L110 116 Q130 146 150 106 L190 46 Q210 26 230 56 L260 116 L300 76 Q320 60 340 86 L400 126" stroke="#c0392b" stroke-width="2" fill="none"/><g stroke="#8a8f98" stroke-width="2"><line x1="40" y1="64" x2="40" y2="170"/><line x1="80" y1="64" x2="80" y2="170"/><line x1="150" y1="104" x2="150" y2="170"/><line x1="190" y1="44" x2="190" y2="170"/><line x1="230" y1="54" x2="230" y2="170"/><line x1="300" y1="74" x2="300" y2="170"/><line x1="340" y1="84" x2="340" y2="170"/></g><g transform="translate(196 34) rotate(-40)"><rect x="-10" y="-6" width="20" height="10" rx="3" fill="#f3c34a"/><circle cx="-4" cy="-8" r="2.5" fill="#333"/><circle cx="4" cy="-8" r="2.5" fill="#333"/></g><g transform="translate(340 100)"><circle r="40" fill="none" stroke="#5a6470" stroke-width="2"/><g stroke="#5a6470" stroke-width="1"><line x1="-40" y1="0" x2="40" y2="0"/><line x1="0" y1="-40" x2="0" y2="40"/><line x1="-28" y1="-28" x2="28" y2="28"/><line x1="-28" y1="28" x2="28" y2="-28"/></g><g fill="#3fa0d0"><circle cx="0" cy="-40" r="4"/><circle cx="40" cy="0" r="4"/><circle cx="0" cy="40" r="4"/><circle cx="-40" cy="0" r="4"/></g></g><rect y="150" width="400" height="20" fill="#d6d0c0"/></svg><img src="img/gc-d3.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>主题乐园：黄金海岸有好几个，四个大人选一个玩一整天就够</figcaption></figure>
+    <div class="dayhead"><div class="badge">D3<small>5/3 周一</small></div><div>
+      <h3>主题乐园玩一整天</h3>
+      <div class="chips"><span class="chip drive">🚗 约20km</span><span class="chip">住：黄金海岸</span><span class="chip book">要预订：乐园门票（网上便宜）</span></div>
+    </div></div>
+    <ul class="tl"><li><span class="t">09:30</span>开园就进。黄金海岸有几个大乐园，<b>选一个就够</b>：<p><b>华纳电影世界</b>（Movie World）：过山车最刺激，DC 超级英雄主题。<br><b>海洋世界</b>（Sea World）：海豚、海狮表演，节奏轻松。<br><b>梦幻世界</b>（Dreamworld）：有动物区，能看考拉和老虎。</p></li><li><span class="t">12:30</span>园里吃午饭。</li><li><span class="t">13:30</span>下午继续玩。工作日人少，热门项目排队也不长。</li><li class="drv"><span class="t">17:00</span>闭园，开回冲浪者天堂。</li><li><span class="t">18:30</span>晚饭去 <b>布罗德海滩</b>（Broadbeach），餐厅多，比冲浪者天堂安静一些。</li></ul>
+    <div class="daytips"><div><b>不想去乐园</b>换成海上活动：观鲸要到6月才开始，五月可以坐快艇游船、玩摩托艇，或者跟团去 <b>南斯特拉德布鲁克岛</b> 看海滩。</div><div><b>门票</b>电影世界、海洋世界是同一家公司，买联票更便宜；只玩一个就买单日票。</div></div>
+  </div>
+  <div class="day" id="d4">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="坦伯林山雨林里的高空步道"><defs><linearGradient id="b4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9d6ea"/><stop offset="1" stop-color="#eef6f2"/></linearGradient></defs><rect width="400" height="170" fill="url(#b4)"/><g fill="#2e6a3a"><ellipse cx="40" cy="40" rx="70" ry="40"/><ellipse cx="200" cy="30" rx="80" ry="36"/><ellipse cx="360" cy="40" rx="70" ry="40"/></g><g fill="#3f8a4a"><ellipse cx="100" cy="120" rx="80" ry="40"/><ellipse cx="300" cy="126" rx="90" ry="40"/></g><path d="M0 78 Q200 98 400 70" stroke="#6a5a4a" stroke-width="5" fill="none"/><path d="M0 68 Q200 88 400 60" stroke="#8a7a6a" stroke-width="1.5" fill="none"/><g stroke="#8a7a6a" stroke-width="1"><line x1="50" y1="70" x2="50" y2="80"/><line x1="100" y1="76" x2="100" y2="86"/><line x1="150" y1="80" x2="150" y2="90"/><line x1="200" y1="82" x2="200" y2="92"/><line x1="250" y1="80" x2="250" y2="90"/><line x1="300" y1="76" x2="300" y2="86"/><line x1="350" y1="70" x2="350" y2="80"/></g><g stroke="#5a4a3a" stroke-width="3"><line x1="120" y1="88" x2="110" y2="170"/><line x1="280" y1="88" x2="290" y2="170"/></g><g fill="#333"><circle cx="180" cy="80" r="2.4"/><rect x="179" y="82" width="2" height="7"/><circle cx="190" cy="81" r="2.4"/><rect x="189" y="83" width="2" height="7"/><circle cx="220" cy="81" r="2.4"/><rect x="219" y="83" width="2" height="7"/></g><g fill="#5aa05a"><path d="M10 170 q10 -30 30 -36 q-12 14 -14 36Z"/><path d="M380 170 q-10 -30 -30 -36 q12 14 14 36Z"/></g></svg><img src="img/gc-d4.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>坦伯林山：走在雨林树冠高度的空中步道上</figcaption></figure>
+    <div class="dayhead"><div class="badge">D4<small>5/4 周二</small></div><div>
+      <h3>坦伯林山：雨林空中步道、萤火虫洞和酒庄</h3>
+      <div class="chips"><span class="chip drive">🚗 来回约100km</span><span class="chip">住：黄金海岸</span><span class="chip book">要预订：空中步道、萤火虫洞</span></div>
+    </div></div>
+    <ul class="tl"><li class="drv"><span class="t">09:00</span>开上 <b>坦伯林山</b>（Tamborine Mountain），约45分钟，山上比海边凉快。</li><li><span class="t">10:00</span><b>坦伯林雨林空中步道</b>（Rainforest Skywalk）：走在树冠高度的钢架步道上，下面是雨林和小溪，约1小时。</li><li><span class="t">11:30</span><b>柯蒂斯瀑布</b>（Curtis Falls）小步道，来回30分钟。</li><li><span class="t">12:30</span>午饭在 <b>画廊街</b>（Gallery Walk），一条街的小店、芝士和巧克力店、手作店。</li><li><span class="t">14:00</span><b>萤火虫洞</b>（Glow Worm Caves，在 Cedar Creek 酒庄里）：人工洞穴，白天也能看到满洞顶的蓝色萤光虫，约40分钟。能喝的顺便在酒庄品酒（司机除外）。</li><li class="drv"><span class="t">16:00</span>下山，天黑前回到海边。</li><li><span class="t">17:30</span>冲浪者天堂海滩上看日落后的天空。</li></ul>
+    <div class="daytips"><div><b>注意</b>山路窄、有急弯；路边有袋鼠和小袋鼠，<b>傍晚前下山</b>。</div><div><b>想看更野的</b><b>春溪国家公园</b>（Springbrook）有天然石桥和瀑布，晚上能看野生萤火虫，但回程是夜路，建议跟团。</div></div>
+  </div>
+  <div class="day" id="d5">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="拜伦湾灯塔和海里的海豚"><defs><linearGradient id="b5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cc0ec"/><stop offset="1" stop-color="#eaf6fc"/></linearGradient></defs><rect width="400" height="170" fill="url(#b5)"/><rect y="80" width="400" height="90" fill="#2e8fc4"/><path d="M0 100 Q100 96 200 101 T400 99 M0 120 Q100 116 200 121 T400 119" stroke="#fff" stroke-width="1" opacity=".4" fill="none"/><path d="M220 170 L240 90 Q280 60 400 50 V170Z" fill="#6b8f4e"/><path d="M220 170 L240 90 Q250 96 252 170Z" fill="#a98b62"/><g transform="translate(320 58)"><rect x="-6" y="-30" width="12" height="32" fill="#fff"/><rect x="-8" y="-34" width="16" height="5" fill="#ddd"/><rect x="-5" y="-42" width="10" height="9" fill="#eee"/><path d="M-6 -42 L0 -48 L6 -42Z" fill="#c0392b"/><rect x="12" y="-6" width="20" height="10" fill="#fff"/><path d="M10 -6 L22 -12 L34 -6Z" fill="#c0392b"/></g><g fill="#5a6b78"><path d="M90 112 q10 -14 20 0 q-10 -4 -20 0Z"/><path d="M98 104 l4 -6 l2 6Z"/><path d="M140 118 q10 -14 20 0 q-10 -4 -20 0Z"/><path d="M148 110 l4 -6 l2 6Z"/></g><path d="M0 150 Q100 140 200 152 L220 170 H0Z" fill="#efdcaa"/></svg><img src="img/gc-d5.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>拜伦角灯塔：澳洲大陆最东端，崖下常有海豚</figcaption></figure>
+    <div class="dayhead"><div class="badge">D5<small>5/5 周三</small></div><div>
+      <h3>拜伦湾：澳洲大陆最东端的灯塔，海边小镇</h3>
+      <div class="chips"><span class="chip drive">🚗 约100km / 1.2h</span><span class="chip">住：拜伦湾</span><span class="chip book">要预订：住宿</span></div>
+    </div></div>
+    <ul class="tl"><li class="drv"><span class="t">09:00</span>退房，沿 M1 往南开到 <b>拜伦湾</b>（Byron Bay），约1小时15分钟。过了州界就是新南威尔士，<b>五月两个州时间一样</b>。</li><li><span class="t">10:30</span><b>拜伦角灯塔步道</b>（Cape Byron Walking Track）：一圈约3.7km、1.5–2小时，经过 <b>澳洲大陆最东点</b>，崖下常能看到海豚。灯塔停车位很少，可以停在镇上走上去。</li><li><span class="t">13:00</span>镇上午饭。拜伦湾是嬉皮士和冲浪小镇，咖啡馆、素食和健康餐都很好吃。</li><li><span class="t">14:30</span>入住。下午在 <b>主海滩</b> 或 <b>The Pass</b> 看冲浪、晒太阳，愿意的可以下海（在红黄旗之间）。</li><li><span class="t">17:00</span>日落时再去 <b>灯塔</b> 或 Wategos Beach，看天空变成粉色。</li><li><span class="t">19:00</span>晚饭，镇上有现场音乐的酒吧。</li></ul>
+    <div class="daytips"><div><b>体验</b>拜伦湾有很多冲浪课、瑜伽课、皮划艇看海豚的活动，愿意的话换掉下午的海滩时间。</div><div><b>注意</b>小镇停车收费，按指示牌停。</div></div>
+  </div>
+  <div class="day" id="d6">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="彩虹吸蜜鹦鹉落在盘子上吃花蜜"><defs><linearGradient id="b6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe0f2"/><stop offset="1" stop-color="#f4f8f0"/></linearGradient></defs><rect width="400" height="170" fill="url(#b6)"/><g fill="#7f9a6a"><ellipse cx="80" cy="50" rx="90" ry="34"/><ellipse cx="330" cy="46" rx="90" ry="34"/></g><path d="M0 110 H400 V170 H0Z" fill="#c9b48a"/><ellipse cx="200" cy="118" rx="70" ry="12" fill="#f4f1ea"/><ellipse cx="200" cy="116" rx="54" ry="8" fill="#e9c27a"/><path d="M300 170 Q290 120 250 110" stroke="#e9c49a" stroke-width="14" fill="none"/><g id="lk"><ellipse cx="0" cy="0" rx="9" ry="6" fill="#2fa84f"/><circle cx="8" cy="-6" r="5" fill="#3a5fcf"/><path d="M12 -6 l4 2 l-4 1Z" fill="#e74c3c"/><ellipse cx="4" cy="0" rx="4" ry="3" fill="#f39c12"/><path d="M-8 0 L-20 4 L-8 3Z" fill="#2fa84f"/><path d="M4 2 l4 1" stroke="#e74c3c" stroke-width="2"/></g><use href="#lk" x="170" y="104"/><use href="#lk" x="220" y="100"/><use href="#lk" x="250" y="96"/><use href="#lk" x="120" y="70"/><use href="#lk" x="300" y="64"/><use href="#lk" x="200" y="60"/></svg><img src="img/gc-d6.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>可伦宾野生动物园：举起盘子，彩虹吸蜜鹦鹉会一群群落下来</figcaption></figure>
+    <div class="dayhead"><div class="badge">D6<small>5/6 周四</small></div><div>
+      <h3>可伦宾喂彩虹鹦鹉，伯利角看日落</h3>
+      <div class="chips"><span class="chip drive">🚗 约80km / 1h</span><span class="chip">住：黄金海岸</span><span class="chip book">要预订：可伦宾野生动物园</span></div>
+    </div></div>
+    <ul class="tl"><li><span class="t">08:30</span>早餐后可选：去内陆的 <b>班格洛</b>（Bangalow）小镇转一圈，老房子里全是小店，20分钟车程。</li><li class="drv"><span class="t">10:00</span>往北开回昆士兰，到 <b>可伦宾野生动物园</b>（Currumbin Wildlife Sanctuary），约50分钟。</li><li><span class="t">11:00</span>看考拉、袋鼠、鸸鹋、鳄鱼，还有原住民文化表演。<b>下午4点的彩虹吸蜜鹦鹉喂食</b>（早上8点也有一场）：举起盘子，一群彩色鹦鹉落在手臂上。</li><li><span class="t">13:00</span>园里或对面海边午饭。</li><li><span class="t">16:00</span>鹦鹉喂食。</li><li class="drv"><span class="t">16:45</span>开到 <b>伯利角</b>（Burleigh Heads），走上国家公园的小山头，看冲浪的人和远处冲浪者天堂的高楼，等日落。</li><li><span class="t">18:30</span>晚饭在伯利角，这一带的餐厅和咖啡馆是本地人最爱。入住伯利角或布罗德海滩。</li></ul>
+    <div class="daytips"><div><b>一天两场</b>如果上午来不及，11点后到也没关系，<b>下午4点那场鹦鹉喂食一定要赶上</b>。</div><div><b>防晒</b>鹦鹉喂食在露天，戴帽子；手上别拿吃的，它们会抢。</div></div>
+  </div>
+  <div class="day" id="d7">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="冲浪者天堂：高楼下的海浪和学冲浪的人"><defs><linearGradient id="b7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#78bde9"/><stop offset="1" stop-color="#e6f4fc"/></linearGradient></defs><rect width="400" height="170" fill="url(#b7)"/><g fill="#c9d6e2"><rect x="200" y="30" width="16" height="80"/><rect x="220" y="14" width="14" height="96"/><path d="M220 14 L227 2 L234 14Z"/><rect x="238" y="44" width="18" height="66"/><rect x="260" y="24" width="16" height="86"/><rect x="280" y="50" width="20" height="60"/><rect x="304" y="36" width="16" height="74"/><rect x="324" y="60" width="18" height="50"/></g><g fill="#a9b9c9" opacity=".6"><rect x="203" y="40" width="3" height="60"/><rect x="224" y="24" width="3" height="80"/><rect x="264" y="34" width="3" height="70"/><rect x="308" y="46" width="3" height="60"/></g><rect y="104" width="400" height="66" fill="#2b8cc4"/><path d="M0 116 Q60 108 120 116 T240 116 T400 114" stroke="#fff" stroke-width="3" fill="none"/><path d="M0 132 Q80 126 160 132 T400 130" stroke="#fff" stroke-width="2" fill="none" opacity=".7"/><g transform="translate(120 112) rotate(-6)"><ellipse cx="0" cy="0" rx="22" ry="3.5" fill="#f3c34a"/><circle cx="0" cy="-16" r="3.2" fill="#222"/><path d="M0 -13 L0 -4 M-7 -10 L7 -8 M0 -4 L-5 0 M0 -4 L5 0" stroke="#222" stroke-width="2.2"/></g><g transform="translate(60 106) rotate(4) scale(.8)"><ellipse cx="0" cy="0" rx="22" ry="3.5" fill="#fff"/><circle cx="0" cy="-16" r="3.2" fill="#222"/><path d="M0 -13 L0 -4 M-7 -10 L7 -8 M0 -4 L-5 0 M0 -4 L5 0" stroke="#222" stroke-width="2.2"/></g></svg><img src="img/gc-d7.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>冲浪者天堂：初学者跟教练在白浪里站起来</figcaption></figure>
+    <div class="dayhead"><div class="badge">D7<small>5/7 周五</small></div><div>
+      <h3>上一节冲浪课，下午回布里斯班还车</h3>
+      <div class="chips"><span class="chip drive">🚗 约90km / 1.2h</span><span class="chip">住：布里斯班</span><span class="chip book">要预订：冲浪课</span></div>
+    </div></div>
+    <ul class="tl"><li><span class="t">09:00</span><b>冲浪课</b>：黄金海岸是学冲浪最好的地方之一，2小时的初学者团课，教练在白浪里带你站起来，四个人一起很好玩。五月海水约23°C，会发防寒服。</li><li><span class="t">11:30</span>冲澡换衣服，海边吃最后一顿炸鱼薯条。</li><li class="drv"><span class="t">13:00</span>开回布里斯班，约1小时15分钟。</li><li><span class="t">14:30</span>市区还车，加满油、拍照。</li><li><span class="t">15:00</span>入住。逛 <b>皇后街</b>（Queen Street Mall）买伴手礼，或者去 <b>布里斯班城市植物园</b> 散步。</li><li><span class="t">18:00</span>最后一晚：<b>Eat Street Northshore</b>（周五晚上开）是集装箱改成的美食夜市，各国小吃都有。</li></ul>
+    <div class="daytips"><div><b>不想冲浪</b>换成 <b>春溪国家公园</b> 的瀑布和观景台，或者在冲浪者天堂多躺一个上午。</div><div><b>如果多一晚</b>把回程改成 5/8 深夜起飞，5/8 白天还能在布里斯班逛半天。</div></div>
+  </div>
+  <div class="day" id="d8">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="一杯拿铁拉花，窗外飞机起飞"><defs><linearGradient id="g8" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c7dcef"/><stop offset="1" stop-color="#f6e6d4"/></linearGradient></defs><rect width="400" height="170" fill="url(#g8)"/><g fill="#a9b6c4"><rect x="230" y="96" width="16" height="44"/><rect x="250" y="80" width="20" height="60"/><rect x="274" y="100" width="14" height="40"/><rect x="292" y="70" width="18" height="70"/><rect x="314" y="92" width="16" height="48"/><path d="M296 70 L301 50 L306 70Z"/></g><rect y="138" width="400" height="32" fill="#cdbba4"/><g transform="translate(330 40) rotate(-14)"><path d="M-30 0 L30 0 Q38 0 38 3 Q38 6 30 6 L-30 6Z" fill="#fff"/><path d="M-4 3 L-18 22 L-10 22 L10 3Z" fill="#e6e9ee"/><path d="M-4 3 L-14 -12 L-8 -12 L8 3Z" fill="#e6e9ee"/><path d="M-30 0 L-38 -10 L-32 -10 L-24 0Z" fill="#c0392b"/></g><path d="M230 70 Q270 60 300 50" stroke="#fff" stroke-width="2" stroke-dasharray="2 4" fill="none" opacity=".8"/><g transform="translate(110 120)"><ellipse cx="0" cy="34" rx="70" ry="10" fill="#f3efe8"/><path d="M-44 -10 H44 L36 30 Q0 40 -36 30Z" fill="#fff"/><path d="M44 0 q22 0 18 14 q-4 12 -24 8" stroke="#fff" stroke-width="6" fill="none"/><ellipse cx="0" cy="-10" rx="44" ry="10" fill="#b07a4a"/><path d="M0 -16 q-12 4 0 12 q12 -8 0 -12Z M0 -4 v-14" fill="#f6efe2" stroke="#f6efe2" stroke-width="1.2"/></g></svg><img src="img/gc-d8.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>布里斯班直飞回上海</figcaption></figure>
+    <div class="dayhead"><div class="badge">D8<small>5/8 周六</small></div><div>
+      <h3>布里斯班直飞回上海</h3>
+      <div class="chips"><span class="chip drive">🚆 20分钟 · ✈ 约10h</span><span class="chip">住：家里</span></div>
+    </div></div>
+    <ul class="tl"><li><span class="t">08:00</span>早餐。周六早上 <b>West End 市集</b> 很热闹，时间够就去逛一下。</li><li class="drv"><span class="t">09:30</span>坐机场快线去机场。</li><li><span class="t">10:30</span>到机场，办退税（同一家店满 A$300）。</li><li><span class="t">中午前后</span>布里斯班直飞上海，约10小时，晚上到浦东。</li><li><span class="t">5/9 周日</span>在家休息一天，<b>5/10 周一正常上班</b>。</li></ul>
+    <div class="daytips"><div><b>伴手礼</b>夏威夷果（澳洲坚果的原产地就是昆士兰）、蜂蜜、羊毛制品。</div><div><b>酸奶善后</b>没吃完的酸奶带不上飞机，早饭解决。</div></div>
+  </div>
+</section>
+
+<section id="drive">
+  <h2>自驾须知</h2>
+  <div class="grid2">
+    <div class="card"><h3>🪪 驾照和车</h3><ul class="tight">
+      <li>中国驾照 + <b>NAATI 英文翻译件</b>，和方案 A 一样。</li>
+      <li>布里斯班市区取、还，6天。买零自付全险。</li>
+      <li>昆士兰有电子收费路段，租车公司会代扣，问清手续费。</li>
+    </ul></div>
+    <div class="card"><h3>☀️ 天气和穿衣</h3><ul class="tight">
+      <li>布里斯班、黄金海岸 <b>14–25°C</b>，海水约23°C；坦伯林山上凉几度。</li>
+      <li>短袖 + 薄外套、泳衣、凉鞋、帽子，防晒霜一定要。</li>
+      <li>日落约17:20，比悉尼稍早。</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="stay">
+  <h2>住宿<small>四人，整套公寓</small></h2>
+  <p class="sub">黄金海岸是公寓式酒店的天下，两卧带厨房、海景阳台很常见。</p>
+  <div class="stays"><div class="stay"><div class="when">5/1<small>1晚</small></div><div><h3>布里斯班</h3><div class="price">约 A$280–380 / 晚 整套</div><p>住南岸或市中心，走路去河边。</p></div></div><div class="stay"><div class="when">5/2–5/4<small>3晚</small></div><div><h3>冲浪者天堂</h3><div class="price">约 A$250–380 / 晚 整套</div><p>选海景公寓，楼下就是海滩；带停车位。</p></div></div><div class="stay"><div class="when">5/5<small>1晚</small></div><div><h3>拜伦湾</h3><div class="price">约 A$350–500 / 晚</div><p>小镇住宿贵，早订；住镇中心走路去海滩。</p></div></div><div class="stay"><div class="when">5/6<small>1晚</small></div><div><h3>伯利角 / 布罗德海滩</h3><div class="price">约 A$250–350 / 晚 整套</div><p>离冲浪课地点近。</p></div></div><div class="stay"><div class="when">5/7<small>1晚</small></div><div><h3>布里斯班</h3><div class="price">约 A$280–380 / 晚 整套</div><p>住市中心，方便坐机场快线。</p></div></div></div>
+</section>
+
+<section id="budget">
+  <h2>预算计算器<small>改数字自动算</small></h2>
+  <p class="sub">默认值按四人估算，每人约1.4–1.7万，四条线里最便宜：往返同城机票、不坐国内航班。</p>
+  <div class="calc">
+    <div class="card result">
+      <div style="color:var(--muted);font-size:14px">每人约</div>
+      <div class="big" id="perPerson">—</div>
+      <div style="color:var(--muted);font-size:14px;margin-bottom:8px"><span id="peopleLabel">四人</span>合计 <span id="total">—</span></div>
+      <div class="bar" id="bar"></div><div class="legend" id="legend"></div><div id="rows" style="margin-top:10px"></div>
+      <button type="button" class="btn" id="resetCalc">恢复默认</button>
+    </div>
+    <div class="card">
+      <div class="fields" id="calcFields"><label>人数<input type="number" inputmode="decimal" min="0" step="1" data-k="people" value="4"></label><label>1 澳元 = ? 元<input type="number" inputmode="decimal" min="0" step="0.01" data-k="aud" value="4.7"></label><label>往返机票 元/人<input type="number" inputmode="decimal" min="0" step="100" data-k="flight" value="5500"></label><label>签证 AUD/人<input type="number" inputmode="decimal" min="0" step="5" data-k="visa" value="200"></label><label>租车 AUD/天<input type="number" inputmode="decimal" min="0" step="10" data-k="car" value="90"></label><label>租几天<input type="number" inputmode="decimal" min="0" step="1" data-k="carDays" value="6"></label><label>油费过路停车 AUD 合计<input type="number" inputmode="decimal" min="0" step="10" data-k="fuel" value="200"></label><label>市内交通 AUD/人<input type="number" inputmode="decimal" min="0" step="5" data-k="local" value="60"></label><label>住宿 AUD/晚 整套<input type="number" inputmode="decimal" min="0" step="10" data-k="lodge" value="300"></label><label>住几晚<input type="number" inputmode="decimal" min="0" step="1" data-k="nights" value="7"></label><label>吃饭 元/人/天<input type="number" inputmode="decimal" min="0" step="10" data-k="food" value="400"></label><label>天数<input type="number" inputmode="decimal" min="0" step="1" data-k="days" value="8"></label><label>门票和课程 AUD/人<input type="number" inputmode="decimal" min="0" step="10" data-k="fun" value="380"></label></div>
+      <p style="font-size:13px;color:var(--muted);margin:12px 0 0">门票和课程＝考拉保护区和游船、一个主题乐园、SkyPoint、空中步道、萤火虫洞、可伦宾、冲浪课。没有国内机票，所以这条线最便宜。</p>
+    </div>
+  </div>
+</section>
+
+<section id="booking">
+  <h2>预订顺序</h2>
+  <div class="timeline-book">
+    <div class="card"><b>2026年11–12月</b><div>定方案，买 <b>上海 ⇄ 布里斯班往返</b>；订拜伦湾住宿（最贵最少）。</div></div>
+    <div class="card"><b>2027年1–2月</b><div>递澳洲签证；订其他住宿；两位司机办驾照翻译。</div></div>
+    <div class="card"><b>2027年2–3月</b><div>订租车、旅行保险。</div></div>
+    <div class="card"><b>2027年4月</b><div>网上买乐园门票、考拉保护区游船、空中步道、萤火虫洞、可伦宾门票；约冲浪课。</div></div>
+    <div class="card"><b>出发前一周</b><div>查天气和海况；买防晒霜。</div></div>
+  </div>
+</section>
+
+<section id="checklist">
+  <h2>出发前清单</h2>
+  <p class="sub">勾选状态只保存在你自己的手机浏览器里。</p>
+  <div class="card"><ul class="check" id="checklistItems"><li><label><input type="checkbox" data-k="leave"><span>四人确认假期和请假</span></label></li><li><label><input type="checkbox" data-k="visa"><span>四人澳洲签证获批</span></label></li><li><label><input type="checkbox" data-k="flight"><span>上海 ⇄ 布里斯班往返机票</span></label></li><li><label><input type="checkbox" data-k="car"><span>租车 5/2–5/7</span></label></li><li><label><input type="checkbox" data-k="naati"><span>驾照英文翻译件</span></label></li><li><label><input type="checkbox" data-k="hotels"><span>住宿：布里斯班×2、冲浪者天堂×3、拜伦湾、伯利角</span></label></li><li><label><input type="checkbox" data-k="park"><span>主题乐园门票（5/3）</span></label></li><li><label><input type="checkbox" data-k="lp"><span>考拉保护区 + 游船（5/2）</span></label></li><li><label><input type="checkbox" data-k="tam"><span>空中步道、萤火虫洞（5/4）</span></label></li><li><label><input type="checkbox" data-k="cws"><span>可伦宾野生动物园（5/6）</span></label></li><li><label><input type="checkbox" data-k="surf"><span>冲浪课（5/7）</span></label></li><li><label><input type="checkbox" data-k="ins"><span>旅行保险</span></label></li><li><label><input type="checkbox" data-k="swim"><span>泳衣、凉鞋、帽子、防晒霜</span></label></li><li><label><input type="checkbox" data-k="food"><span>行李里不带肉、蛋、奶、水果</span></label></li><li><label><input type="checkbox" data-k="spoon"><span>折叠勺（酸奶传统不能断）</span></label></li></ul></div>
+</section>
+
+</main>
+
+<a href="#top" class="totop" id="totop" aria-label="回到顶部">↑</a>
+
+<footer>
+  <div class="wrap">
+    <p>本页写于2026年11月，供出发前参考。航班、票价、签证政策和营业时间都可能变，出发前请以官网为准：<a href="https://lonepinekoalasanctuary.com/" target="_blank" rel="noopener">龙柏考拉保护区</a> · <a href="https://currumbinsanctuary.com.au/" target="_blank" rel="noopener">可伦宾野生动物园</a> · <a href="https://www.destinationgoldcoast.com/" target="_blank" rel="noopener">黄金海岸旅游局</a> · <a href="https://www.qld.gov.au/transport" target="_blank" rel="noopener">昆士兰交通</a></p>
+    <p>签证、入境检疫、插头这些四种玩法都一样，见 <a href="index.html#visa">方案 A 页面的签证入境</a>；三个目的地（澳洲、新西兰、瑞士意大利）的对比见 <a href="index.html#vs">这里</a>。</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var root=document.documentElement, saved=get('au-theme');
+  if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark';
+    root.setAttribute('data-theme',next); set('au-theme',next);
+  });
+  var totop=document.getElementById('totop');
+  window.addEventListener('scroll',function(){totop.classList.toggle('show',window.scrollY>900)},{passive:true});
+  var state={};
+  try{state=JSON.parse(get('au-gc-check')||'{}')||{}}catch(e){state={}}
+  document.querySelectorAll('#checklistItems input').forEach(function(cb){
+    cb.checked=!!state[cb.dataset.k];
+    cb.addEventListener('change',function(){state[cb.dataset.k]=cb.checked;set('au-gc-check',JSON.stringify(state))});
+  });
+  var inputs=[].slice.call(document.querySelectorAll('#calcFields input'));
+  var defaults={}; inputs.forEach(function(i){defaults[i.dataset.k]=i.value});
+  var savedCalc={}; try{savedCalc=JSON.parse(get('au-gc-calc')||'{}')||{}}catch(e){savedCalc={}}
+  inputs.forEach(function(i){ if(savedCalc[i.dataset.k]!=null) i.value=savedCalc[i.dataset.k]; });
+  var colors=['#b4532a','#2a7880','#d39b3a','#7a6bb0','#4f8f4f','#9a9a9a'];
+  var cn=['零','一','两','三','四','五','六','七','八','九','十'];
+  function fmt(n){return '¥'+Math.round(n).toLocaleString('zh-CN')}
+  var partsOf=function(v,p){return [['机票',v.flight],['签证',v.visa*v.aud],['交通租车',v.local*v.aud+(v.car*v.carDays+v.fuel)*v.aud/p],['住宿',v.lodge*v.nights*v.aud/p],['吃饭',v.food*v.days],['门票',v.fun*v.aud]]};
+  function calc(){
+    var v={}; inputs.forEach(function(i){v[i.dataset.k]=Math.max(0,parseFloat(i.value)||0)});
+    var p=Math.max(1,Math.round(v.people));
+    var parts=partsOf(v,p);
+    var per=parts.reduce(function(s,x){return s+x[1]},0);
+    document.getElementById('perPerson').textContent=fmt(per);
+    document.getElementById('total').textContent=fmt(per*p);
+    document.getElementById('peopleLabel').textContent=(p<=10?cn[p]:p)+'人';
+    var bar='',leg='',rows='';
+    parts.forEach(function(x,i){
+      var pct=per>0?x[1]/per*100:0;
+      bar+='<i style="width:'+pct.toFixed(2)+'%;background:'+colors[i]+'"></i>';
+      leg+='<span style="--c:'+colors[i]+'">'+x[0]+'</span>';
+      rows+='<div class="row"><span>'+x[0]+'</span><span>'+fmt(x[1])+' / 人</span></div>';
+    });
+    document.getElementById('bar').innerHTML=bar;
+    document.getElementById('legend').innerHTML=leg;
+    document.getElementById('rows').innerHTML=rows;
+    var s={}; inputs.forEach(function(i){s[i.dataset.k]=i.value}); set('au-gc-calc',JSON.stringify(s));
+  }
+  inputs.forEach(function(i){i.addEventListener('input',calc)});
+  document.getElementById('resetCalc').addEventListener('click',function(){
+    inputs.forEach(function(i){i.value=defaults[i.dataset.k]}); calc();
+  });
+  calc();
+})();
+</script>
+</body>
+</html>

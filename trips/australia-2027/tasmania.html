@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15181b" media="(prefers-color-scheme: dark)">
+<title>塔斯马尼亚自驾 · 2027五一</title>
+<meta name="description" content="2027年5月1日–9日，四人从上海出发：墨尔本进出，塔斯马尼亚岛自驾6天，霍巴特、亚瑟港、酒杯湾、摇篮山，逐日行程、住宿、预算。">
+<style>
+:root{
+  --bg:#f6f3ee; --surface:#ffffff; --surface-2:#efe9df; --text:#22262a; --muted:#5f6670;
+  --line:#ddd5c8; --accent:#b4532a; --accent-soft:#f5e3d8; --lake:#2a7880; --lake-soft:#dcefef;
+  --warn:#8a5a00; --warn-soft:#fff3d6; --ok:#2f7a3d; --ok-soft:#e1f2e3;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181b; --surface:#1e2226; --surface-2:#262b30; --text:#e9e6e1; --muted:#a3a9b0;
+    --line:#343a41; --accent:#e58a5c; --accent-soft:#3a2a22; --lake:#6cc3c9; --lake-soft:#1d3335;
+    --warn:#f0c46a; --warn-soft:#3a3120; --ok:#7fd08c; --ok-soft:#1f3323; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181b; --surface:#1e2226; --surface-2:#262b30; --text:#e9e6e1; --muted:#a3a9b0;
+  --line:#343a41; --accent:#e58a5c; --accent-soft:#3a2a22; --lake:#6cc3c9; --lake-soft:#1d3335;
+  --warn:#f0c46a; --warn-soft:#3a3120; --ok:#7fd08c; --ok-soft:#1f3323; --shadow:none;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:60px;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  line-height:1.7;font-size:16px;-webkit-tap-highlight-color:transparent}
+a{color:var(--lake)}
+.wrap{max-width:1000px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left))}
+header.hero{padding:48px 0 28px;border-bottom:1px solid var(--line)}
+.eyebrow{color:var(--accent);font-weight:600;letter-spacing:.06em;font-size:14px}
+h1{font-size:clamp(26px,5vw,44px);line-height:1.25;margin:8px 0 12px}
+.lede{color:var(--muted);max-width:680px;margin:0}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:22px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.fact b{display:block;font-size:19px}
+.fact span{color:var(--muted);font-size:13px}
+nav.toc{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav.toc .wrap{display:flex;gap:2px;overflow-x:auto;padding-top:8px;padding-bottom:8px;scrollbar-width:none}
+nav.toc .wrap::-webkit-scrollbar{display:none}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--text);font-size:14px;padding:6px 12px;border-radius:999px}
+nav.toc a:hover,nav.toc a:active{background:var(--surface-2)}
+#themeBtn{margin-left:auto;border:1px solid var(--line);background:var(--surface);color:var(--text);
+  border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+section{padding:40px 0 8px}
+h2{font-size:24px;margin:0 0 6px}
+h2 small{font-size:14px;color:var(--muted);font-weight:400;margin-left:8px}
+h3{font-size:18px;margin:0 0 6px}
+h4{font-size:15px;margin:14px 0 4px;color:var(--muted)}
+.sub{color:var(--muted);margin:0 0 18px}
+.note{background:var(--warn-soft);border-left:4px solid var(--warn);border-radius:8px;padding:12px 14px;margin:16px 0;font-size:15px}
+.note b{color:var(--warn)}
+.good{background:var(--ok-soft);border-left:4px solid var(--ok);border-radius:8px;padding:12px 14px;margin:16px 0;font-size:15px}
+.good b{color:var(--ok)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+
+/* overview */
+.overview{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+@media (max-width:760px){.overview{grid-template-columns:1fr}.map{max-width:340px;margin:0 auto;width:100%}}
+.map{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+.map svg{width:100%;height:auto;display:block}
+.map text{font-size:11px;fill:var(--text)}
+.map .island{fill:var(--surface-2);stroke:var(--line)}
+.map .path{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-dasharray:6 4}
+.map .spur{fill:none;stroke:var(--lake);stroke-width:2;stroke-dasharray:3 3}
+.map circle{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.map .cap{fill:var(--muted);font-size:10px}
+.ov{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.ov a{display:grid;grid-template-columns:84px 1fr auto;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--text);align-items:center}
+.ov a:last-child{border-bottom:none}
+.ov a:hover,.ov a:active{background:var(--surface-2)}
+.ov .d{font-weight:700;color:var(--accent);font-size:14px;line-height:1.4}
+.ov .d small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.ov .km{font-size:13px;color:var(--lake);white-space:nowrap}
+@media (max-width:520px){.ov a{grid-template-columns:68px 1fr;gap:4px 10px;padding:11px 14px}.ov .km{grid-column:2}}
+
+/* day */
+.day{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
+.dayhead{display:flex;gap:12px;align-items:flex-start;margin-bottom:8px}
+.badge{background:var(--accent-soft);color:var(--accent);border-radius:10px;text-align:center;padding:6px 8px;font-weight:700;min-width:60px;flex:none}
+.badge small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.dayhead h3{font-size:19px;margin:2px 0 6px;line-height:1.4}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12.5px;border-radius:999px;padding:2px 10px;background:var(--surface-2);color:var(--muted)}
+.chip.drive{background:var(--lake-soft);color:var(--lake)}
+.chip.book{background:var(--accent-soft);color:var(--accent)}
+.tl{list-style:none;margin:12px 0 0 6px;padding:0;border-left:2px solid var(--line)}
+.tl li{position:relative;padding:0 0 12px 18px}
+.tl li::before{content:"";position:absolute;left:-7px;top:8px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
+.tl li.drv::before{border-color:var(--lake);background:var(--lake-soft)}
+.tl .t{font-variant-numeric:tabular-nums;font-weight:700;margin-right:8px;color:var(--accent)}
+.tl li.drv .t{color:var(--lake)}
+.tl p{margin:2px 0 0;color:var(--muted);font-size:14.5px}
+.daytips{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:6px}
+.daytips div{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:14px}
+.daytips b{display:block;font-size:13px;color:var(--muted);margin-bottom:2px}
+
+table{width:100%;border-collapse:collapse;font-size:15px}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--surface-2);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.num,th.num{white-space:nowrap;font-variant-numeric:tabular-nums}
+ul.tight{padding-left:20px;margin:6px 0}
+ul.tight li{margin:4px 0}
+
+/* stay list (card per night, reads well on phone) */
+.stays{display:grid;gap:10px}
+.stay{display:grid;grid-template-columns:76px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.stay .when{font-weight:700;color:var(--accent);font-size:14px;line-height:1.4}
+.stay .when small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.stay h3{font-size:16px;margin:0}
+.stay .price{font-size:13px;color:var(--lake);font-variant-numeric:tabular-nums}
+.stay p{margin:2px 0 0;font-size:14px;color:var(--muted)}
+
+/* calculator */
+.calc{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px}
+@media (max-width:760px){.calc{grid-template-columns:1fr}.calc .result{order:-1}}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px 12px}
+.fields label{display:flex;flex-direction:column;justify-content:flex-end;font-size:13px;color:var(--muted);line-height:1.4}
+.fields input{margin-top:4px;font:inherit;font-size:16px;color:var(--text);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.result .big{font-size:34px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.2}
+.result .row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.result .row span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:12px 0 6px;background:var(--surface-2)}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;background:var(--c)}
+.btn{margin-top:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);border-radius:8px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+
+.check{list-style:none;padding:0;margin:0;columns:2 260px;column-gap:24px}
+.check li{break-inside:avoid;margin:0}
+.check label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:6px 0}
+.check input{margin-top:5px;width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.check input:checked + span{color:var(--muted);text-decoration:line-through}
+.timeline-book{display:grid;gap:10px}
+.timeline-book .card{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:14px 16px}
+@media (max-width:520px){.timeline-book .card{grid-template-columns:1fr;gap:2px}}
+.timeline-book b{color:var(--accent)}
+.totop{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:6;
+  width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--text);
+  box-shadow:0 2px 10px rgba(0,0,0,.12);font-size:18px;display:none;align-items:center;justify-content:center;text-decoration:none}
+.totop.show{display:flex}
+footer{margin-top:44px;padding:24px 0 calc(40px + env(safe-area-inset-bottom));border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+
+
+/* scene illustrations; drop a real photo at img/<id>.jpg and it covers the drawing */
+.scene{position:relative;margin:-20px -20px 14px;border-radius:16px 16px 0 0;overflow:hidden;aspect-ratio:400/150;background:var(--surface-2)}
+.scene svg,.scene img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
+.scene figcaption{position:absolute;left:0;right:0;bottom:0;padding:18px 14px 8px;font-size:12.5px;color:#fff;
+  background:linear-gradient(transparent,rgba(0,0,0,.5));text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.hero-scene{margin:20px 0 0;border-radius:16px;aspect-ratio:400/130;border:1px solid var(--line)}
+@media (max-width:520px){.scene{margin:-16px -14px 12px;border-radius:14px 14px 0 0}.hero-scene{margin:18px 0 0;border-radius:14px;aspect-ratio:400/150}}
+
+/* phone */
+@media (max-width:520px){
+  body{font-size:15.5px}
+  header.hero{padding:32px 0 22px}
+  section{padding:32px 0 4px}
+  h2{font-size:22px}
+  h2 small{display:block;margin:2px 0 0}
+  .card{padding:16px}
+  .day{padding:16px 14px;border-radius:14px}
+  .badge{min-width:54px;padding:5px 6px}
+  .dayhead h3{font-size:17.5px}
+  .tl li{padding-left:14px}
+  .tl .t{display:block;margin:0}
+  .grid2{grid-template-columns:1fr}
+  .daytips{grid-template-columns:1fr}
+  th,td{padding:9px 10px}
+}
+@media print{nav.toc,#themeBtn,.totop{display:none!important}.day,.card{box-shadow:none;break-inside:avoid}}
+/* options */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.opt{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+.opt.rec{border:2px solid var(--accent)}
+.opt .tag{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:var(--surface-2);color:var(--muted);margin-bottom:6px}
+.opt.rec .tag{background:var(--accent);color:#fff}
+.opt h3{margin:0 0 2px}
+.opt .stars{color:var(--accent);letter-spacing:2px;font-size:15px}
+.opt .route{font-size:13.5px;color:var(--lake);margin:6px 0 4px}
+.opt ul{padding-left:0;list-style:none;margin:8px 0 0;font-size:14.5px}
+.opt li{margin:4px 0;padding-left:22px;position:relative}
+.opt li::before{position:absolute;left:0;top:0}
+.opt li.p::before{content:"👍"}
+.opt li.m::before{content:"👎"}
+.opt .verdict{margin-top:10px;font-size:14px;background:var(--surface-2);border-radius:8px;padding:8px 10px}
+.vs{table-layout:fixed}.vs th{white-space:normal}.vs th:first-child,.vs td:first-child{width:84px;color:var(--muted);font-weight:600}
+@media (max-width:520px){.vs th:first-child,.vs td:first-child{width:52px}.vs th,.vs td{font-size:14px;padding:8px 7px}}
+.vs td.win{background:var(--ok-soft)}
+.map .land{fill:var(--surface-2);stroke:var(--line)}
+.map .border{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:2 3}
+.map .water{fill:var(--lake-soft);stroke:none}
+.map .flt{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:1 4;stroke-linecap:round}
+.map .ctry{fill:var(--muted);font-size:13px;font-weight:600;letter-spacing:.2em;opacity:.7}
+.chip.train{background:var(--lake-soft);color:var(--lake)}
+.vs3 th:first-child,.vs3 td:first-child{width:64px}
+@media (max-width:520px){.vs3 th:first-child,.vs3 td:first-child{width:44px}.vs3 th,.vs3 td{font-size:13px;padding:8px 6px}}
+.chip.car{background:var(--lake-soft);color:var(--lake)}
+
+.plans{display:flex;gap:6px;flex-wrap:wrap;margin-top:16px}
+.plans a{font-size:13.5px;text-decoration:none;color:var(--text);border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px}
+.plans a.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.plans span{font-size:13px;color:var(--muted);align-self:center;margin-right:2px}
+</style>
+</head>
+<body>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="eyebrow">方案 B · 2027.5.1 – 5.9 · 四人 · 墨尔本进出</div>
+    <h1>金色山毛榉、酒杯湾和野生袋熊：塔斯马尼亚一圈</h1>
+    <p class="lede">墨尔本进出，中间飞去塔斯马尼亚自驾6天：霍巴特 → 亚瑟港 → 东海岸酒杯湾 → 朗塞斯顿 → 摇篮山，再从朗塞斯顿飞回墨尔本。五月初正赶上落叶山毛榉变金黄，人少路好开，<b>5/8 飞回，5/10 照常上班</b>。</p>
+    <nav class="plans" aria-label="四种玩法"><span>四种玩法：</span><a href="index.html">A 悉尼 + 墨尔本 + 大洋路</a><a href="tasmania.html" class="on">B 塔斯马尼亚自驾</a><a href="cairns.html">C 悉尼 + 大堡礁</a><a href="goldcoast.html">D 布里斯班 + 黄金海岸</a></nav>
+    <figure class="scene hero-scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="塔斯马尼亚：五月初的公路两旁，落叶山毛榉变成金黄色"><defs><linearGradient id="th" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9cc7ea"/><stop offset="1" stop-color="#eef6fb"/></linearGradient></defs><rect width="400" height="170" fill="url(#th)"/><path d="M0 104 L60 88 L96 62 L116 70 L134 40 L146 52 L160 28 L176 50 L196 42 L226 78 L300 68 L400 94 V130 H0Z" fill="#6d6f7a"/><path d="M160 28 L168 40 L158 38 L150 44Z M134 40 L140 48 L130 48Z" fill="#fff"/><path d="M0 118 Q100 100 200 112 T400 106 V170 H0Z" fill="#8a9a5b"/><g fill="#e0a32a"><ellipse cx="40" cy="116" rx="26" ry="10"/><ellipse cx="110" cy="122" rx="30" ry="11"/><ellipse cx="300" cy="116" rx="34" ry="11"/><ellipse cx="370" cy="124" rx="28" ry="10"/></g><g fill="#c4861a"><ellipse cx="60" cy="122" rx="18" ry="7"/><ellipse cx="330" cy="122" rx="20" ry="7"/></g><path d="M150 170 Q200 140 250 126 Q300 114 400 112 V118 Q310 122 262 134 Q220 148 210 170Z" fill="#5e5e5e"/><path d="M180 170 Q216 146 256 130 Q300 118 400 115" stroke="#fff" stroke-width="1" stroke-dasharray="5 5" fill="none"/><g transform="translate(268 128)"><rect x="-12" y="-7" width="24" height="9" rx="3" fill="#e9eef3"/><rect x="-8" y="-12" width="14" height="6" rx="2" fill="#e9eef3"/><rect x="-6" y="-11" width="10" height="4" fill="#9cc7e6"/><circle cx="-7" cy="3" r="2.6" fill="#333"/><circle cx="7" cy="3" r="2.6" fill="#333"/></g></svg><img src="img/tas-hero.jpg" alt="" loading="lazy" onerror="this.remove()"></figure>
+    <div class="facts"><div class="fact"><b>7晚</b><span>墨尔本2晚 · 岛上5晚</span></div><div class="fact"><b>往返墨尔本</b><span>上海直飞约11h</span></div><div class="fact"><b>自驾6天</b><span>约850km，每天≤3h</span></div><div class="fact"><b>3段飞机</b><span>国际往返 + 岛内来回</span></div><div class="fact"><b>5/9 到家</b><span>5/10 正常上班</span></div></div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#why">适合谁</a><a href="#overview">总览</a><a href="#days">每日行程</a><a href="#drive">自驾须知</a><a href="#weather">天气</a><a href="#stay">住宿</a><a href="#budget">预算</a><a href="#booking">预订</a><a href="#checklist">清单</a>
+    <button id="themeBtn" type="button" aria-label="切换深浅色">◐ 主题</button>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<section id="why">
+  <h2>这条线适合谁<small>B · 墨尔本进出 + 塔斯马尼亚自驾</small></h2>
+  <p class="sub">塔斯马尼亚是澳洲南边的一个岛，一半是国家公园。五月初正好是 <b>落叶山毛榉变金黄</b> 的季节，人少，路好开，海鲜便宜。风景和新西兰南岛很像：雪山、湖、海湾、野生动物，只是规模小一些。</p>
+  <div class="grid2">
+    <div class="good"><b>适合：</b>喜欢自驾、徒步和野生动物；想要新西兰那种风景，但飞行时间短、只有2小时时差；想吃生蚝。</div>
+    <div class="note"><b>要接受：</b>岛上冷（山里可能下雪）；没有大城市；上海不能直飞，要在墨尔本转一次；如果最后选了新西兰，这条线就重复了。</div>
+  </div>
+</section>
+
+<section id="overview">
+  <h2>行程总览</h2>
+  <p class="sub">墨尔本进出，岛上一圈：霍巴特 → 东海岸 → 朗塞斯顿 → 摇篮山，自驾6天约850km，每天最多开3小时，都在天黑前到住处。</p>
+  <div class="overview">
+    <div class="ov"><a href="#d1"><span class="d">D1 · 5/1<small>周六</small></span><span>上海直飞墨尔本，<b>落地先吃酸奶</b>，逛市中心</span><span class="km">✈ 11h</span></a><a href="#d2"><span class="d">D2 · 5/2<small>周日</small></span><span>飞霍巴特取车，萨拉曼卡、惠灵顿山顶</span><span class="km">✈ 1.3h</span></a><a href="#d3"><span class="d">D3 · 5/3<small>周一</small></span><span>亚瑟港监狱遗址、塔斯曼拱门</span><span class="km">🚗 200km</span></a><a href="#d4"><span class="d">D4 · 5/4<small>周二</small></span><span>看袋獾袋熊，东海岸到菲欣纳，蜜月湾日落</span><span class="km">🚗 200km</span></a><a href="#d5"><span class="d">D5 · 5/5<small>周三</small></span><span>酒杯湾观景台，下午朗塞斯顿峡谷</span><span class="km">🚗 180km</span></a><a href="#d6"><span class="d">D6 · 5/6<small>周四</small></span><span>摇篮山鸽子湖，金色山毛榉，傍晚看袋熊</span><span class="km">🚗 145km</span></a><a href="#d7"><span class="d">D7 · 5/7<small>周五</small></span><span>壁画小镇，朗塞斯顿还车，飞回墨尔本</span><span class="km">✈ 1h</span></a><a href="#d8"><span class="d">D8 · 5/8<small>周六</small></span><span>墨尔本 brunch，直飞回上海</span><span class="km">✈ 11h</span></a><a href="#d8"><span class="d">5/9 周日<small>到家</small></span><span>在家休息一天，<b>5/10 上班</b></span><span class="km">✅</span></a></div>
+    <div class="map" aria-label="路线示意图"><svg viewBox="0 0 300 380" role="img">
+        <title>墨尔本和塔斯马尼亚路线示意图（非比例）</title>
+        <rect x="0" y="0" width="300" height="380" class="water"/>
+        <path class="land" d="M0 0 L300 0 L300 50 L240 62 L190 72 L160 76 L150 90 L136 80 L120 74 L90 84 L40 92 L0 96Z"/>
+        <path class="land" d="M58 168 L120 160 L180 166 L232 158 L252 196 L246 250 L236 300 L214 336 L196 362 L160 366 L140 346 L120 306 L96 270 L74 230 L60 200Z"/>
+        <path class="flt" d="M140 72 L170 312"/>
+        <path class="flt" d="M168 204 L146 78"/>
+        <path class="spur" d="M170 312 L210 346"/>
+        <path class="path" d="M170 312 L234 250 L168 204 L104 226 L168 204"/>
+        <path class="flt" d="M140 72 L180 10"/>
+        <circle cx="140" cy="72" r="5"/><text x="96" y="62">墨尔本</text>
+        <circle cx="170" cy="312" r="5"/><text x="118" y="318">霍巴特</text>
+        <circle cx="210" cy="346" r="4"/><text x="214" y="362" style="font-size:10px">亚瑟港</text>
+        <circle cx="234" cy="250" r="4"/><text x="196" y="276" style="font-size:10px">酒杯湾</text>
+        <circle cx="168" cy="204" r="5"/><text x="176" y="200">朗塞斯顿</text>
+        <circle cx="104" cy="226" r="4"/><text x="68" y="246" style="font-size:10px">摇篮山</text>
+        <text x="20" y="40" class="ctry">维多利亚</text>
+        <text x="20" y="130" class="cap">巴斯海峡</text>
+        <text x="186" y="18" class="cap">✈ 上海</text>
+        <text x="8" y="360" class="cap">红线=自驾 · 点线=飞机</text>
+        <text x="8" y="374" class="cap">示意非比例</text>
+      </svg></div>
+  </div>
+</section>
+
+<section id="days">
+  <h2>每日行程<small>时间是建议，可以前后挪</small></h2>
+  <p class="sub">按「5/1 早上到墨尔本、5/8 中午从墨尔本起飞」排的。</p>
+
+  <div class="day" id="d1">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="墨尔本：黄色的弗林德斯街车站和绿色铜顶，前面开过一辆电车"><defs><linearGradient id="g6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9cc6e8"/><stop offset="1" stop-color="#eef5fa"/></linearGradient></defs><rect width="400" height="170" fill="url(#g6)"/><g fill="#b9c4cf"><rect x="10" y="40" width="30" height="90"/><rect x="44" y="20" width="26" height="110"/><rect x="330" y="30" width="28" height="100"/><rect x="362" y="50" width="30" height="80"/></g><path d="M80 130 V70 H320 V130Z" fill="#e9b949"/><path d="M80 70 H320 V76 H80Z" fill="#c9932a"/><g fill="#c9932a"><path d="M100 130 V100 Q110 88 120 100 V130Z"/><path d="M140 130 V100 Q150 88 160 100 V130Z"/><path d="M240 130 V100 Q250 88 260 100 V130Z"/><path d="M280 130 V100 Q290 88 300 100 V130Z"/></g><path d="M180 130 V96 Q200 78 220 96 V130Z" fill="#8a5a2a"/><rect x="176" y="50" width="48" height="24" fill="#e9b949"/><path d="M172 52 Q200 6 228 52Z" fill="#5f9f8a"/><rect x="196" y="10" width="8" height="10" fill="#5f9f8a"/><g fill="#fff" stroke="#555" stroke-width=".8"><circle cx="188" cy="62" r="4"/><circle cx="200" cy="62" r="4"/><circle cx="212" cy="62" r="4"/></g><g fill="#e9b949"><rect x="300" y="40" width="14" height="32"/></g><path d="M298 42 L307 28 L316 42Z" fill="#5f9f8a"/><rect y="130" width="400" height="40" fill="#8f8f8f"/><path d="M0 146 H400 M0 152 H400" stroke="#666" stroke-width="1"/><g transform="translate(60 120)"><rect x="0" y="0" width="120" height="28" rx="5" fill="#3a9a5a"/><rect x="0" y="0" width="120" height="8" rx="4" fill="#e9eef2"/><g fill="#d9eef8"><rect x="8" y="10" width="16" height="10"/><rect x="30" y="10" width="16" height="10"/><rect x="52" y="10" width="16" height="10"/><rect x="74" y="10" width="16" height="10"/><rect x="96" y="10" width="16" height="10"/></g><rect x="0" y="22" width="120" height="3" fill="#f3c34a"/><line x1="60" y1="0" x2="60" y2="-14" stroke="#444"/><line x1="50" y1="-14" x2="70" y2="-14" stroke="#444" stroke-width="2"/></g><line x1="0" y1="105" x2="400" y2="105" stroke="#444" stroke-width=".8"/></svg><img src="img/tas-d1.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>墨尔本：落地第一天就在市中心转转</figcaption></figure>
+    <div class="dayhead"><div class="badge">D1<small>5/1 周六</small></div><div>
+      <h3>上海直飞墨尔本，落地吃酸奶，下午逛市中心</h3>
+      <div class="chips"><span class="chip drive">✈ 约11h</span><span class="chip">住：墨尔本</span><span class="chip book">要预订：机票、住宿</span></div>
+    </div></div>
+    <ul class="tl"><li><span class="t">出发</span>上海浦东 → 墨尔本，直飞约11小时。<p>墨尔本比北京 <b>快2小时</b>。选 4/30 晚上起飞、5/1 早上到的班次，下班直接去机场。<b>往返都是墨尔本，机票比开口程好买、也更便宜。</b></p></li><li><span class="t">约08:30</span>到墨尔本机场。入境卡上「食品」一栏如实勾「是」，肉、蛋、奶、水果都别带。</li><li class="drv"><span class="t">09:30</span>SkyBus 进城到南十字星站，约30分钟。</li><li><span class="t">10:15</span><b>🥛 急头白脸吃酸奶，塔斯马尼亚线。</b>市中心随便一家 Coles 或 Woolworths，找 Jalna（就是墨尔本本地牌子）和 Gippsland Dairy，大罐四个人分。</li><li><span class="t">11:00</span>酒店寄存行李。在 <b>免费电车区</b> 里坐电车，逛 Degraves Street 咖啡巷、霍西尔巷涂鸦、弗林德斯街车站。</li><li><span class="t">13:00</span>午饭。周六 <b>维多利亚女王市场</b> 开门，吃热甜甜圈和生蚝。</li><li><span class="t">14:30</span>回酒店入住，补觉。</li><li><span class="t">17:30</span>日落时去南岸沿亚拉河散步，晚饭吃意大利菜或希腊菜。早睡，明天一早飞霍巴特。</li></ul>
+    <div class="daytips"><div><b>今天要做的事</b>手机装好 eSIM；四个人建分账群；把塔斯马尼亚国家公园通行证（Parks Pass）在网上买好。</div><div><b>为什么先在墨尔本住一晚</b>国际航班落地后再转国内航班，行李要重新托运，时间很紧。先住一晚，第二天一早飞，最稳。</div></div>
+  </div>
+  <div class="day" id="d2">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="霍巴特：惠灵顿山下的萨拉曼卡砂岩仓库和港口帆船"><defs><linearGradient id="t2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9cfee"/><stop offset="1" stop-color="#eef6fb"/></linearGradient></defs><rect width="400" height="170" fill="url(#t2)"/><path d="M0 104 Q90 28 200 40 Q300 52 400 92 V120 H0Z" fill="#6f8466"/><g stroke="#5a6d55" stroke-width="1.2"><line x1="150" y1="50" x2="146" y2="78"/><line x1="160" y1="46" x2="157" y2="76"/><line x1="170" y1="44" x2="168" y2="74"/><line x1="180" y1="44" x2="179" y2="74"/><line x1="190" y1="44" x2="190" y2="74"/></g><rect x="196" y="28" width="3" height="14" fill="#ddd"/><g fill="#d7b685"><rect x="40" y="96" width="56" height="26"/><rect x="100" y="92" width="56" height="30"/><rect x="160" y="96" width="56" height="26"/><rect x="220" y="92" width="56" height="30"/></g><g fill="#8a5a3a"><path d="M38 96 L68 84 L98 96Z"/><path d="M98 92 L128 80 L158 92Z"/><path d="M158 96 L188 84 L218 96Z"/><path d="M218 92 L248 80 L278 92Z"/></g><g fill="#5a3b28"><rect x="60" y="104" width="10" height="18" rx="5"/><rect x="120" y="102" width="10" height="20" rx="5"/><rect x="182" y="104" width="10" height="18" rx="5"/><rect x="242" y="102" width="10" height="20" rx="5"/></g><rect y="120" width="400" height="50" fill="#3f7fa0"/><path d="M0 132 Q100 128 200 133 T400 131" stroke="#fff" stroke-width="1" opacity=".4" fill="none"/><g transform="translate(300 140)"><path d="M-26 0 L26 0 L20 8 L-20 8Z" fill="#fff"/><line x1="0" y1="0" x2="0" y2="-40" stroke="#555" stroke-width="1.5"/><path d="M1 -38 L18 -4 L1 -4Z" fill="#f4f1ea"/></g><g transform="translate(350 146)"><path d="M-18 0 L18 0 L14 6 L-14 6Z" fill="#c0392b"/><line x1="0" y1="0" x2="0" y2="-30" stroke="#555" stroke-width="1.2"/><path d="M1 -28 L12 -3 L1 -3Z" fill="#f4f1ea"/></g></svg><img src="img/tas-d2.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>霍巴特：惠灵顿山（kunanyi）脚下，砂岩老仓库排在港口边</figcaption></figure>
+    <div class="dayhead"><div class="badge">D2<small>5/2 周日</small></div><div>
+      <h3>飞霍巴特取车，惠灵顿山顶看全城</h3>
+      <div class="chips"><span class="chip drive">✈ 1.3h · 🚗 约50km</span><span class="chip">住：霍巴特</span><span class="chip book">要预订：国内机票、租车</span></div>
+    </div></div>
+    <ul class="tl"><li class="drv"><span class="t">07:30</span>墨尔本 → 霍巴特，约1小时15分。澳航、维珍、捷星都有。</li><li><span class="t">09:30</span>霍巴特机场取车，<b>霍巴特取、朗塞斯顿还</b>（岛内异地还车一般不加钱或加得很少，订的时候确认）。四个人加行李租中型 SUV。</li><li><span class="t">10:30</span>进城寄存行李，逛 <b>萨拉曼卡广场</b>（Salamanca Place）的砂岩老仓库，现在都是画廊和咖啡馆。周六的大集市今天没有，但店铺开门。</li><li><span class="t">12:00</span>午饭在港口吃 <b>炸鱼薯条</b>，霍巴特码头的海上餐车很有名。</li><li class="drv"><span class="t">13:30</span>开车上 <b>惠灵顿山</b>（kunanyi / Mt Wellington）山顶，海拔1271米，约30分钟盘山路。整个霍巴特、德文特河和海湾都在脚下。<b>山顶风极大，常有雪</b>，穿最厚的衣服。</li><li><span class="t">15:30</span>下山逛 <b>炮台角</b>（Battery Point）的老街小屋。</li><li><span class="t">17:00</span>天黑前回酒店。晚饭吃塔斯马尼亚生蚝和三文鱼，便宜又新鲜。</li></ul>
+    <div class="daytips"><div><b>想看艺术</b><b>MONA 古今艺术博物馆</b>：从码头坐船去，很前卫，有些展品尺度很大。开放日不固定，去之前查官网。时间不够可以放在 D3 晚上之前或者跳过。</div><div><b>注意</b>塔斯马尼亚比墨尔本冷，五月白天10–15°C，山顶可能零下。</div></div>
+  </div>
+  <div class="day" id="d3">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="亚瑟港：没有屋顶的砂岩监狱遗址"><defs><linearGradient id="t3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9cde0"/><stop offset="1" stop-color="#eef3f7"/></linearGradient></defs><rect width="400" height="170" fill="url(#t3)"/><g fill="#3e5e3a"><ellipse cx="30" cy="80" rx="40" ry="24"/><ellipse cx="370" cy="76" rx="44" ry="26"/><ellipse cx="330" cy="90" rx="30" ry="18"/></g><path d="M70 132 V64 L90 56 L94 62 L120 60 L128 54 L160 58 L170 52 L200 56 L230 52 L240 58 L270 54 L290 60 L310 56 L330 64 V132Z" fill="#c99a68"/><g fill="#5a3b28" opacity=".75"><rect x="84" y="74" width="10" height="14" rx="5"/><rect x="106" y="74" width="10" height="14" rx="5"/><rect x="128" y="74" width="10" height="14" rx="5"/><rect x="150" y="74" width="10" height="14" rx="5"/><rect x="172" y="74" width="10" height="14" rx="5"/><rect x="194" y="74" width="10" height="14" rx="5"/><rect x="216" y="74" width="10" height="14" rx="5"/><rect x="238" y="74" width="10" height="14" rx="5"/><rect x="260" y="74" width="10" height="14" rx="5"/><rect x="282" y="74" width="10" height="14" rx="5"/><rect x="304" y="74" width="10" height="14" rx="5"/><rect x="84" y="100" width="10" height="14" rx="5"/><rect x="106" y="100" width="10" height="14" rx="5"/><rect x="128" y="100" width="10" height="14" rx="5"/><rect x="150" y="100" width="10" height="14" rx="5"/><rect x="172" y="100" width="10" height="14" rx="5"/><rect x="194" y="100" width="10" height="14" rx="5"/><rect x="216" y="100" width="10" height="14" rx="5"/><rect x="238" y="100" width="10" height="14" rx="5"/><rect x="260" y="100" width="10" height="14" rx="5"/><rect x="282" y="100" width="10" height="14" rx="5"/><rect x="304" y="100" width="10" height="14" rx="5"/></g><path d="M0 130 H400 V170 H0Z" fill="#7aa35a"/><path d="M0 150 Q100 146 200 152 L200 170 H0Z" fill="#4f86a0"/><g fill="#333"><circle cx="300" cy="140" r="2"/><rect x="299" y="142" width="2" height="6"/><circle cx="310" cy="140" r="2"/><rect x="309" y="142" width="2" height="6"/></g></svg><img src="img/tas-d3.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>亚瑟港：19世纪的流放犯监狱，现在是世界遗产</figcaption></figure>
+    <div class="dayhead"><div class="badge">D3<small>5/3 周一</small></div><div>
+      <h3>塔斯曼半岛：亚瑟港监狱遗址和海边奇石</h3>
+      <div class="chips"><span class="chip drive">🚗 来回约200km</span><span class="chip">住：霍巴特</span><span class="chip book">要预订：亚瑟港门票</span></div>
+    </div></div>
+    <ul class="tl"><li class="drv"><span class="t">08:30</span>出发去 <b>亚瑟港</b>（Port Arthur），约1.5小时。</li><li><span class="t">09:30</span>路上先停 <b>镶嵌路面</b>（Tessellated Pavement），海边的岩石天然裂成一块块方砖，退潮时最清楚。</li><li><span class="t">10:00</span><b>塔斯曼拱门</b>（Tasman Arch）和 <b>魔鬼厨房</b>（Devils Kitchen），都在路边，各停15分钟。</li><li><span class="t">10:45</span><b>亚瑟港历史遗址</b>：19世纪的流放犯监狱，世界遗产。门票含20分钟游船和导览，园区很大，逛3小时左右。</li><li><span class="t">13:30</span>园区里吃午饭。</li><li><span class="t">14:30</span>可选：<b>Remarkable Cave</b>（10分钟车程），从海蚀洞里看出去的海是一个塔斯马尼亚岛的形状。</li><li class="drv"><span class="t">15:30</span>回霍巴特，天黑前到。</li><li><span class="t">18:00</span>晚饭。超市买好明天路上的零食。</li></ul>
+    <div class="daytips"><div><b>晚上可选</b>亚瑟港有 <b>夜间鬼故事导览</b>（Ghost Tour），但结束后要开1.5小时夜路，路上袋鼠、袋熊很多，<b>不推荐</b>。</div><div><b>注意</b>半岛上几乎没有信号死角，但加油站少，出发前在霍巴特加满油。</div></div>
+  </div>
+  <div class="day" id="d4">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="袋獾（塔斯马尼亚恶魔）和袋熊"><defs><linearGradient id="t4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcd8ee"/><stop offset="1" stop-color="#f0f6fa"/></linearGradient></defs><rect width="400" height="170" fill="url(#t4)"/><g fill="#7f9a6a"><ellipse cx="60" cy="60" rx="50" ry="26"/><ellipse cx="320" cy="56" rx="60" ry="28"/></g><path d="M60 170 V70" stroke="#d9d3c7" stroke-width="7"/><path d="M320 170 V70" stroke="#d9d3c7" stroke-width="8"/><path d="M0 110 Q200 96 400 112 V170 H0Z" fill="#a3b36a"/><g transform="translate(150 132)"><ellipse cx="0" cy="0" rx="30" ry="16" fill="#1f1f1f"/><circle cx="30" cy="-6" r="12" fill="#1f1f1f"/><ellipse cx="26" cy="-17" rx="4" ry="5" fill="#d9878a"/><ellipse cx="36" cy="-16" rx="4" ry="5" fill="#d9878a"/><circle cx="36" cy="-8" r="1.6" fill="#fff"/><ellipse cx="41" cy="-2" rx="3" ry="2" fill="#d9878a"/><path d="M8 -14 Q14 0 8 14" stroke="#fff" stroke-width="5" fill="none"/><path d="M-30 0 Q-44 -4 -46 6" stroke="#1f1f1f" stroke-width="6" fill="none"/><rect x="-20" y="12" width="7" height="8" fill="#1f1f1f"/><rect x="14" y="12" width="7" height="8" fill="#1f1f1f"/></g><g transform="translate(270 128)"><path d="M-36 14 Q-40 -20 0 -22 Q38 -22 38 6 Q38 18 30 18 H-30 Q-36 18 -36 14Z" fill="#8a6a4a"/><circle cx="30" cy="-4" r="13" fill="#8a6a4a"/><path d="M22 -16 l2 -7 l5 5Z M34 -16 l4 -6 l3 6Z" fill="#7a5a3a"/><ellipse cx="40" cy="0" rx="5" ry="4" fill="#3a2a1e"/><circle cx="33" cy="-7" r="1.5" fill="#222"/></g></svg><img src="img/tas-d4.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>博诺朗野生动物保护区：袋獾（塔斯马尼亚恶魔）和袋熊</figcaption></figure>
+    <div class="dayhead"><div class="badge">D4<small>5/4 周二</small></div><div>
+      <h3>看袋獾和袋熊，沿东海岸到菲欣纳国家公园</h3>
+      <div class="chips"><span class="chip drive">🚗 约200km / 3h</span><span class="chip">住：科尔斯湾</span><span class="chip book">要预订：保护区导览、住宿</span></div>
+    </div></div>
+    <ul class="tl"><li class="drv"><span class="t">08:30</span>退房，往北开30分钟到 <b>博诺朗野生动物保护区</b>（Bonorong）。</li><li><span class="t">09:00</span>跟园区导览看 <b>袋獾</b>（塔斯马尼亚恶魔）、<b>袋熊</b>，可以自己喂袋鼠。这里是救助中心，动物都是被救回来的。</li><li class="drv"><span class="t">11:00</span>上东海岸公路（Tasman Highway）。路过 <b>斯旺西</b>（Swansea）时停 <b>荆棘桥</b>（Spiky Bridge），流放犯用石头垒的，桥栏上全是竖起来的尖石。</li><li><span class="t">12:30</span>午饭：Kate's Berry Farm，草莓松饼和莓果冰淇淋。</li><li><span class="t">14:00</span>到 <b>科尔斯湾</b>（Coles Bay）入住。<b>菲欣纳国家公园</b>（Freycinet）就在旁边，Parks Pass 要挂在车里。</li><li><span class="t">15:30</span>开到 <b>图维尔角灯塔</b>（Cape Tourville），10分钟木栈道，能看到整片海岸。</li><li><span class="t">17:00</span><b>蜜月湾</b>（Honeymoon Bay）看日落，粉红色的花岗岩配夕阳。</li><li><span class="t">18:00</span>晚饭：去 Freycinet Marine Farm 吃现开的生蚝和贻贝（下午就关门的话就镇上吃）。</li></ul>
+    <div class="daytips"><div><b>注意</b>东海岸公路弯多，两边常有被撞的动物。<b>天黑前一定要到科尔斯湾</b>。</div><div><b>小镇很小</b>科尔斯湾只有一家小超市，晚饭和第二天早饭提前准备。</div></div>
+  </div>
+  <div class="day" id="d5">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="酒杯湾：两座粉色花岗岩山之间，一弯白沙滩和碧绿的海"><defs><linearGradient id="t5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8cc4ee"/><stop offset="1" stop-color="#eaf6fc"/></linearGradient></defs><rect width="400" height="170" fill="url(#t5)"/><path d="M0 66 Q200 56 400 64 V76 H0Z" fill="#3f6b47"/><rect y="72" width="400" height="98" fill="#2fb1c4"/><path d="M0 80 Q200 64 400 78" stroke="#fdfbf3" stroke-width="7" fill="none"/><path d="M0 96 Q200 82 400 96 V170 H0Z" fill="#1f95b5" opacity=".7"/><path d="M0 50 Q40 40 70 70 Q100 110 90 170 H0Z" fill="#c4937e"/><path d="M0 60 Q40 52 64 80 Q80 110 70 170 H0Z" fill="#3e6b42"/><path d="M400 40 Q350 40 330 80 Q310 120 320 170 H400Z" fill="#c4937e"/><path d="M400 54 Q360 56 344 88 Q330 120 338 170 H400Z" fill="#3e6b42"/><g fill="#333"><circle cx="190" cy="152" r="2"/><rect x="189" y="154" width="2" height="6"/></g></svg><img src="img/tas-d5.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>酒杯湾：从观景台看下去，沙滩弯成一个酒杯的形状</figcaption></figure>
+    <div class="dayhead"><div class="badge">D5<small>5/5 周三</small></div><div>
+      <h3>爬上酒杯湾观景台，下午到朗塞斯顿</h3>
+      <div class="chips"><span class="chip drive">🚗 约180km / 2.5h</span><span class="chip">住：朗塞斯顿</span><span class="chip">徒步约1.5小时</span></div>
+    </div></div>
+    <ul class="tl"><li><span class="t">08:00</span><b>酒杯湾观景台</b>（Wineglass Bay Lookout）：从停车场上山，来回约1–1.5小时，坡有点陡但都是台阶。从山口往下看，就是那个酒杯形状的海湾。</li><li><span class="t">09:30</span>体力好可以继续下到 <b>酒杯湾沙滩</b>，来回再加1.5–2小时，沙子白得发亮。不下去就直接回停车场。</li><li class="drv"><span class="t">11:00</span>退房出发去 <b>朗塞斯顿</b>（Launceston），走内陆，约2.5小时。</li><li><span class="t">13:30</span>朗塞斯顿午饭。</li><li><span class="t">14:30</span><b>卡塔拉克特峡谷</b>（Cataract Gorge），离市中心走路15分钟：坐世界最长单跨缆椅过峡谷，看孔雀，峡谷步道散步。</li><li><span class="t">16:30</span>入住。逛市中心的维多利亚式老建筑。</li><li><span class="t">18:30</span>晚饭。这一带是塔斯马尼亚的葡萄酒产区，能喝的点一杯黑皮诺。</li></ul>
+    <div class="daytips"><div><b>不想爬山</b>酒杯湾也可以坐游船从海上看（约4小时），但五月班次少，提前查。</div><div><b>补给</b>朗塞斯顿是北部最大的城市，<b>明天进山前在这里买好吃的和水</b>，摇篮山上东西又少又贵。</div></div>
+  </div>
+  <div class="day" id="d6">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="摇篮山和鸽子湖，湖边的木船屋"><defs><linearGradient id="t6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8cdee"/><stop offset="1" stop-color="#eef6fb"/></linearGradient></defs><rect width="400" height="170" fill="url(#t6)"/><path d="M0 96 L70 80 L110 52 L128 60 L146 30 L158 42 L172 20 L190 44 L210 36 L240 70 L300 64 L400 86 V110 H0Z" fill="#5f6370"/><path d="M172 20 L182 34 L170 32 L162 38Z M146 30 L152 40 L140 40Z" fill="#fff"/><g fill="#e0a32a"><ellipse cx="120" cy="92" rx="22" ry="8"/><ellipse cx="250" cy="84" rx="26" ry="8"/><ellipse cx="320" cy="92" rx="20" ry="7"/></g><path d="M0 104 Q200 96 400 104 V140 H0Z" fill="#2c4a66"/><path d="M80 114 Q200 110 320 116" stroke="#fff" stroke-width="1" opacity=".3" fill="none"/><g transform="translate(70 124)"><rect x="0" y="-16" width="26" height="16" fill="#7a5132"/><path d="M-3 -14 L13 -26 L29 -14Z" fill="#4a3a30"/><rect x="9" y="-10" width="8" height="10" fill="#3a2a1e"/></g><path d="M0 134 Q200 124 400 136 V170 H0Z" fill="#a3a462"/><g stroke="#8a8a4a" stroke-width="1"><line x1="20" y1="150" x2="16" y2="138"/><line x1="26" y1="152" x2="26" y2="138"/><line x1="200" y1="150" x2="196" y2="136"/><line x1="206" y1="150" x2="208" y2="136"/><line x1="360" y1="152" x2="356" y2="140"/></g></svg><img src="img/tas-d6.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>摇篮山：鸽子湖边的老船屋，山坡上的金色是落叶山毛榉</figcaption></figure>
+    <div class="dayhead"><div class="badge">D6<small>5/6 周四</small></div><div>
+      <h3>摇篮山：鸽子湖一圈，找金色的落叶山毛榉</h3>
+      <div class="chips"><span class="chip drive">🚗 约145km / 2h</span><span class="chip">住：摇篮山</span><span class="chip book">要预订：住宿（最难订）</span></div>
+    </div></div>
+    <ul class="tl"><li class="drv"><span class="t">08:00</span>出发去 <b>摇篮山</b>（Cradle Mountain），约2小时，最后一段是山路。</li><li><span class="t">10:00</span>到游客中心停车，<b>换乘公园穿梭巴士</b>进山（私家车不能开到鸽子湖），Parks Pass 含车票。</li><li><span class="t">10:30</span><b>鸽子湖环线</b>（Dove Lake Circuit）：6km、约2–3小时，平路木栈道为主，全程绕着摇篮山走，一定要在老船屋前拍一张。</li><li><span class="t">13:30</span>午饭（自带或游客中心咖啡馆）。</li><li><span class="t">14:30</span><b>找落叶山毛榉</b>（Fagus）：这是澳洲唯一会变色的原生树，每年4月底到5月中金黄，叫 Turning of the Fagus。从湖边往火山口湖（Crater Lake）方向走一段就能看到成片的金色，看到哪算哪。</li><li><span class="t">16:30</span>入住山里的木屋。</li><li><span class="t">17:00</span><b>朗尼溪</b>（Ronny Creek）木栈道，傍晚野生袋熊出来吃草，几米远都不怕人。</li><li><span class="t">18:30</span>木屋里做饭或去山庄餐厅。晚上看星星。</li></ul>
+    <div class="daytips"><div><b>天气</b>摇篮山一年里有大半时间在下雨或起雾，五月可能下雪。<b>没看到山顶也正常</b>，湖边的雨林一样好看。</div><div><b>落叶山毛榉</b>颜色每年早晚不同，5月初通常还在，但如果那年变色早，可能已经过了高峰。出发前一周搜 "Fagus Cradle Mountain" 看最新照片。</div></div>
+  </div>
+  <div class="day" id="d7">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="朗尼溪的草原上，袋熊在吃草"><defs><linearGradient id="t7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6e2ec"/><stop offset="1" stop-color="#f4efe4"/></linearGradient></defs><rect width="400" height="170" fill="url(#t7)"/><path d="M0 90 L120 70 L170 50 L200 64 L260 56 L400 84 V110 H0Z" fill="#9aa3ad"/><path d="M0 104 Q200 92 400 104 V170 H0Z" fill="#b5ae6a"/><path d="M0 150 L400 120" stroke="#8a6a4a" stroke-width="10"/><path d="M0 146 L400 116" stroke="#a5835e" stroke-width="2"/><g transform="translate(140 128)"><path d="M-28 12 Q-32 -16 0 -18 Q30 -18 30 4 Q30 14 24 14 H-24 Q-28 14 -28 12Z" fill="#7a5c40"/><circle cx="24" cy="-2" r="10" fill="#7a5c40"/><path d="M18 -11 l1 -6 l4 4Z M27 -11 l3 -5 l2 5Z" fill="#6a4c30"/><ellipse cx="32" cy="1" rx="4" ry="3" fill="#3a2a1e"/></g><g transform="translate(260 116) scale(.7)"><path d="M-28 12 Q-32 -16 0 -18 Q30 -18 30 4 Q30 14 24 14 H-24 Q-28 14 -28 12Z" fill="#6f5238"/><circle cx="24" cy="-2" r="10" fill="#6f5238"/><ellipse cx="32" cy="1" rx="4" ry="3" fill="#3a2a1e"/></g><g fill="#333"><circle cx="330" cy="112" r="2"/><rect x="329" y="114" width="2" height="6"/><circle cx="340" cy="111" r="2"/><rect x="339" y="113" width="2" height="6"/></g></svg><img src="img/tas-d7.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>朗尼溪：早晚在木栈道边常能看到野生袋熊吃草</figcaption></figure>
+    <div class="dayhead"><div class="badge">D7<small>5/7 周五</small></div><div>
+      <h3>早上再看袋熊，经过壁画小镇，飞回墨尔本</h3>
+      <div class="chips"><span class="chip drive">🚗 约150km / 2h · ✈ 1h</span><span class="chip">住：墨尔本</span><span class="chip book">要预订：朗塞斯顿 → 墨尔本机票</span></div>
+    </div></div>
+    <ul class="tl"><li><span class="t">07:30</span>起早再去朗尼溪或木屋附近的 <b>魔法步道</b>（Enchanted Walk，20分钟），早上动物也多。</li><li class="drv"><span class="t">09:30</span>出发，路过 <b>谢菲尔德</b>（Sheffield）壁画小镇，房子墙上画满了大壁画，停半小时。</li><li><span class="t">11:30</span>可选：Ashgrove 奶酪厂、Christmas Hills 覆盆子农场，就在去机场的路上，<b>奶酪厂里有本地酸奶</b>。</li><li><span class="t">13:30</span>朗塞斯顿机场还车。加满油、拍车身照片。</li><li class="drv"><span class="t">15:00</span>朗塞斯顿 → 墨尔本，约1小时。</li><li><span class="t">17:00</span>到墨尔本，SkyBus 进城入住。晚饭去 Lygon Street 或唐人街。</li></ul>
+    <div class="daytips"><div><b>为什么从朗塞斯顿飞</b>不用开回霍巴特（多3小时），朗塞斯顿飞墨尔本班次也多。</div><div><b>如果想多玩一天</b>把 D8 的航班改成 5/8 深夜起飞、5/9 早上到，5/8 白天还能在墨尔本逛半天。</div></div>
+  </div>
+  <div class="day" id="d8">
+    <figure class="scene"><svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" role="img" aria-label="一杯拿铁拉花，窗外飞机起飞"><defs><linearGradient id="g8" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c7dcef"/><stop offset="1" stop-color="#f6e6d4"/></linearGradient></defs><rect width="400" height="170" fill="url(#g8)"/><g fill="#a9b6c4"><rect x="230" y="96" width="16" height="44"/><rect x="250" y="80" width="20" height="60"/><rect x="274" y="100" width="14" height="40"/><rect x="292" y="70" width="18" height="70"/><rect x="314" y="92" width="16" height="48"/><path d="M296 70 L301 50 L306 70Z"/></g><rect y="138" width="400" height="32" fill="#cdbba4"/><g transform="translate(330 40) rotate(-14)"><path d="M-30 0 L30 0 Q38 0 38 3 Q38 6 30 6 L-30 6Z" fill="#fff"/><path d="M-4 3 L-18 22 L-10 22 L10 3Z" fill="#e6e9ee"/><path d="M-4 3 L-14 -12 L-8 -12 L8 3Z" fill="#e6e9ee"/><path d="M-30 0 L-38 -10 L-32 -10 L-24 0Z" fill="#c0392b"/></g><path d="M230 70 Q270 60 300 50" stroke="#fff" stroke-width="2" stroke-dasharray="2 4" fill="none" opacity=".8"/><g transform="translate(110 120)"><ellipse cx="0" cy="34" rx="70" ry="10" fill="#f3efe8"/><path d="M-44 -10 H44 L36 30 Q0 40 -36 30Z" fill="#fff"/><path d="M44 0 q22 0 18 14 q-4 12 -24 8" stroke="#fff" stroke-width="6" fill="none"/><ellipse cx="0" cy="-10" rx="44" ry="10" fill="#b07a4a"/><path d="M0 -16 q-12 4 0 12 q12 -8 0 -12Z M0 -4 v-14" fill="#f6efe2" stroke="#f6efe2" stroke-width="1.2"/></g></svg><img src="img/tas-d8.jpg" alt="" loading="lazy" onerror="this.remove()"><figcaption>墨尔本直飞回上海</figcaption></figure>
+    <div class="dayhead"><div class="badge">D8<small>5/8 周六</small></div><div>
+      <h3>墨尔本 brunch，飞回上海</h3>
+      <div class="chips"><span class="chip drive">🚌 SkyBus 30分钟 · ✈ 约11h</span><span class="chip">住：家里</span></div>
+    </div></div>
+    <ul class="tl"><li><span class="t">08:00</span>墨尔本 brunch：牛油果吐司、班尼迪克蛋。周六咖啡馆要排队，早点去。</li><li class="drv"><span class="t">09:00</span>南十字星站坐 SkyBus 去机场。</li><li><span class="t">10:00</span>到机场。买满 A$300 的可以办退税（TRS），提前在 App 里填好。</li><li><span class="t">中午前后</span>墨尔本直飞上海，约11小时，晚上到浦东。</li><li><span class="t">5/9 周日</span>在家休息一天，<b>5/10 周一正常上班</b>。</li></ul>
+    <div class="daytips"><div><b>伴手礼</b>塔斯马尼亚的薰衣草熊、蜂蜜、三文鱼罐头都可以在机场买；新鲜水果和肉别带回国。</div><div><b>酸奶善后</b>没吃完的大罐酸奶带不上飞机，早饭就地解决。</div></div>
+  </div>
+</section>
+
+<section id="drive">
+  <h2>岛上自驾须知</h2>
+  <div class="grid2">
+    <div class="card"><h3>🪪 驾照和车</h3><ul class="tight">
+      <li>中国驾照 + <b>NAATI 英文翻译件</b>，主驾本人信用卡付押金，和方案 A 一样。</li>
+      <li>霍巴特取、朗塞斯顿还，订车时确认异地还车费。</li>
+      <li>买零自付全险。岛上很多碎石路段，挡风玻璃容易被石子打到。</li>
+    </ul></div>
+    <div class="card"><h3>🦘 路上</h3><ul class="tight">
+      <li>塔斯马尼亚的路边动物尸体比澳洲任何地方都多，<b>黄昏后不开车</b>。</li>
+      <li>山路窄、弯多，限速常常是80或更低；摇篮山附近可能结冰。</li>
+      <li>国家公园要买 <b>Parks Pass</b>（按车，Holiday Pass 两个月有效），网上买、打印或存手机。</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="weather">
+  <h2>天气和穿衣<small>比墨尔本更冷</small></h2>
+  <div class="tbl"><table>
+    <tr><th>地方</th><th class="num">大概气温</th><th>穿什么</th></tr>
+    <tr><td>墨尔本</td><td class="num">9–18°C</td><td>薄外套，带伞</td></tr>
+    <tr><td>霍巴特、东海岸</td><td class="num">6–16°C</td><td>抓绒 + 防风外套</td></tr>
+    <tr><td>惠灵顿山顶、摇篮山</td><td class="num">−2–10°C</td><td>羽绒服、帽子手套、防水徒步鞋</td></tr>
+  </table></div>
+  <p style="font-size:13px;color:var(--muted)">霍巴特日落约17:15，比悉尼还早。</p>
+</section>
+
+<section id="stay">
+  <h2>住宿<small>四人，整套公寓或木屋</small></h2>
+  <div class="stays"><div class="stay"><div class="when">5/1<small>1晚</small></div><div><h3>墨尔本</h3><div class="price">约 A$300–400 / 晚 整套</div><p>住南十字星站附近，第二天坐 SkyBus 去机场最快。</p></div></div><div class="stay"><div class="when">5/2–5/3<small>2晚</small></div><div><h3>霍巴特</h3><div class="price">约 A$280–380 / 晚 整套</div><p>住萨拉曼卡或市中心，带停车位。</p></div></div><div class="stay"><div class="when">5/4<small>1晚</small></div><div><h3>科尔斯湾</h3><div class="price">约 A$250–400 / 晚</div><p>小镇住处少，早订。</p></div></div><div class="stay"><div class="when">5/5<small>1晚</small></div><div><h3>朗塞斯顿</h3><div class="price">约 A$220–320 / 晚 整套</div><p>市中心或峡谷附近。</p></div></div><div class="stay"><div class="when">5/6<small>1晚</small></div><div><h3>摇篮山</h3><div class="price">约 A$350–550 / 晚 木屋</div><p><b>最难订、最贵，最先订。</b>住公园门口的木屋，傍晚和早上看袋熊最方便。</p></div></div><div class="stay"><div class="when">5/7<small>1晚</small></div><div><h3>墨尔本</h3><div class="price">约 A$300–400 / 晚 整套</div><p>同样住南十字星站附近。</p></div></div></div>
+</section>
+
+<section id="budget">
+  <h2>预算计算器<small>改数字自动算</small></h2>
+  <p class="sub">默认值按四人、住整套公寓估算，每人约1.6–1.8万。往返同一个城市的机票通常比开口程便宜。</p>
+  <div class="calc">
+    <div class="card result">
+      <div style="color:var(--muted);font-size:14px">每人约</div>
+      <div class="big" id="perPerson">—</div>
+      <div style="color:var(--muted);font-size:14px;margin-bottom:8px"><span id="peopleLabel">四人</span>合计 <span id="total">—</span></div>
+      <div class="bar" id="bar"></div><div class="legend" id="legend"></div><div id="rows" style="margin-top:10px"></div>
+      <button type="button" class="btn" id="resetCalc">恢复默认</button>
+    </div>
+    <div class="card">
+      <div class="fields" id="calcFields"><label>人数<input type="number" inputmode="decimal" min="0" step="1" data-k="people" value="4"></label><label>1 澳元 = ? 元<input type="number" inputmode="decimal" min="0" step="0.01" data-k="aud" value="4.7"></label><label>往返机票 元/人<input type="number" inputmode="decimal" min="0" step="100" data-k="flight" value="6000"></label><label>签证 AUD/人<input type="number" inputmode="decimal" min="0" step="5" data-k="visa" value="200"></label><label>两段国内机票 AUD/人<input type="number" inputmode="decimal" min="0" step="10" data-k="dom" value="260"></label><label>租车 AUD/天<input type="number" inputmode="decimal" min="0" step="10" data-k="car" value="100"></label><label>租几天<input type="number" inputmode="decimal" min="0" step="1" data-k="carDays" value="6"></label><label>油费+国家公园 AUD 合计<input type="number" inputmode="decimal" min="0" step="10" data-k="fuel" value="300"></label><label>市内交通 AUD/人<input type="number" inputmode="decimal" min="0" step="5" data-k="local" value="60"></label><label>住宿 AUD/晚 整套<input type="number" inputmode="decimal" min="0" step="10" data-k="lodge" value="320"></label><label>住几晚<input type="number" inputmode="decimal" min="0" step="1" data-k="nights" value="7"></label><label>吃饭 元/人/天<input type="number" inputmode="decimal" min="0" step="10" data-k="food" value="400"></label><label>天数<input type="number" inputmode="decimal" min="0" step="1" data-k="days" value="8"></label><label>门票 AUD/人<input type="number" inputmode="decimal" min="0" step="5" data-k="fun" value="150"></label></div>
+      <p style="font-size:13px;color:var(--muted);margin:12px 0 0">两段国内机票＝墨尔本→霍巴特、朗塞斯顿→墨尔本（含托运）。油费+国家公园＝约850km 的油钱和一张两个月有效的 Parks Pass（按车算，约 A$90）。门票＝亚瑟港、博诺朗、缆椅。摇篮山木屋比较贵，住宿默认值已经往上调了。</p>
+    </div>
+  </div>
+</section>
+
+<section id="booking">
+  <h2>预订顺序</h2>
+  <div class="timeline-book">
+    <div class="card"><b>2026年11–12月</b><div>定方案，买 <b>上海 ⇄ 墨尔本往返</b>；先订 <b>摇篮山木屋</b> 和科尔斯湾。</div></div>
+    <div class="card"><b>2027年1–2月</b><div>递澳洲签证；买墨尔本 → 霍巴特、朗塞斯顿 → 墨尔本两段国内机票；两位司机办驾照翻译。</div></div>
+    <div class="card"><b>2027年2–3月</b><div>订租车（霍巴特取、朗塞斯顿还）、其他住宿、旅行保险。</div></div>
+    <div class="card"><b>2027年4月</b><div>买 Parks Pass、亚瑟港门票、博诺朗导览。</div></div>
+    <div class="card"><b>出发前一周</b><div>查摇篮山天气和落叶山毛榉的最新照片；查路况（Tasmania road closures）。</div></div>
+  </div>
+</section>
+
+<section id="checklist">
+  <h2>出发前清单</h2>
+  <p class="sub">勾选状态只保存在你自己的手机浏览器里。</p>
+  <div class="card"><ul class="check" id="checklistItems"><li><label><input type="checkbox" data-k="leave"><span>四人确认假期和请假</span></label></li><li><label><input type="checkbox" data-k="visa"><span>四人澳洲签证获批</span></label></li><li><label><input type="checkbox" data-k="flight"><span>上海 ⇄ 墨尔本往返机票</span></label></li><li><label><input type="checkbox" data-k="dom"><span>墨尔本→霍巴特（5/2）、朗塞斯顿→墨尔本（5/7）</span></label></li><li><label><input type="checkbox" data-k="car"><span>租车 5/2–5/7，霍巴特取、朗塞斯顿还</span></label></li><li><label><input type="checkbox" data-k="naati"><span>驾照英文翻译件</span></label></li><li><label><input type="checkbox" data-k="parks"><span>Parks Pass 国家公园通行证</span></label></li><li><label><input type="checkbox" data-k="cradle"><span>摇篮山木屋 5/6</span></label></li><li><label><input type="checkbox" data-k="hotels"><span>其他住宿：墨尔本×2、霍巴特×2、科尔斯湾、朗塞斯顿</span></label></li><li><label><input type="checkbox" data-k="ins"><span>旅行保险</span></label></li><li><label><input type="checkbox" data-k="gear"><span>羽绒服、防水外套、徒步鞋、帽子手套</span></label></li><li><label><input type="checkbox" data-k="food"><span>行李里不带肉、蛋、奶、水果</span></label></li><li><label><input type="checkbox" data-k="spoon"><span>折叠勺（酸奶传统不能断）</span></label></li></ul></div>
+</section>
+
+</main>
+
+<a href="#top" class="totop" id="totop" aria-label="回到顶部">↑</a>
+
+<footer>
+  <div class="wrap">
+    <p>本页写于2026年11月，供出发前参考。航班、票价、签证政策和营业时间都可能变，出发前请以官网为准：<a href="https://parks.tas.gov.au/" target="_blank" rel="noopener">塔斯马尼亚国家公园</a> · <a href="https://www.portarthur.org.au/" target="_blank" rel="noopener">亚瑟港</a> · <a href="https://www.discovertasmania.com.au/" target="_blank" rel="noopener">塔斯马尼亚旅游局</a></p>
+    <p>签证、入境检疫、插头这些四种玩法都一样，见 <a href="index.html#visa">方案 A 页面的签证入境</a>；三个目的地（澳洲、新西兰、瑞士意大利）的对比见 <a href="index.html#vs">这里</a>。</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var root=document.documentElement, saved=get('au-theme');
+  if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark';
+    root.setAttribute('data-theme',next); set('au-theme',next);
+  });
+  var totop=document.getElementById('totop');
+  window.addEventListener('scroll',function(){totop.classList.toggle('show',window.scrollY>900)},{passive:true});
+  var state={};
+  try{state=JSON.parse(get('au-tas-check')||'{}')||{}}catch(e){state={}}
+  document.querySelectorAll('#checklistItems input').forEach(function(cb){
+    cb.checked=!!state[cb.dataset.k];
+    cb.addEventListener('change',function(){state[cb.dataset.k]=cb.checked;set('au-tas-check',JSON.stringify(state))});
+  });
+  var inputs=[].slice.call(document.querySelectorAll('#calcFields input'));
+  var defaults={}; inputs.forEach(function(i){defaults[i.dataset.k]=i.value});
+  var savedCalc={}; try{savedCalc=JSON.parse(get('au-tas-calc')||'{}')||{}}catch(e){savedCalc={}}
+  inputs.forEach(function(i){ if(savedCalc[i.dataset.k]!=null) i.value=savedCalc[i.dataset.k]; });
+  var colors=['#b4532a','#2a7880','#d39b3a','#7a6bb0','#4f8f4f','#9a9a9a'];
+  var cn=['零','一','两','三','四','五','六','七','八','九','十'];
+  function fmt(n){return '¥'+Math.round(n).toLocaleString('zh-CN')}
+  var partsOf=function(v,p){return [['机票',v.flight+v.dom*v.aud],['签证',v.visa*v.aud],['交通租车',v.local*v.aud+(v.car*v.carDays+v.fuel)*v.aud/p],['住宿',v.lodge*v.nights*v.aud/p],['吃饭',v.food*v.days],['门票',v.fun*v.aud]]};
+  function calc(){
+    var v={}; inputs.forEach(function(i){v[i.dataset.k]=Math.max(0,parseFloat(i.value)||0)});
+    var p=Math.max(1,Math.round(v.people));
+    var parts=partsOf(v,p);
+    var per=parts.reduce(function(s,x){return s+x[1]},0);
+    document.getElementById('perPerson').textContent=fmt(per);
+    document.getElementById('total').textContent=fmt(per*p);
+    document.getElementById('peopleLabel').textContent=(p<=10?cn[p]:p)+'人';
+    var bar='',leg='',rows='';
+    parts.forEach(function(x,i){
+      var pct=per>0?x[1]/per*100:0;
+      bar+='<i style="width:'+pct.toFixed(2)+'%;background:'+colors[i]+'"></i>';
+      leg+='<span style="--c:'+colors[i]+'">'+x[0]+'</span>';
+      rows+='<div class="row"><span>'+x[0]+'</span><span>'+fmt(x[1])+' / 人</span></div>';
+    });
+    document.getElementById('bar').innerHTML=bar;
+    document.getElementById('legend').innerHTML=leg;
+    document.getElementById('rows').innerHTML=rows;
+    var s={}; inputs.forEach(function(i){s[i.dataset.k]=i.value}); set('au-tas-calc',JSON.stringify(s));
+  }
+  inputs.forEach(function(i){i.addEventListener('input',calc)});
+  document.getElementById('resetCalc').addEventListener('click',function(){
+    inputs.forEach(function(i){i.value=defaults[i.dataset.k]}); calc();
+  });
+  calc();
+})();
+</script>
+</body>
+</html>

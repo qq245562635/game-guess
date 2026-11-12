@@ -15,3 +15,11 @@
 | d6.jpg | 墨尔本 |
 | d7.jpg | 菲利普岛企鹅 |
 | d8.jpg | 回程 |
+
+方案 B、C、D 的页面用带前缀的文件名（方案 C 的 D1–D3 和方案 A 共用 d1–d3）：
+
+| 前缀 | 页面 | 文件名 |
+|---|---|---|
+| tas- | 塔斯马尼亚 | tas-hero、tas-d1 … tas-d8 |
+| cns- | 悉尼 + 大堡礁 | cns-hero、cns-d4 … cns-d8 |
+| gc- | 布里斯班 + 黄金海岸 | gc-hero、gc-d1 … gc-d8 |
